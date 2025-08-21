@@ -1,0 +1,1042 @@
+/* フォントの指定はここから */
+
+.zen-kurenaido-regular {
+    font-family: "Zen Kurenaido", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+}
+
+.zen-old-mincho-regular {
+    font-family: "Zen Old Mincho", serif;
+    font-weight: 400;
+    font-style: normal;
+}
+
+.TA-koigokoro-Regular {
+    font-family: "ta-koigokoro", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+}
+
+.grandiflora-one-regular {
+    font-family: "Grandiflora One", cursive;
+    font-weight: 400;
+    font-style: normal;
+}
+
+/* フォントの指定ここまで */
+
+html{
+    font-family: "zen-krenaido-regular", "zen-old-mincho-regular", "zen-kaku-gothic-new-light", "zen-kaku-gothic-new-regular", "zen-kaku-gothic-new-medium", "zen-kaku-gothic-new-bold", "zen-kaku-gothic-new-black", "ta-koigokoro-regular", "grandiflora-one-regular";
+    margin: 0;
+}
+
+body {
+    margin: 0;
+    background-color: #fdfdfd;
+}
+
+header {
+    top:0;
+    width: 100vw;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 120px 0px 82.17px;
+    box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+    background: #fff;
+    position: fixed;
+    z-index: 1000000000000000 !important;
+}
+
+.header-logo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 337.83px;
+    height: 61px;
+    gap: 20px;
+}
+
+.header-logo-svg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 75.651px;
+    height: 56.644px;
+}
+
+.header-logo-text_1 {
+    font-family: "Zen Old Mincho", serif;
+    font-size: 13px;
+    margin: 0;
+}
+
+.header-logo-text_2 {
+    font-family: "Zen Old Mincho", serif;
+    font-size: 32px;
+    margin: 0;
+}
+
+.header-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-nav a {
+    font-family: "Zen Old Mincho", serif;
+    font-size: 20px;
+    text-decoration: none;
+    color: #000;
+    padding: 15px;
+    letter-spacing: 3px;
+    position: relative; /* アンダーラインのために相対位置を指定 */
+    cursor: pointer;
+}
+
+.header-nav a::after {
+    position: absolute;
+    left: 15px; /* aタグの左端からアンダーラインを引く */
+    right: 15px; /* aタグの右端からアンダーラインを引く */
+    content: '';
+    width: calc(100%-30px);
+    height: 1px;
+    background: #000000;
+    bottom: 12px;
+    transform: scale(0, 1);
+    transform-origin: center top; /*変形（アンダーラインの伸長）の原点がaタグ（各メニュー）の右端*/
+    transition: transform 0.3s;   /*変形の時間*/
+}
+
+.header-nav a:hover::after {
+    transform: scale(1, 1); /* アンダーラインを表示 */
+}
+
+.main-visual {
+    width: 100%;
+    height: calc(100vh - 120px);
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    justify-content: center;
+    padding: 0 72px;
+    position: relative;
+    margin-top: 120px;
+}
+
+.main-visual-logo {
+    width: calc(100%/3.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.main-visual-photos {
+    width: 60%;
+    height: 60%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.main-visual-photos img {
+    width: 400px;
+    height: auto;
+    object-fit: cover;
+    top: 0;
+    left: 0;
+    border: 20px solid #FFF;
+    box-shadow: 5px 5px 4px 0px rgba(0, 0, 0, 0.25);
+}
+
+.main-visual-photos img:nth-child(1) {
+    transform: rotate(-9.91deg);
+    position: absolute;
+    top: -50px;
+    left: 0;
+    z-index: 1;
+    object-fit: cover;
+    /* transition: transform 0.3s ease-in-out; */
+}
+
+.main-visual-photos img:nth-child(2) {
+    transform: rotate(10.037deg);
+    position: absolute;
+    top: 50px;
+    left: 150px;
+    z-index: 2;
+    object-fit: cover;
+    /* transition: transform 0.3s ease-in-out; */
+}
+
+.main-visual-photos img:nth-child(3) {
+    transform: rotate(-3.032deg);
+    position: absolute;
+    top: 150px;
+    left: 0px;
+    z-index: 3;
+    object-fit: cover;
+    /* transition: transform 0.3s ease-in-out; */
+}
+
+.click-popup {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    top: 95%;
+    left: 55%;
+}
+
+.arrow-line {
+    width: 55px;
+    height: 35px;
+    position: relative;
+}
+
+.click-popup p {
+    font-family: "Grandiflora One";
+    font-size: 32px;
+    font-weight: 400;
+    font-style: normal;
+    line-height: normal;
+    letter-spacing: 4.8px;
+    color: #000;
+    margin: 0;
+    transform: rotate(-17.213deg);
+    position: absolute;
+    top: -50%;
+    left: 120%;
+}
+
+.slogan {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 74px 0 148px 0;
+}
+
+.slogan-text {
+    font-family: "Zen Kurenaido", sans-serif;
+    font-size: 24px;
+    font-weight: 400;
+    font-style: normal;
+    letter-spacing: 3.6px;
+    margin: 0;
+    margin-top: 30px;
+    color: #000;
+    text-align: center;
+}
+
+.slogan-subtext {
+    font-family: "Zen Kurenaido", sans-serif;
+    font-size: 20px;
+    font-weight: 400;
+    font-style: normal;
+    letter-spacing: 3px;
+    margin: 0;
+    margin-bottom: 30px;
+    color: #000;
+    text-align: center;
+}
+
+.section-title {
+    display: flex;
+    flex-direction: row;
+    align-items: space-between;
+    justify-content: center;
+    margin-bottom: 55px;
+}
+
+.section-title  h1{
+    color: #000;
+    font-family: "Didot";
+    font-size: 96px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 14.4px;
+    padding-right: 78px;
+}
+
+.section-title-line {
+    width: 100%;
+    position: relative;
+}
+
+.section-title-line::after {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: #000;
+    position: absolute;
+    top: 50%;
+    right: 0;
+}
+
+.Activity {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 120px;
+}
+
+.tab {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin-bottom: 111px;
+    position: relative;
+}
+
+.tab > label {
+    flex: 1 1;
+    order: -1;
+    min-width: 70px;
+    padding: .7em 1em .5em;
+    border-bottom: 1px solid #000000;
+    border-radius: 0;
+    background-color: #fdfdfd;
+    color: #000000;
+    font-family: "Zen Old Mincho";
+    font-size: 15px;
+    letter-spacing: 2.25px;
+    font-weight: 400;
+    font-style: normal;
+    text-align: center;
+    cursor: pointer;
+}
+
+.tab > label:hover {
+    opacity: .8;
+}
+
+.tab input {
+    display: none;
+}
+
+.tab > div {
+    display: none;
+    width: 100%;
+    padding: 1.5em 1em;
+    background-color: #fff;
+    position: relative;
+}
+
+#tab1:checked ~ label[for="tab1"],
+#tab2:checked ~ label[for="tab2"],
+#tab3:checked ~ label[for="tab3"],
+#tab4:checked ~ label[for="tab4"],
+#tab5:checked ~ label[for="tab5"] {
+    background-color: #fff;
+    border-color: #000000;
+    border-style: solid;
+    border-width: 1px 1px 0px 1px;
+    border-radius: 2px 2px 0px 0px;
+    color: #000000;
+}
+
+#tab1:checked ~ label[for="tab1"] + div,
+#tab2:checked ~ label[for="tab2"] + div,
+#tab3:checked ~ label[for="tab3"] + div,
+#tab4:checked ~ label[for="tab4"] + div,
+#tab5:checked ~ label[for="tab5"] + div {
+    display: block;
+    background-color: #fff;
+}
+
+#tab1:checked ~ label[for="tab1"] + div::after,
+#tab2:checked ~ label[for="tab2"] + div::after,
+#tab3:checked ~ label[for="tab3"] + div::after,
+#tab4:checked ~ label[for="tab4"] + div::after,
+#tab5:checked ~ label[for="tab5"] + div::after {
+    content: '';
+    display: block;
+    width: 78.5%;
+    height: 1px;
+    background: #000;
+    position: absolute;
+    top: 100%;
+    left: 0;
+}
+
+.Activity article {
+    width: 100%;
+    height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 50px;
+    position: relative;
+}
+
+.Activity-1,
+.Activity-2 {
+    margin-bottom: 25px;
+}
+
+.Activity-1::after {
+    content: '';
+    display: block;
+    width: 200px;
+    height: 1px;
+    background: #000;
+    margin-top: 12px;
+    position: absolute;
+    top: 100%;
+    left: calc(50% - 100px);
+}
+
+.Activity-2::after {
+    content: '';
+    display: block;
+    width: 200px;
+    height: 1px;
+    background: #000;
+    margin-top: 12px;
+    position: absolute;
+    top: 100%;
+    left: calc(50% - 100px);
+}
+
+.Activity-info {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.Activity-info p {
+    color: #000;
+    font-family: "Grandiflora One";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    text-align: center;
+    line-height: normal;
+    letter-spacing: 3px;
+    margin: 0 45px 0 0;
+}
+
+.Activity-info a {
+    color: #000;
+    font-family: "Grandiflora One";
+    font-size: 15px;
+    font-style: normal;
+    font-weight: 400;
+    text-align: center;
+    line-height: normal;
+    letter-spacing: 2.25px;
+    margin-right: 25px;
+    text-decoration: none;
+    position: relative;
+    cursor: pointer;
+}
+
+.Activity-info a::after {
+    position: absolute;
+    left: 0; /* aタグの左端からアンダーラインを引く */
+    right: 0; /* aタグの右端からアンダーラインを引く */
+    content: '';
+    width: 100%;
+    height: 0.5px;
+    background: #b6b6b6;
+    bottom: 0;
+    transform: scale(0, 1);
+    transform-origin: center top; /*変形（アンダーラインの伸長）の原点がaタグ（各メニュー）の右端*/
+    transition: transform 0.3s;
+}
+
+.Activity-info a:hover::after {
+    transform: scale(1, 1); /* アンダーラインを表示 */
+}
+
+.Activity-title {
+    color: #000;
+    font-family: "Zen Kurenaido";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
+}
+
+.view-more-button {
+    display: inline-block;
+    padding: 14px 32px 16px;
+    background-color: #ffffff;
+    color: #000000;
+    text-decoration: none;
+    font-family: "Zen Old Mincho";
+    font-size: 20px;
+    letter-spacing: 3px;
+    border: #000000 1px solid;
+    position: absolute;
+    right: 0%;
+    top: calc(100% - 30px);
+    cursor: pointer;
+}
+
+.view-more-button:hover {
+    background-color: #707070; /* ホバー時の背景色 */
+    color: #ffffff; /* ホバー時の文字色 */
+    transition: 0.3s ease-in-out; /* ホバー時の変化をスムーズに */
+}
+
+.activity-table {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.click-popup-2 {
+    position: absolute;
+    bottom: -70px;
+    left: 20%;
+}
+
+.arrow-line-2 {
+    width: 66px;
+    height: 61px;
+    position: relative;
+}
+
+.click-popup-2 p {
+    color: #000;
+    font-family: "Grandiflora One";
+    font-size: 32px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 4.8px;
+    margin: 0;
+    transform: rotate(-10.888deg);
+    position: absolute;
+    top: 30%;
+    left: 100%;
+}
+
+.activity-table-text {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: right;
+    justify-content: center;
+}
+.activity-table-text p {
+    font-family: "Zen Kurenaido";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
+    text-align: right;
+    margin-top: 11px;
+}
+
+.activity-card {
+    width: 290px;
+    height: 414px;
+    flex-shrink: 0;
+    aspect-ratio: 145/207;
+    border-radius: 10px;
+    background-color: #707070;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    margin: 7px;
+    padding: 16px;
+    position: relative;
+}
+
+.activity-card::before {
+    content: '';
+    border-radius: 10px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background-color: rgba(71, 71, 71, 0.5);
+}
+
+.activity-card::after {
+    content: '';
+    border-radius: 10px;
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    bottom: 7px;
+    left: 7px;
+    border:#ffffff 0.5px solid;
+}
+
+.activity-card-contents {
+    width: calc(100% - 32px);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.activity-card h1 {
+    color: #ffffff;
+    font-family: "Zen Old Mincho";
+    font-size: 40px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 6px;
+    transition: 0.3s ease;
+}
+
+.activity-card:hover h1 {
+    margin-top: 20px;
+    margin-bottom: 84px;
+    transition: 0.3s ease-in-out;
+}
+
+.activity-card p {
+    color: #ffffff;
+    font-family: "Zen Old Mincho";
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 2.4px;
+    opacity: 0;
+    position: inherit;
+    transition: 
+        /* opacity 0.3s ease, */
+        position 0.1s ease-in-out 0.3s;
+}
+
+.activity-card:hover p {
+    opacity: 1;
+    position: static;
+    transition: 
+        opacity 0.3s ease,
+        position 0.1s ease-in-out 0.3s;
+}
+
+#card-1 h1 {
+    font-family: "Grandiflora One";
+    font-size: 40px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 6px;
+    transition: 0.3s ease-in-out;
+}
+
+#card-1:hover h1 {
+    margin-top: 20px;
+    margin-bottom: 0px;
+    transition: 0.3s ease-in-out;
+}
+
+#card-1 {
+    background-image: url(src/activity/Photo1.jpeg);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+#card-2 {
+    background-image: url(src/activity/Photo2.jpeg);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+#card-3 {
+    background-image: url(src/activity/Photo3.jpeg);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+#card-4 {
+    background-image: url(src/activity/Photo4.jpeg);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+#card-5 {
+    background-image: url(src/activity/Photo5.jpeg);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+#card-6 {
+    background-image: url(src/activity/Photo6.jpeg);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+#card-7 {
+    background-image: url(src/activity/Photo7.jpeg);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+#card-8 {
+    background-image: url(src/activity/Photo8.jpeg);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.advertising {
+    width: 100%;
+    height: 100%;
+    margin-top: 210px;
+}
+
+.advertising h1 {
+    color: #000;
+    font-family: "Zen Kurenaido";
+    font-size: 36px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 5.4px;
+    margin-left: 40px;
+    margin-bottom: 30px;
+}
+
+.photo-carousel {
+    width: 100%;
+    position: relative;
+}
+
+.click-popup-3 {
+    position: absolute;
+    top: -70px;
+    right: 20%;
+}
+
+.arrow-line-3 {
+    width: 66px;
+    height: 61px;
+    position: relative;
+}
+
+.click-popup-3 p {
+    color: #000;
+    font-family: "Grandiflora One";
+    font-size: 32px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 4.8px;
+    margin: 0;
+    transform: rotate(22.748deg);
+    position: absolute;
+    top: -35%;
+    left: 110%;
+}
+
+.upper-film-hole {
+    height: 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.upper-film-hole svg {
+    width: 100%;
+    height: auto;
+    margin-right: 20px;
+    z-index: 1 !important;
+}
+
+.upper-film-hole::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 0;
+    width: 100vw;
+    height: 1px;
+    background-image: url('src/advertising/hand-write-line.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+.lower-film-hole {
+    height: 20px;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.lower-film-hole svg {
+    width: 100%;
+    height: auto;
+    margin-right: 20px;
+    z-index: 1 !important;
+}
+
+.lower-film-hole::after {
+    content: '';
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    width: 100vw;
+    height: 1px;
+    background-image: url('src/advertising/hand-write-line.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+.photo-carousel-contents {
+    position: relative;
+    display: flex;
+    width: 100%;
+    overflow: hidden;
+
+    ul {
+        padding: 0;
+        width: 100%;
+        display: flex;
+        flex-shrink: 0;
+
+        &:first-child {
+            animation: slide1 60s -30s linear infinite;
+        }
+
+        &:last-child {
+            animation: slide2 60s linear infinite;
+        }
+
+        li {
+            display: inline-block;
+            width: 100%;
+            min-width: 150px;
+            margin-right: 20px;
+            list-style: none;
+            text-align: center;
+
+            img {
+                height: 100%;
+                object-fit: cover;
+                z-index: 1 !important;
+            }
+        }
+    }
+    
+    /* &:hover {
+        ul {
+            animation-play-state: paused;
+        }
+    } */
+}
+
+@keyframes slide1 {
+    0% {
+        transform: translateX(100%);
+    }
+
+    to {
+        transform: translateX(-100%);
+    }
+}
+
+@keyframes slide2 {
+    0% {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-200%);
+    }
+}
+
+.photo-carousel-content {
+    width: 240px;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.photo-carousel-content::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    width: calc(100% + 4px);
+    height: calc(100% + 4px);
+    background-image: url('src/advertising/frame-of-picture.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    z-index: 2 !important;
+}
+
+.button-div {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: right;
+    padding: 0 120px;
+}
+
+.join-button {
+    display: inline-block;
+    padding: 14px 32px 16px;
+    background-color: #ffffff;
+    color: #000000;
+    text-decoration: none;
+    font-family: "Zen Old Mincho";
+    font-size: 20px;
+    letter-spacing: 3px;
+    border: #000000 1px solid;
+    cursor: pointer;
+    margin-top: 40px;
+}
+
+.join-button:hover {
+    background-color: #707070; /* ホバー時の背景色 */
+    color: #ffffff; /* ホバー時の文字色 */
+    transition: 0.3s ease-in-out; /* ホバー時の変化をスムーズに */
+}
+
+footer {
+    width: 100%;
+    height: 441px;
+    margin-top: 148px;
+    padding: 68px 120px 35px;
+    flex-shrink: 0;
+    background: rgba(70, 70, 70, 0.75);
+    box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.25) inset;
+    position: relative;
+}
+
+footer h1 {
+    color: #FFF;
+    font-family: "Zen Kurenaido";
+    font-size: 40px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 6px;
+}
+
+footer h2 {
+    color: #FFF;
+    font-family: "Zen Kurenaido";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
+}
+
+footer h3 {
+    color: #FFF;
+    font-family: "Grandiflora One";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
+}
+
+footer a {
+    color: #FFF;
+    font-family: "Zen Old Mincho";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
+    text-decoration: none;
+    margin-right: 44px;
+    position: relative;
+    cursor: pointer;
+}
+
+footer a::after {
+    position: absolute;
+    left: 0; /* aタグの左端からアンダーラインを引く */
+    right: 0; /* aタグの右端からアンダーラインを引く */
+    content: '';
+    width: 100%;
+    height: 1px;
+    background: #b6b6b6;
+    bottom: 0;
+    transform: scale(0, 1);
+    transform-origin: center top; /*変形（アンダーラインの伸長）の原点がaタグ（各メニュー）の右端*/
+    transition: transform 0.3s;
+}
+
+footer a:hover::after {
+    transform: scale(1, 1); /* アンダーラインを表示 */
+}
+
+.footer-links {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    margin-top: 40px;
+    margin-bottom: 30px;
+}
+
+.links-lower-tier {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    margin-top: 20px;
+}
+
+.member-links {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    margin-top: 10px;
+}
+
+.footer-logo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    position: absolute;
+    bottom: 35px;
+    right: 120px;
+}
+
+.footer-logo h3 {
+    margin-top: 25px;
+}

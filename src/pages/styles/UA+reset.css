@@ -1,0 +1,170 @@
+/**
+* uaplus.css version 0.0.1
+*/
+*,
+*::after,
+*::before {
+  box-sizing: border-box;
+}
+:focus-visible {
+  outline-offset: 3px;
+}
+:where(html) {
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
+}
+:where(html) {
+  line-height: 1.5;
+}
+:where(html) {
+  scrollbar-gutter: stable;
+}
+:where(h1) {
+  font-size: 2em;
+  margin-block: 0.67em;
+}
+:where(abbr[title]) {
+  cursor: help;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+}
+@media (forced-colors: active) {
+  mark {
+    color: HighlightText;
+    background-color: Highlight;
+  }
+}
+:where(del, ins, s)::before,
+:where(del, ins, s)::after {
+  clip-path: inset(100%);
+  clip: rect(1px, 1px, 1px, 1px);
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  content: "test";
+}
+:where(s)::before {
+  content: "stricken text start ";
+}
+:where(s)::after {
+  content: " stricken text end";
+}
+:where(del)::before {
+  content: "deletion start ";
+}
+:where(del)::after {
+  content: " deletion end";
+}
+:where(ins)::before {
+  content: "insertion start ";
+}
+:where(ins)::after {
+  content: " insertion end";
+}
+:where(audio, iframe, img, svg, video) {
+  max-block-size: 100%;
+  max-inline-size: 100%;
+}
+:where(fieldset) {
+  min-inline-size: 0;
+}
+:where(label):has(+ :where(textarea, input, select)) {
+  display: block;
+}
+:where(textarea:not([rows])) {
+  min-block-size: 6em;
+}
+:where(button, input, select, textarea) {
+  font-family: inherit;
+  font-size: inherit;
+}
+:where([type="search"]) {
+  -webkit-appearance: textfield;
+}
+@supports (-webkit-touch-callout: none) {
+  :where([type="search"]) {
+    border: 1px solid -apple-system-secondary-label;
+    background-color: canvas;
+  }
+}
+:where([type="tel"], [type="url"], [type="email"], [type="number"]):not(
+    :placeholder-shown
+  ) {
+  direction: ltr;
+}
+:where(table) {
+  border-collapse: collapse;
+  border: 1px solid;
+}
+:where(th, td) {
+  border: 1px solid;
+  padding: 0.25em 0.5em;
+}
+:where(dialog)::backdrop {
+  background: oklch(0% 0 0 / 0.3);
+}
+:where(dialog),
+:where(dialog)::backdrop {
+  opacity: 0;
+  transition: opacity 300ms ease-out, display 300ms allow-discrete,
+    overlay 300ms allow-discrete;
+}
+:where(dialog[open]),
+:where(dialog[open])::backdrop {
+  opacity: 1;
+}
+@starting-style {
+  :where(dialog[open]),
+  :where(dialog[open])::backdrop {
+    opacity: 0;
+  }
+}
+[hidden]:not([hidden="until-found"]) {
+  display: none !important;
+}
+
+/*
+自作ResetCSS
+*/
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-weight: normal;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+table {
+  border: none;
+}
+
+td,
+th {
+  padding: 0;
+  border: none;
+}
+
+tr {
+  border: none;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
