@@ -5,7 +5,7 @@ import background from '../assets/footer/background.jpg';
 const optimizedBackground = await getImage({src: background, format: 'webp'});
 ---
 
-<footer style="background: linear-gradient(rgba(70, 70, 70, 0.75), rgba(70, 70, 70, 0.75)), url(${optimizedBackground.src});" >
+<footer style={{ background: `linear-gradient(rgba(70, 70, 70, 0.75), rgba(70, 70, 70, 0.75)), url(${optimizedBackground.src})` }}>
 
     <a href="/">
         <h2>早稲田大学公認サークル</h2>
@@ -30,7 +30,7 @@ const optimizedBackground = await getImage({src: background, format: 'webp'});
         <a href="Sign_up">Sign up</a>
     </div>
     <div class="footer-logo">
-        <img src="../src/assets/footer/logo.png" alt="Scharade Logo">
+        <img src="../src/assets/footer/logo.svg" alt="Scharade Logo">
         <h3>©Scharade. All Rights Reserved.</h3>
     </div>
 </footer>

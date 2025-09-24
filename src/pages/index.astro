@@ -1,6 +1,9 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import '../styles/index.css';
+
+import MainPhoto1 from "../assets/header/Photo1.jpeg";
+import MainPhoto2 from "../assets/header/Photo2.jpg";
+import MainPhoto3 from "../assets/header/Photo3.jpeg";
 
 import ADphoto1 from "../assets/advertising/Photo1.jpeg";
 import ADphoto2 from "../assets/advertising/Photo2.jpeg";
@@ -8,6 +11,23 @@ import ADphoto3 from "../assets/advertising/Photo3.jpeg";
 import ADphoto4 from "../assets/advertising/Photo4.jpeg";
 import ADphoto5 from "../assets/advertising/Photo5.jpeg";
 
+import { getImage } from 'astro:assets';
+import backgroundCard1 from '../assets/activity/Photo1.jpeg';
+const ACcard1 = await getImage({src: backgroundCard1, format: 'webp'});
+import backgroundCard2 from '../assets/activity/Photo2.jpeg';
+const ACcard2 = await getImage({src: backgroundCard2, format: 'webp'});
+import backgroundCard3 from '../assets/activity/Photo3.jpeg';
+const ACcard3 = await getImage({src: backgroundCard3, format: 'webp'});
+import backgroundCard4 from '../assets/activity/Photo4.jpeg';
+const ACcard4 = await getImage({src: backgroundCard4, format: 'webp'});
+import backgroundCard5 from '../assets/activity/Photo5.jpeg';
+const ACcard5 = await getImage({src: backgroundCard5, format: 'webp'});
+import backgroundCard6 from '../assets/activity/Photo6.jpeg';
+const ACcard6 = await getImage({src: backgroundCard6, format: 'webp'});
+import backgroundCard7 from '../assets/activity/Photo7.jpeg';
+const ACcard7 = await getImage({src: backgroundCard7, format: 'webp'});
+import backgroundCard8 from '../assets/activity/Photo8.jpeg';
+const ACcard8 = await getImage({src: backgroundCard8, format: 'webp'});
 ---
 
 <Layout>
@@ -16,9 +36,9 @@ import ADphoto5 from "../assets/advertising/Photo5.jpeg";
             <img src="../src/assets/header/logo.png" alt="Logo">
         </div>
         <div class="main-visual-photos">
-            <img src="../src/assets/header/Photo1.jpeg" alt="Photo 1">
-            <img src="../src/assets/header/Photo2.jpg" alt="Photo 2">
-            <img src="../src/assets/header/Photo3.jpeg" alt="Photo 3">
+            <img src={MainPhoto1.src} alt="Photo 1">
+            <img src={MainPhoto2.src} alt="Photo 2">
+            <img src={MainPhoto3.src} alt="Photo 3">
             <div class="click-popup">
                 <div class="arrow-line">
                     <svg xmlns="http://www.w3.org/2000/svg" width="55" height="37" viewBox="0 0 55 37" fill="none">
@@ -192,7 +212,7 @@ import ADphoto5 from "../assets/advertising/Photo5.jpeg";
             <table>
                 <tr>
                     <td>
-                        <div class="activity-card" id="card-1">
+                        <div class="activity-card" id="card-1" style={`background-image: url(${ACcard1.src});`}>
                             <div class="activity-card-contents">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="78" height="59" viewBox="0 0 78 59" fill="none">
                                     <path d="M38.875 52.5666C47.0972 52.5666 53.7626 45.8782 53.7626 37.6278C53.7626 29.3773 47.0972 22.689 38.875 22.689C30.6528 22.689 23.9875 29.3773 23.9875 37.6278C23.9875 45.8782 30.6528 52.5666 38.875 52.5666Z" stroke="white"/>
@@ -206,7 +226,7 @@ import ADphoto5 from "../assets/advertising/Photo5.jpeg";
                         </div>
                     </td>
                     <td>
-                        <div class="activity-card" id="card-2">
+                        <div class="activity-card" id="card-2" style={`background-image: url(${ACcard2.src});`}>
                             <div class="activity-card-contents">
                                 <h1>定例会</h1>
                                 <p>月に2回、E212の部室にて定例会を行なっています。<br>定例会ではカメラ講習、ボドゲ大会などを行なっています。</p>
@@ -214,7 +234,7 @@ import ADphoto5 from "../assets/advertising/Photo5.jpeg";
                         </div>
                     </td>
                     <td>
-                        <div class="activity-card" id="card-3">
+                        <div class="activity-card" id="card-3" style={`background-image: url(${ACcard3.src});`}>
                             <div class="activity-card-contents">
                                 <h1>撮影会</h1>
                                 <p>月に2回、E212の部室にて定例会を行なっています。<br>定例会ではカメラ講習、ボドゲ大会などを行なっています。</p>
@@ -222,7 +242,7 @@ import ADphoto5 from "../assets/advertising/Photo5.jpeg";
                         </div>
                     </td>
                     <td>
-                        <div class="activity-card" id="card-4">
+                        <div class="activity-card" id="card-4" style={`background-image: url(${ACcard4.src});`}>
                             <div class="activity-card-contents">
                                 <h1>展示</h1>
                                 <p>月に2回、E212の部室にて定例会を行なっています。<br>定例会ではカメラ講習、ボドゲ大会などを行なっています。</p>
@@ -232,7 +252,7 @@ import ADphoto5 from "../assets/advertising/Photo5.jpeg";
                 </tr>
                 <tr>
                     <td>
-                        <div class="activity-card" id="card-5">
+                        <div class="activity-card" id="card-5" style={`background-image: url(${ACcard5.src});`}>
                             <div class="activity-card-contents">
                                 <h1>夏合宿</h1>
                                 <p>月に2回、E212の部室にて定例会を行なっています。<br>定例会ではカメラ講習、ボドゲ大会などを行なっています。</p>
@@ -240,7 +260,7 @@ import ADphoto5 from "../assets/advertising/Photo5.jpeg";
                         </div>
                     </td>
                     <td>
-                        <div class="activity-card" id="card-6">
+                        <div class="activity-card" id="card-6" style={`background-image: url(${ACcard6.src});`}>
                             <div class="activity-card-contents">
                                 <h1>春合宿</h1>
                                 <p>月に2回、E212の部室にて定例会を行なっています。<br>定例会ではカメラ講習、ボドゲ大会などを行なっています。</p>
@@ -248,7 +268,7 @@ import ADphoto5 from "../assets/advertising/Photo5.jpeg";
                         </div>
                     </td>
                     <td>
-                        <div class="activity-card" id="card-7">
+                        <div class="activity-card" id="card-7" style={`background-image: url(${ACcard7.src});`}>
                             <div class="activity-card-contents">
                                 <h1>新歓</h1>
                                 <p>月に2回、E212の部室にて定例会を行なっています。<br>定例会ではカメラ講習、ボドゲ大会などを行なっています。</p>
@@ -256,7 +276,7 @@ import ADphoto5 from "../assets/advertising/Photo5.jpeg";
                         </div>
                     </td>
                     <td>
-                        <div class="activity-card" id="card-8">
+                        <div class="activity-card" id="card-8" style={`background-image: url(${ACcard8.src});`}>
                             <div class="activity-card-contents">
                                 <h1>部室</h1>
                                 <p>月に2回、E212の部室にて定例会を行なっています。<br>定例会ではカメラ講習、ボドゲ大会などを行なっています。</p>
@@ -611,3 +631,812 @@ import ADphoto5 from "../assets/advertising/Photo5.jpeg";
         </div>
     </div>
 </Layout>
+
+<style>
+    .main-visual {
+        width: 100%;
+        height: calc(100vh - 120px);
+        display: flex;
+        flex-direction: row-reverse;
+        align-items: center;
+        justify-content: center;
+        padding: 0 72px;
+        position: relative;
+        margin-top: 120px;
+    }
+
+    .main-visual-logo {
+        width: calc(100%/3.75);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .main-visual-photos {
+        width: 60%;
+        height: 60%;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    .main-visual-photos img {
+        width: 400px;
+        height: auto;
+        object-fit: cover;
+        top: 0;
+        left: 0;
+        border: 20px solid #FFF;
+        box-shadow: 5px 5px 4px 0px rgba(0, 0, 0, 0.25);
+    }
+
+    .main-visual-photos img:nth-child(1) {
+        transform: rotate(-9.91deg);
+        position: absolute;
+        top: -50px;
+        left: 0;
+        z-index: 1;
+        object-fit: cover;
+        /* transition: transform 0.3s ease-in-out; */
+    }
+
+    .main-visual-photos img:nth-child(2) {
+        transform: rotate(10.037deg);
+        position: absolute;
+        top: 50px;
+        left: 150px;
+        z-index: 2;
+        object-fit: cover;
+        /* transition: transform 0.3s ease-in-out; */
+    }
+
+    .main-visual-photos img:nth-child(3) {
+        transform: rotate(-3.032deg);
+        position: absolute;
+        top: 150px;
+        left: 0px;
+        z-index: 3;
+        object-fit: cover;
+        /* transition: transform 0.3s ease-in-out; */
+    }
+
+    .click-popup {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        top: 95%;
+        left: 55%;
+    }
+
+    .arrow-line {
+        width: 55px;
+        height: 35px;
+        position: relative;
+    }
+
+    .click-popup p {
+        font-family: "Grandiflora One";
+        font-size: 32px;
+        font-weight: 400;
+        font-style: normal;
+        line-height: normal;
+        letter-spacing: 4.8px;
+        color: #000;
+        margin: 0;
+        transform: rotate(-17.213deg);
+        position: absolute;
+        top: -50%;
+        left: 120%;
+    }
+
+    .slogan {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin: 74px 0 148px 0;
+    }
+
+    .slogan-text {
+        font-family: "Zen Kurenaido", sans-serif;
+        font-size: 24px;
+        font-weight: 400;
+        font-style: normal;
+        letter-spacing: 3.6px;
+        margin: 0;
+        margin-top: 30px;
+        color: #000;
+        text-align: center;
+    }
+
+    .slogan-subtext {
+        font-family: "Zen Kurenaido", sans-serif;
+        font-size: 20px;
+        font-weight: 400;
+        font-style: normal;
+        letter-spacing: 3px;
+        margin: 0;
+        margin-bottom: 30px;
+        color: #000;
+        text-align: center;
+    }
+
+    .section-title {
+        display: flex;
+        flex-direction: row;
+        align-items: space-between;
+        justify-content: center;
+        margin-bottom: 55px;
+    }
+
+    .section-title  h1{
+        color: #000;
+        font-family: "Didot";
+        font-size: 96px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 14.4px;
+        padding-right: 78px;
+    }
+
+    .section-title-line {
+        width: 100%;
+        position: relative;
+    }
+
+    .section-title-line::after {
+        content: '';
+        display: block;
+        width: 100%;
+        height: 1px;
+        background: #000;
+        position: absolute;
+        top: 50%;
+        right: 0;
+    }
+
+    .Activity {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0 120px;
+    }
+
+    .tab {
+        display: flex;
+        flex-wrap: wrap;
+        max-width: 1200px;
+        margin-bottom: 111px;
+        position: relative;
+    }
+
+    .tab > label {
+        flex: 1 1;
+        order: -1;
+        min-width: 70px;
+        padding: .7em 1em .5em;
+        border-bottom: 1px solid #000000;
+        border-radius: 0;
+        background-color: #fdfdfd;
+        color: #000000;
+        font-family: "Zen Old Mincho";
+        font-size: 15px;
+        letter-spacing: 2.25px;
+        font-weight: 400;
+        font-style: normal;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .tab > label:hover {
+        opacity: .8;
+    }
+
+    .tab input {
+        display: none;
+    }
+
+    .tab > div {
+        display: none;
+        width: 100%;
+        padding: 1.5em 1em;
+        background-color: #fff;
+        position: relative;
+    }
+
+    #tab1:checked ~ label[for="tab1"],
+    #tab2:checked ~ label[for="tab2"],
+    #tab3:checked ~ label[for="tab3"],
+    #tab4:checked ~ label[for="tab4"],
+    #tab5:checked ~ label[for="tab5"] {
+        background-color: #fff;
+        border-color: #000000;
+        border-style: solid;
+        border-width: 1px 1px 0px 1px;
+        border-radius: 2px 2px 0px 0px;
+        color: #000000;
+    }
+
+    #tab1:checked ~ label[for="tab1"] + div,
+    #tab2:checked ~ label[for="tab2"] + div,
+    #tab3:checked ~ label[for="tab3"] + div,
+    #tab4:checked ~ label[for="tab4"] + div,
+    #tab5:checked ~ label[for="tab5"] + div {
+        display: block;
+        background-color: #fff;
+    }
+
+    #tab1:checked ~ label[for="tab1"] + div::after,
+    #tab2:checked ~ label[for="tab2"] + div::after,
+    #tab3:checked ~ label[for="tab3"] + div::after,
+    #tab4:checked ~ label[for="tab4"] + div::after,
+    #tab5:checked ~ label[for="tab5"] + div::after {
+        content: '';
+        display: block;
+        width: 78.5%;
+        height: 1px;
+        background: #000;
+        position: absolute;
+        top: 100%;
+        left: 0;
+    }
+
+    .Activity article {
+        width: 100%;
+        height: 100px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 0 50px;
+        position: relative;
+    }
+
+    .Activity-1,
+    .Activity-2 {
+        margin-bottom: 25px;
+    }
+
+    .Activity-1::after {
+        content: '';
+        display: block;
+        width: 200px;
+        height: 1px;
+        background: #000;
+        margin-top: 12px;
+        position: absolute;
+        top: 100%;
+        left: calc(50% - 100px);
+    }
+
+    .Activity-2::after {
+        content: '';
+        display: block;
+        width: 200px;
+        height: 1px;
+        background: #000;
+        margin-top: 12px;
+        position: absolute;
+        top: 100%;
+        left: calc(50% - 100px);
+    }
+
+    .Activity-info {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .Activity-info p {
+        color: #000;
+        font-family: "Grandiflora One";
+        font-size: 20px;
+        font-style: normal;
+        font-weight: 400;
+        text-align: center;
+        line-height: normal;
+        letter-spacing: 3px;
+        margin: 0 45px 0 0;
+    }
+
+    .Activity-info a {
+        color: #000;
+        font-family: "Grandiflora One";
+        font-size: 15px;
+        font-style: normal;
+        font-weight: 400;
+        text-align: center;
+        line-height: normal;
+        letter-spacing: 2.25px;
+        margin-right: 25px;
+        text-decoration: none;
+        position: relative;
+        cursor: pointer;
+    }
+
+    .Activity-info a::after {
+        position: absolute;
+        left: 0; /* aタグの左端からアンダーラインを引く */
+        right: 0; /* aタグの右端からアンダーラインを引く */
+        content: '';
+        width: 100%;
+        height: 0.5px;
+        background: #b6b6b6;
+        bottom: 0;
+        transform: scale(0, 1);
+        transform-origin: center top; /*変形（アンダーラインの伸長）の原点がaタグ（各メニュー）の右端*/
+        transition: transform 0.3s;
+    }
+
+    .Activity-info a:hover::after {
+        transform: scale(1, 1); /* アンダーラインを表示 */
+    }
+
+    .Activity-title {
+        color: #000;
+        font-family: "Zen Kurenaido";
+        font-size: 20px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 3px;
+    }
+
+    .view-more-button {
+        display: inline-block;
+        padding: 14px 32px 16px;
+        background-color: #ffffff;
+        color: #000000;
+        text-decoration: none;
+        font-family: "Zen Old Mincho";
+        font-size: 20px;
+        letter-spacing: 3px;
+        border: #000000 1px solid;
+        position: absolute;
+        right: 0%;
+        top: calc(100% - 30px);
+        cursor: pointer;
+    }
+
+    .view-more-button:hover {
+        background-color: #707070; /* ホバー時の背景色 */
+        color: #ffffff; /* ホバー時の文字色 */
+        transition: 0.3s ease-in-out; /* ホバー時の変化をスムーズに */
+    }
+
+    .activity-table {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .click-popup-2 {
+        position: absolute;
+        bottom: -70px;
+        left: 20%;
+    }
+
+    .arrow-line-2 {
+        width: 66px;
+        height: 61px;
+        position: relative;
+    }
+
+    .click-popup-2 p {
+        color: #000;
+        font-family: "Grandiflora One";
+        font-size: 32px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 4.8px;
+        margin: 0;
+        transform: rotate(-10.888deg);
+        position: absolute;
+        top: 30%;
+        left: 100%;
+    }
+
+    .activity-table-text {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: right;
+        justify-content: center;
+    }
+    .activity-table-text p {
+        font-family: "Zen Kurenaido";
+        font-size: 20px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 3px;
+        text-align: right;
+        margin-top: 11px;
+    }
+
+    .activity-card {
+        width: 290px;
+        height: 414px;
+        flex-shrink: 0;
+        aspect-ratio: 145/207;
+        border-radius: 10px;
+        background-color: #707070;
+        display: flex;
+        flex-direction: column;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        margin: 7px;
+        padding: 16px;
+        position: relative;
+    }
+
+    .activity-card::before {
+        content: '';
+        border-radius: 10px;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background-color: rgba(71, 71, 71, 0.5);
+    }
+
+    .activity-card::after {
+        content: '';
+        border-radius: 10px;
+        position: absolute;
+        top: 7px;
+        right: 7px;
+        bottom: 7px;
+        left: 7px;
+        border:#ffffff 0.5px solid;
+    }
+
+    .activity-card-contents {
+        width: calc(100% - 32px);
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .activity-card h1 {
+        color: #ffffff;
+        font-family: "Zen Old Mincho";
+        font-size: 40px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 6px;
+        transition: 0.3s ease;
+    }
+
+    .activity-card:hover h1 {
+        margin-top: 20px;
+        margin-bottom: 84px;
+        transition: 0.3s ease-in-out;
+    }
+
+    .activity-card p {
+        color: #ffffff;
+        font-family: "Zen Old Mincho";
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 2.4px;
+        opacity: 0;
+        position: inherit;
+        transition: 
+            /* opacity 0.3s ease, */
+            position 0.1s ease-in-out 0.3s;
+    }
+
+    .activity-card:hover p {
+        opacity: 1;
+        position: static;
+        transition: 
+            opacity 0.3s ease,
+            position 0.1s ease-in-out 0.3s;
+    }
+
+    #card-1 h1 {
+        font-family: "Grandiflora One";
+        font-size: 40px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 6px;
+        transition: 0.3s ease-in-out;
+    }
+
+    #card-1:hover h1 {
+        margin-top: 20px;
+        margin-bottom: 0px;
+        transition: 0.3s ease-in-out;
+    }
+
+    #card-1 {
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+
+    #card-2 {
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+
+    #card-3 {
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+
+    #card-4 {
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+
+    #card-5 {
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+
+    #card-6 {
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+
+    #card-7 {
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+
+    #card-8 {
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+
+    .advertising {
+        width: 100%;
+        height: 100%;
+        margin-top: 210px;
+    }
+
+    .advertising h1 {
+        color: #000;
+        font-family: "Zen Kurenaido";
+        font-size: 36px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 5.4px;
+        margin-left: 40px;
+        margin-bottom: 30px;
+    }
+
+    .photo-carousel {
+        width: 100%;
+        position: relative;
+    }
+
+    .click-popup-3 {
+        position: absolute;
+        top: -70px;
+        right: 20%;
+    }
+
+    .arrow-line-3 {
+        width: 66px;
+        height: 61px;
+        position: relative;
+    }
+
+    .click-popup-3 p {
+        color: #000;
+        font-family: "Grandiflora One";
+        font-size: 32px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 4.8px;
+        margin: 0;
+        transform: rotate(22.748deg);
+        position: absolute;
+        top: -35%;
+        left: 110%;
+    }
+
+    .upper-film-hole {
+        height: 20px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        position: relative;
+    }
+
+    .upper-film-hole svg {
+        width: 100%;
+        height: auto;
+        margin-right: 20px;
+        z-index: 1 !important;
+    }
+
+    .upper-film-hole::before {
+        content: '';
+        position: absolute;
+        top: -10px;
+        left: 0;
+        width: 100vw;
+        height: 1px;
+        background-image: url('../assets/advertising/hand-write-line.svg');
+        background-size: cover;
+        background-repeat: no-repeat;
+    }
+
+    .lower-film-hole {
+        height: 20px;
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        position: relative;
+    }
+
+    .lower-film-hole svg {
+        width: 100%;
+        height: auto;
+        margin-right: 20px;
+        z-index: 1 !important;
+    }
+
+    .lower-film-hole::after {
+        content: '';
+        position: absolute;
+        top: calc(100% + 10px);
+        left: 0;
+        width: 100vw;
+        height: 1px;
+        background-image: url('../assets/advertising/hand-write-line.svg');
+        background-size: cover;
+        background-repeat: no-repeat;
+    }
+
+    .photo-carousel-contents {
+        position: relative;
+        display: flex;
+        width: 100%;
+        overflow: hidden;
+
+        ul {
+            padding: 0;
+            width: 100%;
+            display: flex;
+            flex-shrink: 0;
+
+            &:first-child {
+                animation: slide1 60s -30s linear infinite;
+            }
+
+            &:last-child {
+                animation: slide2 60s linear infinite;
+            }
+
+            li {
+                display: inline-block;
+                width: 100%;
+                min-width: 150px;
+                margin-right: 20px;
+                list-style: none;
+                text-align: center;
+
+                img {
+                    height: 100%;
+                    object-fit: cover;
+                    z-index: 1 !important;
+                }
+            }
+        }
+        
+        /* &:hover {
+            ul {
+                animation-play-state: paused;
+            }
+        } */
+    }
+
+    @keyframes slide1 {
+        0% {
+            transform: translateX(100%);
+        }
+
+        to {
+            transform: translateX(-100%);
+        }
+    }
+
+    @keyframes slide2 {
+        0% {
+            transform: translateX(0);
+        }
+
+        to {
+            transform: translateX(-200%);
+        }
+    }
+
+    .photo-carousel-content {
+        width: 240px;
+        height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .photo-carousel-content::after {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        width: calc(100% + 4px);
+        height: calc(100% + 4px);
+        background-image: url('../assets/advertising/frame-of-picture.svg');
+        background-size: cover;
+        background-repeat: no-repeat;
+        z-index: 2 !important;
+    }
+
+    .button-div {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: right;
+        padding: 0 120px;
+    }
+
+    .join-button {
+        display: inline-block;
+        padding: 14px 32px 16px;
+        background-color: #ffffff;
+        color: #000000;
+        text-decoration: none;
+        font-family: "Zen Old Mincho";
+        font-size: 20px;
+        letter-spacing: 3px;
+        border: #000000 1px solid;
+        cursor: pointer;
+        margin-top: 40px;
+    }
+
+    .join-button:hover {
+        background-color: #707070; /* ホバー時の背景色 */
+        color: #ffffff; /* ホバー時の文字色 */
+        transition: 0.3s ease-in-out; /* ホバー時の変化をスムーズに */
+    }
+</style>
