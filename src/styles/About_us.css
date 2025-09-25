@@ -479,3 +479,259 @@
     align-items: center;
     justify-content: center;
 }
+
+.equipments-list {
+    width: 100%;
+    height: 500px;
+    overflow-y: scroll;
+    padding: 0 80px;
+}
+
+.equipments-list::-webkit-scrollbar {
+    width: 8px;
+    height: 50%;
+    top: 50%;
+    background-image: url('../assets/equipments/scrollbar-bg.svg');
+    background-size: auto 100%;
+    background-repeat: no-repeat;
+}
+
+.equipments-list::-webkit-scrollbar-thumb {
+    background-image: url('../assets/equipments/scrollbar-thumb.svg');
+    background-size: auto 100%;
+    background-repeat: no-repeat;
+}
+
+.equipments-list::-webkit-scrollbar-thumb:hover {
+    background-color: #555;
+}
+
+.equipment-item {
+    width: 100%;
+    height: 500px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.equipment-image {
+    width: 400px;
+    height: 500px;
+    position: relative;
+}
+
+.equipment-image::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('../assets/equipments/equipments-cover.svg');
+    background-size: cover;
+    background-position: center;
+    user-select: none;
+}
+
+input[name="slideshow"] {
+	display: none;
+}
+
+.image-container {
+    width: 400px;
+    height: 100%;
+	position: relative;
+	text-align: center;
+	-webkit-user-select: none;
+	user-select: none;
+    overflow: hidden;
+    border-radius: 10px;
+}
+
+.image-container section {
+	position: absolute;
+	top: 0;
+	left: 0;
+    width: 100%;
+    height: 100%;
+	transform: translateX(100%);
+	transition: transform .6s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.image-container section img {
+	width: 100%;
+	height: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+	box-sizing: border-box;
+	vertical-align: middle;
+}
+
+.arrow,
+.arrow label,
+.arrow .ico {
+	position: absolute;
+}
+
+.arrow {
+	top: 0;
+	margin: 0;
+    background-color: rgba(255, 255, 255, 0);
+	transition: background-color .3s;
+}
+
+.prev {
+	left: 0;
+}
+
+.next {
+	right: 0;
+}
+
+.arrow:hover {
+	background-color: rgba(255,255,255,.2);
+}
+
+.arrow,
+.arrow label {
+	cursor: pointer;
+	width: 50px;
+	height: 100%;
+}
+
+.arrow label {
+	top: 0;
+	left: 0;
+	z-index: 1;
+}
+
+.arrow .ico {
+	top: calc(50% - 6px);
+	width: 12px;
+	height: 12px;
+	border-top: 3px solid #fff;
+	opacity: 0;
+}
+
+.prev .ico {
+	left: 50%;
+	border-left: 3px solid #fff;
+	transform: rotate(-45deg);
+	transition: transform .3s cubic-bezier(0.215, 0.61, 0.355, 1), opacity .3s;
+}
+
+.next .ico {
+	right: 50%;
+	border-right: 3px solid #fff;
+	transform: rotate(45deg);
+	transition: transform .3s cubic-bezier(0.215, 0.61, 0.355, 1), opacity .3s;
+}
+
+.arrow:hover .ico {
+	opacity: .6;
+}
+
+.prev:hover .ico {
+	transform: translateX(-6px) rotate(-45deg);
+}
+
+.next:hover .ico {
+	transform: translateX(6px) rotate(45deg);
+}
+
+#switch1:checked ~ .image-container #image1,
+#switch2:checked ~ .image-container #image2,
+#switch3:checked ~ .image-container #image3,
+#switch4:checked ~ .image-container #image4,
+#switch5:checked ~ .image-container #image5 {
+	position: relative;
+	transform: none;
+}
+#switch1:checked ~ .image-container #image4,
+#switch1:checked ~ .image-container #image5,
+#switch2:checked ~ .image-container #image5,
+#switch2:checked ~ .image-container #image1,
+#switch3:checked ~ .image-container #image1,
+#switch3:checked ~ .image-container #image2,
+#switch4:checked ~ .image-container #image2,
+#switch4:checked ~ .image-container #image3,
+#switch5:checked ~ .image-container #image3,
+#switch5:checked ~ .image-container #image4 {
+	transform: translateX(-100%);
+}
+#switch1:checked ~ .image-container #image3,
+#switch1:checked ~ .image-container #image4,
+#switch2:checked ~ .image-container #image4,
+#switch2:checked ~ .image-container #image5,
+#switch3:checked ~ .image-container #image5,
+#switch3:checked ~ .image-container #image1,
+#switch4:checked ~ .image-container #image1,
+#switch4:checked ~ .image-container #image2,
+#switch5:checked ~ .image-container #image2,
+#switch5:checked ~ .image-container #image3 {
+	transition-duration: 0s;
+}
+
+.arrow label {
+	pointer-events: none;
+}
+#switch1:checked ~ .prev label[for="switch5"],
+#switch2:checked ~ .prev label[for="switch1"],
+#switch3:checked ~ .prev label[for="switch2"],
+#switch4:checked ~ .prev label[for="switch3"],
+#switch5:checked ~ .prev label[for="switch4"],
+#switch1:checked ~ .next label[for="switch2"],
+#switch2:checked ~ .next label[for="switch3"],
+#switch3:checked ~ .next label[for="switch4"],
+#switch4:checked ~ .next label[for="switch5"],
+#switch5:checked ~ .next label[for="switch1"] {
+	pointer-events: auto;
+}
+
+.equipment-description {
+    width: 100%;
+    height: 100%;
+    margin-left: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+}
+
+.equipment-description h1 {
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    color: rgba(0, 0, 0, 0.20);
+    font-family: "Grandiflora One";
+    font-size: 128px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 19.2px;
+}
+
+.equipment-description h2{
+    color: #000;
+    font-family: "Zen Kurenaido";
+    font-size: 48px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 7.2px;
+    margin-top: 80px;
+}
+
+.equipment-description p{
+    height: 200px;
+    color: #000;
+    font-family: "Zen Kurenaido";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
+    overflow: scroll;
+}
