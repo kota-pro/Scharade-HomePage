@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="icon" type="image/svg+xml" href="/icons/camera.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>写団シャレード</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;500;700;900&family=Zen+Kurenaido&display=swap" rel="stylesheet">
+		<script>
+			(function(d) {
+				var config = {
+				kitId: 'ifd3mog',
+				scriptTimeout: 3000,
+				async: true
+				},
+				h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='https://use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+			})(document);
+		</script>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;500;700;900&family=Zen+Kurenaido&family=Zen+Old+Mincho&display=swap" rel="stylesheet">
+		<script>
+			(function(d) {
+			var config = {
+				kitId: 'ifd3mog',
+				scriptTimeout: 3000,
+				async: true
+			},
+			h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='https://use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+			})(document);
+		</script>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Grandiflora+One&family=Zen+Kaku+Gothic+New:wght@300;400;500;700;900&family=Zen+Kurenaido&family=Zen+Old+Mincho&display=swap" rel="stylesheet">
+	</head>
+<body>
+    <div class="equipment-image">
+        <input type="radio" name="slideshow" id="switch1-1" checked>
+        <input type="radio" name="slideshow" id="switch1-2">
+        <input type="radio" name="slideshow" id="switch1-3">
+        <input type="radio" name="slideshow" id="switch1-4">
+        <input type="radio" name="slideshow" id="switch1-5">
+        <div class="image-container">
+            <section id="image1-1"><img src="../assets/equipments/darkroom1.jpg" alt="暗室"></section>
+            <section id="image1-2"><img src="../assets/equipments/darkroom2.jpg" alt="暗室2"></section>
+            <section id="image1-3"><img src="../assets/equipments/darkroom3.jpg" alt="暗室3"></section>
+            <section id="image1-4"><img src="../assets/equipments/darkroom4.jpg" alt="暗室4"></section>
+            <section id="image1-5"><img src="../assets/equipments/darkroom5.jpg" alt="暗室5"></section>
+        </div>
+        <p class="arrow prev">
+            <i class="ico"></i>
+            <label for="switch1-1"></label>
+            <label for="switch1-2"></label>
+            <label for="switch1-3"></label>
+            <label for="switch1-4"></label>
+            <label for="switch1-5"></label>
+        </p>
+        <p class="arrow next">
+            <i class="ico"></i>
+            <label for="switch1-1"></label>
+            <label for="switch1-2"></label>
+            <label for="switch1-3"></label>
+            <label for="switch1-4"></label>
+            <label for="switch1-5"></label>
+        </p>
+    </div>
+</body>
+</html>
+
+<style>
+    .equipment-item {
+        width: 100%;
+        height: 500px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .equipment-image {
+        width: 400px;
+        height: 500px;
+        position: relative;
+    }
+
+    .equipment-image::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('../assets/equipments/equipments-cover.svg');
+        background-size: cover;
+        background-position: center;
+        user-select: none;
+    }
+
+    input[name="slideshow"] {
+        display: none;
+    }
+
+    .image-container {
+        width: 400px;
+        height: 100%;
+        position: relative;
+        text-align: center;
+        -webkit-user-select: none;
+        user-select: none;
+        overflow: hidden;
+        border-radius: 10px;
+    }
+
+    .image-container section {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        transform: translateX(100%);
+        transition: transform .6s cubic-bezier(0.215, 0.61, 0.355, 1);
+    }
+
+    .image-container section img {
+        width: 100%;
+        height: 100%;
+        aspect-ratio: 4 / 5;
+        object-fit: cover;
+        box-sizing: border-box;
+        vertical-align: middle;
+    }
+
+    .arrow,
+    .arrow label,
+    .arrow .ico {
+        position: absolute;
+    }
+
+    .arrow {
+        top: 0;
+        margin: 0;
+        background-color: rgba(255, 255, 255, 0);
+        transition: background-color .3s;
+    }
+
+    .prev {
+        left: 0;
+    }
+
+    .next {
+        right: 0;
+    }
+
+    .arrow:hover {
+        background-color: rgba(255,255,255,.2);
+    }
+
+    .arrow,
+    .arrow label {
+        cursor: pointer;
+        width: 50px;
+        height: 100%;
+    }
+
+    .arrow label {
+        top: 0;
+        left: 0;
+        z-index: 1;
+    }
+
+    .arrow .ico {
+        top: calc(50% - 6px);
+        width: 12px;
+        height: 12px;
+        border-top: 3px solid #fff;
+        opacity: 0;
+    }
+
+    .prev .ico {
+        left: 50%;
+        border-left: 3px solid #fff;
+        transform: rotate(-45deg);
+        transition: transform .3s cubic-bezier(0.215, 0.61, 0.355, 1), opacity .3s;
+    }
+
+    .next .ico {
+        right: 50%;
+        border-right: 3px solid #fff;
+        transform: rotate(45deg);
+        transition: transform .3s cubic-bezier(0.215, 0.61, 0.355, 1), opacity .3s;
+    }
+
+    .arrow:hover .ico {
+        opacity: .6;
+    }
+
+    .prev:hover .ico {
+        transform: translateX(-6px) rotate(-45deg);
+    }
+
+    .next:hover .ico {
+        transform: translateX(6px) rotate(45deg);
+    }
+
+    /* No.1の画像切り替えここから */
+
+        #switch1-1:checked ~ .image-container #image1-1,
+        #switch1-2:checked ~ .image-container #image1-2,
+        #switch1-3:checked ~ .image-container #image1-3,
+        #switch1-4:checked ~ .image-container #image1-4,
+        #switch1-5:checked ~ .image-container #image1-5 {
+            position: relative;
+            transform: none;
+        }
+        #switch1-1:checked ~ .image-container #image1-4,
+        #switch1-1:checked ~ .image-container #image1-5,
+        #switch1-2:checked ~ .image-container #image1-5,
+        #switch1-2:checked ~ .image-container #image1-1,
+        #switch1-3:checked ~ .image-container #image1-1,
+        #switch1-3:checked ~ .image-container #image1-2,
+        #switch1-4:checked ~ .image-container #image1-2,
+        #switch1-4:checked ~ .image-container #image1-3,
+        #switch1-5:checked ~ .image-container #image1-3,
+        #switch1-5:checked ~ .image-container #image1-4 {
+            transform: translateX(-100%);
+        }
+        #switch1-1:checked ~ .image-container #image1-3,
+        #switch1-1:checked ~ .image-container #image1-4,
+        #switch1-2:checked ~ .image-container #image1-4,
+        #switch1-2:checked ~ .image-container #image1-5,
+        #switch1-3:checked ~ .image-container #image1-5,
+        #switch1-3:checked ~ .image-container #image1-1,
+        #switch1-4:checked ~ .image-container #image1-1,
+        #switch1-4:checked ~ .image-container #image1-2,
+        #switch1-5:checked ~ .image-container #image1-2,
+        #switch1-5:checked ~ .image-container #image1-3 {
+            transition-duration: 0s;
+        }
+
+        .arrow label {
+            pointer-events: none;
+        }
+        #switch1-1:checked ~ .prev label[for="switch1-5"],
+        #switch1-2:checked ~ .prev label[for="switch1-1"],
+        #switch1-3:checked ~ .prev label[for="switch1-2"],
+        #switch1-4:checked ~ .prev label[for="switch1-3"],
+        #switch1-5:checked ~ .prev label[for="switch1-4"],
+        #switch1-1:checked ~ .next label[for="switch1-2"],
+        #switch1-2:checked ~ .next label[for="switch1-3"],
+        #switch1-3:checked ~ .next label[for="switch1-4"],
+        #switch1-4:checked ~ .next label[for="switch1-5"],
+        #switch1-5:checked ~ .next label[for="switch1-1"] {
+            pointer-events: auto;
+        }
+
+    /* No.1の画像切り替えここまで */
+</style>

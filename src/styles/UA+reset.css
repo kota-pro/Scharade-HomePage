@@ -77,6 +77,7 @@
   min-block-size: 6em;
 }
 :where(button, input, select, textarea) {
+  display: inline-block;
   font-family: inherit;
   font-size: inherit;
 }
@@ -97,6 +98,7 @@
 :where(table) {
   border-collapse: collapse;
   border: 1px solid;
+  display: block;
 }
 :where(th, td) {
   border: 1px solid;
@@ -173,6 +175,12 @@ ol {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+form {
+  margin: 0;
+  padding: 0;
+  display: block;
 }
 
 /*

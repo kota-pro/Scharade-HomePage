@@ -1,9 +1,9 @@
 ---
 import '../styles/UA+reset.css';
 import Layout from '../layouts/Layout.astro';
-import '../styles/404.css';
 ---
 <Layout>
+<Fragment slot="setting-none">
     <div class = "Oh404"></div>
     <div class = "errormessage">
         <p>申し訳ございません。お探しのページは未実装か、削除されているか、URLが変更されている可能性があります。<br>URLをご確認の上もう一度お試しいただくか、以下からお目当てのページをお探しください。</p>
@@ -46,6 +46,90 @@ import '../styles/404.css';
             });
         });
     </script>
+</Fragment>
 </Layout>
+
+<style>
+    .Oh404 {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: calc(100vh - 120px);
+        background: url('../src/assets/404page/Group 90.svg') no-repeat;
+        background-size: calc(100vw - 460px);
+        background-position: center 45px;
+    }
+
+    .errormessage {
+        text-align: center;
+        color: #000;
+        font-family: "Zen Kurenaido";
+        font-size: 20px;
+        font-style: normal;
+        line-height: normal;
+        letter-spacing: 3px;
+        margin-top: 45px;
+        margin-bottom: 100px;
+    }
+
+    .sbox {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .sbox-inner {
+        width: 780px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        z-index: 100 !important;
+    }
+
+    .sbox-inner::before {
+        content: '';
+        pointer-events: none;
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: 100%;
+        height: 100%;
+        background-image: url('../assets/404page/Rectangle36.svg');
+        background-size: cover;
+        background-repeat: no-repeat;
+        z-index: 0 !important;
+    }
+
+    .sbox-inner input {
+        border: none;
+        outline: none;
+        height: 100%;
+        padding: 0px 0px 0px 20px;
+    }
+
+    .sbox-inner input#searchbox {
+        flex: auto;
+    }
+
+    .sbox-inner button {
+        border: none;
+        outline: none;
+        background: none;
+        cursor: pointer;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 10px;
+    }
+
+    .sbox-inner button:active {
+        background: rgba(0, 0, 0, 0.1);
+    }
+</style>
 
 

@@ -41,12 +41,22 @@ import Footer from "../components/footer.astro";
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Grandiflora+One&family=Zen+Kaku+Gothic+New:wght@300;400;500;700;900&family=Zen+Kurenaido&family=Zen+Old+Mincho&display=swap" rel="stylesheet">
+		<link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/css/lightbox.css" rel="stylesheet">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js" defer></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/js/lightbox.min.js" defer type="text/javascript"></script>
 	</head>
 	<body>
 		<Header />
-
-		<slot />
-
+		<slot name="main-slot" />
+		<div class="container">
+			<div class="body-contents">
+				<slot name="body-slot" />
+			</div>
+			<div class="menu-contents">
+				<slot name="menu-slot" />
+			</div>
+		</div>
+		<div ><slot name="setting-none" /></div>
 		<Footer />
 	</body>
 </html>
@@ -55,6 +65,7 @@ import Footer from "../components/footer.astro";
 	html{
 		font-family: "zen-krenaido-regular", "zen-old-mincho-regular", "zen-kaku-gothic-new-light", "zen-kaku-gothic-new-regular", "zen-kaku-gothic-new-medium", "zen-kaku-gothic-new-bold", "zen-kaku-gothic-new-black", "ta-koigokoro-regular", "grandiflora-one-regular";
 		margin: 0;
+		scroll-behavior: smooth;
 	}
 
 	body {
@@ -62,4 +73,25 @@ import Footer from "../components/footer.astro";
 		margin-top: 120px;
 		background-color: #fdfdfd;
 	}
+
+	.container {
+		display: flex;
+		flex-direction: row;
+	}
+
+	.body-contents {
+		flex: 11 1 calc(100vw / 12);
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		padding-left: 120px;
+	}
+	.menu-contents {
+		flex: 1 1 auto;
+		display: flex;
+		flex-direction: column;
+		/* justify-content: center; */
+		/* align-items: flex-start; */
+	}
 </style>
+
