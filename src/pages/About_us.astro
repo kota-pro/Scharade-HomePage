@@ -90,8 +90,21 @@ import equipment5e from '../../public/images/temp.png';
                     <th scope="row">名前</th>
                     <td>早稲田大学公認サークル&nbsp;&nbsp;&nbsp;&nbsp;写団シャレード</td>
                     <td rowspan="6" id="map-td">
-                        <span><div class="map">
-                        </div></span>
+                        <span>
+                            <div class="map" id="map">
+                                <gmp-map
+                                    center="35.70598589668286, 139.71658843895162"
+                                    zoom="15"
+                                    map-id="DEMO_MAP_ID"
+                                    loading="lazy"
+                                >
+                                    <gmp-advanced-marker
+                                        position="35.70598589668286, 139.71658843895162"
+                                        title="早稲田大学 戸山キャンパス 学生会館E224"
+                                    ></gmp-advanced-marker>
+                                </gmp-map>
+                            </div>
+                        </span>
                     </td>
                 </tr>
                 <tr>
@@ -248,11 +261,11 @@ import equipment5e from '../../public/images/temp.png';
             <div class="equipment-item">
                 <div class="equipment-image">
                     <div class="image-container">
-                        <section id="image1a"><img src={equipment1a.src} alt="暗室"></section>
-                        <section id="image1b"><img src={equipment1b.src} alt="暗室2"></section>
-                        <section id="image1c"><img src={equipment1c.src} alt="暗室3"></section>
-                        <section id="image1d"><img src={equipment1d.src} alt="暗室4"></section>
-                        <section id="image1e"><img src={equipment1e.src} alt="暗室5"></section>
+                        <section id="image1a"><img loading="lazy" src={equipment1a.src} alt="暗室"></section>
+                        <section id="image1b"><img loading="lazy" src={equipment1b.src} alt="暗室2"></section>
+                        <section id="image1c"><img loading="lazy" src={equipment1c.src} alt="暗室3"></section>
+                        <section id="image1d"><img loading="lazy" src={equipment1d.src} alt="暗室4"></section>
+                        <section id="image1e"><img loading="lazy" src={equipment1e.src} alt="暗室5"></section>
                     </div>
                 </div>
                 <div class="equipment-description">
@@ -264,11 +277,11 @@ import equipment5e from '../../public/images/temp.png';
             <div class="equipment-item">
                 <div class="equipment-image">
                     <div class="image-container">
-                        <section id="image2a"><img src={equipment2a.src} alt="暗室"></section>
-                        <section id="image2b"><img src={equipment2b.src} alt="暗室2"></section>
-                        <section id="image2c"><img src={equipment2c.src} alt="暗室3"></section>
-                        <section id="image2d"><img src={equipment2d.src} alt="暗室4"></section>
-                        <section id="image2e"><img src={equipment2e.src} alt="暗室5"></section>
+                        <section id="image2a"><img loading="lazy" src={equipment2a.src} alt="暗室"></section>
+                        <section id="image2b"><img loading="lazy" src={equipment2b.src} alt="暗室2"></section>
+                        <section id="image2c"><img loading="lazy" src={equipment2c.src} alt="暗室3"></section>
+                        <section id="image2d"><img loading="lazy" src={equipment2d.src} alt="暗室4"></section>
+                        <section id="image2e"><img loading="lazy" src={equipment2e.src} alt="暗室5"></section>
                     </div>
                 </div>
                 <div class="equipment-description">
@@ -280,11 +293,11 @@ import equipment5e from '../../public/images/temp.png';
             <div class="equipment-item">
                 <div class="equipment-image">
                     <div class="image-container">
-                        <section id="image3a"><img src={equipment3a.src} alt="暗室"></section>
-                        <section id="image3b"><img src={equipment3b.src} alt="暗室2"></section>
-                        <section id="image3c"><img src={equipment3c.src} alt="暗室3"></section>
-                        <section id="image3d"><img src={equipment3d.src} alt="暗室4"></section>
-                        <section id="image3e"><img src={equipment3e.src} alt="暗室5"></section>
+                        <section id="image3a"><img loading="lazy" src={equipment3a.src} alt="暗室"></section>
+                        <section id="image3b"><img loading="lazy" src={equipment3b.src} alt="暗室2"></section>
+                        <section id="image3c"><img loading="lazy" src={equipment3c.src} alt="暗室3"></section>
+                        <section id="image3d"><img loading="lazy" src={equipment3d.src} alt="暗室4"></section>
+                        <section id="image3e"><img loading="lazy" src={equipment3e.src} alt="暗室5"></section>
                     </div>
                 </div>
                 <div class="equipment-description">
@@ -296,11 +309,11 @@ import equipment5e from '../../public/images/temp.png';
             <div class="equipment-item">
                 <div class="equipment-image">
                     <div class="image-container">
-                        <section id="image4a"><img src={equipment4a.src} alt="暗室"></section>
-                        <section id="image4b"><img src={equipment4b.src} alt="暗室2"></section>
-                        <section id="image4c"><img src={equipment4c.src} alt="暗室3"></section>
-                        <section id="image4d"><img src={equipment4d.src} alt="暗室4"></section>
-                        <section id="image4e"><img src={equipment4e.src} alt="暗室5"></section>
+                        <section id="image4a"><img loading="lazy" src={equipment4a.src} alt="暗室"></section>
+                        <section id="image4b"><img loading="lazy" src={equipment4b.src} alt="暗室2"></section>
+                        <section id="image4c"><img loading="lazy" src={equipment4c.src} alt="暗室3"></section>
+                        <section id="image4d"><img loading="lazy" src={equipment4d.src} alt="暗室4"></section>
+                        <section id="image4e"><img loading="lazy" src={equipment4e.src} alt="暗室5"></section>
                     </div>
                 </div>
                 <div class="equipment-description">
@@ -312,11 +325,11 @@ import equipment5e from '../../public/images/temp.png';
             <div class="equipment-item">
                 <div class="equipment-image">
                     <div class="image-container">
-                        <section id="image5a"><img src={equipment5a.src} alt="暗室"></section>
-                        <section id="image5b"><img src={equipment5b.src} alt="暗室2"></section>
-                        <section id="image5c"><img src={equipment5c.src} alt="暗室3"></section>
-                        <section id="image5d"><img src={equipment5d.src} alt="暗室4"></section>
-                        <section id="image5e"><img src={equipment5e.src} alt="暗室5"></section>
+                        <section id="image5a"><img loading="lazy" src={equipment5a.src} alt="暗室"></section>
+                        <section id="image5b"><img loading="lazy" src={equipment5b.src} alt="暗室2"></section>
+                        <section id="image5c"><img loading="lazy" src={equipment5c.src} alt="暗室3"></section>
+                        <section id="image5d"><img loading="lazy" src={equipment5d.src} alt="暗室4"></section>
+                        <section id="image5e"><img loading="lazy" src={equipment5e.src} alt="暗室5"></section>
                     </div>
                 </div>
                 <div class="equipment-description">
@@ -394,9 +407,7 @@ import equipment5e from '../../public/images/temp.png';
         gap: 20px;
         position: sticky;
         top: 150px;
-        /* width: 120px; */
-        /* transform: translateY(-50%); */
-        z-index: 1000;
+        z-index: 5;
     }
 
     .menu span {
@@ -544,10 +555,10 @@ import equipment5e from '../../public/images/temp.png';
         justify-content: center;
     }
 
-    .map {
+    #map {
         width: 450px;
         height: 450px;
-        background-color: rgb(228 240 245);
+        /* background-color: rgb(228 240 245); */
         margin: 35px;
     }
 
