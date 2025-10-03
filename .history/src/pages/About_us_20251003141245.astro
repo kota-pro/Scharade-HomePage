@@ -1,0 +1,1152 @@
+---
+import Layout from "../layouts/Layout.astro"
+import "../styles/UA+reset.css"
+
+import { getImage } from 'astro:assets';
+import apr_may_image from '../assets/annual_schedule/apr_may.JPG';
+const apr_may = await getImage({src: apr_may_image, format: 'webp'});
+import jun_image from '../assets/annual_schedule/jun.JPG';
+const jun = await getImage({src: jun_image, format: 'webp'});
+import jul_image from '../assets/annual_schedule/jul.JPG';
+const jul = await getImage({src: jul_image, format: 'webp'});
+import aug_image from '../assets/annual_schedule/aug.JPG';
+const aug = await getImage({src: aug_image, format: 'webp'});
+import sep_image from '../assets/annual_schedule/sep.JPG';
+const sep = await getImage({src: sep_image, format: 'webp'});
+import oct_image from '../assets/annual_schedule/oct.JPG';
+const oct = await getImage({src: oct_image, format: 'webp'});
+import nov_image from '../assets/annual_schedule/nov.JPG';
+const nov = await getImage({src: nov_image, format: 'webp'});
+import dec_image from '../assets/annual_schedule/dec.JPG';
+const dec = await getImage({src: dec_image, format: 'webp'});
+import jan_image from '../assets/annual_schedule/jan.JPG';
+const jan = await getImage({src: jan_image, format: 'webp'});
+import feb_image from '../assets/annual_schedule/feb.JPG';
+const feb = await getImage({src: feb_image, format: 'webp'});
+import mar_image from '../assets/annual_schedule/mar.JPG';
+const mar = await getImage({src: mar_image, format: 'webp'});
+import others_image from '../assets/annual_schedule/others.JPG';
+const others = await getImage({src: others_image, format: 'webp'});
+
+
+import equipment1a from '../assets/equipments/darkroom1.jpg';
+import equipment1b from '../assets/equipments/darkroom2.jpg';
+import equipment1c from '../assets/equipments/darkroom3.jpg';
+import equipment1d from '../assets/equipments/darkroom4.jpg';
+import equipment1e from '../assets/equipments/darkroom5.jpg';
+import equipment2a from '../../public/images/temp.png';
+import equipment2b from '../../public/images/temp.png';
+import equipment2c from '../../public/images/temp.png';
+import equipment2d from '../../public/images/temp.png';
+import equipment2e from '../../public/images/temp.png';
+import equipment3a from '../../public/images/temp.png';
+import equipment3b from '../../public/images/temp.png';
+import equipment3c from '../../public/images/temp.png';
+import equipment3d from '../../public/images/temp.png';
+import equipment3e from '../../public/images/temp.png';
+import equipment4a from '../../public/images/temp.png';
+import equipment4b from '../../public/images/temp.png';
+import equipment4c from '../../public/images/temp.png';
+import equipment4d from '../../public/images/temp.png';
+import equipment4e from '../../public/images/temp.png';
+import equipment5a from '../../public/images/temp.png';
+import equipment5b from '../../public/images/temp.png';
+import equipment5c from '../../public/images/temp.png';
+import equipment5d from '../../public/images/temp.png';
+import equipment5e from '../../public/images/temp.png';
+---
+<Layout>
+<Fragment slot="main-slot">
+    <div class = "section-title a-anchor" id="about-us-title"> 
+        <h1>About&nbsp;us</h1>
+        <div class = "section-title-line"></div>
+    </div>
+</Fragment>
+<Fragment slot="menu-slot">
+    <div class="menu">
+        <a href="#about-us-title" class="menu-item">Top</a>
+        <span>/</span>
+        <a href="#information-title" class="menu-item">Information</a>
+        <span>/</span>
+        <a href="#annual-schedule-title" class="menu-item">Annual&nbsp;Schedule</a>
+        <span>/</span>
+        <a href="#equipments-title" class="menu-item">Equipments</a>
+        <span>/</span>
+        <a href="#faqs-title" class="menu-item">FAQs</a>
+    </div>
+</Fragment>
+<Fragment slot="body-slot">
+    <div class="explanation-about-us">
+        <p>写団シャレードは早稲田大学公認の写真サークルです。活動内容は年4回の写真展を中心にワークショップや展示会見学などを行っています。学生会館E224に部室があり、モノクロ現像のための暗室及び、デジタル処理用のMacを完備しています。所有機材、現段階での技術などは問いません。新歓時期に限らずいつでも入会できます。兼部や2年生以上の方、学外の方の入会も可能です。<br><br>写真をこれからはじめる方でも一から教えます。経験者の方は色々な人とふれあうことでさらに写真を楽しめます。写真は1人でも撮ることが可能です。しかし、私達はお互いを刺激しあい、成長できるような関係をサークルを通じて築き上げたいと考えています。興味のある方はぜひ学生会館E224部室にいつでも見学にいらしてください。<br><br>※機材使用だけを目的とされる方はお断りをする場合があります。サークルとしてお互い刺激しあえる関係を作るための場、とお考えください。</p>
+    </div>
+    <div class="information">
+        <div class="contents-title a-anchor" id="information-title"><h1>Information</h1></div>
+        <table>
+            <caption>
+                ※ 2025年6月現在
+            </caption>
+            <tbody>
+                <tr>
+                    <th scope="row">名前</th>
+                    <td>早稲田大学公認サークル&nbsp;&nbsp;&nbsp;&nbsp;写団シャレード</td>
+                    <td rowspan="6" id="map-td">
+                        <span><div class="map" id="map"></div></span>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">設立</th>
+                    <td>1974年</td>
+                </tr>
+                <tr>
+                    <th scope="row">構成</th>
+                    <td>187名&nbsp;（男女比１：１）</td>
+                </tr>
+                <tr>
+                    <th scope="row">部費</th>
+                    <td>入会費0円&nbsp;&nbsp;/&nbsp;&nbsp;半期3000円</td>
+                </tr>
+                <tr>
+                    <th scope="row">所在地</th>
+                    <td>
+                        <span class="address-span">
+                            <div class="address-text">
+                                〒162-0052<br>東京都新宿区戸山1-24-1&nbsp;&nbsp;早稲田大学学生会館E224
+                            </div>
+                            <a href="https://maps.app.goo.gl/WGv8zg5tN3dyiwy8A" class="link-button" target="_blank">
+                                <img src="/icons/link.svg" alt="Link Icon" />
+                            </a>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">連絡先</th>
+                    <td><a class="href-anchor" href="contact">contact@scharade.jp</a></td>
+                </tr>
+                <tr>
+                    <th scope="row">SNS</th>
+                    <td colspan="2">X（旧twitter）： <a class="href-anchor" href="https://twitter.com/SCHARADE_JP" target="_blank">@SCHARADE_JP</a><span class="separator">/</span>Instagram ： <a class="href-anchor" href="https://www.instagram.com/SCHARADE_JP" target="_blank">@SCHARADE_JP</a></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="annual-schedule">
+        <div class="contents-title a-anchor" id="annual-schedule-title"><h1>Annual Schedule</h1></div>
+        <div class="tab">
+            <input type="radio" id="tab1" name="tab" checked>
+            <label for="tab1">Apr. - Jun.</label>
+            <div>
+                <div class="card-cover" id="card-apr-may" style={`background-image: url(${apr_may.src});`}>
+                    <div class="card-contents" id="card-apr-may-contents">
+                        <h2> 4月 / 5月 </h2>
+                        <h1> 新歓 </h1>
+                        <div class="card-textbox"><p> 部室開放や食事会、撮影会を行います。参加費無料なので雰囲気を知りたい方や同輩や先輩の友達作りなどに最適です！ </p></div>
+                    </div>
+                </div>
+                <div class="card-cover" id="card-jun" style={`background-image: url(${jun.src});`}>
+                    <div class="card-contents">
+                        <h2> 6月 </h2>
+                        <h1> 六月展 </h1>
+                        <div class="card-textbox"><p> 部室開放や食事会、撮影会を行います。参加費無料なので雰囲気を知りたい方や同輩や先輩の友達作りなどに最適です！ </p></div>
+                    </div>
+                </div>
+            </div>
+
+            <input type="radio" id="tab2" name="tab">
+            <label for="tab2">Jul. - Sep.</label>
+            <div>
+                <div class="card-cover" id="card-jul" style={`background-image: url(${jul.src});`}>
+                    <div class="card-contents">
+                        <h2> 7月</h2>
+                        <h1> BBQ </h1>
+                        <div class="card-textbox"><p> 部室開放や食事会、撮影会を行います。参加費無料なので雰囲気を知りたい方や同輩や先輩の友達作りなどに最適です！ </p></div>
+                    </div>
+                </div>
+                <div class="card-cover" id="card-aug" style={`background-image: url(${aug.src});`}>
+                    <div class="card-contents">
+                        <h2> 8月 </h2>
+                        <h1> 夏合宿 </h1>
+                        <div class="card-textbox"><p> 部室開放や食事会、撮影会を行います。参加費無料なので雰囲気を知りたい方や同輩や先輩の友達作りなどに最適です！ </p></div>
+                    </div>
+                </div>
+                <div class="card-cover" id="card-sep" style={`background-image: url(${sep.src});`}>
+                    <div class="card-contents">
+                        <h2> 9月 </h2>
+                        <h1> 新人展 </h1>
+                        <div class="card-textbox"><p> 部室開放や食事会、撮影会を行います。参加費無料なので雰囲気を知りたい方や同輩や先輩の友達作りなどに最適です！ </p></div>
+                    </div>
+                </div>
+            </div>
+
+            <input type="radio" id="tab3" name="tab">
+            <label for="tab3">Oct. - Dec.</label>
+            <div>
+                <div class="card-cover" id="card-oct" style={`background-image: url(${oct.src});`}>
+                    <div class="card-contents">
+                        <h2> 10月 </h2>
+                        <h1> ハロウィン パーティ </h1>
+                        <div class="card-textbox"><p> 部室開放や食事会、撮影会を行います。参加費無料なので雰囲気を知りたい方や同輩や先輩の友達作りなどに最適です！ </p></div>
+                    </div>
+                </div>
+                <div class="card-cover" id="card-nov" style={`background-image: url(${nov.src});`}>
+                    <div class="card-contents">
+                        <h2> 11月 </h2>
+                        <h1> 早稲田祭 </h1>
+                        <div class="card-textbox"><p> 部室開放や食事会、撮影会を行います。参加費無料なので雰囲気を知りたい方や同輩や先輩の友達作りなどに最適です！ </p></div>
+                    </div>
+                </div>
+                <div class="card-cover" id="card-dec" style={`background-image: url(${dec.src});`}>
+                    <div class="card-contents">
+                        <h2> 12月 </h2>
+                        <h1> 忘年会 </h1>
+                        <div class="card-textbox"><p> 部室開放や食事会、撮影会を行います。参加費無料なので雰囲気を知りたい方や同輩や先輩の友達作りなどに最適です！ </p></div>
+                    </div>
+                </div>
+            </div>
+
+            <input type="radio" id="tab4" name="tab">
+            <label for="tab4">Jan. - Mar.</label>
+            <div>
+                <div class="card-cover" id="card-jan" style={`background-image: url(${jan.src});`}>
+                    <div class="card-contents">
+                        <h2> 1月 </h2>
+                        <h1> 新年会 </h1>
+                        <div class="card-textbox"><p> 部室開放や食事会、撮影会を行います。参加費無料なので雰囲気を知りたい方や同輩や先輩の友達作りなどに最適です！ </p></div>
+                    </div>
+                </div>
+                <div class="card-cover" id="card-feb" style={`background-image: url(${feb.src});`}>
+                    <div class="card-contents">
+                        <h2> 2月 </h2>
+                        <h1> 卒業制作展</br>二月展 </h1>
+                        <div class="card-textbox"><p> 部室開放や食事会、撮影会を行います。参加費無料なので雰囲気を知りたい方や同輩や先輩の友達作りなどに最適です！ </p></div>
+                    </div>
+                </div>
+                <div class="card-cover" id="card-mar" style={`background-image: url(${mar.src});`}>
+                    <div class="card-contents">
+                        <h2> 3月 </h2>
+                        <h1> 春合宿 </h1>
+                        <div class="card-textbox"><p> 部室開放や食事会、撮影会を行います。参加費無料なので雰囲気を知りたい方や同輩や先輩の友達作りなどに最適です！ </p></div>
+                    </div>
+                </div>
+            </div>
+
+            <input type="radio" id="tab5" name="tab">
+            <label for="tab5">Others</label>
+            <div>
+                <div class="card-cover" id="card-others" style={`background-image: url(${others.src});`}>
+                    <div class="card-contents" id="card-others-contents">
+                        <p>Now in production...</p>
+                        <div class="card-textbox"><p> Now in production... </p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="Equipments">
+        <div class="contents-title a-anchor" id="equipments-title"><h1>Equipments</h1></div>
+        <div class="equipments-list">
+            <div class="equipment-item">
+                <div class="equipment-image">
+                    <div class="image-container">
+                        <section id="image1a"><img src={equipment1a.src} alt="暗室"></section>
+                        <section id="image1b"><img src={equipment1b.src} alt="暗室2"></section>
+                        <section id="image1c"><img src={equipment1c.src} alt="暗室3"></section>
+                        <section id="image1d"><img src={equipment1d.src} alt="暗室4"></section>
+                        <section id="image1e"><img src={equipment1e.src} alt="暗室5"></section>
+                    </div>
+                </div>
+                <div class="equipment-description">
+                    <h1>No.1</h1>
+                    <h2>暗室</h2>
+                    <p>暗室ではモノクロフィルムの現像、プリントが可能です。 暗室作業は、慣れるまで先輩がついて指導します。また、スピーカーが設置してあり自分のipodやMD、CDプレイヤーなどを繋げば好きな音楽を聴きながら快適に楽しく暗室作業ができます。一般的な暗室では通常カラーフィルムの現像、プリントはできません。</p>
+                </div>
+            </div>
+            <div class="equipment-item">
+                <div class="equipment-image">
+                    <div class="image-container">
+                        <section id="image2a"><img src={equipment2a.src} alt="暗室"></section>
+                        <section id="image2b"><img src={equipment2b.src} alt="暗室2"></section>
+                        <section id="image2c"><img src={equipment2c.src} alt="暗室3"></section>
+                        <section id="image2d"><img src={equipment2d.src} alt="暗室4"></section>
+                        <section id="image2e"><img src={equipment2e.src} alt="暗室5"></section>
+                    </div>
+                </div>
+                <div class="equipment-description">
+                    <h1>No.2</h1>
+                    <h2>Desktop PC</h2>
+                    <p>高解像度の画像編集や動画編集が可能なデスクトップPCです。</p>
+                </div>
+            </div>
+            <div class="equipment-item">
+                <div class="equipment-image">
+                    <div class="image-container">
+                        <section id="image3a"><img src={equipment3a.src} alt="暗室"></section>
+                        <section id="image3b"><img src={equipment3b.src} alt="暗室2"></section>
+                        <section id="image3c"><img src={equipment3c.src} alt="暗室3"></section>
+                        <section id="image3d"><img src={equipment3d.src} alt="暗室4"></section>
+                        <section id="image3e"><img src={equipment3e.src} alt="暗室5"></section>
+                    </div>
+                </div>
+                <div class="equipment-description">
+                    <h1>No.3</h1>
+                    <h2>Xiaomi Google TV</h2>
+                    <p>Xiaomi Google TVは、ストリーミングサービスやアプリに簡単にアクセスできるスマートテレビです。</p>
+                </div>
+            </div>
+            <div class="equipment-item">
+                <div class="equipment-image">
+                    <div class="image-container">
+                        <section id="image4a"><img src={equipment4a.src} alt="暗室"></section>
+                        <section id="image4b"><img src={equipment4b.src} alt="暗室2"></section>
+                        <section id="image4c"><img src={equipment4c.src} alt="暗室3"></section>
+                        <section id="image4d"><img src={equipment4d.src} alt="暗室4"></section>
+                        <section id="image4e"><img src={equipment4e.src} alt="暗室5"></section>
+                    </div>
+                </div>
+                <div class="equipment-description">
+                    <h1>No.4</h1>
+                    <h2>プリンター</h2>
+                    <p>高品質な写真プリントが可能なプリンターです。</p>
+                </div>
+            </div>
+            <div class="equipment-item">
+                <div class="equipment-image">
+                    <div class="image-container">
+                        <section id="image5a"><img src={equipment5a.src} alt="暗室"></section>
+                        <section id="image5b"><img src={equipment5b.src} alt="暗室2"></section>
+                        <section id="image5c"><img src={equipment5c.src} alt="暗室3"></section>
+                        <section id="image5d"><img src={equipment5d.src} alt="暗室4"></section>
+                        <section id="image5e"><img src={equipment5e.src} alt="暗室5"></section>
+                    </div>
+                </div>
+                <div class="equipment-description">
+                    <h1>No.5</h1>
+                    <h2>スキャナー</h2>
+                    <p>フィルムや写真のデジタル化が可能なスキャナーです。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="FAQs">
+        <div class="contents-title a-anchor" id="faqs-title"><h1>FAQs</h1></div>
+        <div class="faqs-container">
+            <section class="faq">
+                <h1>Q1</h1>
+                <h2>写真の経験がなくても大丈夫ですか？</h2>
+                <p>はい、全く問題ありません。初心者の方でも安心して参加できるよう、基礎から丁寧に指導します。写真を楽しむ気持ちがあれば大歓迎です！</p>
+            </section>
+            <section class="faq">
+                <h1>Q2</h1>
+                <h2>カメラを買いたいと思っているのですが、何を買ったらよいのかわかりません。</h2>
+                <p>部室にきていただけたら 部員が購入の相談にのります。また、日程をあわせて一緒にカメラ屋に出かけ、購入の際にアドバイスすることもあります。シャレードでは特に推奨しているカメラはありません。しかし、部員のほとんどが一眼デジタルカメラを所有しています。</p>
+            </section>
+            <section class="faq">
+                <h1>Q3</h1>
+                <h2>活動費用はどのくらいかかりますか？</h2>
+                <p>部費は年間で6000円（半期3000円）です。その他、撮影会や展示会などのイベントに参加する際には、別途費用がかかる場合があります。</p>
+            </section>
+            <section class="faq">
+                <h1>Q4</h1>
+                <h2>兼部・兼サークルは可能ですか？</h2>
+                <p>はい、兼部・兼サークルは可能です。学業や他のサークル活動と両立しながら、写真を楽しむことができます。</p>
+            </section>
+        </div>
+    </div>
+</Fragment>
+</Layout>
+
+<!-- <script>
+    function initMap() {
+        // google オブジェクトの存在確認
+        if (typeof google === 'undefined') {
+            console.error('Google Maps API が読み込まれていません');
+            return;
+        }
+
+        const mapElement = document.getElementById("map");
+        if (!mapElement) {
+            console.error('地図要素が見つかりません');
+            return;
+        }
+
+        const mapOptions = {
+            center: { lat: 35.712678, lng: 139.722174 },
+            zoom: 16,
+        };
+        
+        const map = new google.maps.Map(mapElement, mapOptions);
+        const marker = new google.maps.Marker({
+            position: { lat: 35.712678, lng: 139.722174 },
+            map: map,
+            title: "早稲田大学学生会館E224",
+        });
+    }
+
+    // Google Maps API が読み込まれた後に実行
+    window.initMap = initMap;
+</script> -->
+
+<style>
+    .a-anchor {
+        padding-top: 130px;
+        margin-top: -130px;
+    }
+
+    .href-anchor{
+        text-decoration: none;
+        position: relative;
+        cursor: pointer;
+    }
+
+    .href-anchor::after {
+        position: absolute;
+        left: 0;
+        right: 0;
+        content: '';
+        width: 100%;
+        height: 1px;
+        background: #000000;
+        bottom: 0;
+        transform: scale(0, 1);
+        transform-origin: center top;
+        transition: transform 0.3s;
+    }
+
+    .href-anchor:hover::after {
+        transform: scale(1, 1);
+    }
+
+    .menu {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        writing-mode: vertical-rl;
+        gap: 20px;
+        position: sticky;
+        top: 150px;
+        /* width: 120px; */
+        /* transform: translateY(-50%); */
+        z-index: 1000;
+    }
+
+    .menu span {
+        color: #000;
+        font-size: 16px;
+        user-select: none;
+    }
+
+    .menu-item {
+        color: #000;
+        font-family: "Zen Old Mincho";
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 2px;
+    }
+
+    .menu-item:hover {
+        text-shadow: rgba(0, 0, 0, 0.2) 2px -2px 4px;
+    }
+
+    .section-title {
+        display: flex;
+        flex-direction: row;
+        align-items: space-between;
+        justify-content: center;
+        margin-bottom: 55px;
+    }
+
+    .section-title  h1{
+        color: #000;
+        font-family: "Didot";
+        font-size: 96px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 14.4px;
+        padding-right: 78px;
+    }
+
+    .section-title-line {
+        width: 100%;
+        position: relative;
+    }
+
+    .section-title-line::after {
+        content: '';
+        display: block;
+        width: 100%;
+        height: 1px;
+        background: #000;
+        position: absolute;
+        top: 50%;
+        right: 0;
+    }
+
+    .explanation-about-us {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 148px;
+        /* padding: 0 120px; */
+    }
+
+    .explanation-about-us p{
+        color: #000;
+        font-family: "Zen Kurenaido";
+        font-size: 24px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 3.6px;
+    }
+
+    .information {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        /* padding: 0 120px; */
+    }
+
+    .contents-title {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: right;
+        margin-bottom: 15px;
+    }
+
+    .contents-title h1{
+        color: #000;
+        font-family: "Didot";
+        font-size: 48px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 7.2px;
+        text-align: right;
+    }
+
+    .information table{
+        width: 100%;
+        border-collapse: collapse;
+        border-bottom: 1px solid #000;
+        color: #000;
+        font-family: "Zen Kurenaido";
+        font-size: 20px;
+    }
+
+    .information caption{
+        caption-side: bottom;
+        text-align: right;
+    }
+
+    .information th,
+    .information td {
+        width: max-content;
+        border-top: 1px solid #000;
+        padding: 20px;
+        color: #000;
+        font-family: "Zen Kurenaido";
+        font-weight: 400;
+    }
+
+    .information th {
+        font-size: 24px;
+        padding: 20px 30px;
+    }
+
+    .separator{
+        margin: 0 30px;
+    }
+
+
+    #map-td {
+        padding: 0;
+    }
+
+    #map-td span{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #map {
+        width: 450px;
+        height: 450px;
+        /* background-color: rgb(228 240 245); */
+        margin: 35px;
+    }
+
+    .address-span{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .link-button{
+        padding: 15px;
+        width: 50px;
+        height: 50px;
+        margin-left: 20px;
+    }
+
+    .link-button:hover {
+        background-color: #f0f0f0;
+    }
+
+    .link-button img {
+        width: 20px;
+        height: 20px;
+        vertical-align: top;
+    }
+
+    .annual-schedule {
+        margin-top: 148px;
+        /* padding: 0 120px; */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .tab {
+        display: flex;
+        flex-wrap: wrap;
+        width: 100%;
+        position: relative;
+    }
+
+    .tab > label {
+        flex: 1 1;
+        order: -1;
+        min-width: 70px;
+        padding: .7em 1em .5em;
+        border-bottom: 1px solid #000000;
+        border-radius: 0;
+        background-color: #fdfdfd;
+        color: #000000;
+        font-family: "Zen Old Mincho";
+        font-size: 15px;
+        letter-spacing: 2.25px;
+        font-weight: 400;
+        font-style: normal;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .tab > label:hover {
+        opacity: .8;
+    }
+
+    .tab input {
+        display: none;
+    }
+
+    .tab > div {
+        display: none;
+        width: 100%;
+        padding: 1.5em 1em;
+        background-color: #fff;
+        position: relative;
+        align-items: center;
+        justify-content: space-between;
+        padding: 50px 100px;
+    }
+
+    #tab1:checked ~ label[for="tab1"],
+    #tab2:checked ~ label[for="tab2"],
+    #tab3:checked ~ label[for="tab3"],
+    #tab4:checked ~ label[for="tab4"],
+    #tab5:checked ~ label[for="tab5"] {
+        background-color: #fff;
+        border-color: #000000;
+        border-style: solid;
+        border-width: 1px 1px 0px 1px;
+        border-radius: 2px 2px 0px 0px;
+        color: #000000;
+    }
+
+    #tab1:checked ~ label[for="tab1"] + div,
+    #tab2:checked ~ label[for="tab2"] + div,
+    #tab3:checked ~ label[for="tab3"] + div,
+    #tab4:checked ~ label[for="tab4"] + div,
+    #tab5:checked ~ label[for="tab5"] + div {
+        display: flex;
+        background-color: #fff;
+    }
+
+    #tab1:checked ~ label[for="tab1"] + div::after,
+    #tab2:checked ~ label[for="tab2"] + div::after,
+    #tab3:checked ~ label[for="tab3"] + div::after,
+    #tab4:checked ~ label[for="tab4"] + div::after,
+    #tab5:checked ~ label[for="tab5"] + div::after {
+        content: '';
+        display: block;
+        width: 100%;
+        height: 1px;
+        background: #000;
+        position: absolute;
+        top: 100%;
+        left: 0;
+    }
+
+    .card-cover {
+        padding: 25px;
+        box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.2);
+        flex-shrink: 0;
+        border-radius: 10px;
+        position: relative;
+    }
+
+    .card-cover::before {
+        content: '';
+        border-radius: 10px;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        transition: background-color 0.3s ease;
+    }
+
+    .card-cover::after {
+        content: '';
+        border-radius: 10px;
+        position: absolute;
+        top: 7px;
+        right: 7px;
+        bottom: 7px;
+        left: 7px;
+        border:#000000 0.5px solid;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .card-contents {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    .card-cover h1, .card-cover h2 {
+        font-family: "Zen Old Mincho";
+        font-size: 40px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        transition: opacity 0.3s ease 0.1s;
+    }
+
+    .card-contents h1{
+        text-align: center;
+        opacity: 0;
+        color: #000000;
+        transition: opacity 0.3s ease 0.1s;
+    }
+
+    .card-contents h2 {
+        color: #ffffff;
+        text-shadow: #5c5c5c 2px 2px 4px;
+    }
+
+    .card-textbox {
+        opacity: 0;
+        height: 150px;
+        margin-top: 30px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: opacity 0.3s ease 0.1s;
+    }
+
+    .card-cover:hover::before {
+        background-color: rgba(255, 255, 255, 1);
+    }
+
+    .card-cover:hover::after {
+        opacity: 1;
+    }
+
+    .card-cover:hover h1 {
+        opacity: 1;
+        z-index: 1;
+    }
+    .card-cover:hover h2 {
+        color: #000000;
+        z-index: 1;
+        text-shadow: none;
+    }
+    .card-cover:hover .card-textbox {
+        opacity: 1;
+        z-index: 1;
+    }
+
+    .card-textbox p {
+        color: #000;
+        font-family: "Zen Kurenaido";
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 2.4px;
+    }
+
+    #card-apr-may{
+        width: 655px;
+        height: 414px;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+
+    #card-apr-may-contents {
+        align-items: flex-start;
+    }
+
+    #card-jun,
+    #card-jul,
+    #card-aug,
+    #card-sep,
+    #card-oct,
+    #card-nov,
+    #card-dec,
+    #card-jan,
+    #card-feb,
+    #card-mar {
+        width: 290px;
+        height: 414px;
+        background-size: cover;
+        background-repeat: no-repeat;
+    }
+
+    #card-jun {
+        background-position: center;
+    }
+
+    #card-jul {
+        background-position: 70%;
+    }
+
+    #card-aug {
+        background-position: 30%;
+    }
+
+    #card-sep {
+        background-position: center;
+    }
+
+    #card-oct {
+        background-position: center;
+    }
+
+    #card-nov {
+        background-position: center;
+    }
+
+    #card-dec {
+        background-position: center;
+    }
+
+    #card-jan {
+        background-position: center;
+    }
+
+    #card-feb {
+        background-size: cover;
+        background-position: center;
+    }
+
+    #card-mar {
+        background-position: center;
+    }
+
+    #card-others {
+        width: 100%;
+        height: 414px;
+        background-size: cover;
+        background-position: center;
+    }
+
+    #card-others-contents {
+        justify-content: right;
+        align-items: flex-end;
+    }
+
+    #card-others-contents p {
+        color: #000000;
+        font-family: "Zen Kurenaido";
+        font-size: 30px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 3.6px;
+    }
+
+    .Equipments {
+        margin-top: 148px;
+        /* padding: 0 120px; */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .equipments-list {
+        width: 100%;
+        height: 525px;
+        overflow-y: scroll;
+        padding: 0 80px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        row-gap: 50px;
+        scroll-snap-type: y mandatory;
+    }
+
+    .equipments-list::-webkit-scrollbar {
+        width: 7px;
+        top: 50%;
+        background-image: url('../assets/equipments/scrollbar-bg.svg');
+        background-size: auto 100%;
+        background-repeat: no-repeat;
+    }
+
+    .equipments-list::-webkit-scrollbar-thumb {
+        background-image: url('../assets/equipments/scrollbar-thumb.svg');
+        background-size: auto 100%;
+        background-repeat: no-repeat;
+    }
+
+    .equipments-list::-webkit-scrollbar-thumb:hover {
+        background-color: #696969;
+    }
+
+    .equipment-item {
+        width: 100%;
+        height: 500px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        scroll-snap-align: start;
+    }
+
+    .equipment-item::after {
+        content: '';
+        display: block;
+        width: 70%;
+        height: 1px;
+        background: #000;
+        position: absolute;
+        bottom: -25px;
+        left: 15%;
+    }
+
+    .equipment-image {
+        width: 400px;
+        height: 500px;
+        position: relative;
+    }
+
+    .equipment-image::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('../assets/equipments/equipments-cover.svg');
+        background-size: cover;
+        background-position: center;
+        user-select: none;
+    }
+
+    .image-container {
+        width: 400px;
+        height: 100%;
+        position: relative;
+        text-align: center;
+        -webkit-user-select: none;
+        user-select: none;
+        overflow: hidden;
+        border-radius: 10px;
+    }
+
+    .image-container section {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .image-container section img {
+        width: 100%;
+        height: 100%;
+        aspect-ratio: 4 / 5;
+        object-fit: cover;
+        box-sizing: border-box;
+        vertical-align: middle;
+    }
+
+    .equipment-description {
+        width: 100%;
+        height: 100%;
+        margin-left: 80px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: flex-start;
+        position: relative;
+    }
+
+    .image-container #image1a,
+    .image-container #image2a,
+    .image-container #image3a,
+    .image-container #image4a,
+    .image-container #image5a {
+        position: relative;
+    }
+    .image-container section {
+        animation: autoplay 25s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+    @keyframes autoplay {
+        from, to, 16% { transform: none; }
+        20% { transform: translateX(-100%); }
+        20.001%, 96% { transform: translateX(100%); }
+    }
+    .image-container #image1a { animation-delay: 0s; }
+    .image-container #image1b { animation-delay: -20s; }
+    .image-container #image1c { animation-delay: -15s; }
+    .image-container #image1d { animation-delay: -10s; }
+    .image-container #image1e { animation-delay: -5s; }
+
+    .image-container #image2a { animation-delay: 0s; }
+    .image-container #image2b { animation-delay: -20s; }
+    .image-container #image2c { animation-delay: -15s; }
+    .image-container #image2d { animation-delay: -10s; }
+    .image-container #image2e { animation-delay: -5s; }
+
+    .image-container #image3a { animation-delay: 0s; }
+    .image-container #image3b { animation-delay: -20s; }
+    .image-container #image3c { animation-delay: -15s; }
+    .image-container #image3d { animation-delay: -10s; }
+    .image-container #image3e { animation-delay: -5s; }
+
+    .image-container #image4a { animation-delay: 0s; }
+    .image-container #image4b { animation-delay: -20s; }
+    .image-container #image4c { animation-delay: -15s; }
+    .image-container #image4d { animation-delay: -10s; }
+    .image-container #image4e { animation-delay: -5s; }
+
+    .image-container #image5a { animation-delay: 0s; }
+    .image-container #image5b { animation-delay: -20s; }
+    .image-container #image5c { animation-delay: -15s; }
+    .image-container #image5d { animation-delay: -10s; }
+    .image-container #image5e { animation-delay: -5s; }
+
+    .equipment-description h1 {
+        position: absolute;
+        top: -20px;
+        right: -20px;
+        color: rgba(0, 0, 0, 0.20);
+        font-family: "Grandiflora One";
+        font-size: 128px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 19.2px;
+    }
+
+    .equipment-description h2{
+        color: #000;
+        font-family: "Zen Kurenaido";
+        font-size: 48px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 7.2px;
+        margin-top: 80px;
+    }
+
+    .equipment-description p{
+        height: 200px;
+        color: #000;
+        font-family: "Zen Kurenaido";
+        font-size: 20px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 3px;
+        overflow: scroll;
+    }
+
+    .FAQs {
+        margin-top: 148px;
+        /* padding: 0 120px; */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .faqs-container {
+        width: 100%;
+        padding-left: 150px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        row-gap: 72px;
+    }
+
+    .faq {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        position: relative;
+    }
+
+    .faq h1 {
+        color: rgba(0, 0, 0, 0.20);
+        font-family: "Grandiflora One";
+        font-size: 96px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 14.4px;
+        position: absolute;
+        top: -60px;
+        left: -170px;
+    }
+
+    .faq h2 {
+        color: #000;
+        font-family: "Zen Old Mincho";
+        font-size: 24px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 3.6px;
+        margin-bottom: 40px;
+    }
+
+    .faq p {
+        color: #000;
+        font-family: "Zen Kurenaido";
+        font-size: 20px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 3px;
+        white-space: pre-wrap;
+    }
+</style>
