@@ -1,5 +1,6 @@
 ---
 import '../styles/UA+reset.css';
+const pathname = Astro.url.pathname;
 import { getImage } from 'astro:assets';
 import background from '../assets/footer/background.jpg';
 const optimizedBackground = await getImage({src: background, format: 'webp'});
@@ -13,21 +14,20 @@ const optimizedBackground = await getImage({src: background, format: 'webp'});
     </a>
     <div class="footer-links">
         <div class="links-upper-tier">
-            <a href="About_us">About us</a>
-            <a href="Activity">Activity</a>
-            <a href="Gallery">Gallery</a>
-            <a href="Portfolio">Portfolio</a>
-            <a href="Contact">Contact</a>
+            <a class:list={['link', {active: /^\/About_us\/?$/.test(pathname)}]} href="About_us">About us</a>
+            <a class:list={['link', {active: /^\/Activity\/?$/.test(pathname)}]} href="Activity">Activity</a>
+            <a class:list={['link', {active: /^\/Gallery\/?$/.test(pathname)}]} href="Gallery">Gallery</a>
+            <a class:list={['link', {active: /^\/Portfolio\/?$/.test(pathname)}]} href="Portfolio">Portfolio</a>
         </div>
         <div class="links-lower-tier">
-            <a href="How_to_join_us">How to join us</a>
-            <a href="disclaim">Disclaimer</a>
+            <a class:list={['link', {active: /^\/Contact\/?$/.test(pathname)}]} href="Contact">Contact</a>
+            <a class:list={['link', {active: /^\/Disclaimer\/?$/.test(pathname)}]} href="Disclaimer">Disclaimer</a>
         </div>
     </div>
     <h3>member only</h3>
     <div class="member-links">
-        <a href="Log_in">Log in</a>
-        <a href="Sign_up">Sign up</a>
+        <a class:list={['link', {active: /^\/Login\/?$/.test(pathname)}]} href="Login">Log in</a>
+        <a class:list={['link', {active: /^\/Signup\/?$/.test(pathname)}]} href="Signup">Sign up</a>
     </div>
     <div class="footer-logo">
         <img src="../src/assets/footer/logo.svg" alt="Scharade Logo">
@@ -132,6 +132,14 @@ const optimizedBackground = await getImage({src: background, format: 'webp'});
         align-items: center;
         justify-content: flex-start;
         margin-top: 10px;
+    }
+
+    .link.active {
+        color: #0db49b !important;
+    }
+
+    .link.active::after {
+        background-color: #0db49b !important;
     }
 
     .footer-logo {
