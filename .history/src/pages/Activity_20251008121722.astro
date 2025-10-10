@@ -1,0 +1,164 @@
+---
+import Layout from '../layouts/Layout.astro';
+import '../styles/UA+reset.css';
+import '../styles/Activity.css';
+---
+
+<Layout>
+<Fragment slot="main-slot">
+    <div class = "section-title a-anchor"> 
+        <h1>Activity</h1>
+        <div class = "section-title-line"></div>
+    </div>
+</Fragment>
+<Fragment slot="menu-slot">
+</Fragment>
+<Fragment slot="body-slot">
+    <div class="tab">
+        <input type="radio" id="tab1" name="tab" checked>
+        <label for="tab1">All tags</label>
+        <div class="tab-content">
+            <input type="radio" id="tab1" name="tab" checked>
+        </div>
+        <div>
+            <article class="Activity-1">
+                <div class="Activity-info">
+                    <p class="Activity-date">2025/06/20</p>
+                    <a class="Activity-tag">#Travel</a>
+                    <a class="Activity-tag">#News</a>
+                </div>
+                <h1 class="Activity-title">秩父＆長瀞撮影会を行いました！</h1>
+            </article>
+            <article class="Activity-2">
+                <div class="Activity-info">
+                    <p class="Activity-date">2025/06/16 ~ 06/21</p>
+                    <a class="Activity-tag">#Exhibition</a>
+                    <a class="Activity-tag">#News</a>
+                </div>
+                <h1 class="Activity-title">６月展を開催しました！</h1>
+            </article>
+            <article class="Activity-3">
+                <div class="Activity-info">
+                    <p class="Activity-date">2025/06/20</p>
+                    <a class="Activity-tag">#News</a>
+                    <a class="Activity-tag">#Others</a>
+                </div>
+                <h1 class="Activity-title">今年の夏合宿は富山県＆石川県に決まり、２泊３日の予定です！</h1>
+            </article>
+        </div>
+
+        <input type="radio" id="tab2" name="tab">
+        <label for="tab2">News</label>
+        <div>
+            <article class="Activity-1">
+                <div class="Activity-info">
+                    <p class="Activity-date">2025/06/20</p>
+                    <a class="Activity-tag">#News</a>
+                </div>
+                <h1 class="Activity-title">秩父＆長瀞撮影会を行いました！</h1>
+            </article>
+            <article class="Activity-2">
+                <div class="Activity-info">
+                    <p class="Activity-date">2025/06/16 ~ 06/21</p>
+                    <a class="Activity-tag">#News</a>
+                </div>
+                <h1 class="Activity-title">６月展を開催しました！</h1>
+            </article>
+            <article class="Activity-3">
+                <div class="Activity-info">
+                    <p class="Activity-date">2025/06/20</p>
+                    <a class="Activity-tag">#News</a>
+                </div>
+                <h1 class="Activity-title">今年の夏合宿は富山県＆石川県に決まり、２泊３日の予定です！</h1>
+            </article>
+        </div>
+
+        <input type="radio" id="tab3" name="tab">
+        <label for="tab3">Exhibition</label>
+        <div>
+            <article class="Activity-1">
+                <div class="Activity-info">
+                    <p class="Activity-date">2025/06/20</p>
+                    <a class="Activity-tag">#Exhibition</a>
+                    <a class="Activity-tag">#News</a>
+                </div>
+                <h1 class="Activity-title">秩父＆長瀞撮影会を行いました！</h1>
+            </article>
+            <article class="Activity-2">
+                <div class="Activity-info">
+                    <p class="Activity-date">2025/06/16 ~ 06/21</p>
+                    <a class="Activity-tag">#Exhibition</a>
+                    <a class="Activity-tag">#News</a>
+                </div>
+                <h1 class="Activity-title">６月展を開催しました！</h1>
+            </article>
+            <article class="Activity-3">
+                <div class="Activity-info">
+                    <p class="Activity-date">2025/06/20</p>
+                    <a class="Activity-tag">#Exhibition</a>
+                    <a class="Activity-tag">#Others</a>
+                </div>
+                <h1 class="Activity-title">今年の夏合宿は富山県＆石川県に決まり、２泊３日の予定です！</h1>
+            </article>
+        </div>
+
+        <input type="radio" id="tab4" name="tab">
+        <label for="tab4">Travel</label>
+        <div>
+            <article class="Activity-1">
+                <div class="Activity-info">
+                    <p class="Activity-date">2025/06/20</p>
+                    <a class="Activity-tag">#Travel</a>
+                    <a class="Activity-tag">#News</a>
+                </div>
+                <h1 class="Activity-title">秩父＆長瀞撮影会を行いました！</h1>
+            </article>
+            <article class="Activity-2">
+                <div class="Activity-info">
+                    <p class="Activity-date">2025/06/16 ~ 06/21</p>
+                    <a class="Activity-tag">#Travel</a>
+                    <a class="Activity-tag">#News</a>
+                </div>
+                <h1 class="Activity-title">６月展を開催しました！</h1>
+            </article>
+            <article class="Activity-3">
+                <div class="Activity-info">
+                    <p class="Activity-date">2025/06/20</p>
+                    <a class="Activity-tag">#Travel</a>
+                    <a class="Activity-tag">#Others</a>
+                </div>
+                <h1 class="Activity-title">今年の夏合宿は富山県＆石川県に決まり、２泊３日の予定です！</h1>
+            </article>
+        </div>
+
+        <input type="radio" id="tab5" name="tab">
+        <label for="tab5">Others</label>
+        <div>
+            <article class="Activity-1">
+                <div class="Activity-info">
+                    <p class="Activity-date">2025/06/20</p>
+                    <a class="Activity-tag">#Others</a>
+                    <a class="Activity-tag">#News</a>
+                </div>
+                <h1 class="Activity-title">秩父＆長瀞撮影会を行いました！</h1>
+            </article>
+            <article class="Activity-2">
+                <div class="Activity-info">
+                    <p class="Activity-date">2025/06/16 ~ 06/21</p>
+                    <a class="Activity-tag">#Others</a>
+                    <a class="Activity-tag">#News</a>
+                </div>
+                <h1 class="Activity-title">６月展を開催しました！</h1>
+            </article>
+            <article class="Activity-3">
+                <div class="Activity-info">
+                    <p class="Activity-date">2025/06/20</p>
+                    <a class="Activity-tag">#News</a>
+                    <a class="Activity-tag">#Others</a>
+                </div>
+                <h1 class="Activity-title">今年の夏合宿は富山県＆石川県に決まり、２泊３日の予定です！</h1>
+            </article>
+        </div>
+    </div>
+</Fragment>
+</Layout>

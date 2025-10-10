@@ -1,0 +1,22 @@
+---
+import Layout from './Layout.astro';
+import '../styles/UA+reset.css';
+const { title } = Astro.props
+---
+<Layout>
+    <nav>
+    <a href="/">ホーム</a>
+    <a href="Activity">ブログ</a>
+    <a href="Contact">お問い合わせ</a>
+    </nav>
+    <h1>{title}</h1>
+    <article>
+        <slot /> <!-- ここにコンテンツが挿入されます -->
+    </article>
+</Layout>
+
+<style>
+    h1 {
+    font-size: 2rem;
+    }
+</style>

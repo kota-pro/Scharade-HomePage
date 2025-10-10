@@ -1,0 +1,150 @@
+---
+import '../styles/UA+reset.css';
+const pathname = Astro.url.pathname;
+import { getImage } from 'astro:assets';
+import background from '../assets/footer/background.jpg';
+const optimizedBackground = await getImage({src: background, format: 'webp'});
+---
+
+<footer style={{ background: `linear-gradient(rgba(70, 70, 70, 0.75), rgba(70, 70, 70, 0.75)), url(${optimizedBackground.src})` }}>
+
+    <a href="/">
+        <h2>早稲田大学公認サークル</h2>
+        <h1>写団シャレード</h1>
+    </a>
+    <div class="footer-links">
+        <div class="links-upper-tier">
+            <a class:list={['link', {active: /^\/About_us\/?$/.test(pathname)}]} href="About_us">About us</a>
+            <a class:list={['link', {active: /^\/Activity\/?$/.test(pathname)}]} href="Activity">Activity</a>
+            <a class:list={['link', {active: /^\/Gallery\/?$/.test(pathname)}]} href="Gallery">Gallery</a>
+            <a class:list={['link', {active: /^\/Portfolio\/?$/.test(pathname)}]} href="Portfolio">Portfolio</a>
+        </div>
+        <div class="links-lower-tier">
+            
+            <a class:list={['link', {active: /^\/Disclaimer\/?$/.test(pathname)}]} href="Disclaimer">Disclaimer</a>
+        </div>
+    </div>
+    <h3>member only</h3>
+    <div class="member-links">
+        <a href="Log_in">Log in</a>
+        <a href="Sign_up">Sign up</a>
+    </div>
+    <div class="footer-logo">
+        <img src="../src/assets/footer/logo.svg" alt="Scharade Logo">
+        <h3>©Scharade. All Rights Reserved.</h3>
+    </div>
+</footer>
+</html>
+
+<style>
+    footer {
+        width: 100%;
+        height: 441px;
+        margin-top: 148px;
+        padding: 68px 120px 35px;
+        flex-shrink: 0;
+        box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.25) inset;
+        position: relative;
+    }
+
+    footer h1 {
+        color: #FFF;
+        font-family: "Zen Kurenaido";
+        font-size: 40px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 6px;
+    }
+
+    footer h2 {
+        color: #FFF;
+        font-family: "Zen Kurenaido";
+        font-size: 20px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 3px;
+    }
+
+    footer h3 {
+        color: #FFF;
+        font-family: "Grandiflora One";
+        font-size: 20px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 3px;
+    }
+
+    footer a {
+        color: #FFF;
+        font-family: "Zen Old Mincho";
+        font-size: 20px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 3px;
+        text-decoration: none;
+        margin-right: 44px;
+        position: relative;
+        cursor: pointer;
+    }
+
+    footer a::after {
+        position: absolute;
+        left: 0; /* aタグの左端からアンダーラインを引く */
+        right: 0; /* aタグの右端からアンダーラインを引く */
+        content: '';
+        width: 100%;
+        height: 1px;
+        background: #b6b6b6;
+        bottom: 0;
+        transform: scale(0, 1);
+        transform-origin: center top; /*変形（アンダーラインの伸長）の原点がaタグ（各メニュー）の右端*/
+        transition: transform 0.3s;
+    }
+
+    footer a:hover::after {
+        transform: scale(1, 1); /* アンダーラインを表示 */
+    }
+
+    .footer-links {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        margin-top: 40px;
+        margin-bottom: 30px;
+    }
+
+    .links-lower-tier {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        margin-top: 20px;
+    }
+
+    .member-links {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        margin-top: 10px;
+    }
+
+    .footer-logo {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        position: absolute;
+        bottom: 35px;
+        right: 120px;
+    }
+
+    .footer-logo h3 {
+        margin-top: 25px;
+    }
+</style>
