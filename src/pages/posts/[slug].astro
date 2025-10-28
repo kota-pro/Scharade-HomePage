@@ -1,0 +1,143 @@
+---
+import MypostLayout from "../../layouts/Mypost_Layout.astro";
+import "../../styles/UA+reset.css";
+import { microcmsClient } from "../../lib/microcms";
+import type { Blog } from "../../types/microcms";
+import { formatDate, getPublishedDate, normalizeTags } from "../../utils/blog";
+
+export async function getStaticPaths() {
+  const contents = await microcmsClient.getAllContents<Blog>({
+    endpoint: "blog",
+    queries: {
+      fields: "id,slug",
+    },
+  });
+
+  return contents.map((content) => ({
+    params: { slug: content.slug },
+    props: { id: content.id },
+  }));
+}
+
+const { id } = Astro.props as { id: string };
+const post = await microcmsClient.getListDetail<Blog>({
+  endpoint: "blog",
+  contentId: id,
+  queries: {
+    depth: 2,
+  },
+});
+
+const formattedDate = formatDate(getPublishedDate(post));
+const postTags = normalizeTags(post.tags);
+---
+
+<MypostLayout title={post.title}>
+  <div class="post-meta">
+    {formattedDate ? <p class="post-date">{formattedDate}</p> : null}
+    {
+      normalizeTags(post.tags).length ? (
+        <ul class="post-tags">
+          {normalizeTags(post.tags).map((tag) => (
+            <li class="post-tag">#{tag.name}</li>
+          ))}
+        </ul>
+      ) : null
+    }
+  </div>
+  {
+    post.pictures?.length ? (
+      <div class="post-pictures">
+        {post.pictures.map((image) => (
+          <figure class="post-eyecatch">
+            <img src={image.url} alt={image.alt || post.title} loading="lazy" />
+          </figure>
+        ))}
+      </div>
+    ) : null
+  }
+  <div class="post-body" set:html={post.body ?? ""} />
+</MypostLayout>
+
+<style>
+  .post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 24px;
+    margin-bottom: 24px;
+  }
+
+  .post-date {
+    margin: 0;
+    font-family: "Grandiflora One";
+    font-size: 20px;
+    letter-spacing: 3px;
+  }
+
+  .post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .post-tag {
+    font-family: "Grandiflora One";
+    font-size: 15px;
+    letter-spacing: 2px;
+  }
+
+  .post-pictures {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .post-eyecatch {
+    margin: 0;
+  }
+
+  .post-eyecatch img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 4px;
+  }
+
+  .post-body :global(p) {
+    font-family: "Zen Old Mincho";
+    font-size: 17px;
+    line-height: 1.9;
+    letter-spacing: 0.5px;
+    margin: 0 0 1.5em;
+  }
+
+  .post-body :global(h2),
+  .post-body :global(h3) {
+    font-family: "Zen Old Mincho";
+    margin: 2em 0 0.8em;
+  }
+
+  .post-body :global(img) {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 24px auto;
+    border-radius: 4px;
+  }
+
+  .post-body :global(ul),
+  .post-body :global(ol) {
+    margin: 0 0 1.5em 1.5em;
+    padding: 0;
+  }
+
+  .post-body :global(li) {
+    margin-bottom: 0.5em;
+    line-height: 1.7;
+  }
+</style>
