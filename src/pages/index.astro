@@ -1,5 +1,9 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import "../styles/UA+reset.css";
+import { microcmsClient } from "../lib/microcms";
+import type { Blog, Tag } from "../types/microcms";
+import { buildTabs, formatDate, getPublishedDate, normalizeTags } from "../utils/blog";
 
 import MainPhoto1 from "../assets/header/Photo1.jpeg";
 import MainPhoto2 from "../assets/header/Photo2.jpg";
@@ -28,6 +32,58 @@ import backgroundCard7 from '../assets/activity/Photo7.jpeg';
 const ACcard7 = await getImage({src: backgroundCard7, format: 'webp'});
 import backgroundCard8 from '../assets/activity/Photo8.jpeg';
 const ACcard8 = await getImage({src: backgroundCard8, format: 'webp'});
+
+const fallbackCardImages = [
+    ACcard1.src,
+    ACcard2.src,
+    ACcard3.src,
+    ACcard4.src,
+    ACcard5.src,
+    ACcard6.src,
+    ACcard7.src,
+    ACcard8.src,
+];
+
+const { contents: posts } = await microcmsClient.getList<Blog>({
+    endpoint: "blog",
+    queries: {
+        limit: 100,
+        orders: "-publishedAt",
+        depth: 2,
+    },
+});
+
+const { contents: tags } = await microcmsClient.getList<Tag>({
+    endpoint: "blog-tags",
+    queries: {
+        limit: 100,
+        orders: "name",
+    },
+});
+
+const tabs = buildTabs(posts, tags);
+const tabPostLimit = 3;
+
+const cardSlots = fallbackCardImages.map((fallback, index) => {
+    const post = posts[index];
+    const image = post?.pictures?.[0]?.url ?? fallback;
+    const tagsText = normalizeTags(post?.tags).map((tag) => `#${tag.name}`).join("  ");
+    const meta = post
+    ? [formatDate(getPublishedDate(post)), tagsText].filter(Boolean).join(" ｜ "): "";
+    return {
+        post,
+        image,
+        title: post?.title ?? "記事準備中",
+        meta,
+        excerpt: post?.excerpt ?? "近日公開予定の記事です。",
+        slug: post?.slug ?? null,
+    };
+});
+
+const cardRows = [];
+for (let i = 0; i < cardSlots.length; i += 4) {
+    cardRows.push(cardSlots.slice(i, i + 4));
+}
 ---
 
 <Layout>
@@ -37,9 +93,9 @@ const ACcard8 = await getImage({src: backgroundCard8, format: 'webp'});
             <img src="../src/assets/header/logo.png" alt="Logo">
         </div>
         <div class="main-visual-photos">
-            <a href={MainPhoto1.src} class="main-visual-photo1" data-lightbox="main-photo"><img loading="lazy" src={MainPhoto1.src} alt="width="90vw""></a>
-            <a href={MainPhoto2.src} class="main-visual-photo2" data-lightbox="main-photo"><img loading="lazy" src={MainPhoto2.src} alt="width="90vw""></a>
-            <a href={MainPhoto3.src} class="main-visual-photo3" data-lightbox="main-photo"><img loading="lazy" src={MainPhoto3.src} alt="width="90vw""></a>
+            <a href={MainPhoto1.src} class="main-visual-photo1" data-lightbox="main-photo"><img loading="lazy" src={MainPhoto1.src} alt="写団シャレードの活動写真1"></a>
+            <a href={MainPhoto2.src} class="main-visual-photo2" data-lightbox="main-photo"><img loading="lazy" src={MainPhoto2.src} alt="写団シャレードの活動写真2"></a>
+            <a href={MainPhoto3.src} class="main-visual-photo3" data-lightbox="main-photo"><img loading="lazy" src={MainPhoto3.src} alt="写団シャレードの活動写真3"></a>
             <div class="click-popup">
                 <div class="arrow-line">
                     <svg xmlns="http://www.w3.org/2000/svg" width="55" height="37" viewBox="0 0 55 37" fill="none">
@@ -63,243 +119,104 @@ const ACcard8 = await getImage({src: backgroundCard8, format: 'webp'});
         <h1>Activity</h1>
         <div class="section-title-line"></div>
     </div>
-    <div class="Activity">
-        <div class="tab">
-            <input type="radio" id="tab1" name="tab" checked>
-            <label for="tab1">All tags</label>
-            <div>
-                <article class="Activity-1">
-                    <div class="Activity-info">
-                        <p class="Activity-date">2025/06/20</p>
-                        <a class="Activity-tag">#Travel</a>
-                        <a class="Activity-tag">#News</a>
-                    </div>
-                    <h1 class="Activity-title">秩父＆長瀞撮影会を行いました！</h1>
-                </article>
-                <article class="Activity-2">
-                    <div class="Activity-info">
-                        <p class="Activity-date">2025/06/16 ~ 06/21</p>
-                        <a class="Activity-tag">#Exhibition</a>
-                        <a class="Activity-tag">#News</a>
-                    </div>
-                    <h1 class="Activity-title">６月展を開催しました！</h1>
-                </article>
-                <article class="Activity-3">
-                    <div class="Activity-info">
-                        <p class="Activity-date">2025/06/20</p>
-                        <a class="Activity-tag">#News</a>
-                        <a class="Activity-tag">#Others</a>
-                    </div>
-                    <h1 class="Activity-title">今年の夏合宿は富山県＆石川県に決まり、２泊３日の予定です！</h1>
-                </article>
-            </div>
-
-            <input type="radio" id="tab2" name="tab">
-            <label for="tab2">News</label>
-            <div>
-                <article class="Activity-1">
-                    <div class="Activity-info">
-                        <p class="Activity-date">2025/06/20</p>
-                        <a class="Activity-tag">#News</a>
-                    </div>
-                    <h1 class="Activity-title">秩父＆長瀞撮影会を行いました！</h1>
-                </article>
-                <article class="Activity-2">
-                    <div class="Activity-info">
-                        <p class="Activity-date">2025/06/16 ~ 06/21</p>
-                        <a class="Activity-tag">#News</a>
-                    </div>
-                    <h1 class="Activity-title">６月展を開催しました！</h1>
-                </article>
-                <article class="Activity-3">
-                    <div class="Activity-info">
-                        <p class="Activity-date">2025/06/20</p>
-                        <a class="Activity-tag">#News</a>
-                    </div>
-                    <h1 class="Activity-title">今年の夏合宿は富山県＆石川県に決まり、２泊３日の予定です！</h1>
-                </article>
-            </div>
-
-            <input type="radio" id="tab3" name="tab">
-            <label for="tab3">Exhibition</label>
-            <div>
-                <article class="Activity-1">
-                    <div class="Activity-info">
-                        <p class="Activity-date">2025/06/20</p>
-                        <a class="Activity-tag">#Exhibition</a>
-                        <a class="Activity-tag">#News</a>
-                    </div>
-                    <h1 class="Activity-title">秩父＆長瀞撮影会を行いました！</h1>
-                </article>
-                <article class="Activity-2">
-                    <div class="Activity-info">
-                        <p class="Activity-date">2025/06/16 ~ 06/21</p>
-                        <a class="Activity-tag">#Exhibition</a>
-                        <a class="Activity-tag">#News</a>
-                    </div>
-                    <h1 class="Activity-title">６月展を開催しました！</h1>
-                </article>
-                <article class="Activity-3">
-                    <div class="Activity-info">
-                        <p class="Activity-date">2025/06/20</p>
-                        <a class="Activity-tag">#Exhibition</a>
-                        <a class="Activity-tag">#Others</a>
-                    </div>
-                    <h1 class="Activity-title">今年の夏合宿は富山県＆石川県に決まり、２泊３日の予定です！</h1>
-                </article>
-            </div>
-
-            <input type="radio" id="tab4" name="tab">
-            <label for="tab4">Travel</label>
-            <div>
-                <article class="Activity-1">
-                    <div class="Activity-info">
-                        <p class="Activity-date">2025/06/20</p>
-                        <a class="Activity-tag">#Travel</a>
-                        <a class="Activity-tag">#News</a>
-                    </div>
-                    <h1 class="Activity-title">秩父＆長瀞撮影会を行いました！</h1>
-                </article>
-                <article class="Activity-2">
-                    <div class="Activity-info">
-                        <p class="Activity-date">2025/06/16 ~ 06/21</p>
-                        <a class="Activity-tag">#Travel</a>
-                        <a class="Activity-tag">#News</a>
-                    </div>
-                    <h1 class="Activity-title">６月展を開催しました！</h1>
-                </article>
-                <article class="Activity-3">
-                    <div class="Activity-info">
-                        <p class="Activity-date">2025/06/20</p>
-                        <a class="Activity-tag">#Travel</a>
-                        <a class="Activity-tag">#Others</a>
-                    </div>
-                    <h1 class="Activity-title">今年の夏合宿は富山県＆石川県に決まり、２泊３日の予定です！</h1>
-                </article>
-            </div>
-
-            <input type="radio" id="tab5" name="tab">
-            <label for="tab5">Others</label>
-            <div>
-                <article class="Activity-1">
-                    <div class="Activity-info">
-                        <p class="Activity-date">2025/06/20</p>
-                        <a class="Activity-tag">#Others</a>
-                        <a class="Activity-tag">#News</a>
-                    </div>
-                    <h1 class="Activity-title">秩父＆長瀞撮影会を行いました！</h1>
-                </article>
-                <article class="Activity-2">
-                    <div class="Activity-info">
-                        <p class="Activity-date">2025/06/16 ~ 06/21</p>
-                        <a class="Activity-tag">#Others</a>
-                        <a class="Activity-tag">#News</a>
-                    </div>
-                    <h1 class="Activity-title">６月展を開催しました！</h1>
-                </article>
-                <article class="Activity-3">
-                    <div class="Activity-info">
-                        <p class="Activity-date">2025/06/20</p>
-                        <a class="Activity-tag">#News</a>
-                        <a class="Activity-tag">#Others</a>
-                    </div>
-                    <h1 class="Activity-title">今年の夏合宿は富山県＆石川県に決まり、２泊３日の予定です！</h1>
-                </article>
-            </div>
-            <a class="view-more-button" href="#">View more</a>
-        </div>
-        <div class="activity-table">
-            <table>
-                <tr>
-                    <td>
-                        <div class="activity-card" id="card-1" style={`background-image: url(${ACcard1.src});`}>
-                            <div class="activity-card-contents">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="78" height="59" viewBox="0 0 78 59" fill="none">
-                                    <path d="M38.875 52.5666C47.0972 52.5666 53.7626 45.8782 53.7626 37.6278C53.7626 29.3773 47.0972 22.689 38.875 22.689C30.6528 22.689 23.9875 29.3773 23.9875 37.6278C23.9875 45.8782 30.6528 52.5666 38.875 52.5666Z" stroke="white"/>
-                                    <path d="M38.875 57.6369C48.1795 57.6369 64.2629 57.6634 73.578 57.6104C76.1106 57.5821 76.6637 57.0237 76.6337 54.4063C76.6478 44.9709 76.6672 23.4295 76.6249 13.9021C76.5826 12.8329 76.5474 11.8185 75.658 11.2671C74.8831 10.7299 72.4649 10.6927 71.063 10.6821C68.8632 10.6627 65.9414 10.6786 63.4316 10.6715C61.2618 10.6645 59.4478 10.6185 58.2378 10.0866C54.1659 8.44123 57.4682 1.3138 52.262 1.1141C44.5849 0.925004 33.1616 1.01337 25.8526 1.07876C23.1931 1.13884 22.3478 2.57741 22.0501 4.87487C21.6961 7.91635 21.0814 10.2633 17.5749 10.5372C14.299 10.8076 10.4701 10.615 7.2013 10.6768C5.56865 10.7281 3.77397 10.5973 2.26637 11.1293C1.01767 11.6312 1.0617 12.9831 1.01239 14.2185C1.00358 25.4336 0.996536 46.8954 1.00182 57.6369" stroke="white"/>
-                                    <path d="M38.912 57.5644C28.6195 57.681 19.6918 49.2352 19.1617 38.9708C18.024 24.0762 34.051 13.2251 47.3658 19.7482C54.2205 23.0194 58.6975 29.9188 58.701 37.7072" stroke="white"/>
-                                    <path d="M14.7569 5.55347H7.37742C7.1965 5.55347 7.04984 5.70064 7.04984 5.88218V8.53133C7.04984 8.71287 7.1965 8.86004 7.37742 8.86004H14.7569C14.9378 8.86004 15.0845 8.71287 15.0845 8.53133V5.88218C15.0845 5.70064 14.9378 5.55347 14.7569 5.55347Z" stroke="white"/>
-                                    <path d="M5.05438 17.6223V52.6816" stroke="white"/>
-                                </svg>
-                                <h1>Scharade</h1>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="activity-card" id="card-2" style={`background-image: url(${ACcard2.src});`}>
-                            <div class="activity-card-contents">
-                                <h1>定例会</h1>
-                                <p>月に2回、E212の部室にて定例会を行なっています。<br>定例会ではカメラ講習、ボドゲ大会などを行なっています。</p>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="activity-card" id="card-3" style={`background-image: url(${ACcard3.src});`}>
-                            <div class="activity-card-contents">
-                                <h1>撮影会</h1>
-                                <p>月に2回、E212の部室にて定例会を行なっています。<br>定例会ではカメラ講習、ボドゲ大会などを行なっています。</p>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="activity-card" id="card-4" style={`background-image: url(${ACcard4.src});`}>
-                            <div class="activity-card-contents">
-                                <h1>展示</h1>
-                                <p>月に2回、E212の部室にて定例会を行なっています。<br>定例会ではカメラ講習、ボドゲ大会などを行なっています。</p>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <div class="activity-card" id="card-5" style={`background-image: url(${ACcard5.src});`}>
-                            <div class="activity-card-contents">
-                                <h1>夏合宿</h1>
-                                <p>月に2回、E212の部室にて定例会を行なっています。<br>定例会ではカメラ講習、ボドゲ大会などを行なっています。</p>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="activity-card" id="card-6" style={`background-image: url(${ACcard6.src});`}>
-                            <div class="activity-card-contents">
-                                <h1>春合宿</h1>
-                                <p>月に2回、E212の部室にて定例会を行なっています。<br>定例会ではカメラ講習、ボドゲ大会などを行なっています。</p>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="activity-card" id="card-7" style={`background-image: url(${ACcard7.src});`}>
-                            <div class="activity-card-contents">
-                                <h1>新歓</h1>
-                                <p>月に2回、E212の部室にて定例会を行なっています。<br>定例会ではカメラ講習、ボドゲ大会などを行なっています。</p>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="activity-card" id="card-8" style={`background-image: url(${ACcard8.src});`}>
-                            <div class="activity-card-contents">
-                                <h1>部室</h1>
-                                <p>月に2回、E212の部室にて定例会を行なっています。<br>定例会ではカメラ講習、ボドゲ大会などを行なっています。</p>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            </table>
-            <div class="click-popup-2">
-                <div class="arrow-line-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="66" height="61" viewBox="0 0 66 61" fill="none">
-                        <path d="M23.9242 4.29224C23.9242 4.29224 17.23 35.9631 45.7531 55.3713" stroke="black" stroke-width="0.5"/>
-                        <line x1="23.5433" y1="3.12574" x2="18.4461" y2="14.172" stroke="black" stroke-width="0.5"/>
-                        <line x1="23.5464" y1="2.92325" x2="28.4454" y2="14.4558" stroke="black" stroke-width="0.5"/>
-                    </svg>
-                </div>
-                <p>select!!</p>
-            </div>
-        </div>
-        <div class="activity-table-text">
-            <p>撮影依頼も承っております。御依頼はこちらから。</p>
-        </div>
+<div class="Activity">
+    <div class="tab">
+          {tabs.map((tab, index) => {
+            const inputId = `home-tab-${tab.slug}`;
+            return [
+              <input
+                type="radio"
+                id={inputId}
+                name="home-tab"
+                checked={index === 0}
+              />,
+              <label for={inputId}>
+                {tab.label}
+              </label>,
+              <div class="tab-panel">
+                {tab.posts.length ? (
+                  tab.posts.slice(0, tabPostLimit).map((post, postIndex) => (
+                    <article
+                      class={`Activity-item Activity-item-${postIndex + 1}`}
+                    >
+                      <div class="Activity-info">
+                        <p class="Activity-date">
+                          {formatDate(getPublishedDate(post))}
+                        </p>
+                        {normalizeTags(post.tags).map((tag) => (
+                          <span class="Activity-tag">
+                            #{tag.name}
+                          </span>
+                        ))}
+                      </div>
+                      <h2 class="Activity-title">
+                        <a href={`/posts/${post.slug}/`}>{post.title}</a>
+                      </h2>
+                      {post.excerpt ? (
+                        <p class="Activity-excerpt">{post.excerpt}</p>
+                      ) : null}
+                    </article>
+                  ))
+                ) : (
+                  <p class="Activity-empty">該当する記事はまだありません。</p>
+                )}
+              </div>,
+            ];
+          })}
+      <a class="view-more-button" href="/Activity">View more</a>
     </div>
+    <div class="activity-table">
+      <table>
+            {cardRows.map((row, rowIndex) => (
+              <tr>
+                {row.map((card, columnIndex) => {
+                  const slotIndex = rowIndex * 4 + columnIndex;
+                  return (
+                    <td>
+                      <div
+                        class="activity-card"
+                        id={`card-${slotIndex + 1}`}
+                        style={`background-image: url(${card.image});`}
+                      >
+                        <div class="activity-card-contents">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="78" height="59" viewBox="0 0 78 59" fill="none">
+                              <path d="M38.875 52.5666C47.0972 52.5666 53.7626 45.8782 53.7626 37.6278C53.7626 29.3773 47.0972 22.689 38.875 22.689C30.6528 22.689 23.9875 29.3773 23.9875 37.6278C23.9875 45.8782 30.6528 52.5666 38.875 52.5666Z" stroke="white"/>
+                              <path d="M38.875 57.6369C48.1795 57.6369 64.2629 57.6634 73.578 57.6104C76.1106 57.5821 76.6637 57.0237 76.6337 54.4063C76.6478 44.9709 76.6672 23.4295 76.6249 13.9021C76.5826 12.8329 76.5474 11.8185 75.658 11.2671C74.8831 10.7299 72.4649 10.6927 71.063 10.6821C68.8632 10.6627 65.9414 10.6786 63.4316 10.6715C61.2618 10.6645 59.4478 10.6185 58.2378 10.0866C54.1659 8.44123 57.4682 1.3138 52.262 1.1141C44.5849 0.925004 33.1616 1.01337 25.8526 1.07876C23.1931 1.13884 22.3478 2.57741 22.0501 4.87487C21.6961 7.91635 21.0814 10.2633 17.5749 10.5372C14.299 10.8076 10.4701 10.615 7.2013 10.6768C5.56865 10.7281 3.77397 10.5973 2.26637 11.1293C1.01767 11.6312 1.0617 12.9831 1.01239 14.2185C1.00358 25.4336 0.996536 46.8954 1.00182 57.6369" stroke="white"/>
+                              <path d="M38.912 57.5644C28.6195 57.681 19.6918 49.2352 19.1617 38.9708C18.024 24.0762 34.051 13.2251 47.3658 19.7482C54.2205 23.0194 58.6975 29.9188 58.701 37.7072" stroke="white"/>
+                          </svg>
+                          <h1>{card.title}</h1>
+                          {card.meta ? <p class="activity-card-meta">{card.meta}</p> : null}
+                          <p>{card.excerpt}</p>
+                        </div>
+                        {card.slug ? (
+                          <a
+                            class="activity-card-link"
+                            href={`/posts/${card.slug}/`}
+                            aria-label={`${card.title} の詳細ページ`}
+                          ></a>
+                        ) : null}
+                      </div>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+      </table>
+      <div class="click-popup-2">
+          <div class="arrow-line-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="66" height="61" viewBox="0 0 66 61" fill="none">
+                  <path d="M23.9242 4.29224C23.9242 4.29224 17.23 35.9631 45.7531 55.3713" stroke="black" stroke-width="0.5"/>
+                  <line x1="23.5433" y1="3.12574" x2="18.4461" y2="14.172" stroke="black" stroke-width="0.5"/>
+                  <line x1="23.5464" y1="2.92325" x2="28.4454" y2="14.4558" stroke="black" stroke-width="0.5"/>
+              </svg>
+          </div>
+          <p>select!!</p>
+      </div>
+    </div>
+    <div class="activity-table-text">
+        <p>撮影依頼も承っております。御依頼はこちらから。</p>
+    </div>
+</div>
     <div class="advertising">
         <h1>あなたの大学生活を、<br>あなたの目線で「写真」に残してみませんか？</h1>
         <div class="photo-carousel">
@@ -445,54 +362,54 @@ const ACcard8 = await getImage({src: backgroundCard8, format: 'webp'});
                 <ul>
                     <li>
                         <a href={ADphoto1.src} data-lightbox="carousel-contents-group1"><div class="photo-carousel-content">
-                            <img loading="lazy" src={ADphoto1.src} alt="width="90vw"" />
+                            <img loading="lazy" src={ADphoto1.src} alt="広告イメージ" />
                         </div></a>
                     </li>
                     <li>
                         <a href={ADphoto2.src} data-lightbox="carousel-contents-group1"><div class="photo-carousel-content">
-                            <img loading="lazy" src={ADphoto2.src} alt="width="90vw"" />
+                            <img loading="lazy" src={ADphoto2.src} alt="広告イメージ" />
                         </div></a>
                     </li>
                     <li>
                         <a href={ADphoto3.src} data-lightbox="carousel-contents-group1"><div class="photo-carousel-content">
-                            <img loading="lazy" src={ADphoto3.src} alt="width="90vw"" />
+                            <img loading="lazy" src={ADphoto3.src} alt="広告イメージ" />
                         </div></a>
                     </li>
                     <li>
                         <a href={ADphoto4.src} data-lightbox="carousel-contents-group1"><div class="photo-carousel-content">
-                            <img loading="lazy" src={ADphoto4.src} alt="width="90vw"" />
+                            <img loading="lazy" src={ADphoto4.src} alt="広告イメージ" />
                         </div></a>
                     </li>
                     <li>
                         <a href={ADphoto5.src} data-lightbox="carousel-contents-group1"><div class="photo-carousel-content">
-                            <img loading="lazy" src={ADphoto5.src} alt="width="90vw"" />
+                            <img loading="lazy" src={ADphoto5.src} alt="広告イメージ" />
                         </div></a>
                     </li>
                 </ul>
                 <ul>
                     <li>
                         <a href={ADphoto1.src} data-lightbox="carousel-contents-group2"><div class="photo-carousel-content">
-                            <img loading="lazy" src={ADphoto1.src} alt="width="90vw"" />
+                            <img loading="lazy" src={ADphoto1.src} alt="広告イメージ" />
                         </div></a>
                     </li>
                     <li>
                         <a href={ADphoto2.src} data-lightbox="carousel-contents-group2"><div class="photo-carousel-content">
-                            <img loading="lazy" src={ADphoto2.src} alt="width="90vw"" />
+                            <img loading="lazy" src={ADphoto2.src} alt="広告イメージ" />
                         </div></a>
                     </li>
                     <li>
                         <a href={ADphoto3.src} data-lightbox="carousel-contents-group2"><div class="photo-carousel-content">
-                            <img loading="lazy" src={ADphoto3.src} alt="width="90vw"" />
+                            <img loading="lazy" src={ADphoto3.src} alt="広告イメージ" />
                         </div></a>
                     </li>
                     <li>
                         <a href={ADphoto4.src} data-lightbox="carousel-contents-group2"><div class="photo-carousel-content">
-                            <img loading="lazy" src={ADphoto4.src} alt="width="90vw"" />
+                            <img loading="lazy" src={ADphoto4.src} alt="広告イメージ" />
                         </div></a>
                     </li>
                     <li>
                         <a href={ADphoto5.src} data-lightbox="carousel-contents-group2"><div class="photo-carousel-content">
-                            <img loading="lazy" src={ADphoto5.src} alt="width="90vw"" />
+                            <img loading="lazy" src={ADphoto5.src} alt="広告イメージ" />
                         </div></a>
                     </li>
                 </ul>
@@ -845,25 +762,19 @@ const ACcard8 = await getImage({src: backgroundCard8, format: 'webp'});
         opacity: .8;
     }
 
-    .tab input {
+    .tab > input {
         display: none;
     }
 
-    .tab > div {
+    .tab-panel {
         display: none;
         width: 100%;
-        /* height: 400px; */
         padding: 1.5em 1em;
         background-color: #fff;
         position: relative;
-        /* overflow-y: scroll; */
     }
 
-    #tab1:checked ~ label[for="tab1"],
-    #tab2:checked ~ label[for="tab2"],
-    #tab3:checked ~ label[for="tab3"],
-    #tab4:checked ~ label[for="tab4"],
-    #tab5:checked ~ label[for="tab5"] {
+    .tab > input:checked + label {
         background-color: #fff;
         border-color: #000000;
         border-style: solid;
@@ -872,20 +783,12 @@ const ACcard8 = await getImage({src: backgroundCard8, format: 'webp'});
         color: #000000;
     }
 
-    #tab1:checked ~ label[for="tab1"] + div,
-    #tab2:checked ~ label[for="tab2"] + div,
-    #tab3:checked ~ label[for="tab3"] + div,
-    #tab4:checked ~ label[for="tab4"] + div,
-    #tab5:checked ~ label[for="tab5"] + div {
+    .tab > input:checked + label + .tab-panel {
         display: block;
         background-color: #fff;
     }
 
-    #tab1:checked ~ label[for="tab1"] + div::after,
-    #tab2:checked ~ label[for="tab2"] + div::after,
-    #tab3:checked ~ label[for="tab3"] + div::after,
-    #tab4:checked ~ label[for="tab4"] + div::after,
-    #tab5:checked ~ label[for="tab5"] + div::after {
+    .tab > input:checked + label + .tab-panel::after {
         content: '';
         display: block;
         width: 78.5%;
@@ -896,22 +799,16 @@ const ACcard8 = await getImage({src: backgroundCard8, format: 'webp'});
         left: 0;
     }
 
-    .Activity article {
+    .Activity-item {
         width: 100%;
-        height: 100px;
         display: flex;
         flex-direction: column;
         justify-content: center;
-        padding: 0 50px;
+        padding: 24px 50px;
         position: relative;
     }
 
-    .Activity-1,
-    .Activity-2 {
-        margin-bottom: 25px;
-    }
-
-    .Activity-1::after {
+    .Activity-item:not(:last-child)::after {
         content: '';
         display: block;
         width: 200px;
@@ -919,19 +816,7 @@ const ACcard8 = await getImage({src: backgroundCard8, format: 'webp'});
         background: #000;
         margin-top: 12px;
         position: absolute;
-        top: 100%;
-        left: calc(50% - 100px);
-    }
-
-    .Activity-2::after {
-        content: '';
-        display: block;
-        width: 200px;
-        height: 1px;
-        background: #000;
-        margin-top: 12px;
-        position: absolute;
-        top: 100%;
+        top: calc(100% - 12px);
         left: calc(50% - 100px);
     }
 
@@ -941,7 +826,7 @@ const ACcard8 = await getImage({src: backgroundCard8, format: 'webp'});
         align-items: center;
     }
 
-    .Activity-info p {
+    .Activity-date {
         color: #000;
         font-family: "Grandiflora One";
         font-size: 20px;
@@ -953,7 +838,7 @@ const ACcard8 = await getImage({src: backgroundCard8, format: 'webp'});
         margin: 0 45px 0 0;
     }
 
-    .Activity-info a {
+    .Activity-tag {
         color: #000;
         font-family: "Grandiflora One";
         font-size: 15px;
@@ -963,27 +848,25 @@ const ACcard8 = await getImage({src: backgroundCard8, format: 'webp'});
         line-height: normal;
         letter-spacing: 2.25px;
         margin-right: 25px;
-        text-decoration: none;
         position: relative;
-        cursor: pointer;
     }
 
-    .Activity-info a::after {
+    .Activity-tag::after {
         position: absolute;
-        left: 0; /* aタグの左端からアンダーラインを引く */
-        right: 0; /* aタグの右端からアンダーラインを引く */
+        left: 0;
+        right: 0;
         content: '';
         width: 100%;
         height: 0.5px;
         background: #b6b6b6;
         bottom: 0;
         transform: scale(0, 1);
-        transform-origin: center top; /*変形（アンダーラインの伸長）の原点がaタグ（各メニュー）の右端*/
+        transform-origin: center top;
         transition: transform 0.3s;
     }
 
-    .Activity-info a:hover::after {
-        transform: scale(1, 1); /* アンダーラインを表示 */
+    .Activity-tag:hover::after {
+        transform: scale(1, 1);
     }
 
     .Activity-title {
@@ -994,6 +877,32 @@ const ACcard8 = await getImage({src: backgroundCard8, format: 'webp'});
         font-weight: 400;
         line-height: normal;
         letter-spacing: 3px;
+        margin: 12px 0 0;
+    }
+
+    .Activity-title a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .Activity-title a:hover {
+        opacity: 0.8;
+    }
+
+    .Activity-excerpt {
+        margin: 16px 0 0;
+        font-family: "Zen Old Mincho";
+        font-size: 15px;
+        line-height: 1.7;
+        letter-spacing: 0.5px;
+        color: #333;
+    }
+
+    .Activity-empty {
+        padding: 24px 50px;
+        font-family: "Zen Old Mincho";
+        font-size: 15px;
+        color: #555;
     }
 
     .view-more-button {
@@ -1123,6 +1032,7 @@ const ACcard8 = await getImage({src: backgroundCard8, format: 'webp'});
         flex-direction: column;
         align-items: center;
         justify-content: center;
+        z-index: 2;
     }
 
     .activity-card h1 {
@@ -1163,6 +1073,21 @@ const ACcard8 = await getImage({src: backgroundCard8, format: 'webp'});
         transition: 
             opacity 0.3s ease,
             position 0.1s ease-in-out 0.3s;
+    }
+
+    .activity-card-meta {
+        color: #ffffff;
+        font-family: "Zen Old Mincho";
+        font-size: 14px;
+        letter-spacing: 1.5px;
+        margin: 12px 0 8px;
+    }
+
+    .activity-card-link {
+        position: absolute;
+        inset: 0;
+        border-radius: 10px;
+        z-index: 3;
     }
 
     #card-1 h1 {
