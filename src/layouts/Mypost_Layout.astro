@@ -1,12 +1,14 @@
 ---
 import Layout from './Layout.astro';
 import '../styles/UA+reset.css';
-const { title } = Astro.props
+const { title } = Astro.props;
+const url = new URL(Astro.request.url);
+const from = url.searchParams.get("from");
 ---
 <Layout>
 <Fragment slot="main-slot">
     <div class = "section-title"> 
-        <h1>Activity</h1>
+        <h1>{ from }</h1>
         <div class = "section-title-line"></div>
     </div>
 </Fragment>
@@ -27,6 +29,7 @@ const { title } = Astro.props
 		margin: 0;
 		scroll-behavior: smooth;
 	}
+
 
 	body {
 		margin: 0;
