@@ -18,11 +18,11 @@ const pathname = Astro.url.pathname;
         </div>
     </div></a>
     <div class="header-nav" id="header-nav">
-        <a class:list={['link', {active: /^\/About_us\/?$/.test(pathname)}]} href="About_us">About us</a>
-        <a class:list={['link', {active: /^\/Activity\/?$/.test(pathname)}]} href="Activity">Activity</a>
-        <a class:list={['link', {active: /^\/Gallery\/?$/.test(pathname)}]} href="Gallery">Gallery</a>
-        <a class:list={['link', {active: /^\/Portfolio\/?$/.test(pathname)}]} href="Portfolio">Portfolio</a>
-        <a class:list={['link', {active: /^\/Contact\/?$/.test(pathname)}]} href="Contact">Contact</a>
+        <a class:list={['link', {active: /^\/About_us\/?$/.test(pathname)}]} href="/About_us">About us</a>
+        <a class:list={['link', {active: /^\/Activity\/?$/.test(pathname)}]} href="/Activity">Activity</a>
+        <a class:list={['link', {active: /^\/Gallery\/?$/.test(pathname)}]} href="/Gallery">Gallery</a>
+        <a class:list={['link', {active: /^\/Portfolio\/?$/.test(pathname)}]} href="/Portfolio">Portfolio</a>
+        <a class:list={['link', {active: /^\/Contact\/?$/.test(pathname)}]} href="/Contact">Contact</a>
     </div>
     <div class="hamburger-menu" id="hamburger-menu">
         <nav>
@@ -50,18 +50,18 @@ const pathname = Astro.url.pathname;
                     </div>
                 </div>
                 <ul>
-                    <li><a class:list={['link', {active: /^\/About_us\/?$/.test(pathname)}]} href="About_us">About&nbsp;us</a></li>
-                    <li><a class:list={['link', {active: /^\/Activity\/?$/.test(pathname)}]} href="Activity">Activity</a></li>
-                    <li><a class:list={['link', {active: /^\/Gallery\/?$/.test(pathname)}]} href="Gallery">Gallery</a></li>
-                    <li><a class:list={['link', {active: /^\/Portfolio\/?$/.test(pathname)}]} href="Portfolio">Portfolio</a></li>
-                    <li><a class:list={['link', {active: /^\/Contact\/?$/.test(pathname)}]} href="Contact">Contact</a></li>
-                    <li><a class:list={['link', {active: /^\/Disclaimer\/?$/.test(pathname)}]} href="Disclaimer">Disclaimer</a></li>
+                    <li><a class:list={['link', {active: /^\/About_us\/?$/.test(pathname)}]} href="/About_us">About&nbsp;us</a></li>
+                    <li><a class:list={['link', {active: /^\/Activity\/?$/.test(pathname)}]} href="/Activity">Activity</a></li>
+                    <li><a class:list={['link', {active: /^\/Gallery\/?$/.test(pathname)}]} href="/Gallery">Gallery</a></li>
+                    <li><a class:list={['link', {active: /^\/Portfolio\/?$/.test(pathname)}]} href="/Portfolio">Portfolio</a></li>
+                    <li><a class:list={['link', {active: /^\/Contact\/?$/.test(pathname)}]} href="/Contact">Contact</a></li>
+                    <li><a class:list={['link', {active: /^\/Disclaimer\/?$/.test(pathname)}]} href="/Disclaimer">Disclaimer</a></li>
                 </ul>
                 <div class="member-area">
                     <p>Member&nbsp;only</p>
                     <div class="member-buttons">
-                        <a href="Login" id="none-underline">Log&nbsp;in</a>
-                        <a href="Signup" id="none-underline">Sign&nbsp;up</a>
+                        <a href="/Login" id="none-underline">Log&nbsp;in</a>
+                        <a href="/Signup" id="none-underline">Sign&nbsp;up</a>
                     </div>
                 </div>
             </div>
