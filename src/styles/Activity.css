@@ -62,11 +62,11 @@
     opacity: .8;
 }
 
-.tab input {
+.tab > input {
     display: none;
 }
 
-.tab > div {
+.tab-panel {
     display: none;
     width: 100%;
     padding: 1.5em 1em;
@@ -74,11 +74,7 @@
     position: relative;
 }
 
-#tab1:checked ~ label[for="tab1"],
-#tab2:checked ~ label[for="tab2"],
-#tab3:checked ~ label[for="tab3"],
-#tab4:checked ~ label[for="tab4"],
-#tab5:checked ~ label[for="tab5"] {
+.tab > input:checked + label {
     background-color: #fff;
     border-color: #000000;
     border-style: solid;
@@ -87,20 +83,12 @@
     color: #000000;
 }
 
-#tab1:checked ~ label[for="tab1"] + div,
-#tab2:checked ~ label[for="tab2"] + div,
-#tab3:checked ~ label[for="tab3"] + div,
-#tab4:checked ~ label[for="tab4"] + div,
-#tab5:checked ~ label[for="tab5"] + div {
+.tab > input:checked + label + .tab-panel {
     display: block;
     background-color: #fff;
 }
 
-#tab1:checked ~ label[for="tab1"] + div::after,
-#tab2:checked ~ label[for="tab2"] + div::after,
-#tab3:checked ~ label[for="tab3"] + div::after,
-#tab4:checked ~ label[for="tab4"] + div::after,
-#tab5:checked ~ label[for="tab5"] + div::after {
+.tab > input:checked + label + .tab-panel::after {
     content: '';
     display: block;
     width: 100%;
@@ -111,22 +99,16 @@
     left: 0;
 }
 
-.tab article {
+.Activity-item {
     width: 100%;
-    height: 100px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 0 50px;
+    padding: 24px 50px 24px;
     position: relative;
 }
 
-.Activity-1,
-.Activity-2 {
-    margin-bottom: 25px;
-}
-
-.Activity-1::after {
+.Activity-item:not(:last-child)::after {
     content: '';
     display: block;
     width: 200px;
@@ -134,19 +116,7 @@
     background: #000;
     margin-top: 12px;
     position: absolute;
-    top: 100%;
-    left: calc(50% - 100px);
-}
-
-.Activity-2::after {
-    content: '';
-    display: block;
-    width: 200px;
-    height: 1px;
-    background: #000;
-    margin-top: 12px;
-    position: absolute;
-    top: 100%;
+    top: calc(100% - 12px);
     left: calc(50% - 100px);
 }
 
@@ -156,7 +126,7 @@
     align-items: center;
 }
 
-.Activity-info p {
+.Activity-date {
     color: #000;
     font-family: "Grandiflora One";
     font-size: 20px;
@@ -168,7 +138,7 @@
     margin: 0 45px 0 0;
 }
 
-.Activity-info a {
+.Activity-info .Activity-tag {
     color: #000;
     font-family: "Grandiflora One";
     font-size: 15px;
@@ -178,12 +148,10 @@
     line-height: normal;
     letter-spacing: 2.25px;
     margin-right: 25px;
-    text-decoration: none;
     position: relative;
-    cursor: pointer;
 }
 
-.Activity-info a::after {
+.Activity-info .Activity-tag::after {
     position: absolute;
     left: 0; /* aタグの左端からアンダーラインを引く */
     right: 0; /* aタグの右端からアンダーラインを引く */
@@ -197,7 +165,7 @@
     transition: transform 0.3s;
 }
 
-.Activity-info a:hover::after {
+.Activity-info .Activity-tag:hover::after {
     transform: scale(1, 1); /* アンダーラインを表示 */
 }
 
@@ -209,4 +177,29 @@
     font-weight: 400;
     line-height: normal;
     letter-spacing: 3px;
+}
+
+.Activity-title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.Activity-title a:hover {
+    opacity: 0.8;
+}
+
+.Activity-excerpt {
+    margin: 16px 0 0;
+    font-family: "Zen Old Mincho";
+    font-size: 15px;
+    line-height: 1.7;
+    letter-spacing: 0.5px;
+    color: #333;
+}
+
+.Activity-empty {
+    padding: 24px 50px;
+    font-family: "Zen Old Mincho";
+    font-size: 15px;
+    color: #555;
 }
