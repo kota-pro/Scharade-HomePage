@@ -4,6 +4,7 @@ import "../styles/UA+reset.css";
 import { microcmsClient } from "../lib/microcms";
 import type { Blog, Tag } from "../types/microcms";
 import { buildTabs, formatDate, getPublishedDate, normalizeTags } from "../utils/blog";
+import { linkToPost } from "../utils/linkToPost";
 
 import MainPhoto1 from "../assets/header/Photo1.jpeg";
 import MainPhoto2 from "../assets/header/Photo2.jpg";
@@ -34,55 +35,56 @@ import backgroundCard8 from '../assets/activity/Photo8.jpeg';
 const ACcard8 = await getImage({src: backgroundCard8, format: 'webp'});
 
 const fallbackCardImages = [
-    ACcard1.src,
-    ACcard2.src,
-    ACcard3.src,
-    ACcard4.src,
-    ACcard5.src,
-    ACcard6.src,
-    ACcard7.src,
-    ACcard8.src,
+  ACcard1.src,
+  ACcard2.src,
+  ACcard3.src,
+  ACcard4.src,
+  ACcard5.src,
+  ACcard6.src,
+  ACcard7.src,
+  ACcard8.src,
 ];
 
 const { contents: posts } = await microcmsClient.getList<Blog>({
-    endpoint: "blog",
-    queries: {
-        limit: 100,
-        orders: "-publishedAt",
-        depth: 2,
-    },
+  endpoint: "blog",
+  queries: {
+    limit: 100,
+    orders: "-publishedAt",
+    depth: 2,
+  },
 });
 
 const { contents: tags } = await microcmsClient.getList<Tag>({
-    endpoint: "blog-tags",
-    queries: {
-        limit: 100,
-        orders: "name",
-    },
+  endpoint: "blog-tags",
+  queries: {
+    limit: 100,
+    orders: "name",
+  },
 });
 
 const tabs = buildTabs(posts, tags);
 const tabPostLimit = 3;
 
 const cardSlots = fallbackCardImages.map((fallback, index) => {
-    const post = posts[index];
-    const image = post?.pictures?.[0]?.url ?? fallback;
-    const tagsText = normalizeTags(post?.tags).map((tag) => `#${tag.name}`).join("  ");
-    const meta = post
-    ? [formatDate(getPublishedDate(post)), tagsText].filter(Boolean).join(" ｜ "): "";
-    return {
-        post,
-        image,
-        title: post?.title ?? "記事準備中",
-        meta,
-        excerpt: post?.excerpt ?? "近日公開予定の記事です。",
-        slug: post?.slug ?? null,
-    };
+  const post = posts[index];
+  const image = post?.pictures?.[0]?.url ?? fallback;
+  const tagsText = normalizeTags(post?.tags).map((tag) => `#${tag.name}`).join("  ");
+  const meta = post
+    ? [formatDate(getPublishedDate(post)), tagsText].filter(Boolean).join(" ｜ ")
+    : "";
+  return {
+    post,
+    image,
+    title: post?.title ?? "記事準備中",
+    meta,
+    excerpt: post?.excerpt ?? "近日公開予定の記事です。",
+    slug: post?.slug ?? null,
+  };
 });
 
 const cardRows = [];
 for (let i = 0; i < cardSlots.length; i += 4) {
-    cardRows.push(cardSlots.slice(i, i + 4));
+  cardRows.push(cardSlots.slice(i, i + 4));
 }
 ---
 
@@ -150,7 +152,7 @@ for (let i = 0; i < cardSlots.length; i += 4) {
                         ))}
                       </div>
                       <h2 class="Activity-title">
-                        <a href={`/posts/${post.slug}/`}>{post.title}</a>
+                        <a href={linkToPost(post.slug, "activity")}>{post.title}</a>
                       </h2>
                       {post.excerpt ? (
                         <p class="Activity-excerpt">{post.excerpt}</p>
@@ -191,7 +193,7 @@ for (let i = 0; i < cardSlots.length; i += 4) {
                         {card.slug ? (
                           <a
                             class="activity-card-link"
-                            href={`/posts/${card.slug}/`}
+                            href={linkToPost(card.slug, "activity")}
                             aria-label={`${card.title} の詳細ページ`}
                           ></a>
                         ) : null}
