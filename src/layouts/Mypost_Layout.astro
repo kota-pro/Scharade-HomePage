@@ -28,6 +28,32 @@ const { title } = Astro.props
 		scroll-behavior: smooth;
 	}
 
+	body {
+		margin: 0;
+		padding-top: 120px;
+		background-color: #fdfdfd;
+	}
+
+	.container {
+		display: flex;
+		flex-direction: row;
+	}
+
+	.body-contents {
+		flex: 11 1 calc(100vw / 12);
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		padding-left: 120px;
+	}
+	.menu-contents {
+		flex: 1 1 auto;
+		display: flex;
+		flex-direction: column;
+		/* justify-content: center; */
+		/* align-items: flex-start; */
+	}
+
     .post-title {
         color: #000;
         font-family: "Zen Old Mincho";
