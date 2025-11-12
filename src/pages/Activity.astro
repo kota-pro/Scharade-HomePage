@@ -5,6 +5,7 @@ import "../styles/Activity.css";
 import { microcmsClient } from "../lib/microcms";
 import type { Blog, Tag } from "../types/microcms";
 import { buildTabs, formatDate, getPublishedDate, normalizeTags } from "../utils/blog";
+import { linkToPost } from "../utils/linkToPost";
 
 const { contents: posts } = await microcmsClient.getList<Blog>({
   endpoint: "blog",
@@ -54,7 +55,7 @@ const tabs = buildTabs(posts, tags);
                     ))}
                   </div>
                   <h2 class="Activity-title">
-                    <a href={`/posts/${post.slug}/`}>{post.title}</a>
+                    <a href={linkToPost(post.slug, "activity")}>{post.title}</a>
                   </h2>
                   {post.excerpt ? (
                     <p class="Activity-excerpt">{post.excerpt}</p>
