@@ -15,7 +15,11 @@
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
     "astro": "^5.13.2",
+<<<<<<< HEAD
     "microcms-js-sdk": "^3.2.0",
+=======
+    "express": "^5.1.0",
+>>>>>>> 187ca522f7e934b3d58c53ade0f2df36e63a2017
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "typescript": "^5.9.2"
