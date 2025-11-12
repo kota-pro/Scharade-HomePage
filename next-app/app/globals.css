@@ -1,0 +1,20 @@
+:root {
+  font-family: 'Zen Old Mincho', serif;
+  color: #111;
+  background-color: #fffef9;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  line-height: 1.7;
+  background-color: #fffef9;
+}
+
+a {
+  color: inherit;
+}
