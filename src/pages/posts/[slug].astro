@@ -32,23 +32,40 @@ const post = await microcmsClient.getListDetail<Blog>({
 
 const formattedDate = formatDate(getPublishedDate(post));
 const postTags = normalizeTags(post.tags);
+
+const backLinkMap = {
+  activity: { href: "/Activity", label: "◀︎ Activityへ戻る" },
+  gallery: { href: "/Gallery", label: "◀︎ Galleryへ戻る" },
+} as const;
+type BackLinkMap = typeof backLinkMap;
+type FromParam = keyof BackLinkMap;
+const isFromParam = (value: string | null): value is FromParam =>
+  value === "activity" || value === "gallery";
+const fromParam = Astro.url.searchParams.get("from");
+const backLink = isFromParam(fromParam) ? backLinkMap[fromParam] : null;
+const backLinkMapJSON = JSON.stringify(backLinkMap);
 ---
 
 <MypostLayout title={post.title}>
-  <div class="post-header">
-    <h1 class="post-title">これはテストです。</h1>
-    <div class="post-meta">
-      {formattedDate ? <p class="post-date">{formattedDate}</p> : null}
-      {
-        normalizeTags(post.tags).length ? (
-          <ul class="post-tags">
-            {normalizeTags(post.tags).map((tag) => (
-              <li class="post-tag">#{tag.name}</li>
-            ))}
-          </ul>
-        ) : null
-      }
-    </div>
+  <div
+    class="back-link"
+    id="post-back-link"
+    data-map={backLinkMapJSON}
+    hidden={!backLink}
+  >
+    {backLink ? <a href={backLink.href}>{backLink.label}</a> : null}
+  </div>
+  <div class="post-meta">
+    {formattedDate ? <p class="post-date">{formattedDate}</p> : null}
+    {
+      normalizeTags(post.tags).length ? (
+        <ul class="post-tags">
+          {normalizeTags(post.tags).map((tag) => (
+            <li class="post-tag">#{tag.name}</li>
+          ))}
+        </ul>
+      ) : null
+    }
   </div>
 
   {
@@ -169,3 +186,28 @@ const postTags = normalizeTags(post.tags);
     line-height: 1.7;
   }
 </style>
+
+<script type="module">
+  const container = document.getElementById("post-back-link");
+  if (container) {
+    try {
+      const map = JSON.parse(container.dataset.map ?? "{}");
+      const params = new URLSearchParams(window.location.search);
+      const from = params.get("from");
+      const link = from && map[from];
+      if (link) {
+        if (!container.querySelector("a")) {
+          const anchor = document.createElement("a");
+          anchor.href = link.href;
+          anchor.textContent = link.label;
+          container.appendChild(anchor);
+        }
+        container.hidden = false;
+      } else {
+        container.hidden = true;
+      }
+    } catch (error) {
+      console.error("Failed to render back link", error);
+    }
+  }
+</script>
