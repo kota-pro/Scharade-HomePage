@@ -1,3 +1,8 @@
+.a-anchor {
+    padding-top: 130px;
+    margin-top: -130px;
+}
+
 .section-title {
     display: flex;
     flex-direction: row;
@@ -33,6 +38,48 @@
     right: 0;
 }
 
+.menu-contents-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.page-top-nav {
+    width: 50px;
+    height: 50px;
+    background-color: #fff;
+    border: 1px solid #000;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: sticky;
+    bottom: 50px;
+    z-index: 5;
+    transition: all 0.3s;
+}
+
+.page-top-nav svg {
+    width: 32px;
+    height: 32px;
+    rotate: 90deg;
+    transition: all 0.3s;
+}
+
+.page-top-nav:hover {
+    background-color: #707070;
+    box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
+}
+
+.page-top-nav:hover svg {
+    filter: invert(100%) sepia(2%) saturate(1%) hue-rotate(267deg) brightness(101%) contrast(101%);
+}
+
 .tab {
     display: flex;
     flex-wrap: wrap;
@@ -59,7 +106,7 @@
 }
 
 .tab > label:hover {
-    opacity: .8;
+    color: #0db49b;
 }
 
 .tab > input {
@@ -99,6 +146,93 @@
     left: 0;
 }
 
+.panel-top {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-bottom: 24px;
+    padding: 0 9px;
+    gap: 10px;
+}
+
+.panel-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 24px;
+    padding: 0 9px;
+    gap: 10px;
+}
+
+.tab-posts-navigation {
+    text-decoration: none;
+    width: 20px;
+    height: 20px;
+}
+
+.tab-posts-double-navigation {
+    text-decoration: none;
+    width: 26px;
+    height: 20px;
+}
+
+.tab-posts-navigation:hover {
+    filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg) brightness(100%) contrast(90%);
+}
+
+.tab-posts-double-navigation:hover {
+    filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg) brightness(100%) contrast(90%);
+}
+
+.tab-posts-navigation img {
+    width: 20px;
+    height: 20px;
+}
+
+.tab-posts-double-navigation img {
+    width: 26px;
+    height: 20px;
+}
+
+.tab-panel-number p,
+.tab-panel-number a,
+.tab-panel-number input {
+    color: #000;
+    font-family: "Grandiflora One";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
+    text-align: center;
+    cursor: default;
+}
+
+.tab-posts-number {
+    text-decoration: none;
+    cursor: pointer !important;
+}
+
+.tab-posts-number:hover {
+    color: #0db49b;
+}
+
+.tab-panel-number input {
+    width: 40px;
+    text-align: center;
+    border: none;
+    background: none;
+    outline: none;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: text !important;
+}
+
+.tab-panel-number input:focus {
+    width: 80px;
+    border-bottom: 1px solid #0db49b;
+    color: #0db49b;
+}
+
 .Activity-item {
     width: 100%;
     display: flex;
@@ -108,16 +242,26 @@
     position: relative;
 }
 
-.Activity-item:not(:last-child)::after {
+.Activity-item:not(:nth-last-child(2))::after{
     content: '';
     display: block;
-    width: 200px;
+    width: 30%;
     height: 1px;
     background: #000;
     margin-top: 12px;
     position: absolute;
     top: calc(100% - 12px);
-    left: calc(50% - 100px);
+    left: 35%;
+    z-index: 3 !important;
+}
+
+.Activity-item:hover {
+    background-color: #f0f0f0;
+}
+
+.Activity-item a {
+    color: inherit;
+    text-decoration: none;
 }
 
 .Activity-info {
@@ -171,26 +315,24 @@
 
 .Activity-title {
     color: #000;
-    font-family: "Zen Kurenaido";
-    font-size: 20px;
+    font-family: "Zen Old Mincho";
+    font-size: 25px;
     font-style: normal;
     font-weight: 400;
     line-height: normal;
     letter-spacing: 3px;
+    margin: 12px 0px;
 }
 
-.Activity-title a {
-    color: inherit;
-    text-decoration: none;
-}
-
-.Activity-title a:hover {
-    opacity: 0.8;
+.Activity-excerpt-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .Activity-excerpt {
-    margin: 16px 0 0;
-    font-family: "Zen Old Mincho";
+    margin: 0px;
+    font-family: "Zen Kurenaido";
     font-size: 15px;
     line-height: 1.7;
     letter-spacing: 0.5px;
