@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_レイヤー_2" data-name="レイヤー 2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 121.31 24.45">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+      }
+
+      .cls-2 {
+        fill: #231815;
+      }
+
+      .cls-3 {
+        opacity: .91;
+      }
+
+      .cls-4 {
+        fill: url(#_メキシコ_階段_);
+        opacity: .75;
+      }
+    </style>
+    <pattern id="_メキシコ_階段_" data-name="メキシコ (階段)" x="0" y="0" width="48" height="60" patternTransform="translate(-568.48 402.03)" patternUnits="userSpaceOnUse" viewBox="0 0 48 60">
+      <g>
+        <rect class="cls-1" width="48" height="60"/>
+        <path class="cls-1" d="M24,36v24H0v-6h6v-6h6v-6h6v-6h6ZM21,42l-15,15h15v-15Z"/>
+        <path class="cls-1" d="M24,30h24v24h-6v-6h-6v-6h-6v-6h-6v-6ZM30,33l15,15v-15h-15Z"/>
+        <path class="cls-1" d="M24,30H0v-6h6v-6h6v-6h6v-6h6v24ZM21,12l-15,15h15v-15Z"/>
+        <path class="cls-1" d="M48,0v24h-6v-6h-6v-6h-6v-6h-6V0h24ZM45,3h-15l15,15V3Z"/>
+        <path class="cls-2" d="M42,54h6v6h-24v-24h6v6h6v6h6v6ZM42,57l-15-15v15h15Z"/>
+        <path class="cls-2" d="M42,24h6v6h-24V6h6v6h6v6h6v6ZM42,27l-15-15v15h15Z"/>
+        <path class="cls-2" d="M6,24H0V0h24v6h-6v6h-6v6h-6v6ZM3,18L18,3H3v15Z"/>
+        <path class="cls-2" d="M6,54H0v-24h24v6h-6v6h-6v6h-6v6ZM3,48l15-15H3v15Z"/>
+        <polygon class="cls-2" points="21 57 21 42 6 57 21 57"/>
+        <polygon class="cls-2" points="45 33 30 33 45 48 45 33"/>
+        <polygon class="cls-2" points="21 27 21 12 6 27 21 27"/>
+        <polygon class="cls-2" points="45 18 45 3 30 3 45 18"/>
+        <polygon class="cls-1" points="3 33 3 48 18 33 3 33"/>
+        <polygon class="cls-1" points="27 57 42 57 27 42 27 57"/>
+        <polygon class="cls-1" points="3 3 3 18 18 3 3 3"/>
+        <polygon class="cls-1" points="27 27 42 27 27 12 27 27"/>
+      </g>
+    </pattern>
+  </defs>
+  <g id="_レイヤー_1-2" data-name="レイヤー 1">
+    <g class="cls-3">
+      <path class="cls-4" d="M12.98.03h108.33c-.87,1.57-.91,3.48-2.52,4.88-.55.48-.95.11-1.4.75.05-.07-.03,1.14-.03,1.22-.06,1.01,0,1.76.33,2.71-1.32.14-.19,1.34-.32,1.99-.16.74-1.38,1.51-1.71,2.25-.89,1.99.58,3.11,2.96,3.22,1.05,1.37-3.01,2.64.55,3.38-.79.33-2.07.77-1.73,1.76.75.46,1.82.79,2.47,1.29-.31.43.05.46.34.84l-120.25.14c.41-1.01,0-2.2.13-3.2.12-.99.58-2.09.58-3.11,0-.56-.21-.78-.18-1.29.03-.5.36-.94.35-1.51,0-1.09-.64-2.05,0-3.09.63-1.03,2.34-2.17,3.53-2.82.97-.52,2.67-.77,2.89-1.93.18-.96-1.25-2.03-.87-3.09.1-.27.92-1.01,1.17-1.29.64-.73,1.21-1.41,2.35-1.83.62-.23,1.25-.33,1.79-.55.7-.28.64-.89,2.12-.71"/>
+    </g>
+  </g>
+</svg>

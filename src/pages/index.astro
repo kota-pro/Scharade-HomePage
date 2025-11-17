@@ -123,49 +123,52 @@ for (let i = 0; i < cardSlots.length; i += 4) {
     </div>
 <div class="Activity">
     <div class="tab">
-          {tabs.map((tab, index) => {
+        {tabs.map((tab, index) => {
             const inputId = `home-tab-${tab.slug}`;
             return [
-              <input
-                type="radio"
-                id={inputId}
-                name="home-tab"
-                checked={index === 0}
-              />,
-              <label for={inputId}>
-                {tab.label}
-              </label>,
-              <div class="tab-panel">
-                {tab.posts.length ? (
-                  tab.posts.slice(0, tabPostLimit).map((post, postIndex) => (
-                    <article
-                      class={`Activity-item Activity-item-${postIndex + 1}`}
-                    >
-                      <div class="Activity-info">
-                        <p class="Activity-date">
-                          {formatDate(getPublishedDate(post))}
-                        </p>
-                        {normalizeTags(post.tags).map((tag) => (
-                          <span class="Activity-tag">
-                            #{tag.name}
-                          </span>
-                        ))}
-                      </div>
-                      <h2 class="Activity-title">
-                        <a href={linkToPost(post.slug, "activity")}>{post.title}</a>
-                      </h2>
-                      {post.excerpt ? (
-                        <p class="Activity-excerpt">{post.excerpt}</p>
-                      ) : null}
-                    </article>
-                  ))
-                ) : (
-                  <p class="Activity-empty">該当する記事はまだありません。</p>
-                )}
-              </div>,
+                <input
+                    type="radio"
+                    id={inputId}
+                    name="home-tab"
+                    checked={index === 0}
+                />,
+                <label for={inputId}>
+                    {tab.label}
+                </label>,
+                <div class="tab-panel">
+                    {tab.posts.length ? (
+                        tab.posts.slice(0, tabPostLimit).map((post, postIndex) => (
+                            <article
+                                class={`Activity-item Activity-item-${postIndex + 1}`}
+                            >
+                                <a href={linkToPost(post.slug, "activity")}>
+                                    <div class="Activity-info">
+                                    <p class="Activity-date">
+                                        {formatDate(getPublishedDate(post))}
+                                    </p>
+                                        {normalizeTags(post.tags).map((tag) => (
+                                            <span class="Activity-tag">
+                                                #{tag.name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <h2 class="Activity-title">{post.title}</h2>
+                                    <div class="Activity-excerpt-container">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 25 25"><path fill="currentColor" d="m14 20l-.713-.713l3.792-3.787H6V5h1v9.5h10.079l-3.792-3.792l.707-.714L19 15z"/></svg>
+                                        {post.excerpt ? (
+                                            <p class="Activity-excerpt">{post.excerpt}</p>
+                                        ) : null}
+                                    </div>
+                                </a>
+                            </article>
+                        ))
+                    ) : (
+                        <p class="Activity-empty">該当する記事はまだありません。</p>
+                    )}
+                </div>,
             ];
-          })}
-      <a class="view-more-button" href="/Activity">View more</a>
+        })}
+        <a class="view-more-button" href="/Activity">View more</a>
     </div>
     <div class="activity-table">
       <table>
@@ -216,7 +219,7 @@ for (let i = 0; i < cardSlots.length; i += 4) {
       </div>
     </div>
     <div class="activity-table-text">
-        <p>撮影依頼も承っております。御依頼はこちらから。</p>
+        <p>撮影依頼も承っております。御依頼は<a href="Contact">こちら</a>から。</p>
     </div>
 </div>
     <div class="advertising">
@@ -761,7 +764,7 @@ for (let i = 0; i < cardSlots.length; i += 4) {
     }
 
     .tab > label:hover {
-        opacity: .8;
+        color: #0db49b;
     }
 
     .tab > input {
@@ -813,13 +816,23 @@ for (let i = 0; i < cardSlots.length; i += 4) {
     .Activity-item:not(:last-child)::after {
         content: '';
         display: block;
-        width: 200px;
+        width: 30%;
         height: 1px;
         background: #000;
         margin-top: 12px;
         position: absolute;
         top: calc(100% - 12px);
-        left: calc(50% - 100px);
+        left: 35%;
+        z-index: 3 !important;
+    }
+
+    .Activity-item:hover {
+        background-color: #f0f0f0;
+    }
+
+    .Activity-item a {
+        text-decoration: none;
+        color: inherit;
     }
 
     .Activity-info {
@@ -873,27 +886,24 @@ for (let i = 0; i < cardSlots.length; i += 4) {
 
     .Activity-title {
         color: #000;
-        font-family: "Zen Kurenaido";
-        font-size: 20px;
+        font-family: "Zen Old Mincho";
+        font-size: 25px;
         font-style: normal;
         font-weight: 400;
         line-height: normal;
         letter-spacing: 3px;
-        margin: 12px 0 0;
+        margin: 12px 0px;
     }
 
-    .Activity-title a {
-        color: inherit;
-        text-decoration: none;
-    }
-
-    .Activity-title a:hover {
-        opacity: 0.8;
-    }
+    .Activity-excerpt-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
 
     .Activity-excerpt {
-        margin: 16px 0 0;
-        font-family: "Zen Old Mincho";
+        margin: 0px;
+        font-family: "Zen Kurenaido";
         font-size: 15px;
         line-height: 1.7;
         letter-spacing: 0.5px;
@@ -974,7 +984,8 @@ for (let i = 0; i < cardSlots.length; i += 4) {
         align-items: right;
         justify-content: center;
     }
-    .activity-table-text p {
+    .activity-table-text p,
+    .activity-table-text a {
         font-family: "Zen Kurenaido";
         font-size: 20px;
         font-style: normal;
@@ -983,6 +994,36 @@ for (let i = 0; i < cardSlots.length; i += 4) {
         letter-spacing: 3px;
         text-align: right;
         margin-top: 11px;
+    }
+
+    .activity-table-text a {
+        position: relative;
+    }
+
+    .activity-table-text a::after {
+        position: absolute;
+        left: 0;
+        right: 0;
+        content: '';
+        width: 100%;
+        height: 1px;
+        background: #000000;
+        bottom: 0;
+        transform: scale(0, 1);
+        transform-origin: center top;
+        transition: transform 0.3s;
+    }
+
+    .activity-table-text a:hover::after {
+        transform: scale(1, 1);
+    }
+
+    .activity-table-text a:active {
+        color: #0db49b;
+    }
+
+    .activity-table-text a:active::after {
+        background: #0db49b;
     }
 
     .activity-card {

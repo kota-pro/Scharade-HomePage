@@ -134,7 +134,7 @@ import equipment5e from '../../public/images/temp.png';
                 </tr>
                 <tr>
                     <th scope="row">連絡先</th>
-                    <td><a class="href-anchor" href="contact">contact@scharade.jp</a></td>
+                    <td><a class="href-anchor" href="Contact">contact@scharade.jp</a></td>
                 </tr>
                 <tr>
                     <th scope="row">SNS</th>
@@ -394,8 +394,16 @@ import equipment5e from '../../public/images/temp.png';
         transition: transform 0.3s;
     }
 
+    .href-anchor:active {
+        color: #0db49b;
+    }
+    
     .href-anchor:hover::after {
         transform: scale(1, 1);
+    }
+
+    .href-anchor:active::after {
+        background: #0db49b;
     }
 
     .menu {
@@ -427,7 +435,7 @@ import equipment5e from '../../public/images/temp.png';
     }
 
     .menu-item:hover {
-        text-shadow: rgba(0, 0, 0, 0.2) 2px -2px 4px;
+        color: #0db49b;
     }
 
     .section-title {
@@ -489,7 +497,6 @@ import equipment5e from '../../public/images/temp.png';
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        /* padding: 0 120px; */
     }
 
     .contents-title {
@@ -513,8 +520,6 @@ import equipment5e from '../../public/images/temp.png';
 
     .information table{
         width: 100%;
-        border-collapse: collapse;
-        border-bottom: 1px solid #000;
         color: #000;
         font-family: "Zen Kurenaido";
         font-size: 20px;
@@ -533,6 +538,10 @@ import equipment5e from '../../public/images/temp.png';
         color: #000;
         font-family: "Zen Kurenaido";
         font-weight: 400;
+    }
+
+    .information tr:last-child {
+        border-bottom: 1px solid #000;
     }
 
     .information th {
@@ -620,7 +629,7 @@ import equipment5e from '../../public/images/temp.png';
     }
 
     .tab > label:hover {
-        opacity: .8;
+        color: #0db49b;
     }
 
     .tab input {

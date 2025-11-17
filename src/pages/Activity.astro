@@ -29,12 +29,18 @@ const tabs = buildTabs(posts, tags);
 
 <Layout>
   <Fragment slot="main-slot">
-    <div class="section-title a-anchor">
+    <div class="section-title a-anchor" id="Page-top">
       <h1>Activity</h1>
       <div class="section-title-line"></div>
     </div>
   </Fragment>
-  <Fragment slot="menu-slot"></Fragment>
+  <Fragment slot="menu-slot">
+    <div class="menu-contents-inner">
+      <a href="#Page-top" class="page-top-nav">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"/></svg>
+      </a>
+    </div>
+  </Fragment>
   <Fragment slot="body-slot">
     <div class="tab">
       {tabs.map((tab, index) => {
@@ -43,31 +49,96 @@ const tabs = buildTabs(posts, tags);
           <input type="radio" id={inputId} name="tab" checked={index === 0} />,
           <label for={inputId}>{tab.label}</label>,
           <div class="tab-panel">
+            <div class="tab-panel-number panel-top">
+              <a class="tab-posts-navigation" href="#"><img src="/icons/leftarrow.svg"></a>
+              <input value={tab.posts.length} type="text"/>
+              <p>/</p>
+              <p>{posts.length}</p>
+              <a class="tab-posts-navigation" href="#"><img src="/icons/rightarrow.svg"></a>
+            </div>
             {tab.posts.length ? (
               tab.posts.map((post) => (
                 <article class="Activity-item">
-                  <div class="Activity-info">
-                    <p class="Activity-date">{formatDate(getPublishedDate(post))}</p>
-                    {normalizeTags(post.tags).map((tag) => (
-                      <span class="Activity-tag">
-                        #{tag.name}
-                      </span>
-                    ))}
-                  </div>
-                  <h2 class="Activity-title">
-                    <a href={linkToPost(post.slug, "activity")}>{post.title}</a>
-                  </h2>
-                  {post.excerpt ? (
-                    <p class="Activity-excerpt">{post.excerpt}</p>
-                  ) : null}
+                  <a href={linkToPost(post.slug, "activity")}>
+                    <div class="Activity-info">
+                      <p class="Activity-date">{formatDate(getPublishedDate(post))}</p>
+                      {normalizeTags(post.tags).map((tag) => (
+                        <span class="Activity-tag">
+                          #{tag.name}
+                        </span>
+                      ))}
+                    </div>
+                    <h2 class="Activity-title">{post.title}</h2>
+                    <div class="Activity-excerpt-container">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 25 25"><path fill="currentColor" d="m14 20l-.713-.713l3.792-3.787H6V5h1v9.5h10.079l-3.792-3.792l.707-.714L19 15z"/></svg>
+                      {post.excerpt ? (
+                        <p class="Activity-excerpt">{post.excerpt}</p>
+                      ) : null}
+                    </div>
+                  </a>
                 </article>
               ))
             ) : (
               <p class="Activity-empty">該当する記事はまだありません。</p>
             )}
+            <div class="tab-panel-number panel-bottom">
+              <a class="tab-posts-double-navigation" href="#"><img src="/icons/doubleleftarrow.svg"></a>
+              <a class="tab-posts-navigation" href="#"><img src="/icons/leftarrow.svg"></a>
+              <a class="tab-posts-number" href="#">1</a>
+              <a class="tab-posts-number" href="#">2</a>
+              <a class="tab-posts-number" href="#">3</a>
+              <p class="separate-slash">...</p>
+              <a class="tab-posts-number" href="#">{tab.posts.length}</a>
+              <a class="tab-posts-number" href="#">{posts.length}</a>
+              <a class="tab-posts-navigation" href="#"><img src="/icons/rightarrow.svg"></a>
+              <a class="tab-posts-double-navigation" href="#"><img src="/icons/doublerightarrow.svg"></a>
+            </div>
           </div>,
         ];
       })}
     </div>
   </Fragment>
 </Layout>
+
+<script>
+  {/* タブ切り替え時にスクロール位置を調整 */}
+  document.querySelectorAll('.tab input[type="radio"]').forEach((radio) => {
+    radio.addEventListener('change', () => {
+      window.scrollTo({
+        top: document.querySelector('.section-title').offsetTop,
+        behavior: 'smooth',
+      });
+    });
+  });
+
+  {/* 各タブ内のナビゲーションボタンの動作 by github copilot */}
+  document.querySelectorAll('.tab').forEach((tabContainer) => {
+    const tabPanels = tabContainer.querySelectorAll('.tab-panel');
+    tabPanels.forEach((panel) => {
+      const posts = panel.querySelectorAll('.Activity-item');
+      let currentIndex = 0;
+      const postsPerPage = 10; // 1ページあたりの表示件数
+
+      // ナビゲーションボタンの動作
+      const prevButton = panel.querySelector('.tab-posts-navigation:first-child');
+      const nextButton = panel.querySelector('.tab-posts-navigation:last-child');
+
+      prevButton.addEventListener('click', () => {
+        currentIndex -= postsPerPage;
+        updatePostsVisibility();
+      });
+
+      nextButton.addEventListener('click', () => {
+        currentIndex += postsPerPage;
+        updatePostsVisibility();
+      });
+
+      function updatePostsVisibility() {
+        posts.forEach((post, index) => {
+          post.style.display = (index >= currentIndex && index < currentIndex + postsPerPage) ? 'block' : 'none';
+        });
+      }
+      updatePostsVisibility(); // 初期表示の更新
+    });
+  });
+</script>

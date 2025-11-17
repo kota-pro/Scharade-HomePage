@@ -1,22 +1,27 @@
 ---
 import Layout from './Layout.astro';
 import '../styles/UA+reset.css';
-const { title } = Astro.props;
-const url = new URL(Astro.request.url);
-const from = url.searchParams.get("from");
+export interface Props {
+    title: string;
+    from: string | null;
+}
+const { from } = Astro.props as Props;
 ---
 <Layout>
 <Fragment slot="main-slot">
-    <div class = "section-title"> 
-        <h1>{ from }</h1>
+    <div class = "section-title a-anchor" id="Page-top"> 
+        <h1>{ from }</h1> <!-- クエリパラメータをここで表示したい -->
         <div class = "section-title-line"></div>
     </div>
 </Fragment>
 <Fragment slot="menu-slot">
-    
+    <div class="menu-contents-inner">
+        <a href="#Page-top" class="page-top-nav">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"/></svg>
+        </a>
+    </div>
 </Fragment>
 <Fragment slot="body-slot">
-    <!-- <h1 class="post-title">{title}</h1> -->
     <article>
         <slot /> <!-- ここにコンテンツが挿入されます -->
     </article>
@@ -24,38 +29,50 @@ const from = url.searchParams.get("from");
 </Layout>
 
 <style>
-    html{
-		font-family: "zen-krenaido-regular", "zen-old-mincho-regular", "zen-kaku-gothic-new-light", "zen-kaku-gothic-new-regular", "zen-kaku-gothic-new-medium", "zen-kaku-gothic-new-bold", "zen-kaku-gothic-new-black", "ta-koigokoro-regular", "grandiflora-one-regular";
-		margin: 0;
-		scroll-behavior: smooth;
+    .a-anchor {
+        padding-top: 130px;
+        margin-top: -130px;
+    }
+    .menu-contents-inner {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+		justify-content: flex-end;
 	}
+    .page-top-nav {
+        width: 50px;
+        height: 50px;
+        background-color: #fff;
+        border: 1px solid #000;
+        border-radius: 10px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: sticky;
+        bottom: 50px;
+        z-index: 5;
+        transition: all 0.3s;
+    }
 
+    .page-top-nav svg {
+        width: 32px;
+        height: 32px;
+        rotate: 90deg;
+        transform: all 0.3s;
+    }
 
-	body {
-		margin: 0;
-		padding-top: 120px;
-		background-color: #fdfdfd;
-	}
+    .page-top-nav:hover {
+        background-color: #707070;
+        box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
+    }
 
-	.container {
-		display: flex;
-		flex-direction: row;
-	}
-
-	.body-contents {
-		flex: 11 1 calc(100vw / 12);
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		padding-left: 120px;
-	}
-	.menu-contents {
-		flex: 1 1 auto;
-		display: flex;
-		flex-direction: column;
-		/* justify-content: center; */
-		/* align-items: flex-start; */
-	}
+    .page-top-nav:hover svg {
+        filter: invert(100%) sepia(0%) saturate(1152%) hue-rotate(311deg) brightness(99%) contrast(105%);
+    }
 
     .post-title {
         color: #000;
