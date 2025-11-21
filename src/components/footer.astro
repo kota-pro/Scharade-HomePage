@@ -8,7 +8,7 @@ const optimizedBackground = await getImage({src: background, format: 'webp'});
 
 <footer style={{ background: `linear-gradient(rgba(70, 70, 70, 0.75), rgba(70, 70, 70, 0.75)), url(${optimizedBackground.src})` }}>
 
-    <a href="/">
+    <a href="/" class="footer-title">
         <h2>早稲田大学公認サークル</h2>
         <h1>写団シャレード</h1>
     </a>
@@ -115,6 +115,10 @@ const optimizedBackground = await getImage({src: background, format: 'webp'});
 
     footer a:hover::after {
         transform: scale(1, 1); /* アンダーラインを表示 */
+    }
+
+    .footer-title:active {
+        color: #0db49b;
     }
 
     .footer-links {
