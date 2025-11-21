@@ -9,14 +9,14 @@ const { from } = Astro.props as Props;
 ---
 <Layout>
 <Fragment slot="main-slot">
-    <div class = "section-title a-anchor" id="Page-top"> 
+    <div class = "section-title"> 
         <h1>{ from }</h1> <!-- クエリパラメータをここで表示したい -->
         <div class = "section-title-line"></div>
     </div>
 </Fragment>
 <Fragment slot="menu-slot">
     <div class="menu-contents-inner">
-        <a href="#Page-top" class="page-top-nav">
+        <a href="#" class="page-top-nav">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"/></svg>
         </a>
     </div>
@@ -29,10 +29,6 @@ const { from } = Astro.props as Props;
 </Layout>
 
 <style>
-    .a-anchor {
-        padding-top: 130px;
-        margin-top: -130px;
-    }
     .menu-contents-inner {
         width: 100%;
         height: 100%;
