@@ -50,6 +50,7 @@ import Footer from "../components/footer.astro";
 		<Header />
 		<slot name="main-slot" />
 		<div class="container">
+			<div class="for-padding"></div>
 			<div class="body-contents">
 				<slot name="body-slot" />
 			</div>
@@ -76,22 +77,25 @@ import Footer from "../components/footer.astro";
 	}
 
 	.container {
-		display: flex;
-		flex-direction: row;
+		display: grid;
+		grid-template-columns: repeat(12, [col-start] 1fr);
+	}
+	
+	.for-padding {
+		grid-column: col-start / span 1;
 	}
 
 	.body-contents {
-		flex: 11 1 calc(100vw / 12);
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
-		padding-left: 120px;
+		grid-column: col-start 2 / span 10;
 	}
 	.menu-contents {
-		flex: 1 1 auto;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
+		grid-column: col-start 12 / span 1;
 	}
 </style>
 

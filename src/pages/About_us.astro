@@ -495,7 +495,8 @@ import equipment5e from '../../public/images/temp.png';
     .information {
         display: flex;
         flex-direction: column;
-        align-items: center;
+        align-items: stretch;
+        width: 100%;
         justify-content: center;
     }
 
@@ -519,7 +520,9 @@ import equipment5e from '../../public/images/temp.png';
     }
 
     .information table{
+        display: table;
         width: 100%;
+        table-layout: auto;
         color: #000;
         font-family: "Zen Kurenaido";
         font-size: 20px;
@@ -532,7 +535,8 @@ import equipment5e from '../../public/images/temp.png';
 
     .information th,
     .information td {
-        width: max-content;
+        /* width: max-content; */
+        word-wrap: break-word;
         border-top: 1px solid #000;
         padding: 20px;
         color: #000;
@@ -657,7 +661,7 @@ import equipment5e from '../../public/images/temp.png';
         border-style: solid;
         border-width: 1px 1px 0px 1px;
         border-radius: 2px 2px 0px 0px;
-        color: #000000;
+        color: #0db49b;
     }
 
     #tab1:checked ~ label[for="tab1"] + div,

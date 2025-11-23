@@ -60,21 +60,24 @@ const tabs = buildTabs(posts, tags);
               tab.posts.map((post) => (
                 <article class="Activity-item">
                   <a href={linkToPost(post.slug, "activity")}>
-                    <div class="Activity-info">
-                      <p class="Activity-date">{formatDate(getPublishedDate(post))}</p>
-                      {normalizeTags(post.tags).map((tag) => (
-                        <span class="Activity-tag">
-                          #{tag.name}
-                        </span>
-                      ))}
+                    <div class="Activity-text-container">
+                      <div class="Activity-info">
+                        <p class="Activity-date">{formatDate(getPublishedDate(post))}</p>
+                        {normalizeTags(post.tags).map((tag) => (
+                          <span class="Activity-tag">
+                            #{tag.name}
+                          </span>
+                        ))}
+                      </div>
+                      <h2 class="Activity-title">{post.title}</h2>
+                      <div class="Activity-excerpt-container">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 25 25"><path fill="currentColor" d="m14 20l-.713-.713l3.792-3.787H6V5h1v9.5h10.079l-3.792-3.792l.707-.714L19 15z"/></svg>
+                        {post.excerpt ? (
+                          <p class="Activity-excerpt">{post.excerpt}</p>
+                        ) : null}
+                      </div>
                     </div>
-                    <h2 class="Activity-title">{post.title}</h2>
-                    <div class="Activity-excerpt-container">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 25 25"><path fill="currentColor" d="m14 20l-.713-.713l3.792-3.787H6V5h1v9.5h10.079l-3.792-3.792l.707-.714L19 15z"/></svg>
-                      {post.excerpt ? (
-                        <p class="Activity-excerpt">{post.excerpt}</p>
-                      ) : null}
-                    </div>
+                    <img class="link-button" src="/icons/link.svg" alt="Link Icon" />
                   </a>
                 </article>
               ))
@@ -84,12 +87,18 @@ const tabs = buildTabs(posts, tags);
             <div class="tab-panel-number panel-bottom">
               <a class="tab-posts-double-navigation" href="#"><img src="/icons/doubleleftarrow.svg"></a>
               <a class="tab-posts-navigation" href="#"><img src="/icons/leftarrow.svg"></a>
-              <a class="tab-posts-number" href="#">1</a>
-              <a class="tab-posts-number" href="#">2</a>
-              <a class="tab-posts-number" href="#">3</a>
-              <p class="separate-slash">...</p>
-              <a class="tab-posts-number" href="#">{tab.posts.length}</a>
-              <a class="tab-posts-number" href="#">{posts.length}</a>
+              <div class="tab-posts-numbers">
+                <a class="tab-posts-number" href="#">1</a>
+                <a class="tab-posts-number" href="#">2</a>
+                <a class="tab-posts-number" href="#">3</a>
+                <p class="separate-slash">...</p>
+                <a class="tab-posts-number" href="#">6</a>
+                <a class="tab-posts-number" href="#">7</a>
+                <a class="tab-posts-number" href="#">8</a>
+                <p class="separate-slash">...</p>
+                <a class="tab-posts-number" href="#">{tab.posts.length}</a>
+                <a class="tab-posts-number" href="#">{posts.length}</a>
+              </div>
               <a class="tab-posts-navigation" href="#"><img src="/icons/rightarrow.svg"></a>
               <a class="tab-posts-double-navigation" href="#"><img src="/icons/doublerightarrow.svg"></a>
             </div>
