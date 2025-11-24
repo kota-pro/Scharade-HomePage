@@ -9,9 +9,52 @@ import '../styles/UA+reset.css';
 <style>
     .img-grid-container {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        /* gap: 16px; */
-        /* padding: 16px; */
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         grid-auto-flow: dense;
+        gap: 5px;
+
+        /* display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: space-between; */
     }
+    .img-grid-container img {
+        /* max-width: 400px; */
+        height: auto;
+        display: block;
+        aspect-ratio: attr(width) / attr(height);
+    }
+
+    /* .wide {
+        grid-column-end: span 2;
+    }
+
+    .tall {
+        grid-row-end: span 2;
+    } */
 </style>
+
+<script>
+    document.querySelectorAll<HTMLImageElement>('.img-grid-container img')
+    .forEach(img => {
+        const decide = () => {
+            if(img.naturalWidth > img.naturalHeight){
+                img.classList.add('wide');
+                img.style.gridColumnEnd = 'span 2';
+                // img.style.gridRowEnd = 'span 1.5';
+                // img.style.aspectRatio = '4 / 3';
+            } else {
+                img.classList.add('tall');
+                // img.style.gridColumnEnd = 'span 1.5';
+                // img.style.gridRowEnd = 'span 1';
+                // img.style.aspectRatio = '3 / 4';
+            }
+        };
+
+        // img.style.maxWidth = '400px';
+        // img.style.height = 'auto';
+        // img.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
+
+        img.complete ? decide() : img.addEventListener('load', decide, { once:true });
+    });
+</script>
