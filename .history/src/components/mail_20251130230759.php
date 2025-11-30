@@ -1,4 +1,4 @@
-<?php header("Content-Type:text/html;charset=utf-8"); ?>
+<!-- <?php header("Content-Type:text/html;charset=utf-8"); ?> -->
 <?php //error_reporting(E_ALL | E_STRICT);
 ##-----------------------------------------------------------------------------------------------------------------##
 #

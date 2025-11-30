@@ -465,6 +465,10 @@ function confirmOutput($arr){
 			
 		}else{ $out = $val; }//チェックボックス（配列）追記ここまで
 		
+		if (version_compare(PHP_VERSION, '5.1.0', '<=')) {//PHP5.1.0以下の場合のみ実行（7.4でget_magic_quotes_gpcが非推奨になったため）
+			if(get_magic_quotes_gpc()) { $out = stripslashes($out); }
+		}
+		
 		//全角→半角変換
 		if($hankaku == 1){
 			$out = zenkaku2hankaku($key,$out,$hankaku_array);
