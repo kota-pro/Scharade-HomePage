@@ -10,10 +10,16 @@ import Layout from '../layouts/Layout.astro';
     </div>
 </Fragment>
 <Fragment slot="menu-slot">
-    <div class="menu-contents-inner">
-        <a href="#" class="page-top-nav">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"/></svg>
-        </a>
+    <div class="menu">
+        <a href="#" class="menu-item">Top</a>
+        <span>/</span>
+        <a href="#name" class="menu-item">Name</a>
+        <span>/</span>
+        <a href="#furigana" class="menu-item">Furigana</a>
+        <span>/</span>
+        <a href="#institution" class="menu-item">Institution</a>
+        <span>/</span>
+        <a href="#faculty" class="menu-item">Faculty</a>
     </div>
 </Fragment>
 <Fragment slot="body-slot">
@@ -30,7 +36,7 @@ import Layout from '../layouts/Layout.astro';
                     <tr>
                         <th><p id="furigana" class="a-anchor">フリガナ</p></th>
                         <td class="require-td"><p id="require">必須</p></td>
-                        <td class="input-td"><input type="text" name="furigana" autocomplete="off" id="inputField" required></td>
+                        <td class="input-td"><input type="text" name="furigana" autocomplete="name" id="inputField" required></td>
                     </tr>
                     <tr>
                         <th><p id="institution" class="a-anchor">所属教育機関</p></th>
@@ -338,47 +344,38 @@ import Layout from '../layouts/Layout.astro';
         margin-top: -150px;
     }
 
-    .menu-contents-inner {
-        width: 100%;
-        height: 100%;
+    .menu {
         display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-end;
-    }
-
-    .page-top-nav {
-        width: 50px;
-        height: 50px;
-        background-color: #fff;
-        border: 1px solid #000;
-        border-radius: 10px;
-        cursor: pointer;
-        display: flex;
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
         justify-content: center;
+        writing-mode: vertical-rl;
+        gap: 20px;
         position: sticky;
-        bottom: 50px;
+        top: 150px;
         z-index: 5;
-        transition: all 0.3s;
     }
 
-    .page-top-nav svg {
-        width: 32px;
-        height: 32px;
-        rotate: 90deg;
-        transition: all 0.3s;
+    .menu span {
+        color: #000;
+        font-size: 16px;
+        user-select: none;
     }
 
-    .page-top-nav:hover {
-        background-color: #707070;
-        box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
+    .menu-item {
+        color: #000;
+        font-family: "Zen Old Mincho";
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 2px;
     }
 
-    .page-top-nav:hover svg {
-        filter: invert(100%) sepia(2%) saturate(1%) hue-rotate(267deg) brightness(101%) contrast(101%);
+    .menu-item:hover {
+        color: #0db49b;
     }
+
     .section-title {
         display: flex;
         flex-direction: row;
