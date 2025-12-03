@@ -211,7 +211,7 @@ import Layout from '../layouts/Layout.astro';
             preview.classList.toggle(isHidden);
             body.style.overflow = 'hidden';
             mask.classList.toggle(isHidden);
-
+            
             const formData = new FormData(form);
             const gradeValues = formData.getAll('grade[]') as string[];
             const inquiryValues = formData.getAll('inquiry[]') as string[];
@@ -271,7 +271,7 @@ import Layout from '../layouts/Layout.astro';
             console.error('mask要素が見つかりません');
         }
 
-        function focusInputByPreviewId(previewId: string) {
+        function focusInputByPreviewId(previewId) {
             const idToSelector = {
                 'preview-name': 'input[name="name"]',
                 'preview-furigana': 'input[name="furigana"]',
@@ -305,7 +305,7 @@ import Layout from '../layouts/Layout.astro';
         }
 
         // 共通ハンドラのユーティリティ
-        function attachPreviewLink(linkEl: HTMLParagraphElement) {
+        function attachPreviewLink(linkEl) {
             if (!linkEl) return;
             linkEl.addEventListener('click', (e) => {
                 e.preventDefault();

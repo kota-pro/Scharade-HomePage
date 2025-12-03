@@ -305,7 +305,7 @@ import Layout from '../layouts/Layout.astro';
         }
 
         // 共通ハンドラのユーティリティ
-        function attachPreviewLink(linkEl: HTMLParagraphElement) {
+        function attachPreviewLink(linkEl) {
             if (!linkEl) return;
             linkEl.addEventListener('click', (e) => {
                 e.preventDefault();
