@@ -14,20 +14,20 @@ const optimizedBackground = await getImage({src: background, format: 'webp'});
     </a>
     <div class="footer-links">
         <div class="links-upper-tier">
-            <a class:list={['link', {active: /^\/About_us\/?$/.test(pathname)}]} href="About_us">About us</a>
-            <a class:list={['link', {active: /^\/Activity\/?$/.test(pathname)}]} href="Activity">Activity</a>
-            <a class:list={['link', {active: /^\/Gallery\/?$/.test(pathname)}]} href="Gallery">Gallery</a>
-            <a class:list={['link', {active: /^\/Portfolio\/?$/.test(pathname)}]} href="Portfolio">Portfolio</a>
+            <a class:list={['link', {active: /^\/About_us\/?$/.test(pathname)}]} href="About_us"><span class="text">About us</span></a>
+            <a class:list={['link', {active: /^\/Activity\/?$/.test(pathname)}]} href="Activity"><span class="text">Activity</span></a>
+            <a class:list={['link', {active: /^\/Gallery\/?$/.test(pathname)}]} href="Gallery"><span class="text">Gallery</span></a>
+            <a class:list={['link', {active: /^\/Portfolio\/?$/.test(pathname)}]} href="Portfolio"><span class="text">Portfolio</span></a>
         </div>
         <div class="links-lower-tier">
-            <a class:list={['link', {active: /^\/Contact\/?$/.test(pathname)}]} href="Contact">Contact</a>
-            <a class:list={['link', {active: /^\/Disclaimer\/?$/.test(pathname)}]} href="Disclaimer">Disclaimer</a>
+            <a class:list={['link', {active: /^\/Contact\/?$/.test(pathname)}]} href="Contact"><span class="text">Contact</span></a>
+            <a class:list={['link', {active: /^\/Disclaimer\/?$/.test(pathname)}]} href="Disclaimer"><span class="text">Disclaimer</span></a>
         </div>
     </div>
-    <h3>member only</h3>
+    <h3>members only</h3>
     <div class="member-links">
-        <a class:list={['link', {active: /^\/Login\/?$/.test(pathname)}]} href="Login">Log in</a>
-        <a class:list={['link', {active: /^\/Signup\/?$/.test(pathname)}]} href="Signup">Sign up</a>
+        <a class:list={['link', {active: /^\/Login\/?$/.test(pathname)}]} href="Login"><span class="text">Log in</span></a>
+        <a class:list={['link', {active: /^\/Signup\/?$/.test(pathname)}]} href="Signup"><span class="text">Sign in</span></a>
     </div>
     <div class="footer-logo">
         <label for="show-credit-checkbox">
@@ -63,6 +63,7 @@ const optimizedBackground = await getImage({src: background, format: 'webp'});
         font-weight: 400;
         line-height: normal;
         letter-spacing: 6px;
+        display:inline-block;
     }
 
     footer h2 {
@@ -124,8 +125,8 @@ const optimizedBackground = await getImage({src: background, format: 'webp'});
     .footer-links {
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
         justify-content: center;
+        align-items: flex-start;
         margin-top: 40px;
         margin-bottom: 30px;
     }
@@ -204,5 +205,100 @@ const optimizedBackground = await getImage({src: background, format: 'webp'});
 
     .footer-logo h3 {
         margin-top: 25px;
+    }
+    @media (max-width:800px){
+    footer {
+        padding:30px;
+        margin-top: 60px;
+        height:626px;
+    }
+    footer a{
+        margin-right: 0;
+    }
+    footer h1{
+        font-size:24px;
+    }
+    footer h2{
+        font-size:12px;
+    }
+    footer h3{
+        display:flex;
+        font-size:13px;
+        justify-content: center;
+        margin-top: 35px;
+    }
+    footer a::after,.member-links a::after{
+        content:none;
+    }
+    .text {
+        display:inline-block;
+        position: relative;
+    }
+    .text::after{
+        content:'';
+        position:absolute;
+        left:0;
+        right:0;
+        bottom:0; 
+        height:1px;
+        background:#b6b6b6;
+        transform:scaleX(0);
+        transform-origin:center;
+        transition: transform 0.3s; 
+    }
+    .footer-links a:hover .text::after,
+    .member-links a:hover .text::after 
+    {
+        transform: scaleX(1);
+    }
+    .link.active .text::after {
+        background-color:#0db49b;
+    }
+    .footer-links{
+        display:flex;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .footer-links a{
+        display: block;
+        width: 100%;
+        text-align: center;
+        margin: 0;
+        padding: 10px 0;
+        font-size: 13px;
+        border-bottom: 1px solid rgba(255,255,255,.6);
+    }
+    .links-upper-tier {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .links-upper-tier a:first-child {
+        border-top: 1px solid rgba(255,255,255,.6);
+    }
+    .links-lower-tier {
+        flex-direction: column;
+        margin-top:0;
+    }
+    .member-links {
+        justify-content: space-around;
+        border-bottom:1px solid rgba(255,255,255,.6);
+        border-top: 1px solid rgba(255,255,255,.6);;
+    }
+    .member-links a{
+        font-size: 13px;
+        padding-bottom: 10px;
+        padding-top: 10px;
+    }
+    .footer-logo {
+        bottom: 30px;
+        right:30px;
+        width:256px;
+    }
+    .footer-logo h3{
+        font-size: 10px;
+        margin-top: 12px;
+    }
     }
 </style>
