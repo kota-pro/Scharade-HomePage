@@ -32,6 +32,7 @@ const formattedDate = formatDate(getPublishedDate(post));
 const postTags = normalizeTags(post.tags);
 
 const backLinkMap = {
+  // index: { href: "/", label: "メインページへ戻る" },
   activity: { href: "/Activity", label: "Activityへ戻る" },
   gallery: { href: "/Gallery", label: "Galleryへ戻る" },
 } as const;

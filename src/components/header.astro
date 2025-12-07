@@ -7,8 +7,8 @@ const pathname = Astro.url.pathname;
     <a href="/"><div class="header-logo" id="header-logo">
         <img src="/icons/logo.svg" alt="Scharade Logo" class="header-logo-svg">
         <div class="header-logo-text">
-            <p class="header-logo-text_1">早稲田大学公認サークル</p>
-            <p class="header-logo-text_2">写団シャレード</p>
+            <p class="header-logo-text">早稲田大学公認サークル</p>
+            <p class="header-logo-text">写団シャレード</p>
         </div>
     </div></a>
     <div class="header-nav" id="header-nav">
@@ -175,14 +175,6 @@ const pathname = Astro.url.pathname;
         gap: 20px;
     }
 
-    /* .header-logo.scrolled {
-        position: fixed;
-        top: 31px;
-        left: 82.17px;
-        filter: drop-shadow(4px 4px 4px rgba(0, 0, 0, 0.25));
-        z-index: 11;
-    } */
-
     .header-logo:active {
         filter: invert(45%) sepia(95%) saturate(720%) hue-rotate(132deg) brightness(97%) contrast(90%);
     }
@@ -193,16 +185,15 @@ const pathname = Astro.url.pathname;
         justify-content: center;
         width: 75.651px;
         height: 56.644px;
-        backdrop-filter: blur(12px);
     }
 
-    .header-logo-text_1 {
+    .header-logo-text:first-child {
         font-family: "Zen Old Mincho", serif;
         font-size: 13px;
         margin: 0;
     }
 
-    .header-logo-text_2 {
+    .header-logo-text:last-child {
         font-family: "Zen Old Mincho", serif;
         font-size: 32px;
         margin: 0;
@@ -247,11 +238,27 @@ const pathname = Astro.url.pathname;
         transform: scale(1, 1); /* アンダーラインを表示 */
     }
 
+    .header-nav a:focus {
+        color: #0db49b;
+    }
+
+    .header-nav a:focus::after {
+        background-color: #0db49b;
+    }
+
     .link.active {
         color: #0db49b !important;
     }
 
     .link.active::after {
+        background-color: #0db49b !important;
+    }
+
+    .link:focus {
+        color: #0db49b !important;
+    }
+
+    .link:focus::after {
         background-color: #0db49b !important;
     }
 
@@ -607,5 +614,32 @@ const pathname = Astro.url.pathname;
     =============*/
     body.open {
         overflow: hidden;
+    }
+
+    @media screen and (max-width: 430px) {
+        header {
+            padding: 0 20px;
+            height: 50px;
+        }
+
+        .header-logo {
+            width: 144px;
+            height: 26px;
+            gap: 13px;
+        }
+
+        .header-logo-svg {
+            width: 32.05px;
+            height: 24px;
+        }
+
+        .header-logo-text:first-child {
+            font-size: 5px;
+        }
+
+        .header-logo-text:last-child {
+            font-size: 14px;
+        }
+
     }
 </style>
