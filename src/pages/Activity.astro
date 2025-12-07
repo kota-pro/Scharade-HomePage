@@ -171,7 +171,7 @@ const ITEMS_PER_PAGE = 10;
 
     if (totalPosts === 0) return;
 
-    let currentPage = 10;
+    let currentPage = 1;
 
     const posts = panel.querySelectorAll(".Activity-item");
     const inputTop = panel.querySelector(".page-input-top");
@@ -207,28 +207,27 @@ const ITEMS_PER_PAGE = 10;
       numbersContainer.innerHTML = "";
 
       const pagesToShow = new Set([1, totalPages]);
+      
       let start = currentPage - 1;
       let end = currentPage + 1;
+
       if (currentPage <= 2) {
         start = 1;
         end = 3;
       }
+      
+      if (currentPage >= totalPages - 1) {
+        start = totalPages - 2;
+        end = totalPages;
+      }
+
       if (start < 1) start = 1;
       if (end > totalPages) end = totalPages;
 
       for (let i = start; i <= end; i++) {
         pagesToShow.add(i);
       }
-      if (currentPage >= totalPages - 1) {
-        start = totalPages - 2;
-        end = totalPages;
-      }
-      for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-        if (i > 1 && i < totalPages) {
-          pagesToShow.add(i);
-        }
-      }
-
+      
       const sortedPages = Array.from(pagesToShow).sort((a, b) => a - b);
 
       let prevPage = 0;
