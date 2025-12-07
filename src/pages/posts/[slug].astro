@@ -29,8 +29,6 @@ const post = await microcmsClient.getListDetail<Blog>({
 });
 
 const formattedDate = formatDate(getPublishedDate(post));
-const postTags = normalizeTags(post.tags);
-
 const backLinkMap = {
   activity: { href: "/Activity", label: "Activityへ戻る" },
   gallery: { href: "/Gallery", label: "Galleryへ戻る" },
@@ -64,11 +62,25 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
   {
     post.pictures?.length ? (
       <div class="post-pictures">
-        {post.pictures.map((image) => (
-          <figure class="post-eyecatch">
-            <img src={image.url} alt={image.alt || post.title} loading="lazy" />
-          </figure>
-        ))}
+        {post.pictures.map((image) => {
+          const tapeNum = Math.floor(Math.random() * 70) + 1;
+          const rotateDeg = Math.floor(Math.random() * 41) * 0.5 - 10;
+
+          const tapeStyles = `
+            --tape-url: url(/images/tapes/asset${tapeNum}.svg);
+            --tape-rotate: ${rotateDeg}deg;
+          `;
+
+          return (
+            <figure class="post-eyecatch" style={tapeStyles}>
+              <img
+                src={image.url}
+                alt={image.alt || post.title}
+                loading="lazy"
+              />
+            </figure>
+          );
+        })}
       </div>
     ) : null
   }
@@ -79,7 +91,16 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
     data-map={backLinkMapJSON}
     hidden={!backLink}
   >
-    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 20 20"><path fill="currentColor" d="M11.25 17.308L5.942 12l5.308-5.308l.708.708L7.364 12l4.594 4.6zm6.1 0L12.042 12l5.308-5.308l.708.708l-4.594 4.6l4.594 4.6z"/></svg>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="25"
+      height="25"
+      viewBox="0 0 20 20"
+      ><path
+        fill="currentColor"
+        d="M11.25 17.308L5.942 12l5.308-5.308l.708.708L7.364 12l4.594 4.6zm6.1 0L12.042 12l5.308-5.308l.708.708l-4.594 4.6l4.594 4.6z"
+      ></path></svg
+    >
     {backLink ? <a href={backLink.href}>{backLink.label}</a> : null}
   </div>
 </MypostLayout>
@@ -147,9 +168,11 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
     position: relative;
   }
 
+  /* ✨ ここを修正しました */
   .post-eyecatch::after {
-    content: '';
-    background-image: url(/images/tapes/asset1.svg); /* ファイルのassetの次の数字を毎回ランダムにしたい */
+    content: "";
+    /* HTML側で計算した変数を呼び出します */
+    background-image: var(--tape-url);
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
@@ -159,7 +182,8 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
     position: absolute;
     top: -20px;
     left: 35%;
-    transform: rotate(10deg); /* この角度を-10~10degの範囲でランダムにしたい(できれば0.5deg刻みで)*/
+    /* HTML側で計算した変数を呼び出します */
+    transform: rotate(var(--tape-rotate));
     z-index: 10 !important;
   }
 
