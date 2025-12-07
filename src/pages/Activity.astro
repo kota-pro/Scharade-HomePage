@@ -79,6 +79,10 @@ const ITEMS_PER_PAGE = 10;
               data-total-pages={totalPages}
             >
               <div class="tab-panel-number panel-top">
+                <a class="tab-posts-navigation prev-btn-top" href="#">
+                  <img src="/icons/leftarrow.svg" />
+                </a>
+
                 <input
                   class="page-input-top"
                   type="number"
@@ -88,6 +92,10 @@ const ITEMS_PER_PAGE = 10;
                 />
                 <p>/</p>
                 <p>{totalPages}</p>
+
+                <a class="tab-posts-navigation next-btn-top" href="#">
+                  <img src="/icons/rightarrow.svg" />
+                </a>
               </div>
 
               <div class="post-list-container">
@@ -182,6 +190,9 @@ const ITEMS_PER_PAGE = 10;
     const btnNext = panel.querySelector(".next-btn");
     const btnLast = panel.querySelector(".last-btn");
 
+    const btnPrevTop = panel.querySelector(".prev-btn-top");
+    const btnNextTop = panel.querySelector(".next-btn-top");
+
     const renderPage = (page) => {
       if (page < 1) page = 1;
       if (page > totalPages) page = totalPages;
@@ -206,29 +217,19 @@ const ITEMS_PER_PAGE = 10;
       if (!numbersContainer) return;
       numbersContainer.innerHTML = "";
 
-      const pagesToShow = new Set([1, totalPages]);
-      
-      let start = currentPage - 1;
-      let end = currentPage + 1;
+      const pagesSet = new Set([
+        1,
+        2,
+        totalPages - 1,
+        totalPages,
+        currentPage - 1,
+        currentPage,
+        currentPage + 1,
+      ]);
 
-      if (currentPage <= 2) {
-        start = 1;
-        end = 3;
-      }
-      
-      if (currentPage >= totalPages - 1) {
-        start = totalPages - 2;
-        end = totalPages;
-      }
-
-      if (start < 1) start = 1;
-      if (end > totalPages) end = totalPages;
-
-      for (let i = start; i <= end; i++) {
-        pagesToShow.add(i);
-      }
-      
-      const sortedPages = Array.from(pagesToShow).sort((a, b) => a - b);
+      const sortedPages = Array.from(pagesSet)
+        .filter((p) => p >= 1 && p <= totalPages)
+        .sort((a, b) => a - b);
 
       let prevPage = 0;
       sortedPages.forEach((p) => {
@@ -265,6 +266,16 @@ const ITEMS_PER_PAGE = 10;
       });
     }
 
+    btnPrevTop?.addEventListener("click", (e) => {
+      e.preventDefault();
+      renderPage(currentPage - 1);
+    });
+
+    btnNextTop?.addEventListener("click", (e) => {
+      e.preventDefault();
+      renderPage(currentPage + 1);
+    });
+
     btnFirst?.addEventListener("click", (e) => {
       e.preventDefault();
       renderPage(1);
@@ -288,3 +299,14 @@ const ITEMS_PER_PAGE = 10;
     renderPage(1);
   });
 </script>
+
+<style>
+  input.page-input-top::-webkit-outer-spin-button,
+  input.page-input-top::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input.page-input-top[type="number"] {
+    -moz-appearance: textfield;
+  }
+</style>
