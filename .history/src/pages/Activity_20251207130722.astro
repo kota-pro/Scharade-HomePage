@@ -85,8 +85,7 @@ const ITEMS_PER_PAGE = 10;
 
                 <input
                   class="page-input-top"
-                  type="text"
-                  inputmode="numeric"
+                  type="number"
                   min="1"
                   max={totalPages}
                   value="1"
@@ -174,6 +173,19 @@ const ITEMS_PER_PAGE = 10;
 </Layout>
 
 <script define:vars={{ ITEMS_PER_PAGE }}>
+  const inputElement = document.getElement;
+
+  // フォーカスイベントリスナーを追加
+  inputElement.addEventListener('focus', function() {
+      // 現在のテキストの長さを取得
+      const length = this.value.length;
+
+      // setSelectionRange(開始位置, 終了位置) を使用してカーソル位置を設定
+      // 開始位置と終了位置を同じ長さ（末尾）に設定することで、選択範囲なしでカーソルだけを末尾に移動させる
+      this.setSelectionRange(length, length);
+  });
+
+
   document.querySelectorAll(".tab-panel").forEach((panel) => {
     const totalPages = parseInt(panel.getAttribute("data-total-pages") || "1");
     const totalPosts = parseInt(panel.getAttribute("data-total-posts") || "0");
@@ -248,8 +260,6 @@ const ITEMS_PER_PAGE = 10;
 
         if (p === currentPage) {
           a.style.textDecoration = "underline";
-          a.style.textDecorationThickness = "0.5px";
-          a.style.textUnderlineOffset = "4px";
         }
 
         a.addEventListener("click", (e) => {

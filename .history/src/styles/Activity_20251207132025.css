@@ -150,6 +150,18 @@
 .panel-top {
     justify-content: flex-end;
     margin-bottom: 24px;
+    /* position: relative; */
+}
+
+.panel-top::after {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 5px;
+    background: #f0f0f0;
+    position: absolute;
+    bottom: -12px;
+    left: 0;
 }
 
 .panel-bottom {
@@ -241,7 +253,7 @@
     position: relative;
 }
 
-.Activity-item:not(:nth-child(10n),:nth-last-child(1))::after{
+.Activity-item:not(:nth-last-child(2))::after{
     content: '';
     display: block;
     width: 30%;
@@ -249,7 +261,7 @@
     background: #000;
     margin-top: 12px;
     position: absolute;
-    bottom: 0;
+    top: calc(100% - 12px);
     left: 35%;
     z-index: 3 !important;
 }

@@ -241,7 +241,7 @@
     position: relative;
 }
 
-.Activity-item:not(:nth-child(10n),:nth-last-child(1))::after{
+.Activity-item:not(:nth-last-child(1))::after{
     content: '';
     display: block;
     width: 30%;
@@ -249,7 +249,7 @@
     background: #000;
     margin-top: 12px;
     position: absolute;
-    bottom: 0;
+    bottom: -12px;
     left: 35%;
     z-index: 3 !important;
 }
