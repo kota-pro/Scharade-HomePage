@@ -1,4 +1,4 @@
-import type { Blog, Tag } from "../types/microcms";
+import type { Blog } from "../types/microcms";
 
 export const getPublishedDate = (blog: Blog) =>
   blog.publishedAt ?? blog.createdAt ?? blog.updatedAt ?? blog.revisedAt;
@@ -25,26 +25,32 @@ export const toTabSlug = (value: string) => {
   return normalized || undefined;
 };
 
-export const normalizeTags = (tags: Blog["tags"]) => {
+export const normalizeTags = (tags: string[] | undefined) => {
   if (!tags) return [];
   return Array.isArray(tags) ? tags : [tags];
 };
 
-export const buildTabs = (posts: Blog[], tags: Tag[]) => [
-  {
-    label: "All tags",
-    slug: "all",
-    posts,
-  },
-  ...tags.map((tag) => {
-    const slug =
-      toTabSlug(tag.slug ?? "") ?? toTabSlug(tag.id) ?? `tag-${tag.id}`;
-    return {
-      label: tag.name,
-      slug,
-      posts: posts.filter((post) =>
-        normalizeTags(post.tags).some((assignedTag) => assignedTag.id === tag.id)
-      ),
-    };
-  }),
-];
+export const buildTabs = (posts: Blog[]) => {
+  const allTags = Array.from(
+    new Set(posts.flatMap((post) => normalizeTags(post.tags))),
+  ).sort();
+
+  return [
+    {
+      label: "All tags",
+      slug: "all",
+      posts,
+    },
+    ...allTags.map((tagString) => {
+      const slug = toTabSlug(tagString) ?? "tag";
+
+      return {
+        label: tagString,
+        slug,
+        posts: posts.filter((post) =>
+          normalizeTags(post.tags).includes(tagString),
+        ),
+      };
+    }),
+  ];
+};
