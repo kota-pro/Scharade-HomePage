@@ -1,4 +1,4 @@
-export type PostContext = 'activity' | 'gallery';
+export type PostContext = 'activity' | 'gallery' | 'home';
 
 function normalizeSlug(slug: string): string {
   return slug.replace(/^\/+/, '').replace(/\/+$/, '');
