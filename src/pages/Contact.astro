@@ -86,7 +86,10 @@ import Layout from '../layouts/Layout.astro';
             <div class="confirm-preview is-hidden">
                 <div class="preview-header">
                     <h1>Confirm</h1>
-                    <a id="close-preview"><img src="/icons/close.svg" alt="Close Icon"/></a>
+                    <a id="close-preview">
+                        <span></span>
+                        <span></span>
+                    </a>
                 </div>
                 <div class="preview-body">
                     <div class="preview-item-left">
@@ -445,7 +448,8 @@ import Layout from '../layouts/Layout.astro';
 
     .form {
         width: 100%;
-        padding: 0 140px;
+        /* padding: 0 140px; */
+        max-width: 920px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -633,12 +637,43 @@ import Layout from '../layouts/Layout.astro';
         font-weight: 400;
         line-height: normal;
         letter-spacing: 6px;
+        cursor: default;
     }
 
-    #close-preview img {
+    #close-preview{
         width: 36px;
         height: 36px;
         cursor: pointer;
+        position: relative;
+    }
+
+    #close-preview span {
+        position: absolute;
+        display: block;
+        width: 120%;
+        height: 1px;
+        background-color: #000000;
+        top: calc(50% - 0.5px);
+        left: -10%;
+        transform-origin: center;
+    }
+
+    #close-preview span:first-child {
+        transform:  rotate(45deg);
+        transition: all 0.3s;
+    }
+
+    #close-preview span:last-child {
+        transform: rotate(-45deg);
+        transition: all 0.3s;
+    }
+
+    #close-preview:hover > span:first-child {
+        transform:  rotate(-135deg);
+    }
+
+    #close-preview:hover > span:last-child {
+        transform: rotate(135deg);
     }
 
     .preview-body {
@@ -659,6 +694,7 @@ import Layout from '../layouts/Layout.astro';
         font-weight: 500;
         line-height: normal;
         letter-spacing: 3px;
+        cursor: default;
     }
 
     .preview-item-content {

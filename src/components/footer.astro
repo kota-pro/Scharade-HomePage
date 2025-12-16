@@ -100,7 +100,7 @@ const optimizedBackground = await getImage({src: background, format: 'webp'});
         cursor: pointer;
     }
 
-    footer a::after {
+    footer a:not(.footer-title)::after {
         position: absolute;
         left: 0; /* aタグの左端からアンダーラインを引く */
         right: 0; /* aタグの右端からアンダーラインを引く */
@@ -116,6 +116,14 @@ const optimizedBackground = await getImage({src: background, format: 'webp'});
 
     footer a:hover::after {
         transform: scale(1, 1); /* アンダーラインを表示 */
+    }
+
+    footer a:focus > * {
+        color: #0db49b;
+    }
+
+    footer a:focus::after {
+        background-color: #0db49b;
     }
 
     .footer-title:active {
@@ -206,99 +214,148 @@ const optimizedBackground = await getImage({src: background, format: 'webp'});
     .footer-logo h3 {
         margin-top: 25px;
     }
-    @media (max-width:800px){
-    footer {
-        padding:30px;
-        margin-top: 60px;
-        height:626px;
+
+    @media (max-width: 1024px) {
+        footer {
+            padding: 85px 85px 35px;
+            margin-top: 60px;
+            /* height:626px; */
+        }
+
+        .footer-logo {
+            bottom: 35px;
+            right: 85px;
+            width: 350px;
+        }
+
+        .footer-logo h3{
+            font-size: 16px;
+            margin-top: 12px;
+        }
     }
-    footer a{
-        margin-right: 0;
-    }
-    footer h1{
-        font-size:24px;
-    }
-    footer h2{
-        font-size:12px;
-    }
-    footer h3{
-        display:flex;
-        font-size:13px;
-        justify-content: center;
-        margin-top: 35px;
-    }
-    footer a::after,.member-links a::after{
-        content:none;
-    }
-    .text {
-        display:inline-block;
-        position: relative;
-    }
-    .text::after{
-        content:'';
-        position:absolute;
-        left:0;
-        right:0;
-        bottom:0; 
-        height:1px;
-        background:#b6b6b6;
-        transform:scaleX(0);
-        transform-origin:center;
-        transition: transform 0.3s; 
-    }
-    .footer-links a:hover .text::after,
-    .member-links a:hover .text::after 
-    {
-        transform: scaleX(1);
-    }
-    .link.active .text::after {
-        background-color:#0db49b;
-    }
-    .footer-links{
-        display:flex;
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .footer-links a{
-        display: block;
-        width: 100%;
-        text-align: center;
-        margin: 0;
-        padding: 10px 0;
-        font-size: 13px;
-        border-bottom: 1px solid rgba(255,255,255,.6);
-    }
-    .links-upper-tier {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-    .links-upper-tier a:first-child {
-        border-top: 1px solid rgba(255,255,255,.6);
-    }
-    .links-lower-tier {
-        flex-direction: column;
-        margin-top:0;
-    }
-    .member-links {
-        justify-content: space-around;
-        border-bottom:1px solid rgba(255,255,255,.6);
-        border-top: 1px solid rgba(255,255,255,.6);;
-    }
-    .member-links a{
-        font-size: 13px;
-        padding-bottom: 10px;
-        padding-top: 10px;
-    }
-    .footer-logo {
-        bottom: 30px;
-        right:30px;
-        width:256px;
-    }
-    .footer-logo h3{
-        font-size: 10px;
-        margin-top: 12px;
-    }
+
+    @media (max-width: 800px) {
+        footer {
+            padding:30px;
+            margin-top: 60px;
+            height:626px;
+        }
+
+        footer a{
+            margin-right: 0;
+        }
+
+        footer h1{
+            font-size:24px;
+        }
+
+        footer h2{
+            font-size:12px;
+        }
+    
+        footer h3{
+            display:flex;
+            font-size:13px;
+            justify-content: center;
+            margin-top: 35px;
+        }
+
+        footer a::after,.member-links a::after{
+            content:none;
+        }
+
+        .text {
+            display:inline-block;
+            position: relative;
+        }
+
+        .text::after{
+            content:'';
+            position:absolute;
+            left:0;
+            right:0;
+            bottom:0; 
+            height:1px;
+            background:#b6b6b6;
+            transform:scaleX(0);
+            transform-origin:center;
+            transition: transform 0.3s; 
+        }
+
+        .footer-links a:hover .text::after,
+        .member-links a:hover .text::after {
+            transform: scaleX(1);
+        }
+
+        .link.active .text::after {
+            background-color:#0db49b;
+        }
+        
+        .footer-links{
+            display:flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .footer-links a{
+            display: block;
+            width: 100%;
+            text-align: center;
+            margin: 0;
+            padding: 10px 0;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(255,255,255,.6);
+        }
+
+        .links-upper-tier {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .links-upper-tier a:first-child {
+            border-top: 1px solid rgba(255,255,255,.6);
+        }
+
+        .links-lower-tier {
+            flex-direction: column;
+            margin-top:0;
+        }
+
+        .member-links {
+            justify-content: space-around;
+            border-bottom:1px solid rgba(255,255,255,.6);
+            border-top: 1px solid rgba(255,255,255,.6);;
+            position: relative;
+        }
+
+        .member-links::after{
+            content: '';
+            display: block;
+            width: 1px;
+            height: calc(100% - 10px);
+            background: #b6b6b6;
+            position: absolute;
+            top: 5px;
+            left: calc(50% - 0.5px);
+        }
+
+        .member-links a{
+            font-size: 13px;
+            padding-bottom: 10px;
+            padding-top: 10px;
+        }
+
+        .footer-logo {
+            bottom: 30px;
+            right:30px;
+            width:256px;
+        }
+
+        .footer-logo h3{
+            font-size: 10px;
+            margin-top: 12px;
+        }
     }
 </style>
