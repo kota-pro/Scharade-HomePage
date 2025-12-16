@@ -48,7 +48,12 @@ const response = await microcmsClient.getList({
 const cardImages = response.contents;
 
 const fixedTexts = [
-  { title: "Portrait", text: "ポートレート撮影の作品です。", slug: "#" },
+    { title: "Portrait", text: "ポートレート撮影の作品です。", slug: "#", image: `<svg xmlns="http://www.w3.org/2000/svg" width="78" height="59" viewBox="0 0 78 59" fill="none">
+              <path d="M38.875 52.5666C47.0972 52.5666 53.7626 45.8782 53.7626 37.6278C53.7626 29.3773 47.0972 22.689 38.875 22.689C30.6528 22.689 23.9875 29.3773 23.9875 37.6278C23.9875 45.8782 30.6528 52.5666 38.875 52.5666Z" stroke="white" />
+              <path d="M38.875 57.6369C48.1795 57.6369 64.2629 57.6634 73.578 57.6104C76.1106 57.5821 76.6637 57.0237 76.6337 54.4063C76.6478 44.9709 76.6672 23.4295 76.6249 13.9021C76.5826 12.8329 76.5474 11.8185 75.658 11.2671C74.8831 10.7299 72.4649 10.6927 71.063 10.6821C68.8632 10.6627 65.9414 10.6786 63.4316 10.6715C61.2618 10.6645 59.4478 10.6185 58.2378 10.0866C54.1659 8.44123 57.4682 1.3138 52.262 1.1141C44.5849 0.925004 33.1616 1.01337 25.8526 1.07876C23.1931 1.13884 22.3478 2.57741 22.0501 4.87487C21.6961 7.91635 21.0814 10.2633 17.5749 10.5372C14.299 10.8076 10.4701 10.615 7.2013 10.6768C5.56865 10.7281 3.77397 10.5973 2.26637 11.1293C1.01767 11.6312 1.0617 12.9831 1.01239 14.2185C1.00358 25.4336 0.996536 46.8954 1.00182 57.6369" stroke="white" />
+              <path d="M38.912 57.5644C28.6195 57.681 19.6918 49.2352 19.1617 38.9708C18.024 24.0762 34.051 13.2251 47.3658 19.7482C54.2205 23.0194 58.6975 29.9188 58.701 37.7072" stroke="white" />
+            </svg>`
+  },
   { title: "Landscape", text: "風景写真の作品です。", slug: "#" },
   { title: "Snap", text: "日常のスナップ写真です。", slug: "#" },
   { title: "Studio", text: "スタジオ撮影の作品です。", slug: "#" },
@@ -228,65 +233,55 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
       </div>
       <div class="activity-table">
         <table>
-          <tbody>
-            {
-              cardRows.map((row, rowIndex) => (
-                <tr>
-                  {row.map((card, columnIndex) => {
-                    const slotIndex = rowIndex * 4 + columnIndex;
-                    const textData = fixedTexts[slotIndex];
+            <tbody>
+                {cardRows.map((row, rowIndex) => (
+                    <tr>
+                        {row.map((card, columnIndex) => {
+                            const slotIndex = rowIndex * 4 + columnIndex;
+                            const textData = fixedTexts[slotIndex];
+                            
+                            return (
+                                <td>
+                                        <div
+                                        class="activity-card"
+                                        id={`card-${slotIndex + 1}`}
+                                        style={`background-image: url(${card.image?.url});`}
+                                    >
+                                        <div class="activity-card-contents">
+                                            {textData?.image ? (
+                                                <div set:html={textData.image} style="display: contents;" />
+                                            ) : null}
 
-                    return (
-                      <td>
-                        <div
-                          class="activity-card"
-                          id={`card-${slotIndex + 1}`}
-                          style={`background-image: url(${card.image?.url});`}
-                        >
-                          <div class="activity-card-contents">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="78"
-                              height="59"
-                              viewBox="0 0 78 59"
-                              fill="none"
-                            >
-                              <path
-                                d="M38.875 52.5666C47.0972 52.5666 53.7626 45.8782 53.7626 37.6278C53.7626 29.3773 47.0972 22.689 38.875 22.689C30.6528 22.689 23.9875 29.3773 23.9875 37.6278C23.9875 45.8782 30.6528 52.5666 38.875 52.5666Z"
-                                stroke="white"
-                              />
-                              <path
-                                d="M38.875 57.6369C48.1795 57.6369 64.2629 57.6634 73.578 57.6104C76.1106 57.5821 76.6637 57.0237 76.6337 54.4063C76.6478 44.9709 76.6672 23.4295 76.6249 13.9021C76.5826 12.8329 76.5474 11.8185 75.658 11.2671C74.8831 10.7299 72.4649 10.6927 71.063 10.6821C68.8632 10.6627 65.9414 10.6786 63.4316 10.6715C61.2618 10.6645 59.4478 10.6185 58.2378 10.0866C54.1659 8.44123 57.4682 1.3138 52.262 1.1141C44.5849 0.925004 33.1616 1.01337 25.8526 1.07876C23.1931 1.13884 22.3478 2.57741 22.0501 4.87487C21.6961 7.91635 21.0814 10.2633 17.5749 10.5372C14.299 10.8076 10.4701 10.615 7.2013 10.6768C5.56865 10.7281 3.77397 10.5973 2.26637 11.1293C1.01767 11.6312 1.0617 12.9831 1.01239 14.2185C1.00358 25.4336 0.996536 46.8954 1.00182 57.6369"
-                                stroke="white"
-                              />
-                              <path
-                                d="M38.912 57.5644C28.6195 57.681 19.6918 49.2352 19.1617 38.9708C18.024 24.0762 34.051 13.2251 47.3658 19.7482C54.2205 23.0194 58.6975 29.9188 58.701 37.7072"
-                                stroke="white"
-                              />
-                            </svg>
+                                            {textData?.title && <h1>{textData.title}</h1>}
+                                            {textData?.text && <p class="activity-card-meta">{textData.text}</p>}
+                                        </div>
 
-                            {textData?.title && <h1>{textData.title}</h1>}
-                            {textData?.text && (
-                              <p class="activity-card-meta">{textData.text}</p>
-                            )}
-                          </div>
-
-                          {textData?.slug ? (
-                            <a
-                              class="activity-card-link"
-                              href={textData.slug}
-                              aria-label={`${textData.title || "詳細"} ページ`}
-                            />
-                          ) : null}
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))
-            }
-          </tbody>
+                                        {textData?.slug ? (
+                                            <a
+                                                class="activity-card-link"
+                                                href={textData.slug}
+                                                aria-label={`${textData.title || '詳細'} ページ`}
+                                            ></a>
+                                        ) : null}
+                                    </div>
+                                </td>
+                            );
+                        })}
+                    </tr>
+                ))}
+            </tbody>
         </table>
+        <div class="click-popup-2">
+            <div class="arrow-line-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="66" height="61" viewBox="0 0 66 61" fill="none">
+                    <path d="M23.9242 4.29224C23.9242 4.29224 17.23 35.9631 45.7531 55.3713" stroke="black" stroke-width="0.5"/>
+                    <line x1="23.5433" y1="3.12574" x2="18.4461" y2="14.172" stroke="black" stroke-width="0.5"/>
+                    <line x1="23.5464" y1="2.92325" x2="28.4454" y2="14.4558" stroke="black" stroke-width="0.5"/>
+                </svg>
+            </div>
+            <p>select!!</p>
+        </div>
+    </div>
 
         <div class="click-popup-2">
           <div class="arrow-line-2">
