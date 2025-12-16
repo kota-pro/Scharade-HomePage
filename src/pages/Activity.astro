@@ -31,7 +31,7 @@ const { contents: tags } = await microcmsClient.getList<Tag>({
 
 const tabs = buildTabs(posts, tags);
 
-const ITEMS_PER_PAGE = 2;
+const ITEMS_PER_PAGE = 10;
 ---
 
 <Layout>
@@ -85,7 +85,8 @@ const ITEMS_PER_PAGE = 2;
 
                 <input
                   class="page-input-top"
-                  type="number"
+                  type="text"
+                  inputmode="numeric"
                   min="1"
                   max={totalPages}
                   value="1"
@@ -247,6 +248,8 @@ const ITEMS_PER_PAGE = 2;
 
         if (p === currentPage) {
           a.style.textDecoration = "underline";
+          a.style.textDecorationThickness = "0.5px";
+          a.style.textUnderlineOffset = "4px";
         }
 
         a.addEventListener("click", (e) => {
