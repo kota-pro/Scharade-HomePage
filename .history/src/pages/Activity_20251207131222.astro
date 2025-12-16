@@ -1,0 +1,329 @@
+---
+import Layout from "../layouts/Layout.astro";
+import "../styles/UA+reset.css";
+import "../styles/Activity.css";
+import { microcmsClient } from "../lib/microcms";
+import type { Blog, Tag } from "../types/microcms";
+import {
+  buildTabs,
+  formatDate,
+  getPublishedDate,
+  normalizeTags,
+} from "../utils/blog";
+import { linkToPost } from "../utils/linkToPost";
+
+const { contents: posts } = await microcmsClient.getList<Blog>({
+  endpoint: "blog",
+  queries: {
+    limit: 100,
+    orders: "-publishedAt",
+    depth: 2,
+  },
+});
+
+const { contents: tags } = await microcmsClient.getList<Tag>({
+  endpoint: "blog-tags",
+  queries: {
+    limit: 100,
+    orders: "name",
+  },
+});
+
+const tabs = buildTabs(posts, tags);
+
+const ITEMS_PER_PAGE = 10;
+---
+
+<Layout>
+  <Fragment slot="main-slot">
+    <div class="section-title">
+      <h1>Activity</h1>
+      <div class="section-title-line"></div>
+    </div>
+  </Fragment>
+  <Fragment slot="menu-slot">
+    <div class="menu-contents-inner">
+      <a href="#" class="page-top-nav">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          ><path
+            fill="currentColor"
+            d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"
+          ></path></svg
+        >
+      </a>
+    </div>
+  </Fragment>
+  <Fragment slot="body-slot">
+    <div class="tab">
+      {
+        tabs.map((tab, index) => {
+          const inputId = `tab-${tab.slug}`;
+          const totalPosts = tab.posts.length;
+          const totalPages = Math.ceil(totalPosts / ITEMS_PER_PAGE);
+
+          return [
+            <input
+              type="radio"
+              id={inputId}
+              name="tab"
+              checked={index === 0}
+            />,
+            <label for={inputId}>{tab.label}</label>,
+            <div
+              class="tab-panel"
+              data-total-posts={totalPosts}
+              data-total-pages={totalPages}
+            >
+              <div class="tab-panel-number panel-top">
+                <a class="tab-posts-navigation prev-btn-top" href="#">
+                  <img src="/icons/leftarrow.svg" />
+                </a>
+
+                <input
+                  class="page-input-top"
+                  type="text"
+                  inputmode="numeric"
+                  min="1"
+                  max={totalPages}
+                  value="1"
+                />
+                <p>/</p>
+                <p>{totalPages}</p>
+
+                <a class="tab-posts-navigation next-btn-top" href="#">
+                  <img src="/icons/rightarrow.svg" />
+                </a>
+              </div>
+
+              <div class="post-list-container">
+                {tab.posts.length ? (
+                  tab.posts.map((post, postIndex) => (
+                    <article class="Activity-item" data-index={postIndex}>
+                      <a href={linkToPost(post.slug, "activity")}>
+                        <div class="Activity-text-container">
+                          <div class="Activity-info">
+                            <p class="Activity-date">
+                              {formatDate(getPublishedDate(post))}
+                            </p>
+                            {normalizeTags(post.tags).map((tag) => (
+                              <span class="Activity-tag">#{tag.name}</span>
+                            ))}
+                          </div>
+                          <h2 class="Activity-title">{post.title}</h2>
+                          <div class="Activity-excerpt-container">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="25"
+                              height="25"
+                              viewBox="0 0 25 25"
+                            >
+                              <path
+                                fill="currentColor"
+                                d="m14 20l-.713-.713l3.792-3.787H6V5h1v9.5h10.079l-3.792-3.792l.707-.714L19 15z"
+                              />
+                            </svg>
+                            {post.excerpt ? (
+                              <p class="Activity-excerpt">{post.excerpt}</p>
+                            ) : null}
+                          </div>
+                        </div>
+                        <img
+                          class="link-button"
+                          src="/icons/link.svg"
+                          alt="Link Icon"
+                        />
+                      </a>
+                    </article>
+                  ))
+                ) : (
+                  <p class="Activity-empty">該当する記事はまだありません。</p>
+                )}
+              </div>
+
+              {tab.posts.length > 0 && (
+                <div class="tab-panel-number panel-bottom">
+                  <a href="#" class="tab-posts-double-navigation first-btn">
+                    <img src="/icons/doubleleftarrow.svg" alt="First" />
+                  </a>
+
+                  <a href="#" class="tab-posts-navigation prev-btn">
+                    <img src="/icons/leftarrow.svg" alt="Prev" />
+                  </a>
+
+                  <div class="tab-posts-numbers" />
+
+                  <a href="#" class="tab-posts-navigation next-btn">
+                    <img src="/icons/rightarrow.svg" alt="Next" />
+                  </a>
+
+                  <a href="#" class="tab-posts-double-navigation last-btn">
+                    <img src="/icons/doublerightarrow.svg" alt="Last" />
+                  </a>
+                </div>
+              )}
+            </div>,
+          ];
+        })
+      }
+    </div>
+  </Fragment>
+</Layout>
+
+<script define:vars={{ ITEMS_PER_PAGE }}>
+  // すべての .page-input-top にフォーカス時末尾へキャレットを移動
+  document.querySelectorAll<HTMLInputElement>('.page-input-top').forEach((el) => {
+    el.addEventListener('focus', () => {
+      const len = el.value.length;
+      // Safari対策で少し遅延させる
+      setTimeout(() => {
+        try {
+          el.setSelectionRange(len, len);
+        } catch (_) {
+          // number 型で失敗するブラウザがある
+        }
+      }, 30);
+    });
+  });
+
+
+  document.querySelectorAll(".tab-panel").forEach((panel) => {
+    const totalPages = parseInt(panel.getAttribute("data-total-pages") || "1");
+    const totalPosts = parseInt(panel.getAttribute("data-total-posts") || "0");
+
+    if (totalPosts === 0) return;
+
+    let currentPage = 1;
+
+    const posts = panel.querySelectorAll(".Activity-item");
+    const inputTop = panel.querySelector(".page-input-top");
+    const numbersContainer = panel.querySelector(".tab-posts-numbers");
+
+    const btnFirst = panel.querySelector(".first-btn");
+    const btnPrev = panel.querySelector(".prev-btn");
+    const btnNext = panel.querySelector(".next-btn");
+    const btnLast = panel.querySelector(".last-btn");
+
+    const btnPrevTop = panel.querySelector(".prev-btn-top");
+    const btnNextTop = panel.querySelector(".next-btn-top");
+
+    const renderPage = (page) => {
+      if (page < 1) page = 1;
+      if (page > totalPages) page = totalPages;
+      currentPage = page;
+
+      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+      const endIndex = startIndex + ITEMS_PER_PAGE;
+
+      posts.forEach((post, index) => {
+        if (index >= startIndex && index < endIndex) {
+          post.style.display = "block";
+        } else {
+          post.style.display = "none";
+        }
+      });
+
+      if (inputTop) inputTop.value = currentPage.toString();
+      updatePaginationNumbers();
+    };
+
+    const updatePaginationNumbers = () => {
+      if (!numbersContainer) return;
+      numbersContainer.innerHTML = "";
+
+      const pagesSet = new Set([
+        1,
+        2,
+        totalPages - 1,
+        totalPages,
+        currentPage - 1,
+        currentPage,
+        currentPage + 1,
+      ]);
+
+      const sortedPages = Array.from(pagesSet)
+        .filter((p) => p >= 1 && p <= totalPages)
+        .sort((a, b) => a - b);
+
+      let prevPage = 0;
+      sortedPages.forEach((p) => {
+        if (prevPage > 0 && p - prevPage > 1) {
+          const dots = document.createElement("span");
+          dots.className = "separate-slash";
+          dots.textContent = "...";
+          numbersContainer.appendChild(dots);
+        }
+
+        const a = document.createElement("a");
+        a.className = "tab-posts-number";
+        a.textContent = p.toString();
+        a.href = "#";
+
+        if (p === currentPage) {
+          a.style.textDecoration = "underline";
+        }
+
+        a.addEventListener("click", (e) => {
+          e.preventDefault();
+          renderPage(p);
+        });
+
+        numbersContainer.appendChild(a);
+        prevPage = p;
+      });
+    };
+
+    if (inputTop) {
+      inputTop.addEventListener("change", (e) => {
+        const val = parseInt(e.target.value);
+        if (!isNaN(val)) renderPage(val);
+      });
+    }
+
+    btnPrevTop?.addEventListener("click", (e) => {
+      e.preventDefault();
+      renderPage(currentPage - 1);
+    });
+
+    btnNextTop?.addEventListener("click", (e) => {
+      e.preventDefault();
+      renderPage(currentPage + 1);
+    });
+
+    btnFirst?.addEventListener("click", (e) => {
+      e.preventDefault();
+      renderPage(1);
+    });
+
+    btnPrev?.addEventListener("click", (e) => {
+      e.preventDefault();
+      renderPage(currentPage - 1);
+    });
+
+    btnNext?.addEventListener("click", (e) => {
+      e.preventDefault();
+      renderPage(currentPage + 1);
+    });
+
+    btnLast?.addEventListener("click", (e) => {
+      e.preventDefault();
+      renderPage(totalPages);
+    });
+
+    renderPage(1);
+  });
+</script>
+
+<style>
+  input.page-input-top::-webkit-outer-spin-button,
+  input.page-input-top::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input.page-input-top[type="number"] {
+    -moz-appearance: textfield;
+  }
+</style>
