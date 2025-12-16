@@ -3,7 +3,7 @@ import Layout from "../layouts/Layout.astro";
 import "../styles/UA+reset.css";
 import "../styles/Activity.css";
 import { microcmsClient } from "../lib/microcms";
-import type { Blog, Tag } from "../types/microcms";
+import type { Blog } from "../types/microcms";
 import {
   buildTabs,
   formatDate,
@@ -21,15 +21,7 @@ const { contents: posts } = await microcmsClient.getList<Blog>({
   },
 });
 
-const { contents: tags } = await microcmsClient.getList<Tag>({
-  endpoint: "blog-tags",
-  queries: {
-    limit: 100,
-    orders: "name",
-  },
-});
-
-const tabs = buildTabs(posts, tags);
+const tabs = buildTabs(posts);
 
 const ITEMS_PER_PAGE = 10;
 ---
@@ -110,7 +102,7 @@ const ITEMS_PER_PAGE = 10;
                               {formatDate(getPublishedDate(post))}
                             </p>
                             {normalizeTags(post.tags).map((tag) => (
-                              <span class="Activity-tag">#{tag.name}</span>
+                              <span class="Activity-tag">#{tag}</span>
                             ))}
                           </div>
                           <h2 class="Activity-title">{post.title}</h2>

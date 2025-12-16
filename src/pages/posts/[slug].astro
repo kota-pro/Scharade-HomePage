@@ -3,7 +3,7 @@ import MypostLayout from "../../layouts/Mypost_Layout.astro";
 import "../../styles/UA+reset.css";
 import { microcmsClient } from "../../lib/microcms";
 import type { Blog } from "../../types/microcms";
-import { formatDate, getPublishedDate, normalizeTags } from "../../utils/blog";
+import { formatDate, getPublishedDate } from "../../utils/blog";
 
 export async function getStaticPaths() {
   const contents = await microcmsClient.getAllContents<Blog>({
@@ -49,10 +49,10 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
     <div class="post-meta">
       {formattedDate ? <p class="post-date">{formattedDate}</p> : null}
       {
-        normalizeTags(post.tags).length ? (
+        post.tags && post.tags.length > 0 ? (
           <ul class="post-tags">
-            {normalizeTags(post.tags).map((tag) => (
-              <li class="post-tag">#{tag.name}</li>
+            {post.tags.map((tag) => (
+              <li class="post-tag">#{tag}</li>
             ))}
           </ul>
         ) : null
@@ -169,10 +169,8 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
     position: relative;
   }
 
-  /* ✨ ここを修正しました */
   .post-eyecatch::after {
     content: "";
-    /* HTML側で計算した変数を呼び出します */
     background-image: var(--tape-url);
     background-size: cover;
     background-repeat: no-repeat;
@@ -183,7 +181,6 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
     position: absolute;
     top: -20px;
     left: 35%;
-    /* HTML側で計算した変数を呼び出します */
     transform: rotate(var(--tape-rotate));
     z-index: 10 !important;
   }
