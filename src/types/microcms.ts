@@ -17,7 +17,7 @@ export type Blog = {
   excerpt?: string;
   body?: string;
   pictures?: MicroCMSImage[];
-  tags?: Tag[] | Tag;
+  tags: string[];
 } & MicroCMSContentId &
   MicroCMSDate;
 
