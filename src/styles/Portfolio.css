@@ -1,35 +1,233 @@
+/* フォント設定（Galleryと同じZen Old Minchoを前提） */
+.portfolio-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 40px 100px;
+    font-family: "Zen Old Mincho", serif;
+    color: #333;
+}
+
+/* タイトルエリア */
 .section-title {
     display: flex;
     flex-direction: row;
-    align-items: space-between;
-    justify-content: center;
-    margin-bottom: 55px;
+    align-items: center;
+    margin-bottom: 40px;
 }
 
-.section-title  h1{
+.section-title h1 {
     color: #000;
-    font-family: "Didot";
-    font-size: 96px;
-    font-style: normal;
+    font-family: "Didot", serif; /* デザインのフォントに合わせる */
+    font-size: 80px; /* 少し調整 */
     font-weight: 400;
-    line-height: normal;
-    letter-spacing: 14.4px;
-    padding-right: 78px;
+    letter-spacing: 0.1em;
+    margin-right: 40px;
+    white-space: nowrap;
 }
 
 .section-title-line {
     width: 100%;
-    position: relative;
-}
-
-.section-title-line::after {
-    content: '';
-    display: block;
-    width: 100%;
     height: 1px;
     background: #000;
-    position: absolute;
-    top: 50%;
-    right: 0;
+    margin-top: 10px; /* 文字のベースラインに合わせる調整 */
 }
 
+.page-description {
+    margin-bottom: 60px;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    margin-left: 20px;
+}
+
+/* フィルタータブ */
+.filter-tabs-wrapper {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.filter-tabs {
+    display: flex;
+    gap: 5px;
+    padding-left: 20px;
+}
+
+.filter-tab {
+    list-style: none;
+    padding: 8px 15px;
+    font-size: 12px;
+    font-family: "Courier New", monospace, serif; /* タイプライター風フォント */
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-bottom: none;
+    transition: all 0.3s;
+    letter-spacing: 0.05em;
+    position: relative;
+    z-index: 2; /* 線より上に */
+}
+
+/* アクティブなタブのデザイン（囲み枠） */
+.filter-tab.active {
+    border: 1px solid #666;
+    border-bottom: 1px solid #fff; /* 下線を消して繋がってるように見せる */
+    background: #fff;
+    margin-bottom: -1px; /* 線に食い込ませる */
+}
+
+.filter-tab:hover:not(.active) {
+    color: #888;
+}
+
+/* タブの下線 */
+.tabs-border-line {
+    width: 100%;
+    height: 1px;
+    background: #666;
+    margin-top: -1px; /* タブの下端に合わせる */
+    position: relative;
+    z-index: 1;
+}
+
+/* ページネーション（上） */
+.pagination.top {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    font-family: "Courier New", monospace;
+    font-size: 14px;
+    margin-bottom: 40px;
+    color: #888;
+}
+
+/* セクション見出し（アコーディオン） */
+.section-heading {
+    font-size: 24px;
+    font-weight: normal;
+    margin-bottom: 30px;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    letter-spacing: 0.1em;
+}
+
+.section-heading::-webkit-details-marker {
+    display: none;
+}
+
+.arrow-icon {
+    font-size: 18px;
+    font-weight: lighter;
+}
+
+/* メンバーグリッド（5列） */
+.member-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* PCは5列 */
+    gap: 15px;
+    margin-bottom: 60px;
+    padding-left: 30px; /* インデント */
+}
+
+/* メンバーカード */
+.member-card {
+    aspect-ratio: 4 / 5; /* 少し縦長 */
+    position: relative;
+    background-color: #d9d9d9; /* プレースホルダーのグレー */
+    cursor: pointer;
+    transition: opacity 0.3s;
+}
+
+.member-card:hover {
+    opacity: 0.8;
+}
+
+.member-image-placeholder {
+    width: 100%;
+    height: 100%;
+    /* 画像が入る場合はここにimgタグを入れて object-fit: cover */
+}
+
+.member-info {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    pointer-events: none; /* 文字の上でもクリック判定を通す */
+}
+
+.member-grade {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    font-size: 10px;
+    font-family: "Courier New", monospace;
+    color: #666;
+    letter-spacing: 0.05em;
+}
+
+.member-name {
+    position: absolute;
+    bottom: 10px;
+    right: 15px;
+    font-size: 20px;
+    font-family: "Zen Old Mincho", serif;
+    color: #000;
+    letter-spacing: 0.1em;
+}
+
+/* ページネーション（下） */
+.pagination.bottom {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    font-family: "Courier New", monospace;
+    color: #888;
+    font-size: 12px;
+    padding-top: 40px;
+    border-top: 1px solid #ccc;
+}
+
+.page-arrow, .page-number {
+    cursor: pointer;
+}
+
+.page-arrow:hover, .page-number:hover {
+    color: #000;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 1024px) {
+    .member-grid {
+        grid-template-columns: repeat(3, 1fr); /* タブレットは3列 */
+    }
+    .section-title h1 {
+        font-size: 60px;
+    }
+}
+
+@media (max-width: 768px) {
+    .portfolio-container {
+        padding: 0 20px 60px;
+    }
+    
+    .filter-tabs {
+        overflow-x: auto; /* スマホでタブが多い場合はスクロール */
+        white-space: nowrap;
+        padding-bottom: 0;
+    }
+
+    .member-grid {
+        grid-template-columns: repeat(2, 1fr); /* スマホは2列 */
+        padding-left: 0;
+    }
+
+    .section-title h1 {
+        font-size: 40px;
+        margin-right: 20px;
+    }
+}
