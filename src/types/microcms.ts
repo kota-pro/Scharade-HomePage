@@ -20,5 +20,12 @@ export type Blog = {
   tags: string[];
 } & MicroCMSContentId &
   MicroCMSDate;
+export type Gallery = {
+  gallery_title: string;
+  date?: string;
+  tags?: string[];
+  pictures?: MicroCMSImage[];
+  top_image: MicroCMSImage;
+};
 
 export type BlogListResponse = MicroCMSListResponse<Blog>;

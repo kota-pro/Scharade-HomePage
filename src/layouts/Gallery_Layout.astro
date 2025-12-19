@@ -1,0 +1,29 @@
+---
+import Layout from "./Layout.astro";
+import "../styles/UA+reset.css";
+import "../styles/Gallery.css";
+
+const { title = "Gallery" } = Astro.props;
+---
+
+<Layout title={`Sharade | ${title}`}>
+  <Fragment slot="main-slot">
+    <div class="gallery-detail-wrapper">
+      <div class="section-title">
+        <h1>{title}</h1>
+        <div class="section-title-line"></div>
+      </div>
+
+      <slot />
+      
+    </div>
+  </Fragment>
+</Layout>
+
+<style>
+  .gallery-detail-wrapper {
+    width: 100%;
+    padding-bottom: 100px;
+    font-family: "Zen Old Mincho", serif;
+  }
+</style>
