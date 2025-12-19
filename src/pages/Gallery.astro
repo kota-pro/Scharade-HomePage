@@ -2,17 +2,137 @@
 import Layout from "../layouts/Layout.astro";
 import "../styles/UA+reset.css";
 import "../styles/Gallery.css";
+import { getAlbums, getAlbumCoverId } from "../lib/lightroom";
+const rawAlbums = await getAlbums();
+
+const albums = await Promise.all(
+  rawAlbums.map(async (album) => {
+    const coverId = await getAlbumCoverId(album.id);
+
+    return {
+      ...album,
+      coverId, 
+    };
+  })
+);
+const years = Array.from(
+  new Set(
+    albums.map((item) => {
+      return item.created
+        ? new Date(item.created).getFullYear()
+        : new Date().getFullYear();
+    }),
+  ),
+).sort((a, b) => b - a);
+
+const tabYears = ["All", ...years];
+const categories = ["撮影会", "合宿", "展示", "その他"];
+const getCategoryFromName = (name: string) => {
+  if (name.includes("撮影会")) return "撮影会";
+  if (name.includes("合宿")) return "合宿";
+  if (name.includes("展示")) return "展示";
+  return "その他";
+};
 ---
 
 <Layout>
-    <Fragment slot="main-slot">
-        <div class="section-title a-anchor">
-            <h1>Gallery</h1>
-            <div class="section-title-line"></div>
-        </div>
-    </Fragment>
-    <Fragment slot="menu-slot"></Fragment>
-    <Fragment slot="body-slot">
-        <p>Galleryページは現在準備中です。</p>
-    </Fragment>
+  <Fragment slot="main-slot">
+    <div class="gallery-container">
+      <div class="section-title">
+        <h1>Gallery</h1>
+        <div class="section-title-line"></div>
+      </div>
+
+      <div class="year-tabs">
+        {
+          tabYears.map((year, index) => (
+            <button
+              class={`year-tab ${index === 0 ? "active" : ""}`}
+              data-year={year}
+            >
+              {year}
+            </button>
+          ))
+        }
+        <div class="year-tabs-line"></div>
+      </div>
+
+      <div class="gallery-content">
+        {categories.map((category) => (
+          <details class="category-section" open={category === "その他"}>
+            <summary class="category-title">
+              <span class="arrow-icon">▷</span> {category}
+            </summary>
+            
+            <div class="gallery-grid">
+              {albums.map((item) => {
+                const itemYear = item.created ? new Date(item.created).getFullYear() : new Date().getFullYear();
+                const itemCategory = getCategoryFromName(item.payload.name);
+                if (itemCategory !== category) return null;
+
+                return (
+                  <div class="gallery-item" data-year={itemYear} style="display: block;">
+                    <a href={`/gallery/${item.id}`} class="gallery-link">
+                      <div class="image-wrapper">
+                        
+                        {item.coverId ? (
+                          <img 
+                            src={`/api/images/${item.coverId}`} 
+                            alt={item.payload.name} 
+                            loading="lazy"
+                            style="width: 100%; height: 200px; object-fit: cover;"
+                          />
+                        ) : (
+                          <div class="placeholder-image" style="width: 100%; height: 200px; background: #eee; display: flex; align-items: center; justify-content: center; color: #888;">
+                            No Image
+                          </div>
+                        )}
+                        
+                        <p class="image-title">{item.payload.name}</p>
+                      </div>
+                    </a>
+                  </div>
+                );
+              })}
+            </div>
+          </details>
+        ))}
+      </div>
+      
+    </div>
+  </Fragment>
 </Layout>
+
+<script>
+  const tabs = document.querySelectorAll(".year-tab");
+  
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      tabs.forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+
+      const selectedYear = tab.getAttribute("data-year");
+      const items = document.querySelectorAll(".gallery-item");
+
+      items.forEach((item) => {
+        const itemYear = item.getAttribute("data-year");
+
+        if (selectedYear === "All" || itemYear === selectedYear) {
+          (item as HTMLElement).style.display = "block";
+        } else {
+          (item as HTMLElement).style.display = "none";
+        }
+      });
+    });
+  });
+
+  const details = document.querySelectorAll("details");
+  details.forEach((detail) => {
+    const updateArrow = () => {
+      const arrow = detail.querySelector(".arrow-icon");
+      if (arrow) arrow.textContent = detail.open ? "▽" : "▷";
+    };
+    detail.addEventListener("toggle", updateArrow);
+    updateArrow();
+  });
+</script>
