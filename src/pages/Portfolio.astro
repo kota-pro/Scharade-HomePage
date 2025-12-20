@@ -9,12 +9,11 @@ import { getPortfolios } from "../lib/microcms";
 // フィルター用タブの項目
 const tabs = [
   "All",
-  "1st Grade",
-  "2nd Grade",
-  "3rd Grade",
-  "4th Grade",
-  "Master",
-  "International",
+  "50th",
+  "49th",
+  "48th",
+  "47th",
+  "46th",
   "Graduate",
 ];
 
@@ -29,57 +28,54 @@ const portfolios = response.contents;
 
 <Layout title="Sharade | Portfolio">
   <Fragment slot="main-slot">
-    <div class="portfolio-container">
-      
-      {/* タイトルセクション */}
-      <div class="section-title">
-        <h1>Portfolio</h1>
-        <div class="section-title-line"></div>
-      </div>
-
-      <p class="page-description">
+    <div class="section-title">
+      <h1>Portfolio</h1>
+      <div class="section-title-line"></div>
+    </div>
+  </Fragment>
+  <Fragment slot="menu-slot">
+    <div class="menu-contents-inner">
+      <a href="#" class="page-top-nav">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          ><path
+            fill="currentColor"
+            d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"
+          ></path></svg
+        >
+      </a>
+    </div>
+  </Fragment>
+  <Fragment slot="body-slot">
+    <div class="explanation-area">
+      <p>
         サークル員のポートフォリオになります。ぜひご鑑賞ください。
       </p>
-
-      {/* フィルタータブ */}
-      <div class="filter-tabs-wrapper">
-        <ul class="filter-tabs">
-          {tabs.map((tab, index) => (
-            <li class={`filter-tab ${index === 0 ? "active" : ""}`}>
-              {tab}
-            </li>
-          ))}
-        </ul>
-        <div class="tabs-border-line"></div>
-      </div>
-
-      {/* ページネーション（上） */}
-      <div class="pagination top">
-        <span class="page-arrow">◁</span>
-        <span class="page-count">1 / {portfolios.length}</span>
-        <span class="page-arrow">▷</span>
-      </div>
-
-      {/* メンバーリスト（アコーディオン） */}
-      <details class="member-section" open>
+    </div>
+    
+    {/* メンバーリスト（アコーディオン） */}
+    {tabs.map((tab) => (
+      <details class={`${tab.toLowerCase().replace(/ /g, "_")}_members`} name="member-section">
         <summary class="section-heading">
-          <span class="arrow-icon">▷</span> All Members
+          <img class="arrow-icon" src="/icons/rightarrow.svg" alt="arrow icon">{tab} Members
         </summary>
-        
         <div class="member-grid">
+          {/* 各タブに応じたメンバーのカードをここに追加 */}
           {/* ★修正：microCMSのデータを表示 */}
           {portfolios.map((portfolio) => (
             /* 詳細ページへのリンクに変更（aタグ） */
-            <a href={`/portfolio/${portfolio.id}`} class="member-card" style="display: block; text-decoration: none; color: inherit;">
+            <a href={`/Portfolio/${portfolio.id}`} class="member-card" style="display: block; text-decoration: none; color: inherit;">
               <div class="member-image-placeholder">
-                 {/* アイコン画像があれば表示、なければグレーのまま */}
-                 {portfolio.icon ? (
+                  {/* アイコン画像があれば表示、なければグレーのまま */}
+                  {portfolio.icon ? (
                     <img 
                       src={portfolio.icon.url} 
                       alt={portfolio.name}
-                      style="width: 100%; height: 100%; object-fit: cover;"
                     />
-                 ) : null}
+                  ) : null}
               </div>
               
               <div class="member-info">
@@ -90,19 +86,7 @@ const portfolios = response.contents;
           ))}
         </div>
       </details>
-
-      {/* ページネーション（下） */}
-      <div class="pagination bottom">
-        <span class="page-arrow">◁</span>
-        <span class="page-arrow">◁</span>
-        <span class="page-number">1</span>
-        {/* 以下略...実装時はロジックが必要ですが一旦そのまま */}
-        <span class="page-dots">...</span>
-        <span class="page-arrow">▷</span>
-        <span class="page-arrow">▷</span>
-      </div>
-
-    </div>
+    ))}
   </Fragment>
 </Layout>
 
@@ -111,21 +95,12 @@ const portfolios = response.contents;
   const details = document.querySelectorAll("details");
   details.forEach((detail) => {
     const summary = detail.querySelector("summary");
-    const arrow = summary?.querySelector(".arrow-icon");
+    const arrow = summary?.querySelector(".arrow-icon") as HTMLElement;
     
     if(arrow) {
         detail.addEventListener("toggle", () => {
-            arrow.textContent = detail.open ? "▽" : "▷";
+            arrow.style.transform = detail.open ? "rotate(90deg)" : "rotate(0deg)";
         });
     }
-  });
-
-  // タブの切り替えロジック（見た目だけ）
-  const tabs = document.querySelectorAll(".filter-tab");
-  tabs.forEach(tab => {
-    tab.addEventListener("click", () => {
-        tabs.forEach(t => t.classList.remove("active"));
-        tab.classList.add("active");
-    });
   });
 </script>

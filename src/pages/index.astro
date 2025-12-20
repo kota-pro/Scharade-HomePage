@@ -43,8 +43,8 @@ const cardImages = response.contents;
 
 const fixedTexts = [
   {
-    title: "Portrait",
-    text: "ポートレート撮影の作品です。",
+    title: "Scharade",
+    text: "",
     slug: "#",
     image: `<svg xmlns="http://www.w3.org/2000/svg" width="78" height="59" viewBox="0 0 78 59" fill="none">
               <path d="M38.875 52.5666C47.0972 52.5666 53.7626 45.8782 53.7626 37.6278C53.7626 29.3773 47.0972 22.689 38.875 22.689C30.6528 22.689 23.9875 29.3773 23.9875 37.6278C23.9875 45.8782 30.6528 52.5666 38.875 52.5666Z" stroke="white" />
@@ -52,13 +52,13 @@ const fixedTexts = [
               <path d="M38.912 57.5644C28.6195 57.681 19.6918 49.2352 19.1617 38.9708C18.024 24.0762 34.051 13.2251 47.3658 19.7482C54.2205 23.0194 58.6975 29.9188 58.701 37.7072" stroke="white" />
             </svg>`,
   },
-  { title: "Landscape", text: "風景写真の作品です。", slug: "#" },
-  { title: "Snap", text: "日常のスナップ写真です。", slug: "#" },
-  { title: "Studio", text: "スタジオ撮影の作品です。", slug: "#" },
-  { title: "Event", text: "イベントの記録写真です。", slug: "#" },
-  { title: "Film", text: "フィルムカメラで撮影しました。", slug: "#" },
-  { title: "Monochrome", text: "モノクロ写真の世界です。", slug: "#" },
-  { title: "Other", text: "その他の作品です。", slug: "#" },
+  { title: "定例会", text: "月に2回、E212の部室にて定例会を行なっています。定例会ではカメラ講習、ボドゲ大会などを行なっています。", slug: "#" },
+  { title: "撮影会", text: "月に2回、週末に撮影会を行なっています。撮影会ではいろいろな場所に赴きスナップ写真を撮りながら楽しんでいます。", slug: "#" },
+  { title: "展示", text: "新人展、六月展、早稲田祭展、卒業制作展、二月展と年5回展示を行っています。場所は学生会館で行うこともあれば場所をお借りして行うこともあります。", slug: "#" },
+  { title: "夏合宿", text: "毎年８月から９月ごろに夏合宿を行います。2025年は石川・富山県、2024年は熱海・伊東にて行いました。", slug: "#" },
+  { title: "春合宿", text: "毎年2月から3月ごろに春合宿を行います。2025年は蔵王温泉・仙台、2024年には湯田中温泉にて行いました。。", slug: "#" },
+  { title: "新歓", text: "新入生の方々をサークル員一同歓迎いたします。例年ご飯会や撮影会などを行ってサークルの雰囲気を知ってもらえるうな企画を行っています。", slug: "#" },
+  { title: "部室", text: "学生会館の2階というエレベーターなどを使わずにいけるとてもいい立地に部室があります。中には冷蔵庫や電子レンジなどくつろげる空間になっており、本サークルの目玉でもあります。", slug: "#" },
 ];
 
 const cardRows = [];
@@ -1547,7 +1547,6 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 0 120px;
   }
 
   .tab {
@@ -1793,6 +1792,7 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
   .activity-table-text {
     width: 100%;
     height: 100%;
+    padding: 0 120px;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -1919,7 +1919,7 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
   }
 
   .activity-card:hover h1 {
-    margin-top: 20px;
+    /* margin-top: 20px; */
     margin-bottom: 84px;
     transition: 0.3s ease-in-out;
   }
@@ -1950,7 +1950,7 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
     font-family: "Zen Old Mincho";
     font-size: 14px;
     letter-spacing: 1.5px;
-    margin: 12px 0 8px;
+    /* margin: 12px 0 8px; */
   }
 
   .activity-card-link {
