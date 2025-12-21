@@ -3,6 +3,8 @@ dist
 .next
 .DS_Store
 .env
+/.history
+.env.*
 next-app/.next
 next-app/node_modules
 public/images/photo_library
