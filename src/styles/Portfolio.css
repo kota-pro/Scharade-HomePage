@@ -197,22 +197,31 @@ details[open] .arrow-icon {
 
 .member-grade {
     position: absolute;
-    top: 10px;
-    left: 12px;
-    font-size: 10px;
-    font-family: "Courier New", monospace;
-    color: #666;
-    letter-spacing: 0.05em;
+    top: 5px;
+    left: 10px;
+    color: #ffffff;
+    font-family: "Grandiflora One";
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 2.4px;
+    mix-blend-mode: exclusion;
 }
 
 .member-name {
     position: absolute;
     bottom: 10px;
-    right: 15px;
+    right: 10px;
+    color: #ffffff;
+    text-align: right;
+    font-family: "Zen Kurenaido";
     font-size: 20px;
-    font-family: "Zen Old Mincho", serif;
-    color: #000;
-    letter-spacing: 0.1em;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 4.8px;
+    mix-blend-mode: exclusion;
 }
 
 /* レスポンシブ対応 */

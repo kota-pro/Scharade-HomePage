@@ -80,9 +80,9 @@ const pictures = portfolio.pictures || [];
               />
             )}
         </div>
-        <div>
-          {gradeNumber && <span class="grade-num">{gradeNumber}</span>}
-          {gradeText && <span class="grade-txt">{gradeText}</span>}
+        <div class="grade-text-overlay">
+          {gradeNumber && <p class="grade-num">{gradeNumber}</p>}
+          {/* {gradeText && <p class="grade-txt">{gradeText}</p>} */}
         </div>
     </div>
   </div>
@@ -237,6 +237,16 @@ const pictures = portfolio.pictures || [];
     object-fit: cover;
   }
 
+  .grade-text-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2 !important;
+    left: -102px;
+    top: 37px;
+  }
+
   .grade-num {
     color: #555;
     font-family: "Grandiflora One";
@@ -245,19 +255,15 @@ const pictures = portfolio.pictures || [];
     font-weight: 400;
     line-height: normal;
     letter-spacing: 30px;
-    position: absolute;
-    left: -20px;
-    top: 30px;
-    z-index: 2 !important;
   }
   .grade-txt {
-    font-family: "Courier New", monospace;
-    font-size: 32px;
-    position: absolute;
-    right: 20px;
-    bottom: 60px;
-    color: #333;
-    z-index: 2 !important;
+    color: #000;
+    font-family: "Grandiflora One";
+    font-size: 64px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 9.6px;
   }
 
   .divider-line {
@@ -309,6 +315,7 @@ const pictures = portfolio.pictures || [];
   .photo-item:hover img {
     transform: scale(1.05);
   }
+
 
   @media (max-width: 768px) {
     .section-title h1 {

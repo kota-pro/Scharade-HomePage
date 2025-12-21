@@ -75,12 +75,17 @@ const portfolios = response.contents;
                       src={portfolio.icon.url} 
                       alt={portfolio.name}
                     />
-                  ) : null}
+                  ) : (
+                    <img 
+                      src="/images/placeholder_icon.jpeg" 
+                      alt="Placeholder Icon"
+                    />
+                  )}
               </div>
               
               <div class="member-info">
-                <span class="member-grade">{portfolio.grade}</span>
-                <span class="member-name">{portfolio.name}</span>
+                <p class="member-grade">{portfolio.grade}</p>
+                <p class="member-name">{portfolio.name}</p>
               </div>
             </a>
           ))}
