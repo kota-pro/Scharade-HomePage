@@ -36,20 +36,25 @@ const pictures = portfolio.pictures || [];
 <Layout title={`Portfolio | ${portfolio.name}`} from="Portfolio">
   <div class="profile-section">
     <div class="profile-info">
-      <h2 class="profile-name">{portfolio.name}</h2>
-      
-      <div class="social-links">
-        {portfolio.instagram && (
-          <a href={`https://instagram.com/${portfolio.instagram}`} target="_blank" rel="noopener noreferrer" class="social-icon">
-            <span style="font-family: sans-serif;">📷</span>
-            <span>Instagram</span>
-          </a>
-        )}
+      <div class="section-head">
+        <h2 class="profile-name">{portfolio.name}</h2>
+        <div class="social-links">
+          {portfolio.instagram && (
+            <a href={`https://instagram.com/${portfolio.instagram}`} target="_blank" rel="noopener noreferrer" class="social-icon">
+              <img src="/icons/Instagram.svg" alt="Instagram">
+            </a>
+          )}
+        </div>
       </div>
 
       <div class="profile-meta">
-        <p class="tags">#Photo #Portrait</p> 
-        <p class="camera-info">Camera Info...</p>
+        <p class="tags">#Updated At: {new Date(portfolio.updatedAt).toLocaleDateString()}</p>
+        <div>
+          <p class="tags">#夜景</p>
+          <p class="tags">#Snap Shot</p>
+          <p class="tags">#Portrait</p>
+        </div>
+
       </div>
 
       <div class="profile-bio">
@@ -67,12 +72,17 @@ const pictures = portfolio.pictures || [];
                 width={portfolio.icon.width}
                 height={portfolio.icon.height}
               />
-            ) : (
-              <>
-                {gradeNumber && <span class="grade-num">{gradeNumber}</span>}
-                {gradeText && <span class="grade-txt">{gradeText}</span>}
-              </>
+            ):(
+              <img 
+                src="/images/placeholder_icon.jpeg" 
+                alt="Placeholder Icon" 
+                class="grade-icon-img"
+              />
             )}
+        </div>
+        <div>
+          {gradeNumber && <span class="grade-num">{gradeNumber}</span>}
+          {gradeText && <span class="grade-txt">{gradeText}</span>}
         </div>
     </div>
   </div>
@@ -81,8 +91,8 @@ const pictures = portfolio.pictures || [];
 
   <div class="photos-section">
     <div class="photos-header">
-        <span class="click-hint">click!! ⤵</span>
-        <div class="pagination-simple">◁ 1 / {pictures.length} ▷</div>
+      <span class="click-hint"><p class="tags">Pictures Count: {pictures.length}</p></span>
+      <div class="pagination-simple">◁ 1 / {pictures.length} ▷</div>
     </div>
 
     <div class="photo-grid">
@@ -114,6 +124,14 @@ const pictures = portfolio.pictures || [];
     width: 62.75%;
   }
 
+  .section-head {
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
   .profile-name {
     color: #000;
     font-family: "Zen Old Mincho";
@@ -127,29 +145,56 @@ const pictures = portfolio.pictures || [];
   .social-links {
     display: flex;
     gap: 15px;
-    margin-bottom: 20px;
+    align-items: center;
   }
   .social-icon {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 0.9rem;
-      color: #888;
-      text-decoration: none;
+    width: 50px;
+    height: 50px;
+    display: inline-block;
+    padding: 10px 10px;
+  }
+
+  .social-icon img {
+    cursor: pointer;
+    filter: invert(59%) sepia(1%) saturate(380%) hue-rotate(24deg) brightness(103%) contrast(99%);
+  }
+
+
+  .social-icon:hover {
+    background-color: #e0dede;
+  }
+
+  .social-icon:hover img {
+    filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(335deg) brightness(106%) contrast(102%);
   }
 
   .profile-meta {
-    font-family: "Courier New", monospace;
-    font-size: 14px;
-    color: #666;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex-wrap: wrap;
     margin-bottom: 30px;
-    line-height: 1.8;
+  }
+
+  .tags {
+    color: #909090;
+    font-family: "Zen Kurenaido";
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 200;
+    line-height: normal;
+    letter-spacing: 3px;
+  }
+
+  .profile-meta > div {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 20px;
   }
 
   .profile-bio {
     white-space: pre-wrap;
-    overflow-y: auto;
-    height: 145px;
     display: flex;
     align-items: center;
   }
@@ -157,30 +202,33 @@ const pictures = portfolio.pictures || [];
   .profile-bio p {
     color: #000;
     font-family: "Zen Kurenaido";
-    font-size: 20px;
+    font-size: 18px;
     font-style: normal;
     font-weight: 400;
-    line-height: normal;
+    line-height: 1.5;
     letter-spacing: 3px;
   }
+
   .grade-circle-wrapper {
-      position: relative;
-      width: 200px;
-      height: 200px;
-      flex-shrink: 0; 
+    width: 300px;
+    height: 300px;
+    flex-shrink: 0;
+    margin-top: 20px;
+    z-index: 1 !important;
+    position: relative;
   }
   
   .grade-circle {
-      width: 100%;
-      height: 100%;
-      background-color: #ddd;
-      border-radius: 50%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      position: relative;
-      overflow: hidden;
+    width: 100%;
+    height: 100%;
+    border: 1px solid #ccc;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    z-index: 1 !important;
   }
 
   .grade-icon-img {
@@ -190,21 +238,26 @@ const pictures = portfolio.pictures || [];
   }
 
   .grade-num {
-      font-family: "Didot", serif;
-      font-size: 100px;
-      line-height: 1;
-      font-weight: 400;
-      position: absolute;
-      left: -20px;
-      top: 30px;
+    color: #555;
+    font-family: "Grandiflora One";
+    font-size: 200px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 30px;
+    position: absolute;
+    left: -20px;
+    top: 30px;
+    z-index: 2 !important;
   }
   .grade-txt {
-      font-family: "Courier New", monospace;
-      font-size: 32px;
-      position: absolute;
-      right: 20px;
-      bottom: 60px;
-      color: #333;
+    font-family: "Courier New", monospace;
+    font-size: 32px;
+    position: absolute;
+    right: 20px;
+    bottom: 60px;
+    color: #333;
+    z-index: 2 !important;
   }
 
   .divider-line {
@@ -224,9 +277,14 @@ const pictures = portfolio.pictures || [];
   }
   
   .click-hint {
-      font-family: cursive;
-      transform: rotate(-10deg);
-      display: inline-block;
+    color: #909090;
+    font-family: "Zen Kurenaido";
+    font-size: 18px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
+    display: inline-block;
   }
 
   .photo-grid {
@@ -236,41 +294,41 @@ const pictures = portfolio.pictures || [];
   }
 
   .photo-item {
-      aspect-ratio: 1 / 1;
-      background: #eee;
-      overflow: hidden;
+    aspect-ratio: 1 / 1;
+    background: #eee;
+    overflow: hidden;
   }
   
   .photo-item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.3s ease;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
   }
   
   .photo-item:hover img {
-      transform: scale(1.05);
+    transform: scale(1.05);
   }
 
   @media (max-width: 768px) {
-      .section-title h1 {
-          font-size: 50px;
-      }
-      .profile-section {
-          flex-direction: column-reverse;
-          gap: 40px;
-          align-items: center;
-      }
-      .profile-info {
-          max-width: 100%;
-      }
-      .grade-circle-wrapper {
-          align-self: center;
-          margin-bottom: 20px;
-          width: 150px;
-          height: 150px;
-      }
-      .grade-num { font-size: 80px; left: -10px; top: 20px; }
-      .grade-txt { font-size: 24px; right: 10px; bottom: 40px; }
+    .section-title h1 {
+      font-size: 50px;
+    }
+    .profile-section {
+      flex-direction: column-reverse;
+      gap: 40px;
+      align-items: center;
+    }
+    .profile-info {
+      max-width: 100%;
+    }
+    .grade-circle-wrapper {
+      align-self: center;
+      margin-bottom: 20px;
+      width: 150px;
+      height: 150px;
+    }
+    .grade-num { font-size: 80px; left: -10px; top: 20px; }
+    .grade-txt { font-size: 24px; right: 10px; bottom: 40px; }
   }
 </style>
