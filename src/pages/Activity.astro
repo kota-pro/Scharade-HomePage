@@ -171,6 +171,38 @@ const ITEMS_PER_PAGE = 10;
 </Layout>
 
 <script define:vars={{ ITEMS_PER_PAGE }}>
+  // Tab switching implemented via JavaScript
+  document.querySelectorAll(".tab").forEach((tabEl) => {
+    const inputs = Array.from(
+      tabEl.querySelectorAll('input[type="radio"][name="tab"]')
+    );
+    const labels = Array.from(tabEl.querySelectorAll("label"));
+    const panels = Array.from(tabEl.querySelectorAll(".tab-panel"));
+
+    const activate = (idx) => {
+      inputs.forEach((inp, i) => {
+        inp.checked = i === idx;
+      });
+      panels.forEach((panel, i) => {
+        panel.style.display = i === idx ? "block" : "none";
+        panel.setAttribute("aria-hidden", i === idx ? "false" : "true");
+      });
+      labels.forEach((label, i) => {
+        label.setAttribute("aria-selected", i === idx ? "true" : "false");
+      });
+    };
+
+    inputs.forEach((inp, i) => {
+      inp.addEventListener("change", () => activate(i));
+    });
+    labels.forEach((label, i) => {
+      label.addEventListener("click", () => activate(i));
+    });
+
+    const initialIndex = inputs.findIndex((inp) => inp.checked);
+    activate(initialIndex >= 0 ? initialIndex : 0);
+  });
+
   document.querySelectorAll(".tab-panel").forEach((panel) => {
     const totalPages = parseInt(panel.getAttribute("data-total-pages") || "1");
     const totalPosts = parseInt(panel.getAttribute("data-total-posts") || "0");

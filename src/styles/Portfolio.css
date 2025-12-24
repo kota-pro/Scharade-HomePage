@@ -130,8 +130,8 @@ details:last-child {
 }
 
 .arrow-icon {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     transition: transform 0.3s;
 }
 
@@ -141,6 +141,10 @@ details[open] .section-heading {
 
 details[open] .arrow-icon {
     filter: invert(54%) sepia(91%) saturate(458%) hue-rotate(122deg) brightness(86%) contrast(90%);
+}
+
+details[open] .arrow-icon {
+    transform: rotate(90deg);
 }
 
 /* メンバーグリッド（5列） */
