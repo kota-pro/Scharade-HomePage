@@ -5,33 +5,24 @@ import GalleryLayout from "../../layouts/Gallery_Layout.astro";
 import { getAlbumPhotos } from "../../lib/lightroom";
 
 const { id } = Astro.params;
-const albumId = id as string;
-
-const photos = await getAlbumPhotos(albumId);
+const photos = await getAlbumPhotos(id as string);
 
 const albumTitle = "Gallery";
-
-const photosJson = JSON.stringify(photos);
 ---
 
 <GalleryLayout title={albumTitle}>
   {photos.length === 0 && <div class="no-photos">No photos found.</div>}
 
   <div class="gallery-container-inner">
-    <div class="justified-grid" id="gallery-grid">
+    <div class="justified-grid">
       {
         photos.map((photo) => (
-          <button 
-            class="photo-wrapper photo-trigger" 
-            type="button"
-            data-aspect-ratio={photo.aspectRatio}
-          >
+          <button class="photo-wrapper photo-trigger" type="button">
             <img
               src={`/api/images/${photo.id}`}
               alt={photo.name}
               loading="lazy"
               data-full-src={`/api/images/full/${photo.id}`}
-              style={`aspect-ratio: ${photo.aspectRatio};`}
             />
             <div class="photo-meta">
               <span class="photo-name">{photo.name}</span>
@@ -44,7 +35,9 @@ const photosJson = JSON.stringify(photos);
 
   <div id="image-modal" class="modal-overlay" aria-hidden="true">
     <div class="modal-content">
-      <button id="modal-close-btn" class="modal-close" aria-label="Close">&times;</button>
+      <button id="modal-close-btn" class="modal-close" aria-label="Close"
+        >&times;</button
+      >
       <img id="modal-image" src="" alt="" />
     </div>
   </div>
@@ -55,213 +48,270 @@ const photosJson = JSON.stringify(photos);
     width: 100%;
     max-width: 1600px;
     margin: 0 auto;
-    padding: 0 20px 60px;
+    padding: 0 20px;
   }
-  
+
+  @media (min-width: 1024px) {
+    .gallery-container-inner {
+      padding: 0 80px;
+    }
+  }
+
   .justified-grid {
     display: flex;
     flex-wrap: wrap;
     gap: 0;
-    align-items: flex-start;
   }
-
   button.photo-wrapper {
     padding: 0;
     border: none;
-    background: #f0f0f0;
+    background: none;
     cursor: pointer;
+    text-align: left;
     flex: 0 0 auto;
+    height: 250px;
     position: relative;
     overflow: hidden;
-    height: 250px; 
     margin-right: 12px;
     margin-bottom: 12px;
-    opacity: 0;
-    transition: opacity 0.5s ease;
-  }
-  button.photo-wrapper.visible {
-    opacity: 1;
-    background: none;
   }
 
   button.photo-wrapper img {
     height: 100%;
     width: auto;
+    min-width: 100%;
+    object-fit: cover;
     vertical-align: bottom;
-    opacity: 0;
-    transition: opacity 0.3s;
   }
-  
-  button.photo-wrapper img.loaded {
-    opacity: 1;
-  }
-  
-  button.photo-wrapper:hover img {
-    transform: scale(1.03);
-    transition: transform 0.3s;
+
+  @media (max-width: 768px) {
+    button.photo-wrapper {
+      height: 150px;
+    }
   }
 
   .photo-meta {
-    position: absolute; bottom: 0; left: 0; width: 100%;
-    padding: 8px; background: rgba(0,0,0,0.6); color: white;
-    font-size: 0.8rem; opacity: 0; transition: opacity 0.3s;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.7);
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: opacity 0.3s;
   }
-  button.photo-wrapper:hover .photo-meta { opacity: 1; }
-
+  button.photo-wrapper:hover .photo-meta {
+    opacity: 1;
+  }
   .modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.95); z-index: 1000;
-    display: flex; justify-content: center;
-    align-items: flex-start;
-    padding-top: 50px;
-    opacity: 0; visibility: hidden; transition: all 0.3s;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
   }
-  .modal-overlay.active { opacity: 1; visibility: visible; }
+
+  .modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
 
   .modal-content {
-    position: relative; width: auto; height: auto;
-    display: flex; justify-content: center; align-items: center;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 
   #modal-image {
-    max-width: 100%;
-    max-height: 50vh;
+    max-width: 100vw;
+    max-height: 100vh;
     object-fit: contain;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    box-shadow: none;
   }
 
   .modal-close {
-    position: absolute; top: -40px; right: -40px;
-    color: white; font-size: 40px; background: none; border: none; cursor: pointer;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1100;
+    color: white;
+    font-size: 40px;
+    background: rgba(0, 0, 0, 0.5);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    border: none;
+    cursor: pointer;
   }
 </style>
 
-<script define:vars={{ photosJson }}>
-  const allPhotos = JSON.parse(photosJson);
-
-  const BASE_HEIGHT = 250;
-  const GAP = 12;
-
-  function layoutImages() {
-    const container = document.getElementById('gallery-grid');
-    if (!container) return;
-    
-    const containerWidth = container.clientWidth - 1; 
-    const items = Array.from(container.querySelectorAll('.photo-wrapper'));
-    if (items.length === 0) return;
-
-    let totalAspectRatio = 0;
-    const itemRatios = items.map(item => {
-      const r = parseFloat(item.getAttribute('data-aspect-ratio') || '1.5');
-      totalAspectRatio += r;
-      return r;
-    });
-    const rowCapacityAR = containerWidth / BASE_HEIGHT;
-    
-    const idealRowsFloat = totalAspectRatio / rowCapacityAR;
-    let targetRows = Math.round(idealRowsFloat);
-    if (targetRows < 1) targetRows = 1;
-
-    const avgItemsPerRow = items.length / targetRows;
-    const estimatedTotalGap = (avgItemsPerRow - 1) * GAP;
-    const effectiveWidth = containerWidth - estimatedTotalGap;
-    
-    let newHeight = effectiveWidth / (totalAspectRatio / targetRows);
-
-    if (newHeight > 400) newHeight = 400;
-    if (newHeight < 150) newHeight = 150;
-
-    
-    let currentRow = [];
-    let currentRowWidth = 0;
-
-    items.forEach((item, index) => {
-      const ar = itemRatios[index];
-      const width = newHeight * ar;
-      
-      const potentialWidth = currentRowWidth + width + (currentRow.length > 0 ? GAP : 0);
-
-      if (potentialWidth > containerWidth + 10) {
-        resizeRow(currentRow, containerWidth, newHeight);
-        
-        currentRow = [item];
-        currentRowWidth = width;
-      } else {
-        currentRow.push(item);
-        currentRowWidth += width;
-      }
-
-      if (index === items.length - 1) {
-        resizeRow(currentRow, containerWidth, newHeight);
-      }
-    });
-  }
-
-  function resizeRow(rowItems, containerWidth, targetHeight) {
-    if (rowItems.length === 0) return;
-
-    const totalGap = (rowItems.length - 1) * GAP;
-    const availableWidth = containerWidth - totalGap;
-    
-    let rowAR = 0;
-    rowItems.forEach(item => {
-      rowAR += parseFloat(item.getAttribute('data-aspect-ratio'));
-    });
-
-    let exactHeight = availableWidth / rowAR;
-    
-    if (exactHeight > targetHeight * 1.5) exactHeight = targetHeight;
-
-    rowItems.forEach((item, idx) => {
-      const ar = parseFloat(item.getAttribute('data-aspect-ratio'));
-      const w = exactHeight * ar;
-      
-      item.style.height = `${exactHeight}px`;
-      item.style.width = `${w}px`;
-      item.style.marginRight = (idx === rowItems.length - 1) ? '0' : `${GAP}px`;
-      item.style.marginBottom = `${GAP}px`;
-      
-      item.classList.add('visible');
-    });
-  }
-
+<script>
   const modal = document.getElementById("image-modal");
-  const modalImg = document.getElementById("modal-image");
+  const modalImg = document.getElementById("modal-image") as HTMLImageElement;
   const closeBtn = document.getElementById("modal-close-btn");
+  const triggers = document.querySelectorAll(".photo-trigger");
 
-  function openModal(src, alt) {
-    if(!modal || !modalImg) return;
-    modalImg.src = src;
-    modalImg.alt = alt;
+  function openModal(imgSrc: string, imgAlt: string) {
+    if (!modal || !modalImg) return;
+    modalImg.src = imgSrc;
+    modalImg.alt = imgAlt;
     modal.classList.add("active");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
   }
-  document.querySelectorAll(".photo-trigger").forEach((trigger) => {
-    trigger.onclick = () => {
+
+  function closeModal() {
+    if (!modal) return;
+    modal.classList.remove("active");
+    modal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    setTimeout(() => {
+      if (modalImg) modalImg.src = "";
+    }, 300);
+  }
+
+  triggers.forEach((trigger) => {
+    trigger.addEventListener("click", () => {
       const img = trigger.querySelector("img");
       if (img) {
         const src = img.getAttribute("data-full-src") || img.src;
-        openModal(src, img.alt);
+        const alt = img.alt;
+        openModal(src, alt);
       }
-    };
-  });
-  
-  closeBtn?.addEventListener("click", () => modal?.classList.remove("active"));
-  modal?.addEventListener("click", (e) => { if(e.target === modal) modal.classList.remove("active"); });
-
-  document.addEventListener('DOMContentLoaded', () => {
-    layoutImages();
-  });
-  
-  const images = document.querySelectorAll('.photo-wrapper img');
-  images.forEach(img => {
-    if(img.complete) img.classList.add('loaded');
-    else img.onload = () => img.classList.add('loaded');
-  });
-  
-  let resizeTimer;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(layoutImages, 100);
+    });
   });
 
+  closeBtn?.addEventListener("click", closeModal);
+  modal?.addEventListener("click", (e) => {
+    if (e.target === modal) closeModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal?.classList.contains("active")) closeModal();
+  });
+  const TARGET_HEIGHT = 250;
+  const GAP = 12;
+
+  function layoutImages() {
+    const container = document.querySelector(".justified-grid") as HTMLElement;
+    if (!container) return;
+
+    const containerWidth = container.clientWidth;
+    const items = Array.from(
+      document.querySelectorAll(".photo-wrapper:not(.hidden)"),
+    ) as HTMLElement[];
+    if (items.length === 0) return;
+
+    let currentRow: HTMLElement[] = [];
+    let currentRowWidth = 0;
+
+    items.forEach((item) => {
+      const img = item.querySelector("img");
+      if (!img || img.naturalWidth === 0) {
+        item.style.visibility = "hidden";
+        item.style.position = "absolute";
+        return;
+      }
+      item.style.visibility = "visible";
+      item.style.position = "relative";
+
+      const aspectRatio = img.naturalWidth / img.naturalHeight;
+      const widthAtTarget = TARGET_HEIGHT * aspectRatio;
+      const potentialWidth =
+        currentRowWidth + widthAtTarget + (currentRow.length > 0 ? GAP : 0);
+      if (potentialWidth > containerWidth + 20) {
+        resizeRow(currentRow, currentRowWidth, containerWidth, false);
+        currentRow = [item];
+        currentRowWidth = widthAtTarget;
+      } else {
+        currentRow.push(item);
+        currentRowWidth += widthAtTarget;
+      }
+    });
+    if (currentRow.length > 0) {
+      const isMoreThanHalf = currentRowWidth > containerWidth * 0.5;
+      if (isMoreThanHalf) {
+        resizeRow(currentRow, currentRowWidth, containerWidth, true);
+      } else {
+        currentRow.forEach((item) => {
+          const img = item.querySelector("img");
+          const ar = img ? img.naturalWidth / img.naturalHeight : 1;
+          item.style.height = `${TARGET_HEIGHT}px`;
+          item.style.width = `${TARGET_HEIGHT * ar}px`;
+          item.style.marginRight = `${GAP}px`;
+          item.style.marginBottom = `${GAP}px`;
+          item.style.flexGrow = "0";
+        });
+      }
+    }
+  }
+
+  function resizeRow(
+    items: HTMLElement[],
+    currentWidth: number,
+    containerWidth: number,
+    isLastRow: boolean,
+  ) {
+    const totalGaps = (items.length - 1) * GAP;
+    const availableWidth = containerWidth - totalGaps;
+
+    let totalAspectRatio = 0;
+    items.forEach((item) => {
+      const img = item.querySelector("img");
+      if (img) totalAspectRatio += img.naturalWidth / img.naturalHeight;
+    });
+
+    let finalHeight = availableWidth / totalAspectRatio;
+
+    if (isLastRow && finalHeight > 500) {
+      finalHeight = 500;
+    }
+
+    items.forEach((item, idx) => {
+      const img = item.querySelector("img");
+      const ar = img ? img.naturalWidth / img.naturalHeight : 1;
+
+      item.style.height = `${finalHeight}px`;
+      item.style.width = `${finalHeight * ar}px`;
+      item.style.marginRight = idx === items.length - 1 ? "0" : `${GAP}px`;
+      item.style.marginBottom = `${GAP}px`;
+    });
+  }
+  const images = document.querySelectorAll(".photo-wrapper img");
+
+  images.forEach((img) => {
+    if ((img as HTMLImageElement).complete) {
+    } else {
+      img.addEventListener("load", layoutImages);
+    }
+    img.addEventListener("error", (e) => {
+      const wrapper = (e.target as HTMLElement).closest(".photo-wrapper");
+      if (wrapper) {
+        wrapper.classList.add("hidden");
+        (wrapper as HTMLElement).style.display = "none";
+        layoutImages();
+      }
+    });
+  });
+  layoutImages();
+  window.addEventListener("resize", () => {
+    clearTimeout((window as any).resizeTimer);
+    (window as any).resizeTimer = setTimeout(layoutImages, 100);
+  });
 </script>
