@@ -61,7 +61,9 @@ const albumTitle = "Gallery";
     display: flex;
     flex-wrap: wrap;
     gap: 0;
+    align-content: flex-start;
   }
+
   button.photo-wrapper {
     padding: 0;
     border: none;
@@ -69,25 +71,15 @@ const albumTitle = "Gallery";
     cursor: pointer;
     text-align: left;
     flex: 0 0 auto;
-    height: 250px;
     position: relative;
     overflow: hidden;
-    margin-right: 12px;
-    margin-bottom: 12px;
   }
 
   button.photo-wrapper img {
+    display: block;
+    width: 100%;
     height: 100%;
-    width: auto;
-    min-width: 100%;
     object-fit: cover;
-    vertical-align: bottom;
-  }
-
-  @media (max-width: 768px) {
-    button.photo-wrapper {
-      height: 150px;
-    }
   }
 
   .photo-meta {
@@ -101,9 +93,11 @@ const albumTitle = "Gallery";
     opacity: 0;
     transition: opacity 0.3s;
   }
+
   button.photo-wrapper:hover .photo-meta {
     opacity: 1;
   }
+
   .modal-overlay {
     position: fixed;
     top: 0;
@@ -138,7 +132,6 @@ const albumTitle = "Gallery";
     max-width: 100vw;
     max-height: 100vh;
     object-fit: contain;
-    box-shadow: none;
   }
 
   .modal-close {
@@ -155,14 +148,93 @@ const albumTitle = "Gallery";
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0;
-    line-height: 1;
     border: none;
     cursor: pointer;
   }
 </style>
 
 <script>
+  const TARGET_HEIGHT = 250;
+  const GAP = 12;
+  const MIN_LAST_ROW_WIDTH = 800;
+
+  function layoutImages() {
+    const container = document.querySelector(".justified-grid") as HTMLElement;
+    if (!container) return;
+
+    const containerWidth = container.clientWidth;
+    const items = Array.from(
+      document.querySelectorAll(".photo-wrapper"),
+    ) as HTMLElement[];
+
+    const validItems = items.filter((item) => {
+      const img = item.querySelector("img");
+      return img && img.naturalWidth > 0;
+    });
+
+    if (validItems.length === 0) return;
+
+    let rows: HTMLElement[][] = [];
+    let currentRow: HTMLElement[] = [];
+    let currentRowWidth = 0;
+
+    validItems.forEach((item) => {
+      const img = item.querySelector("img")!;
+      const aspectRatio = img.naturalWidth / img.naturalHeight;
+      const itemWidthAtTarget = TARGET_HEIGHT * aspectRatio;
+
+      if (
+        currentRowWidth + itemWidthAtTarget + currentRow.length * GAP >
+        containerWidth
+      ) {
+        rows.push(currentRow);
+        currentRow = [item];
+        currentRowWidth = itemWidthAtTarget;
+      } else {
+        currentRow.push(item);
+        currentRowWidth += itemWidthAtTarget;
+      }
+    });
+    if (currentRow.length > 0) rows.push(currentRow);
+
+    if (rows.length > 0) {
+      const lastRow = rows[rows.length - 1];
+      let lastRowWidthAtTarget = 0;
+      lastRow.forEach((item) => {
+        const img = item.querySelector("img")!;
+        lastRowWidthAtTarget +=
+          (img.naturalWidth / img.naturalHeight) * TARGET_HEIGHT;
+      });
+
+      if (lastRowWidthAtTarget < MIN_LAST_ROW_WIDTH && rows.length > 1) {
+        const lastRowItems = rows.pop()!;
+        rows[rows.length - 1] = rows[rows.length - 1].concat(lastRowItems);
+      }
+    }
+
+    rows.forEach((row) => {
+      let totalAR = 0;
+      row.forEach((item) => {
+        const img = item.querySelector("img")!;
+        totalAR += img.naturalWidth / img.naturalHeight;
+      });
+
+      const availableWidth = containerWidth - (row.length - 1) * GAP;
+      const rowHeight = availableWidth / totalAR;
+
+      row.forEach((item, itemIndex) => {
+        const img = item.querySelector("img")!;
+        const ar = img.naturalWidth / img.naturalHeight;
+
+        item.style.width = `${rowHeight * ar}px`;
+        item.style.height = `${rowHeight}px`;
+        item.style.marginRight =
+          itemIndex === row.length - 1 ? "0" : `${GAP}px`;
+        item.style.marginBottom = `${GAP}px`;
+      });
+    });
+  }
+
   const modal = document.getElementById("image-modal");
   const modalImg = document.getElementById("modal-image") as HTMLImageElement;
   const closeBtn = document.getElementById("modal-close-btn");
@@ -192,8 +264,7 @@ const albumTitle = "Gallery";
       const img = trigger.querySelector("img");
       if (img) {
         const src = img.getAttribute("data-full-src") || img.src;
-        const alt = img.alt;
-        openModal(src, alt);
+        openModal(src, img.alt);
       }
     });
   });
@@ -205,113 +276,26 @@ const albumTitle = "Gallery";
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && modal?.classList.contains("active")) closeModal();
   });
-  const TARGET_HEIGHT = 250;
-  const GAP = 12;
 
-  function layoutImages() {
-    const container = document.querySelector(".justified-grid") as HTMLElement;
-    if (!container) return;
-
-    const containerWidth = container.clientWidth;
-    const items = Array.from(
-      document.querySelectorAll(".photo-wrapper:not(.hidden)"),
-    ) as HTMLElement[];
-    if (items.length === 0) return;
-
-    let currentRow: HTMLElement[] = [];
-    let currentRowWidth = 0;
-
-    items.forEach((item) => {
-      const img = item.querySelector("img");
-      if (!img || img.naturalWidth === 0) {
-        item.style.visibility = "hidden";
-        item.style.position = "absolute";
-        return;
-      }
-      item.style.visibility = "visible";
-      item.style.position = "relative";
-
-      const aspectRatio = img.naturalWidth / img.naturalHeight;
-      const widthAtTarget = TARGET_HEIGHT * aspectRatio;
-      const potentialWidth =
-        currentRowWidth + widthAtTarget + (currentRow.length > 0 ? GAP : 0);
-      if (potentialWidth > containerWidth + 20) {
-        resizeRow(currentRow, currentRowWidth, containerWidth, false);
-        currentRow = [item];
-        currentRowWidth = widthAtTarget;
-      } else {
-        currentRow.push(item);
-        currentRowWidth += widthAtTarget;
-      }
-    });
-    if (currentRow.length > 0) {
-      const isMoreThanHalf = currentRowWidth > containerWidth * 0.5;
-      if (isMoreThanHalf) {
-        resizeRow(currentRow, currentRowWidth, containerWidth, true);
-      } else {
-        currentRow.forEach((item) => {
-          const img = item.querySelector("img");
-          const ar = img ? img.naturalWidth / img.naturalHeight : 1;
-          item.style.height = `${TARGET_HEIGHT}px`;
-          item.style.width = `${TARGET_HEIGHT * ar}px`;
-          item.style.marginRight = `${GAP}px`;
-          item.style.marginBottom = `${GAP}px`;
-          item.style.flexGrow = "0";
-        });
-      }
-    }
-  }
-
-  function resizeRow(
-    items: HTMLElement[],
-    currentWidth: number,
-    containerWidth: number,
-    isLastRow: boolean,
-  ) {
-    const totalGaps = (items.length - 1) * GAP;
-    const availableWidth = containerWidth - totalGaps;
-
-    let totalAspectRatio = 0;
-    items.forEach((item) => {
-      const img = item.querySelector("img");
-      if (img) totalAspectRatio += img.naturalWidth / img.naturalHeight;
-    });
-
-    let finalHeight = availableWidth / totalAspectRatio;
-
-    if (isLastRow && finalHeight > 500) {
-      finalHeight = 500;
-    }
-
-    items.forEach((item, idx) => {
-      const img = item.querySelector("img");
-      const ar = img ? img.naturalWidth / img.naturalHeight : 1;
-
-      item.style.height = `${finalHeight}px`;
-      item.style.width = `${finalHeight * ar}px`;
-      item.style.marginRight = idx === items.length - 1 ? "0" : `${GAP}px`;
-      item.style.marginBottom = `${GAP}px`;
-    });
-  }
-  const images = document.querySelectorAll(".photo-wrapper img");
-
-  images.forEach((img) => {
-    if ((img as HTMLImageElement).complete) {
+  const allImgs = document.querySelectorAll(".photo-wrapper img");
+  let loadedCount = 0;
+  allImgs.forEach((img) => {
+    const htmlImg = img as HTMLImageElement;
+    if (htmlImg.complete) {
+      loadedCount++;
     } else {
-      img.addEventListener("load", layoutImages);
+      htmlImg.addEventListener("load", () => {
+        loadedCount++;
+        if (loadedCount === allImgs.length) layoutImages();
+      });
     }
-    img.addEventListener("error", (e) => {
-      const wrapper = (e.target as HTMLElement).closest(".photo-wrapper");
-      if (wrapper) {
-        wrapper.classList.add("hidden");
-        (wrapper as HTMLElement).style.display = "none";
-        layoutImages();
-      }
-    });
   });
-  layoutImages();
+
+  if (loadedCount === allImgs.length) layoutImages();
+
+  let resizeTimer: number;
   window.addEventListener("resize", () => {
-    clearTimeout((window as any).resizeTimer);
-    (window as any).resizeTimer = setTimeout(layoutImages, 100);
+    clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(layoutImages, 100);
   });
 </script>
