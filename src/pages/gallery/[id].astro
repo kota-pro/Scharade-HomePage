@@ -60,19 +60,26 @@ const albumTitle = "Gallery";
   .justified-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 0;
     align-content: flex-start;
+    width: 100%;
   }
 
   button.photo-wrapper {
     padding: 0;
     border: none;
-    background: none;
+    background-color: #f0f0f0;
     cursor: pointer;
-    text-align: left;
-    flex: 0 0 auto;
     position: relative;
     overflow: hidden;
+    display: block;
+    float: left;
+    margin-right: 12px;
+    margin-bottom: 12px;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+  }
+  button.photo-wrapper.is-loaded {
+    opacity: 1;
   }
 
   button.photo-wrapper img {
@@ -168,7 +175,7 @@ const albumTitle = "Gallery";
     ) as HTMLElement[];
 
     const validItems = items.filter((item) => {
-      const img = item.querySelector("img");
+      const img = item.querySelector("img") as HTMLImageElement;
       return img && img.naturalWidth > 0;
     });
 
@@ -195,6 +202,7 @@ const albumTitle = "Gallery";
         currentRowWidth += itemWidthAtTarget;
       }
     });
+
     if (currentRow.length > 0) rows.push(currentRow);
 
     if (rows.length > 0) {
@@ -231,6 +239,7 @@ const albumTitle = "Gallery";
         item.style.marginRight =
           itemIndex === row.length - 1 ? "0" : `${GAP}px`;
         item.style.marginBottom = `${GAP}px`;
+        item.classList.add("is-loaded");
       });
     });
   }
@@ -298,4 +307,5 @@ const albumTitle = "Gallery";
     clearTimeout(resizeTimer);
     resizeTimer = window.setTimeout(layoutImages, 100);
   });
+  layoutImages();
 </script>
