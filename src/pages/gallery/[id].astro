@@ -47,11 +47,23 @@ const albumTitle = "Gallery";
   .gallery-container-inner {
     width: 100%;
     max-width: 1600px;
+<<<<<<< HEAD
+=======
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  @media (min-width: 1024px) {
+    .gallery-container-inner {
+      padding: 0 80px;
+    }
+>>>>>>> 246114c9b5c422ea4b070944e480aabcd002ad44
   }
 
   .justified-grid {
     display: flex;
     flex-wrap: wrap;
+<<<<<<< HEAD
     gap: 0;
     justify-content: center;
   }
@@ -81,6 +93,35 @@ const albumTitle = "Gallery";
     button.photo-wrapper {
       height: 150px;
     }
+=======
+    align-content: flex-start;
+    width: 100%;
+  }
+
+  button.photo-wrapper {
+    padding: 0;
+    border: none;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    display: block;
+    float: left;
+    margin-right: 12px;
+    margin-bottom: 12px;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+  }
+  button.photo-wrapper.is-loaded {
+    opacity: 1;
+  }
+
+  button.photo-wrapper img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+>>>>>>> 246114c9b5c422ea4b070944e480aabcd002ad44
   }
 
   .photo-meta {
@@ -94,9 +135,17 @@ const albumTitle = "Gallery";
     opacity: 0;
     transition: opacity 0.3s;
   }
+<<<<<<< HEAD
   button.photo-wrapper:hover .photo-meta {
     opacity: 1;
   }
+=======
+
+  button.photo-wrapper:hover .photo-meta {
+    opacity: 1;
+  }
+
+>>>>>>> 246114c9b5c422ea4b070944e480aabcd002ad44
   .modal-overlay {
     position: fixed;
     top: 0;
@@ -131,7 +180,10 @@ const albumTitle = "Gallery";
     max-width: 100vw;
     max-height: 100vh;
     object-fit: contain;
+<<<<<<< HEAD
     box-shadow: none;
+=======
+>>>>>>> 246114c9b5c422ea4b070944e480aabcd002ad44
   }
 
   .modal-close {
@@ -148,14 +200,103 @@ const albumTitle = "Gallery";
     display: flex;
     align-items: center;
     justify-content: center;
+<<<<<<< HEAD
     padding: 0;
     line-height: 1;
+=======
+>>>>>>> 246114c9b5c422ea4b070944e480aabcd002ad44
     border: none;
     cursor: pointer;
   }
 </style>
 
 <script>
+<<<<<<< HEAD
+=======
+  const TARGET_HEIGHT = 250;
+  const GAP = 12;
+  const MIN_LAST_ROW_WIDTH = 800;
+
+  function layoutImages() {
+    const container = document.querySelector(".justified-grid") as HTMLElement;
+    if (!container) return;
+
+    const containerWidth = container.clientWidth;
+    const items = Array.from(
+      document.querySelectorAll(".photo-wrapper"),
+    ) as HTMLElement[];
+
+    const validItems = items.filter((item) => {
+      const img = item.querySelector("img") as HTMLImageElement;
+      return img && img.naturalWidth > 0;
+    });
+
+    if (validItems.length === 0) return;
+
+    let rows: HTMLElement[][] = [];
+    let currentRow: HTMLElement[] = [];
+    let currentRowWidth = 0;
+
+    validItems.forEach((item) => {
+      const img = item.querySelector("img")!;
+      const aspectRatio = img.naturalWidth / img.naturalHeight;
+      const itemWidthAtTarget = TARGET_HEIGHT * aspectRatio;
+
+      if (
+        currentRowWidth + itemWidthAtTarget + currentRow.length * GAP >
+        containerWidth
+      ) {
+        rows.push(currentRow);
+        currentRow = [item];
+        currentRowWidth = itemWidthAtTarget;
+      } else {
+        currentRow.push(item);
+        currentRowWidth += itemWidthAtTarget;
+      }
+    });
+
+    if (currentRow.length > 0) rows.push(currentRow);
+
+    if (rows.length > 0) {
+      const lastRow = rows[rows.length - 1];
+      let lastRowWidthAtTarget = 0;
+      lastRow.forEach((item) => {
+        const img = item.querySelector("img")!;
+        lastRowWidthAtTarget +=
+          (img.naturalWidth / img.naturalHeight) * TARGET_HEIGHT;
+      });
+
+      if (lastRowWidthAtTarget < MIN_LAST_ROW_WIDTH && rows.length > 1) {
+        const lastRowItems = rows.pop()!;
+        rows[rows.length - 1] = rows[rows.length - 1].concat(lastRowItems);
+      }
+    }
+
+    rows.forEach((row) => {
+      let totalAR = 0;
+      row.forEach((item) => {
+        const img = item.querySelector("img")!;
+        totalAR += img.naturalWidth / img.naturalHeight;
+      });
+
+      const availableWidth = containerWidth - (row.length - 1) * GAP;
+      const rowHeight = availableWidth / totalAR;
+
+      row.forEach((item, itemIndex) => {
+        const img = item.querySelector("img")!;
+        const ar = img.naturalWidth / img.naturalHeight;
+
+        item.style.width = `${rowHeight * ar}px`;
+        item.style.height = `${rowHeight}px`;
+        item.style.marginRight =
+          itemIndex === row.length - 1 ? "0" : `${GAP}px`;
+        item.style.marginBottom = `${GAP}px`;
+        item.classList.add("is-loaded");
+      });
+    });
+  }
+
+>>>>>>> 246114c9b5c422ea4b070944e480aabcd002ad44
   const modal = document.getElementById("image-modal");
   const modalImg = document.getElementById("modal-image") as HTMLImageElement;
   const closeBtn = document.getElementById("modal-close-btn");
@@ -185,8 +326,12 @@ const albumTitle = "Gallery";
       const img = trigger.querySelector("img");
       if (img) {
         const src = img.getAttribute("data-full-src") || img.src;
+<<<<<<< HEAD
         const alt = img.alt;
         openModal(src, alt);
+=======
+        openModal(src, img.alt);
+>>>>>>> 246114c9b5c422ea4b070944e480aabcd002ad44
       }
     });
   });
@@ -198,6 +343,7 @@ const albumTitle = "Gallery";
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && modal?.classList.contains("active")) closeModal();
   });
+<<<<<<< HEAD
   const TARGET_HEIGHT = 250;
   const GAP = 12;
 
@@ -307,4 +453,29 @@ const albumTitle = "Gallery";
     clearTimeout((window as any).resizeTimer);
     (window as any).resizeTimer = setTimeout(layoutImages, 100);
   });
+=======
+
+  const allImgs = document.querySelectorAll(".photo-wrapper img");
+  let loadedCount = 0;
+  allImgs.forEach((img) => {
+    const htmlImg = img as HTMLImageElement;
+    if (htmlImg.complete) {
+      loadedCount++;
+    } else {
+      htmlImg.addEventListener("load", () => {
+        loadedCount++;
+        if (loadedCount === allImgs.length) layoutImages();
+      });
+    }
+  });
+
+  if (loadedCount === allImgs.length) layoutImages();
+
+  let resizeTimer: number;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(layoutImages, 100);
+  });
+  layoutImages();
+>>>>>>> 246114c9b5c422ea4b070944e480aabcd002ad44
 </script>

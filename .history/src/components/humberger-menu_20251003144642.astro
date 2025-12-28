@@ -1,0 +1,270 @@
+---
+import '../styles/UA+reset.css';
+---
+
+<header>
+    <a href="/"><div class="header-logo">
+        <svg class="header-logo-svg" xmlns="http://www.w3.org/2000/svg" width="78" height="59" viewBox="0 0 78 59" fill="none">
+            <path d="M39.0475 52.7459C47.2697 52.7459 53.9351 46.0576 53.9351 37.8071C53.9351 29.5566 47.2697 22.8683 39.0475 22.8683C30.8254 22.8683 24.16 29.5566 24.16 37.8071C24.16 46.0576 30.8254 52.7459 39.0475 52.7459Z" stroke="black"/>
+            <path d="M39.0476 57.8162C48.3521 57.8162 64.4355 57.8427 73.7506 57.7897C76.2832 57.7614 76.8362 57.2029 76.8063 54.5856C76.8204 45.1501 76.8397 23.6088 76.7975 14.0814C76.7552 13.0122 76.72 11.9978 75.8305 11.4464C75.0556 10.9091 72.6375 10.872 71.2355 10.8614C69.0358 10.842 66.1139 10.8579 63.6042 10.8508C61.4344 10.8437 59.6203 10.7978 58.4104 10.2658C54.3384 8.62049 57.6407 1.49306 52.4346 1.29336C44.7574 1.10426 33.3342 1.19263 26.0251 1.25802C23.3657 1.3181 22.5203 2.75667 22.2227 5.05413C21.8686 8.09561 21.254 10.4426 17.7474 10.7165C14.4715 10.9869 10.6427 10.7942 7.37384 10.8561C5.74119 10.9074 3.94651 10.7766 2.43891 11.3085C1.19021 11.8104 1.23424 13.1624 1.18493 14.3977C1.17612 25.6129 1.16908 47.0747 1.17436 57.8162" stroke="black"/>
+            <path d="M39.0845 57.7437C28.792 57.8604 19.8644 49.4146 19.3343 39.1502C18.1965 24.2556 34.2236 13.4045 47.5384 19.9275C54.393 23.1988 58.87 30.0982 58.8736 37.8866" stroke="black"/>
+            <path d="M14.9295 5.73276H7.54996C7.36904 5.73276 7.22237 5.87993 7.22237 6.06147V8.71062C7.22237 8.89216 7.36904 9.03933 7.54996 9.03933H14.9295C15.1104 9.03933 15.257 8.89216 15.257 8.71062V6.06147C15.257 5.87993 15.1104 5.73276 14.9295 5.73276Z" stroke="black"/>
+            <path d="M5.22691 17.8015V52.8608" stroke="black"/>
+        </svg>
+        <div class="header-logo-text">
+            <p class="header-logo-text_1">早稲田大学公認サークル</p>
+            <p class="header-logo-text_2">写団シャレード</p>
+        </div>
+    </div>
+    <div class="header-nav">
+        <button class="Button">
+            <div class="Button-LineTop"></div>
+            <div class="Button-LineMedium"></div>
+            <div class="Button-LineBottom"></div>
+        </button>
+        <nav class="Menu">
+            <div class="Menu-Header">MENU</div>
+            <ul class="Menu-List">
+                <li class="Menu-List-Item">
+                    <a href="#" class="Menu-List-Item-Link">アイテム1</a>
+                </li>
+                <li class="Menu-List-Item">
+                    <a href="#" class="Menu-List-Item-Link">アイテム2</a>
+                </li>
+                <li class="Menu-List-Item">
+                    <a href="#" class="Menu-List-Item-Link">アイテム3</a>
+                </li>
+                <li class="Menu-List-Item">
+                    <a href="#" class="Menu-List-Item-Link">アイテム4</a>
+                </li>
+                <li class="Menu-List-Item">
+                    <a href="#" class="Menu-List-Item-Link">アイテム5</a>
+                </li>
+                <li class="Menu-List-Item">
+                    <a href="#" class="Menu-List-Item-Link">アイテム6</a>
+                </li>
+                <li class="Menu-List-Item">
+                    <a href="#" class="Menu-List-Item-Link">アイテム7</a>
+                </li>
+                <li class="Menu-List-Item">
+                    <a href="#" class="Menu-List-Item-Link">アイテム8</a>
+                </li>
+            </ul>
+        </nav>
+        <div class="Overlay"></div>
+    </div>
+</header>
+
+<script>
+    const menu = document.querySelector(".Menu")
+    const button = document.querySelector(".Button")
+    const overlay = document.querySelector(".Overlay")
+    const body = document.body
+
+    const toggleMenu = () => {
+        menu.classList.toggle("MenuIsOpen")
+        overlay.classList.toggle("OverlayIsOpen")
+        button.classList.toggle("ButtonIsOpen")
+        body.classList.toggle("IsScrollAllowed")
+    }
+
+    button.addEventListener("click", () => {
+        toggleMenu()
+    })
+
+    overlay.addEventListener("click", () => {
+        toggleMenu()
+    })
+</script>
+
+<style>
+    header {
+        top:0;
+        width: 100vw;
+        height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 120px 0px 82.17px;
+        box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+        background: #fff;
+        position: fixed;
+        z-index: 10 !important;
+    }
+
+    .header-logo {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 337.83px;
+        height: 61px;
+        gap: 20px;
+    }
+
+    .header-logo-svg {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 75.651px;
+        height: 56.644px;
+    }
+
+    .header-logo-text_1 {
+        font-family: "Zen Old Mincho", serif;
+        font-size: 13px;
+        margin: 0;
+    }
+
+    .header-logo-text_2 {
+        font-family: "Zen Old Mincho", serif;
+        font-size: 32px;
+        margin: 0;
+    }
+
+    .header-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .header-nav a {
+        font-family: "Zen Old Mincho", serif;
+        font-size: 20px;
+        text-decoration: none;
+        color: #000;
+        padding: 15px;
+        letter-spacing: 3px;
+        position: relative; /* アンダーラインのために相対位置を指定 */
+        cursor: pointer;
+    }
+
+    .header-nav a::after {
+        position: absolute;
+        left: 15px; /* aタグの左端からアンダーラインを引く */
+        right: 15px; /* aタグの右端からアンダーラインを引く */
+        content: '';
+        width: calc(100%-30px);
+        height: 1px;
+        background: #000000;
+        bottom: 12px;
+        transform: scale(0, 1);
+        transform-origin: center top; /*変形（アンダーラインの伸長）の原点がaタグ（各メニュー）の右端*/
+        transition: transform 0.3s;   /*変形の時間*/
+    }
+
+    .header-nav a:hover::after {
+        transform: scale(1, 1); /* アンダーラインを表示 */
+    }
+
+
+    .Menu {
+        position: fixed;
+        top: 0;
+        right: 0;
+        z-index: 20;
+        width: 80%;
+        max-width: 400px;
+        height: 100vh;
+        background-color: #fff;
+        transform: translateX(100%);
+        transition: all 0.3s;
+    }
+
+    .Menu-Header {
+        width: 100%;
+        height: 60px;
+        background-color: #6ba6e7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: bold;
+        font-size: 32px;
+    }
+
+    .Menu-List {
+        width: 100%;
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    .Menu-List-Item {
+        border-bottom: 1px solid #ccc;
+        width: 100%;
+        padding-top: 16px;
+        padding-bottom: 16px;
+        padding-left: 32px;
+        font-weight: bold;
+    }
+
+    .MenuIsOpen {
+        transform: translateX(0);
+    }
+
+    .Button {
+        position: fixed;
+        top: 0;
+        right: 0;
+        z-index: 30;
+        height: 60px;
+        padding-left: 10px;
+        padding-right: 20px;
+    }
+
+    .Button-LineTop {
+        position: absolute;
+        top: 15px;
+        width: 40px;
+        height: 3px;
+        background-color: #fff;
+        transition: all 0.3s;
+        }
+
+        .ButtonIsOpen .Button-LineTop {
+        /* 子孫セレクタ */
+        transform: translateY(13.5px) rotate(45deg);
+        }
+
+        .Button-LineMedium {
+        width: 40px;
+        height: 3px;
+        background-color: #fff;
+        transition: all 0.3s;
+        }
+
+        .ButtonIsOpen .Button-LineMedium {
+        opacity: 0;
+        }
+
+        .Button-LineBottom {
+        position: absolute;
+        bottom: 15px;
+        width: 40px;
+        height: 3px;
+        background-color: #fff;
+        transition: all 0.3s;
+        }
+
+        .ButtonIsOpen .Button-LineBottom {
+        transform: translateY(-13.5px) rotate(-45deg);
+        }
+
+        .Overlay {
+        visibility: hidden;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 10;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.2);
+        opacity: 0;
+        transition: all 0.3s;
+        }
+
+        .OverlayIsOpen {
+        visibility: visible;
+        opacity: 1;
+        }
+
+</style>

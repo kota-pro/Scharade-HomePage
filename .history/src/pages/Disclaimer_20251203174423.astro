@@ -1,0 +1,231 @@
+---
+import '../styles/UA+reset.css';
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout>
+<Fragment slot="main-slot">
+    <div class = "section-title"> 
+        <h1>Disclaimer</h1>
+        <div class = "section-title-line"></div>
+    </div>
+</Fragment>
+<Fragment slot="body-slot">
+    <div class="disclaim_container">
+        <h1>プライバシーポリシー</h21>
+        <h2>個人情報の利用</h2>
+        <p>当ブログでは、お問い合わせや記事へのコメントの際、名前やメールアドレス等の個人情報を入力していただく場合がございます。<br>
+        取得した個人情報は、お問い合わせに対する回答や必要な情報を電子メールでご連絡する場合に利用させていただくものであり、これらの目的以外では利用しません。</p>
+        <h2>アクセス解析ツールについて</h2>
+        <p>
+        当ブログでは、Googleによるアクセス解析ツール「Googleアナリティクス」を利用しています。このGoogleアナリティクスはトラフィックデータの収集のためにクッキー（Cookie）を使用しております。トラフィックデータは匿名で収集されており、個人を特定するものではありません。
+        </p>
+        <h2>コメントについて</h2>
+        <p>
+        当ブログへのコメントを残す際に、IP アドレスを収集しています。<br>
+        これはブログの標準機能としてサポートされている機能で、スパムや荒らしへの対応以外にこのIPアドレスを使用することはありません。なお、全てのコメントは管理人が事前にその内容を確認し、承認した上での掲載となります。あらかじめご了承ください。
+        </p>
+    </div>
+    <div class="disclaim_container">
+        <h1>免責事項</h1>
+        <p>
+            当ブログからのリンクやバナーなどで移動したサイトで提供される情報、サービス等について一切の責任を負いません。<br>
+            また当ブログのコンテンツ・情報について、できる限り正確な情報を提供するように努めておりますが、正確性や安全性を保証するものではありません。情報が古くなっていることもございます。<br>
+            当サイトに掲載された内容によって生じた損害等の一切の責任を負いかねますのでご了承ください。
+        </p>
+    </div>
+    <div class="disclaim_container">
+        <h1>著作権について</h1>
+        <p>
+            当ブログで掲載している文章や画像などにつきましては、無断転載することを禁止します。<br>
+            当ブログは著作権や肖像権の侵害を目的としたものではありません。著作権や肖像権に関して問題がございましたら、<a href="Contact">Contact</a>よりご連絡ください。迅速に対応いたします。
+        </p>
+    </div>
+    <div class="disclaim_container">
+        <h1>リンクについて</h1>
+        <p>当ブログは基本的にリンクフリーです。リンクを行う場合の許可や連絡は不要です。<br>
+        ただし、インラインフレームの使用や画像の直リンクはご遠慮ください。</p>
+    </div>
+</Fragment>
+</Layout>
+
+<style>
+    .section-title {
+        display: flex;
+        flex-direction: row;
+        align-items: space-between;
+        justify-content: center;
+        margin-bottom: 55px;
+        margin-top:25px;
+    }
+
+    .section-title h1{
+        color:#000;
+        font-family: "Didot";
+        font-size:96px;
+        font-style:normal;
+        font-weight:400;
+        line-height:normal;
+        letter-spacing: 14.4px;
+        padding-right: 78px;
+    }
+
+    .section-title-line{
+        width :100%;
+        position:relative;
+    }
+
+    .section-title-line::after{
+        content:"";
+        display:block;
+        width:100%;
+        height:1px;
+        background:#000;
+        position:absolute;
+        top:50%;
+        right:0;
+    }
+
+    .disclaim_container {
+        display:flex;
+        height: 100%;
+        width: 100%;
+        padding-left: 20px;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        position: relative;
+    }
+
+    .disclaim_container:not(:last-child){
+        margin-bottom: 60px;
+    }
+
+    .disclaim_container::after{
+        content:'';
+        display:block;
+        width:1px;
+        height: calc(100% + 20px);
+        background:#000;
+        position: absolute;
+        top: -10px;
+        left: 0;
+    }
+
+    .disclaim_container h1{
+        color:#000;
+        font-family:"Zen Old Mincho", serif;
+        font-size:32px;
+        font-style:normal;
+        font-weight: 400;
+        line-height:normal;
+        letter-spacing: 4.8px;
+        margin-bottom: 40px;
+    }
+
+    .disclaim_container h2{
+        color:#000;
+        font-family:"Zen Kurenaido", sans-serif;
+        font-size:20px;
+        font-style:normal;
+        font-weight:400;
+        line-height:normal;
+        letter-spacing: 3px;
+        margin-bottom:15px;
+    }
+
+    .disclaim_container p{
+        color:#000;
+        font-family:"Zen Kurenaido", sans-serif;
+        font-size:16px;
+        font-style:normal;
+        font-weight:400;
+        line-height:normal;
+        letter-spacing:2.4px;
+        margin-bottom:15px;
+    }
+
+    .disclaim_container p:not(:last-child) {
+    
+    }
+
+    .disclaim_container a {
+        position: relative; /* アンダーラインのために相対位置を指定 */
+        cursor: pointer;
+    }
+
+    .disclaim_container a::after {
+        position: absolute;
+        left: 0px; /* aタグの左端からアンダーラインを引く */
+        right: 0px; /* aタグの右端からアンダーラインを引く */
+        content: '';
+        width: calc(100%-30px);
+        height: 1px;
+        background: #000000;
+        bottom: 0px;
+        transform: scale(0, 1);
+        transform-origin: center top; /*変形（アンダーラインの伸長）の原点がaタグ（各メニュー）の右端*/
+        transition: transform 0.3s;   /*変形の時間*/
+    }
+
+    .disclaim_container a:hover::after {
+        transform: scale(1, 1); /* アンダーラインを表示 */
+    }
+
+    @media (max-width: 768px) {
+    .section-title {
+        margin-bottom: 35px;
+        margin-top: 30px;
+    }
+    .section-title h1 {
+        font-size: 60px;
+        letter-spacing: 5px;
+        padding-right: 30px;
+    }
+    .disclaim_container h1 {
+        font-size: 25px;
+        letter-spacing: 3px;
+        margin-bottom: 24px;
+    }
+    .disclaim_container h2 {
+        font-size: 20px;
+        letter-spacing: 1px;
+        margin-bottom: 10px;
+    }
+    .disclaim_container p {
+        font-size: 14px;
+        letter-spacing: 1.6px;
+        line-height: 1.7;
+        margin-bottom: 12px;
+    }
+    }
+
+    @media (max-width: 428px) {
+    .section-title h1 {
+        font-size: 50px;
+        letter-spacing: 5.5px;
+    }
+    .section-title-line {
+        width: 88%;
+    }
+    .disclaim_container {
+        padding-left: 10px;
+    }
+    .disclaim_container::after {
+        height: calc(100% + 10px);
+    }
+    .disclaim_container h1 {
+        font-size: 30px;
+        margin-bottom: 20px;
+    }
+    .disclaim_container h2 {
+        font-size: 20px;
+        letter-spacing: 2px;
+    }
+    .disclaim_container p {
+        font-size: 13px;
+        letter-spacing: 1.5px;
+
+    }
+    }
+</style>

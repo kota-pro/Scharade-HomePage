@@ -89,7 +89,7 @@ export async function fetchImageBuffer(
   assetId: string,
 ): Promise<ArrayBuffer | null> {
   const accessToken = await getAccessToken();
-  const url = `https://lr.adobe.io/v2/catalogs/${CATALOG_ID}/assets/${assetId}/renditions/thumbnail2x`;
+  const url = `https://lr.adobe.io/v2/catalogs/${CATALOG_ID}/assets/${assetId}/renditions/640`;
 
   const response = await fetch(url, {
     headers: {
@@ -99,11 +99,10 @@ export async function fetchImageBuffer(
     },
   });
 
-  if (!response.ok) {
-    return null;
-  }
+  if (!response.ok) return null;
   return await response.arrayBuffer();
 }
+
 export async function getAlbumPhotos(albumId: string): Promise<any[]> {
   const accessToken = await getAccessToken();
 

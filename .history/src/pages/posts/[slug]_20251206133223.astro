@@ -1,0 +1,251 @@
+---
+import MypostLayout from "../../layouts/Mypost_Layout.astro";
+import "../../styles/UA+reset.css";
+import { microcmsClient } from "../../lib/microcms";
+import type { Blog } from "../../types/microcms";
+import { formatDate, getPublishedDate, normalizeTags } from "../../utils/blog";
+
+export async function getStaticPaths() {
+  const contents = await microcmsClient.getAllContents<Blog>({
+    endpoint: "blog",
+    queries: {
+      fields: "id,slug",
+    },
+  });
+
+  return contents.map((content) => ({
+    params: { slug: content.slug },
+    props: { id: content.id },
+  }));
+}
+
+const { id } = Astro.props as { id: string };
+const post = await microcmsClient.getListDetail<Blog>({
+  endpoint: "blog",
+  contentId: id,
+  queries: {
+    depth: 2,
+  },
+});
+
+const formattedDate = formatDate(getPublishedDate(post));
+const postTags = normalizeTags(post.tags);
+
+const backLinkMap = {
+  index: { href: "/", label: "Mainへ戻る" },
+  activity: { href: "/Activity", label: "Activityへ戻る" },
+  gallery: { href: "/Gallery", label: "Galleryへ戻る" },
+} as const;
+type BackLinkMap = typeof backLinkMap;
+type FromParam = keyof BackLinkMap;
+const isFromParam = (value: string | null): value is FromParam =>
+  value === "Activity" || value === "Gallery";
+const fromParam = Astro.url.searchParams.get("from");
+const backLink = isFromParam(fromParam) ? backLinkMap[fromParam] : null;
+const backLinkMapJSON = JSON.stringify(backLinkMap);
+---
+
+<MypostLayout title={post.title} from="Activity">
+  <div class="post-header">
+    <h1 class="post-title">{post.title}</h1>
+    <div class="post-meta">
+      {formattedDate ? <p class="post-date">{formattedDate}</p> : null}
+      {
+        normalizeTags(post.tags).length ? (
+          <ul class="post-tags">
+            {normalizeTags(post.tags).map((tag) => (
+              <li class="post-tag">#{tag.name}</li>
+            ))}
+          </ul>
+        ) : null
+      }
+    </div>
+  </div>
+
+  {
+    post.pictures?.length ? (
+      <div class="post-pictures">
+        {post.pictures.map((image) => (
+          <figure class="post-eyecatch">
+            <img src={image.url} alt={image.alt || post.title} loading="lazy" />
+          </figure>
+        ))}
+      </div>
+    ) : null
+  }
+  <div class="post-body" set:html={post.body ?? ""} />
+  <div
+    class="back-link"
+    id="post-back-link"
+    data-map={backLinkMapJSON}
+    hidden={!backLink}
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 20 20"><path fill="currentColor" d="M11.25 17.308L5.942 12l5.308-5.308l.708.708L7.364 12l4.594 4.6zm6.1 0L12.042 12l5.308-5.308l.708.708l-4.594 4.6l4.594 4.6z"/></svg>
+    {backLink ? <a href={backLink.href}>{backLink.label}</a> : null}
+  </div>
+</MypostLayout>
+
+<style>
+  .post-header {
+    margin-bottom: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .post-title {
+    color: #000;
+    font-family: "Zen Old Mincho";
+    font-size: 64px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 9.6px;
+  }
+
+  .post-meta {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 24px;
+  }
+
+  .post-date {
+    margin: 0;
+    font-family: "Grandiflora One";
+    font-size: 25px;
+    letter-spacing: 3px;
+  }
+
+  .post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .post-tag {
+    font-family: "Grandiflora One";
+    font-size: 18px;
+    letter-spacing: 2px;
+  }
+
+  .post-pictures {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .post-eyecatch {
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+
+  .post-eyecatch::after {
+    content: '';
+    background-image: url(/images/tapes/asset1.svg); /* ファイルのassetの次の数字を毎回ランダムにしたい */
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 30%;
+    height: 5%;
+    display: block;
+    position: absolute;
+    top: -20px;
+    left: 35%;
+    transform: rotate(10deg); /* この角度を-10~10degの範囲でランダムにしたい(できれば0.5deg刻みで)*/
+    z-index: 10 !important;
+  }
+
+  .post-eyecatch img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border: 20px solid #ffffff;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .post-body :global(p) {
+    color: #000;
+    font-family: "Zen Kurenaido";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
+  }
+
+  .post-body :global(h2),
+  .post-body :global(h3) {
+    font-family: "Zen Old Mincho";
+    margin: 2em 0 0.8em;
+  }
+
+  .post-body :global(img) {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 24px auto;
+    border-radius: 4px;
+  }
+
+  .post-body :global(ul),
+  .post-body :global(ol) {
+    margin: 0 0 1.5em 1.5em;
+    padding: 0;
+  }
+
+  .post-body :global(li) {
+    margin-bottom: 0.5em;
+    line-height: 1.7;
+  }
+
+  .back-link {
+    margin-top: 48px;
+    font-family: "Zen Kurenaido";
+    font-size: 20px;
+    letter-spacing: 3px;
+    text-align: right;
+    color: #6f6f6f;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 15px;
+  }
+
+  .back-link:hover {
+    color: #0db49b;
+  }
+</style>
+
+<script type="module">
+  const container = document.getElementById("post-back-link");
+  if (container) {
+    try {
+      const map = JSON.parse(container.dataset.map ?? "{}");
+      const params = new URLSearchParams(window.location.search);
+      const from = params.get("from");
+      const link = from && map[from];
+      if (link) {
+        if (!container.querySelector("a")) {
+          const anchor = document.createElement("a");
+          anchor.href = link.href;
+          anchor.textContent = link.label;
+          container.appendChild(anchor);
+        }
+        container.hidden = false;
+      } else {
+        container.hidden = true;
+      }
+    } catch (error) {
+      console.error("Failed to render back link", error);
+    }
+  }
+</script>

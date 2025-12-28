@@ -1,0 +1,191 @@
+
+    header {
+        top:0;
+        width: 100vw;
+        height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 120px 0px 82.17px;
+        box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+        background: #fff;
+        position: fixed;
+        z-index: 10 !important;
+    }
+
+    .header-logo {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 337.83px;
+        height: 61px;
+        gap: 20px;
+    }
+
+    .header-logo-svg {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 75.651px;
+        height: 56.644px;
+    }
+
+    .header-logo-text_1 {
+        font-family: "Zen Old Mincho", serif;
+        font-size: 13px;
+        margin: 0;
+    }
+
+    .header-logo-text_2 {
+        font-family: "Zen Old Mincho", serif;
+        font-size: 32px;
+        margin: 0;
+    }
+
+    .header-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .header-nav a {
+        font-family: "Zen Old Mincho", serif;
+        font-size: 20px;
+        text-decoration: none;
+        color: #000;
+        padding: 15px;
+        letter-spacing: 3px;
+        position: relative; /* アンダーラインのために相対位置を指定 */
+        cursor: pointer;
+    }
+
+    .header-nav a::after {
+        position: absolute;
+        left: 15px; /* aタグの左端からアンダーラインを引く */
+        right: 15px; /* aタグの右端からアンダーラインを引く */
+        content: '';
+        width: calc(100%-30px);
+        height: 1px;
+        background: #000000;
+        bottom: 12px;
+        transform: scale(0, 1);
+        transform-origin: center top; /*変形（アンダーラインの伸長）の原点がaタグ（各メニュー）の右端*/
+        transition: transform 0.3s;   /*変形の時間*/
+    }
+
+    .header-nav a:hover::after {
+        transform: scale(1, 1); /* アンダーラインを表示 */
+    }
+
+
+    .Menu {
+        position: fixed;
+        top: 0;
+        right: 0;
+        z-index: 20;
+        width: 80%;
+        max-width: 400px;
+        height: 100vh;
+        background-color: #fff;
+        transform: translateX(100%);
+        transition: all 0.3s;
+    }
+
+    .Menu-Header {
+        width: 100%;
+        height: 60px;
+        background-color: #6ba6e7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: bold;
+        font-size: 32px;
+    }
+
+    .Menu-List {
+        width: 100%;
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    .Menu-List-Item {
+        border-bottom: 1px solid #ccc;
+        width: 100%;
+        padding-top: 16px;
+        padding-bottom: 16px;
+        padding-left: 32px;
+        font-weight: bold;
+    }
+
+    .MenuIsOpen {
+        transform: translateX(0);
+    }
+
+    .Button {
+        position: fixed;
+        top: 0;
+        right: 0;
+        z-index: 30;
+        height: 60px;
+        padding-left: 10px;
+        padding-right: 20px;
+    }
+
+    .Button-LineTop {
+        position: absolute;
+        top: 15px;
+        width: 40px;
+        height: 3px;
+        background-color: #fff;
+        transition: all 0.3s;
+    }
+
+    .ButtonIsOpen .Button-LineTop {
+        /* 子孫セレクタ */
+        transform: translateY(13.5px) rotate(45deg);
+    }
+
+    .Button-LineMedium {
+        width: 40px;
+        height: 3px;
+        background-color: #fff;
+        transition: all 0.3s;
+    }
+
+    .ButtonIsOpen .Button-LineMedium {
+        opacity: 0;
+    }
+
+    .Button-LineBottom {
+        position: absolute;
+        bottom: 15px;
+        width: 40px;
+        height: 3px;
+        background-color: #fff;
+        transition: all 0.3s;
+    }
+
+    .ButtonIsOpen .Button-LineBottom {
+        transform: translateY(-13.5px) rotate(-45deg);
+    }
+
+    .Overlay {
+        visibility: hidden;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 10;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.2);
+        opacity: 0;
+        transition: all 0.3s;
+    }
+
+    .OverlayIsOpen {
+        visibility: visible;
+        opacity: 1;
+    }
+
+</style>

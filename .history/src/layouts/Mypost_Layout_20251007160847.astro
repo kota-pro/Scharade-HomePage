@@ -1,0 +1,35 @@
+---
+import Layout from './Layout.astro';
+import '../styles/UA+reset.css';
+const { title } = Astro.props
+---
+<Layout>
+<Fragment slot="main-slot">
+    <nav>
+    <a href="/">ホーム</a>
+    <a href="Activity">ブログ</a>
+    <a href="Contact">お問い合わせ</a>
+    </nav>
+</Fragment>
+<Fragment slot="menu-slot">
+    <aside>
+    <h2>サイドメニュー</h2>
+    <ul>
+        <li><a href="/about">このサイトについて</a></li>
+        <li><a href="/privacy">プライバシーポリシー</a></li>
+        <li><a href="/terms">利用規約</a></li>
+    </ul>
+    </aside>
+<Fragment slot="body-slot">
+    <h1>{title}</h1>
+    <article>
+        <slot /> <!-- ここにコンテンツが挿入されます -->
+    </article>
+</Fragment>
+</Layout>
+
+<style>
+    h1 {
+    font-size: 2rem;
+    }
+</style>

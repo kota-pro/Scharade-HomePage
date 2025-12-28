@@ -1,0 +1,8 @@
+node_modules
+dist
+.next
+.DS_Store
+.env
+next-app/.next
+next-app/node_modules
+publicimages

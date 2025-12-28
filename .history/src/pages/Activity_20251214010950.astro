@@ -1,0 +1,682 @@
+---
+import Layout from "../layouts/Layout.astro";
+import "../styles/UA+reset.css";
+import "../styles/Activity.css";
+import { microcmsClient } from "../lib/microcms";
+import type { Blog, Tag } from "../types/microcms";
+import {
+  buildTabs,
+  formatDate,
+  getPublishedDate,
+  normalizeTags,
+} from "../utils/blog";
+import { linkToPost } from "../utils/linkToPost";
+
+const { contents: posts } = await microcmsClient.getList<Blog>({
+  endpoint: "blog",
+  queries: {
+    limit: 100,
+    orders: "-publishedAt",
+    depth: 2,
+  },
+});
+
+const { contents: tags } = await microcmsClient.getList<Tag>({
+  endpoint: "blog-tags",
+  queries: {
+    limit: 100,
+    orders: "name",
+  },
+});
+
+const tabs = buildTabs(posts, tags);
+
+const ITEMS_PER_PAGE = 10;
+---
+
+<Layout>
+  <Fragment slot="main-slot">
+    <div class="section-title">
+      <h1>Activity</h1>
+      <div class="section-title-line"></div>
+    </div>
+  </Fragment>
+  <Fragment slot="menu-slot">
+    <div class="menu-contents-inner">
+      <a href="#" class="page-top-nav">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          ><path
+            fill="currentColor"
+            d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"
+          ></path></svg
+        >
+      </a>
+    </div>
+  </Fragment>
+  <Fragment slot="body-slot">
+    <div class="tab">
+      {
+        tabs.map((tab, index) => {
+          const inputId = `tab-${tab.slug}`;
+          const totalPosts = tab.posts.length;
+          const totalPages = Math.ceil(totalPosts / ITEMS_PER_PAGE);
+
+          return [
+            <input
+              type="radio"
+              id={inputId}
+              name="tab"
+              checked={index === 0}
+            />,
+            <label for={inputId}>{tab.label}</label>,
+            <div
+              class="tab-panel"
+              data-total-posts={totalPosts}
+              data-total-pages={totalPages}
+            >
+              <div class="tab-panel-number panel-top">
+                <a class="tab-posts-navigation prev-btn-top" href="#">
+                  <img src="/icons/leftarrow.svg" />
+                </a>
+
+                <input
+                  class="page-input-top"
+                  type="text"
+                  inputmode="numeric"
+                  min="1"
+                  max={totalPages}
+                  value="1"
+                />
+                <p>/</p>
+                <p>{totalPages}</p>
+
+                <a class="tab-posts-navigation next-btn-top" href="#">
+                  <img src="/icons/rightarrow.svg" />
+                </a>
+              </div>
+
+              <div class="post-list-container">
+                {tab.posts.length ? (
+                  tab.posts.map((post, postIndex) => (
+                    <article class="Activity-item" data-index={postIndex}>
+                      <a href={linkToPost(post.slug, "activity")}>
+                        <div class="Activity-text-container">
+                          <div class="Activity-info">
+                            <p class="Activity-date">
+                              {formatDate(getPublishedDate(post))}
+                            </p>
+                            {normalizeTags(post.tags).map((tag) => (
+                              <span class="Activity-tag">#{tag.name}</span>
+                            ))}
+                          </div>
+                          <h2 class="Activity-title">{post.title}</h2>
+                          <div class="Activity-excerpt-container">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="25"
+                              height="25"
+                              viewBox="0 0 25 25"
+                            >
+                              <path
+                                fill="currentColor"
+                                d="m14 20l-.713-.713l3.792-3.787H6V5h1v9.5h10.079l-3.792-3.792l.707-.714L19 15z"
+                              />
+                            </svg>
+                            {post.excerpt ? (
+                              <p class="Activity-excerpt">{post.excerpt}</p>
+                            ) : null}
+                          </div>
+                        </div>
+                        <img
+                          class="link-button"
+                          src="/icons/link.svg"
+                          alt="Link Icon"
+                        />
+                      </a>
+                    </article>
+                  ))
+                ) : (
+                  <p class="Activity-empty">該当する記事はまだありません。</p>
+                )}
+              </div>
+
+              {tab.posts.length > 0 && (
+                <div class="tab-panel-number panel-bottom">
+                  <a href="#" class="tab-posts-double-navigation first-btn">
+                    <img src="/icons/doubleleftarrow.svg" alt="First" />
+                  </a>
+
+                  <a href="#" class="tab-posts-navigation prev-btn">
+                    <img src="/icons/leftarrow.svg" alt="Prev" />
+                  </a>
+
+                  <div class="tab-posts-numbers" />
+
+                  <a href="#" class="tab-posts-navigation next-btn">
+                    <img src="/icons/rightarrow.svg" alt="Next" />
+                  </a>
+
+                  <a href="#" class="tab-posts-double-navigation last-btn">
+                    <img src="/icons/doublerightarrow.svg" alt="Last" />
+                  </a>
+                </div>
+              )}
+            </div>,
+          ];
+        })
+      }
+    </div>
+  </Fragment>
+</Layout>
+
+<script define:vars={{ ITEMS_PER_PAGE }}>
+  document.querySelectorAll(".tab-panel").forEach((panel) => {
+    const totalPages = parseInt(panel.getAttribute("data-total-pages") || "1");
+    const totalPosts = parseInt(panel.getAttribute("data-total-posts") || "0");
+
+    if (totalPosts === 0) return;
+
+    let currentPage = 1;
+
+    const posts = panel.querySelectorAll(".Activity-item");
+    const inputTop = panel.querySelector(".page-input-top");
+    const numbersContainer = panel.querySelector(".tab-posts-numbers");
+
+    const btnFirst = panel.querySelector(".first-btn");
+    const btnPrev = panel.querySelector(".prev-btn");
+    const btnNext = panel.querySelector(".next-btn");
+    const btnLast = panel.querySelector(".last-btn");
+
+    const btnPrevTop = panel.querySelector(".prev-btn-top");
+    const btnNextTop = panel.querySelector(".next-btn-top");
+
+    const renderPage = (page) => {
+      if (page < 1) page = 1;
+      if (page > totalPages) page = totalPages;
+      currentPage = page;
+
+      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+      const endIndex = startIndex + ITEMS_PER_PAGE;
+
+      posts.forEach((post, index) => {
+        if (index >= startIndex && index < endIndex) {
+          post.style.display = "block";
+        } else {
+          post.style.display = "none";
+        }
+      });
+
+      if (inputTop) inputTop.value = currentPage.toString();
+      updatePaginationNumbers();
+    };
+
+    const updatePaginationNumbers = () => {
+      if (!numbersContainer) return;
+      numbersContainer.innerHTML = "";
+
+      const pagesSet = new Set([
+        1,
+        2,
+        totalPages - 1,
+        totalPages,
+        currentPage - 1,
+        currentPage,
+        currentPage + 1,
+      ]);
+
+      const sortedPages = Array.from(pagesSet)
+        .filter((p) => p >= 1 && p <= totalPages)
+        .sort((a, b) => a - b);
+
+      let prevPage = 0;
+      sortedPages.forEach((p) => {
+        if (prevPage > 0 && p - prevPage > 1) {
+          const dots = document.createElement("span");
+          dots.className = "separate-slash";
+          dots.textContent = "...";
+          numbersContainer.appendChild(dots);
+        }
+
+        const a = document.createElement("a");
+        a.className = "tab-posts-number";
+        a.textContent = p.toString();
+        a.href = "#";
+
+        if (p === currentPage) {
+          a.style.textDecoration = "underline";
+          a.style.textDecorationThickness = "0.5px";
+          a.style.textUnderlineOffset = "4px";
+        }
+
+        a.addEventListener("click", (e) => {
+          e.preventDefault();
+          renderPage(p);
+        });
+
+        numbersContainer.appendChild(a);
+        prevPage = p;
+      });
+    };
+
+    if (inputTop) {
+      inputTop.addEventListener("change", (e) => {
+        const val = parseInt(e.target.value);
+        if (!isNaN(val)) renderPage(val);
+      });
+    }
+
+    btnPrevTop?.addEventListener("click", (e) => {
+      e.preventDefault();
+      renderPage(currentPage - 1);
+    });
+
+    btnNextTop?.addEventListener("click", (e) => {
+      e.preventDefault();
+      renderPage(currentPage + 1);
+    });
+
+    btnFirst?.addEventListener("click", (e) => {
+      e.preventDefault();
+      renderPage(1);
+    });
+
+    btnPrev?.addEventListener("click", (e) => {
+      e.preventDefault();
+      renderPage(currentPage - 1);
+    });
+
+    btnNext?.addEventListener("click", (e) => {
+      e.preventDefault();
+      renderPage(currentPage + 1);
+    });
+
+    btnLast?.addEventListener("click", (e) => {
+      e.preventDefault();
+      renderPage(totalPages);
+    });
+
+    renderPage(1);
+  });
+</script>
+
+<style>
+  input.page-input-top::-webkit-outer-spin-button,
+  input.page-input-top::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input.page-input-top[type="number"] {
+    -moz-appearance: textfield;
+  }
+
+  .section-title {
+    display: flex;
+    flex-direction: row;
+    align-items: space-between;
+    justify-content: center;
+    margin-bottom: 55px;
+  }
+
+  .section-title  h1{
+    color: #000;
+    font-family: "Didot";
+    font-size: 96px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 14.4px;
+    padding-right: 78px;
+  }
+
+  .section-title-line {
+    width: 100%;
+    position: relative;
+  }
+
+  .section-title-line::after {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: #000;
+    position: absolute;
+    top: 50%;
+    right: 0;
+  }
+
+  .menu-contents-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .page-top-nav {
+    width: 50px;
+    height: 50px;
+    background-color: #fff;
+    border: 1px solid #000;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: sticky;
+    bottom: 50px;
+    z-index: 5;
+    transition: all 0.3s;
+  }
+
+  .page-top-nav svg {
+    width: 32px;
+    height: 32px;
+    rotate: 90deg;
+    transition: all 0.3s;
+  }
+
+  .page-top-nav:hover {
+    background-color: #707070;
+    box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  .page-top-nav:hover svg {
+    filter: invert(100%) sepia(2%) saturate(1%) hue-rotate(267deg) brightness(101%) contrast(101%);
+  }
+
+  .tab {
+    display: flex;
+    flex-wrap: wrap;
+    position: relative;
+  }
+
+  .tab > label {
+    flex: 1 1;
+    order: -1;
+    min-width: 70px;
+    padding: .7em 1em .5em;
+    border-bottom: 1px solid #000000;
+    border-radius: 0;
+    background-color: #fdfdfd;
+    color: #000000;
+    font-family: "Zen Old Mincho";
+    font-size: 15px;
+    letter-spacing: 2.25px;
+    font-weight: 400;
+    font-style: normal;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .tab > label:hover {
+    color: #0db49b;
+  }
+
+  .tab > input {
+    display: none;
+  }
+
+  .tab-panel {
+    display: none;
+    width: 100%;
+    padding: 1.5em 1em;
+    background-color: #fff;
+    position: relative;
+  }
+
+  .tab > input:checked + label {
+    background-color: #fff;
+    border-color: #000000;
+    border-style: solid;
+    border-width: 1px 1px 0px 1px;
+    border-radius: 2px 2px 0px 0px;
+    color: #0db49b;
+  }
+
+  .tab > input:checked + label + .tab-panel {
+    display: block;
+    background-color: #fff;
+  }
+
+  .tab > input:checked + label + .tab-panel::after {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: #000;
+    position: absolute;
+    top: 100%;
+    left: 0;
+  }
+
+  .tab-panel-number {
+    display: flex;
+    align-items: center;
+    padding: 0 9px;
+    gap: 10px;
+  }
+
+  .panel-top {
+    justify-content: flex-end;
+    margin-bottom: 24px;
+  }
+
+  .panel-bottom {
+    justify-content: center;
+    margin-top: 24px;
+  }
+
+  .tab-posts-navigation {
+    text-decoration: none;
+    width: 20px;
+    height: 20px;
+  }
+
+  .tab-posts-double-navigation {
+    text-decoration: none;
+    width: 26px;
+    height: 20px;
+  }
+
+  .tab-posts-navigation:hover {
+    filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg) brightness(100%) contrast(90%);
+  }
+
+  .tab-posts-double-navigation:hover {
+    filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg) brightness(100%) contrast(90%);
+  }
+
+  .tab-posts-navigation img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .tab-posts-double-navigation img {
+    width: 26px;
+    height: 20px;
+  }
+
+  .tab-panel-number p,
+  .tab-panel-number a,
+  .tab-panel-number input {
+    color: #000;
+    font-family: "Grandiflora One";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
+    text-align: center;
+    cursor: default;
+  }
+
+  .tab-posts-numbers {
+    display: flex;
+    gap: 10px;
+    margin: 0 15px;
+  }
+
+  .tab-posts-number {
+    text-decoration: none;
+    cursor: pointer !important;
+  }
+
+  .tab-posts-number:hover {
+    color: #0db49b;
+  }
+
+  .tab-panel-number input {
+    width: 40px;
+    text-align: center;
+    border: none;
+    background: none;
+    outline: none;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: text !important;
+  }
+
+  .tab-panel-number input:focus {
+    width: 80px;
+    border-bottom: 1px solid #0db49b;
+    color: #0db49b;
+  }
+
+  .Activity-item {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 24px 50px 24px;
+    position: relative;
+  }
+
+  .Activity-item:not(:nth-child(10n),:nth-last-child(1))::after{
+    content: '';
+    display: block;
+    width: 30%;
+    height: 1px;
+    background: #000;
+    margin-top: 12px;
+    position: absolute;
+    bottom: 0;
+    left: 35%;
+    z-index: 3 !important;
+  }
+
+  .Activity-item:hover {
+    background-color: #f0f0f0;
+  }
+
+  .Activity-item a {
+    color: inherit;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .Activity-info {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .Activity-date {
+    color: #000;
+    font-family: "Grandiflora One";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    text-align: center;
+    line-height: normal;
+    letter-spacing: 3px;
+    margin: 0 45px 0 0;
+  }
+
+  .Activity-info .Activity-tag {
+    color: #000;
+    font-family: "Grandiflora One";
+    font-size: 15px;
+    font-style: normal;
+    font-weight: 400;
+    text-align: center;
+    line-height: normal;
+    letter-spacing: 2.25px;
+    margin-right: 25px;
+    position: relative;
+  }
+
+  .Activity-info .Activity-tag::after {
+    position: absolute;
+    left: 0; /* aタグの左端からアンダーラインを引く */
+    right: 0; /* aタグの右端からアンダーラインを引く */
+    content: '';
+    width: 100%;
+    height: 0.5px;
+    background: #b6b6b6;
+    bottom: 0;
+    transform: scale(0, 1);
+    transform-origin: center top; /*変形（アンダーラインの伸長）の原点がaタグ（各メニュー）の右端*/
+    transition: transform 0.3s;
+  }
+
+  .Activity-info .Activity-tag:hover::after {
+    transform: scale(1, 1); /* アンダーラインを表示 */
+  }
+
+  .Activity-title {
+    color: #000;
+    font-family: "Zen Old Mincho";
+    font-size: 25px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
+    margin: 12px 0px;
+  }
+
+  .Activity-excerpt-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .Activity-excerpt {
+      margin: 0px;
+      font-family: "Zen Kurenaido";
+      font-size: 15px;
+      line-height: 1.7;
+      letter-spacing: 0.5px;
+      color: #333;
+  }
+
+  .Activity-empty {
+      padding: 24px 50px;
+      font-family: "Zen Old Mincho";
+      font-size: 15px;
+      color: #555;
+  }
+
+  .link-button{
+      padding: 15px;
+      width: 50px;
+      height: 50px;
+      margin-left: 20px;
+  }
+
+  .link-button:hover {
+      background-color: #f0f0f0;
+  }
+
+  .link-button img {
+      width: 20px;
+      height: 20px;
+      vertical-align: top;
+  }
+</style>

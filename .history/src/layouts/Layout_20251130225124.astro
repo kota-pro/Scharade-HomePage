@@ -1,0 +1,102 @@
+---
+import "../styles/UA+reset.css";
+import Header from "../components/header.astro";
+import Footer from "../components/footer.astro";
+const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="icon" type="image/svg+xml" href="/icons/camera.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>写団シャレード</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;500;700;900&family=Zen+Kurenaido&display=swap" rel="stylesheet">
+		<script>
+			(function(d) {
+				var config = {
+				kitId: 'ifd3mog',
+				scriptTimeout: 3000,
+				async: true
+				},
+				h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='https://use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+			})(document);
+		</script>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;500;700;900&family=Zen+Kurenaido&family=Zen+Old+Mincho&display=swap" rel="stylesheet">
+		<script>
+			(function(d) {
+			var config = {
+				kitId: 'ifd3mog',
+				scriptTimeout: 3000,
+				async: true
+			},
+			h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='https://use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+			})(document);
+		</script>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Grandiflora+One&family=Zen+Kaku+Gothic+New:wght@300;400;500;700;900&family=Zen+Kurenaido&family=Zen+Old+Mincho&display=swap" rel="stylesheet">
+		<link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/css/lightbox.css" rel="stylesheet">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js" defer></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/js/lightbox.min.js" defer type="text/javascript"></script>
+		<script src={`https://maps.googleapis.com/maps/api/js?lang=ja&key=${googleMapsApiKey}&libraries=maps,marker`} defer></script>
+	</head>
+	<body>
+		<Header />
+		<slot name="main-slot" />
+		<div class="container">
+			<div class="for-padding"></div>
+			<div class="body-contents">
+				<slot name="body-slot" />
+			</div>
+			<div class="menu-contents">
+				<slot name="menu-slot" />
+			</div>
+		</div>
+		<div><slot name="setting-none" /></div>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	html{
+		font-family: "zen-krenaido-regular", "zen-old-mincho-regular", "zen-kaku-gothic-new-light", "zen-kaku-gothic-new-regular", "zen-kaku-gothic-new-medium", "zen-kaku-gothic-new-bold", "zen-kaku-gothic-new-black", "ta-koigokoro-regular", "grandiflora-one-regular";
+		margin: 0;
+		scroll-behavior: smooth;
+	}
+
+	body {
+		margin: 0;
+		padding-top: 120px;
+		background-color: #fdfdfd;
+	}
+
+	.container {
+		display: grid;
+		grid-template-columns: repeat(12, [col-start] 1fr);
+	}
+	
+	.for-padding {
+		grid-column: col-start / span 1;
+	}
+
+	.body-contents {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		grid-column: col-start 2 / span 10;
+	}
+	.menu-contents {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		grid-column: col-start 12 / span 1;
+	}
+</style>
+

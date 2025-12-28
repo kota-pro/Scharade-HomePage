@@ -1,0 +1,723 @@
+---
+import '../styles/UA+reset.css';
+import Layout from '../layouts/Layout.astro';
+---
+<Layout>
+<Fragment slot="main-slot">
+    <div class = "section-title a-anchor"> 
+        <h1>Contact</h1>
+        <div class = "section-title-line"></div>
+    </div>
+</Fragment>
+<Fragment slot="body-slot">
+    <p class="contact-description">写団 シャレードに興味を持っていただきありがとうございます。</br></br>入会希望や見学、撮影の依頼などお問い合わせは、下記のメールフォームからご気軽にお問い合わせください。</br>後日、ご連絡させて頂きます。</p>
+    <div class="contact-form">
+        <form class="form" action="../src/components/mail.php" method="post">
+            <table class="form-table">
+                <tbody>
+                    <tr>
+                        <th><p id="name" class="a-anchor">お名前</p></th>
+                        <td class="require-td"><p id="require">必須</p></td>
+                        <td class="input-td"><input type="text" name="name" autocomplete="name" required></td>
+                    </tr>
+                    <tr>
+                        <th><p id="furigana" class="a-anchor">フリガナ</p></th>
+                        <td class="require-td"><p id="require">必須</p></td>
+                        <td class="input-td"><input type="text" name="furigana" autocomplete="name" id="inputField" required></td>
+                    </tr>
+                    <tr>
+                        <th><p id="institution" class="a-anchor">所属教育機関</p></th>
+                        <td class="require-td"><p id="require">必須</p></td>
+                        <td class="input-td"><input type="text" placeholder="※学生でない方は所属企業名をお書きください。" name="institution" autocomplete="organization" required></td>
+                    </tr>
+                    <tr>
+                        <th><p id="faculty" class="a-anchor">学部</p></th>
+                        <td class="require-td"></td>
+                        <td class="input-td"><input type="text" name="faculty"></td>
+                    </tr>
+                    <tr>
+                        <th><p id="grade" class="a-anchor">学年</p></th>
+                        <td class="require-td"></td>
+                        <td class="input-td">
+                            <span><input class="grade-selection" type="radio" value="1年" name="grade[]" id="grade-1"><label for="grade-1">1年</label></span>
+                            <span><input class="grade-selection" type="radio" value="2年" name="grade[]" id="grade-2"><label for="grade-2">2年</label></span>
+                            <span><input class="grade-selection" type="radio" value="3年" name="grade[]" id="grade-3"><label for="grade-3">3年</label></span>
+                            <span><input class="grade-selection" type="radio" value="4年" name="grade[]" id="grade-4"><label for="grade-4">4年</label></span>
+
+                            <span><input class="grade-selection" type="radio" value="院生" name="grade[]" id="grade-5"><label for="grade-5">院生</label></span>
+                            <span><input class="grade-selection" type="radio" value="留学生" name="grade[]" id="grade-6"><label for="grade-6">留学生</label></span>
+                            <span><input class="grade-selection" type="radio" value="その他" name="grade[]" id="grade-7"><label for="grade-7">その他</label></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><p id="email" class="a-anchor">メールアドレス</p></th>
+                        <td class="require-td"><p id="require">必須</p></td>
+                        <td class="input-td"><input type="email" name="Email" autocomplete="email" required></td>
+                    </tr>
+                    <tr>
+                        <th><p id="inquiry" class="a-anchor">お問い合わせ内容</p></th>
+                        <td class="require-td"><p id="require">必須</p></td>
+                        <td class="input-td">
+                            <span><input class="inquiry-selection" type="radio" name="inquiry[]" required id="inquiry-1"><label for="inquiry-1">入会希望</label></span>
+                            <span><input class="inquiry-selection" type="radio" name="inquiry[]" required id="inquiry-2"><label for="inquiry-2">見学・体験希望</label></span>
+                            <span><input class="inquiry-selection" type="radio" name="inquiry[]" required id="inquiry-3"><label for="inquiry-3">撮影依頼</label></span>
+                            <span><input class="inquiry-selection" type="radio" name="inquiry[]" required id="inquiry-4"><label for="inquiry-4">その他</label></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><p id="message" class="a-anchor">お問い合わせ詳細</p></th>
+                        <td class="require-td"></td>
+                        <td class="text-td"><textarea name="message" rows="8" placeholder="※上記で「その他」を選択した方はこちらにお書きください。"></textarea></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="button-div-1">
+                <div class = "section-title-line-1"></div>
+                <a class="confirm-button">Confirm</a>
+                <div class = "section-title-line-2"></div>
+            </div>
+            <div class="confirm-preview is-hidden">
+                <div class="preview-header">
+                    <h1>Confirm</h1>
+                    <a id="close-preview"><img src="/icons/close.svg" alt="Close Icon"/></a>
+                </div>
+                <div class="preview-body">
+                    <div class="preview-item-left">
+                        <span><a href="#name" id="preview-name">
+                            <h2 class="preview-item-title">お名前</h2>
+                            <p class="preview-item-content">岡元昊太</p>
+                        </span></a>
+                        <span>
+                            <h2 class="preview-item-title">フリガナ</h2>
+                            <a href="#furigana" id="preview-furigana"><p class="preview-item-content">オカモトコウタ</p></a>
+                        </span>
+                        <span>
+                            <h2 class="preview-item-title">所属教育機関</h2>
+                            <a href="#institution" id="preview-institution"><p class="preview-item-content">早稲田大学</p></a>
+                        </span>
+                        <span>
+                            <h2 class="preview-item-title">学部</h2>
+                            <a href="#faculty" id="preview-faculty"><p class="preview-item-content">基幹理工学部</p></a>
+                        </span>
+                        <span>
+                            <h2 class="preview-item-title">学年</h2>
+                            <a href="#grade" id="preview-grade"><p class="preview-item-content">2年</p></a>
+                        </span>
+                        <span>
+                            <h2 class="preview-item-title">メールアドレス</h2>
+                            <a href="#email" id="preview-email"><p class="preview-item-content">contact@scharade.jp</p></a>
+                        </span>
+                        <span>
+                            <h2 class="preview-item-title">お問い合わせ内容</h2>
+                            <a href="#inquiry" id="preview-inquiry"><p class="preview-item-content">見学・体験希望</p></a>
+                        </span>
+                    </div>
+                    <div class="preview-item-right">
+                        <h2 class="preview-item-title">お問い合わせ詳細</h2>
+                        <div class="preview-message-container">
+                            <a href="#message" id="preview-message"><p class="preview-item-content">お問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせお問い合わせ</p></a>
+                        </div>
+                    </div>                    
+                </div>
+                <div class="button-div-2">
+                    <input type="submit" class="submit-button" value="Submit">
+                </div>
+            </div>
+            <div class="mask is-hidden"></div>
+        </form>
+</Fragment>
+</Layout>
+
+<!-- 判定のため、JavaScriptを追加 -->
+<script>
+    (() => {
+        // チェックボックスのinputタグを取得
+        const checkBoxElements = Array.from(document.getElementsByClassName("inquiry-selection")) as HTMLInputElement[];
+
+        const errorMessage = "1つ以上の選択肢を選択してください。";
+        checkBoxElements
+            .forEach(m => {
+                // エラーメッセージを、カスタムなものに変更
+                m.setCustomValidity(errorMessage);
+
+                // 各チェックボックスのチェックのオン・オフ時に、以下の処理が実行されるようにする
+                m.addEventListener("change", () => {
+                    // 1つ以上チェックがされているかどうかを判定
+                    const isCheckedAtLeastOne = document.querySelector(".inquiry-selection:checked") !== null;
+
+                    // 1つもチェックがされていなかったら、すべてのチェックボックスを required にする
+                    // 加えて、エラーメッセージも変更する
+                    checkBoxElements.forEach(n => {
+                        n.required = !isCheckedAtLeastOne
+                        n.setCustomValidity(isCheckedAtLeastOne ? "" : errorMessage);
+                    });
+                });
+            });
+    })();
+
+    function toFullWidthKatakana(str: string): string {
+        return str.replace(/[\u3041-\u3096]/g, function(match: string) {
+            // ひらがなを全角カタカナに変換
+            return String.fromCharCode(match.charCodeAt(0) + 0x60);
+        });
+    }
+
+    function convertInputToKatakana() {
+        const inputField = document.getElementById('inputField');
+        if (inputField && inputField instanceof HTMLInputElement) {
+            const inputValue = inputField.value;
+            const convertedValue = toFullWidthKatakana(inputValue);
+            inputField.value = convertedValue;
+        }
+    }
+
+    const inputField = document.getElementById('inputField');
+    if (inputField) {
+        inputField.addEventListener('input', convertInputToKatakana);
+    }
+
+    // window.addEventListener("beforeunload", (event) => {
+    //     // 標準の確認ダイアログを表示させる
+    //     event.preventDefault();
+    //     event.returnValue = ''; // 空文字をセット（これで標準ダイアログが出る）
+    // });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.querySelector('.form') as HTMLFormElement;
+        const preview = document.querySelector('.confirm-preview') as HTMLDivElement;
+        const closePreviewBtn = document.getElementById('close-preview') as HTMLImageElement;
+        const confirmBtn = document.querySelector('.confirm-button') as HTMLAnchorElement;
+        const submitBtn = document.querySelector('.submit-button') as HTMLInputElement;
+        const body = document.body as HTMLDivElement;
+        const mask = document.querySelector('.mask') as HTMLDivElement;
+        const isHidden = 'is-hidden';
+
+        confirmBtn.addEventListener('click', () => {
+            preview.classList.toggle(isHidden);
+            body.style.overflow = 'hidden';
+            mask.classList.toggle(isHidden);
+        });
+
+        closePreviewBtn.addEventListener('click', () => {
+            preview.classList.toggle(isHidden);
+            body.style.overflow = 'initial';
+            mask.classList.toggle(isHidden);
+        });
+
+        submitBtn.addEventListener('click', (e) => {
+            // HTML5 バリデーションを走らせる
+            if (!form.checkValidity()) {
+                // 送信を止める
+                e.preventDefault();
+                e.stopPropagation();
+                // プレビューとマスクを必ず非表示に
+                preview.classList.add(isHidden);
+                mask.classList.add(isHidden);
+                body.style.overflow = 'initial';
+                // 必須未入力のフィールドへフォーカス
+                const firstInvalid = form.querySelector(':invalid') as HTMLElement | null;
+                firstInvalid?.focus();
+            } else {
+                // 送信を止める（実際の送信を行うなら e.preventDefault() を外す）
+                e.preventDefault();
+                // 成功メッセージを表示
+                preview.classList.add(isHidden);
+                mask.classList.add(isHidden);
+                body.style.overflow = 'initial';
+                // 既存のメッセージ表示方法に合わせて調整
+                alert('送信しました');
+                // 実送信したい場合は form.submit(); を呼ぶ
+                // form.submit();
+            }
+        });
+
+        if (mask) {
+            mask.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('maskがクリックされました');
+                preview.classList.toggle(isHidden);
+                body.style.overflow = 'initial';
+                mask.classList.toggle(isHidden);
+            });
+        } else {
+            console.error('mask要素が見つかりません');
+        }
+    });
+</script>
+
+<style>
+    .a-anchor {
+        padding-top: 150px;
+        margin-top: -150px;
+    }
+
+    .section-title {
+        display: flex;
+        flex-direction: row;
+        align-items: space-between;
+        justify-content: center;
+        margin-bottom: 55px;
+    }
+
+    .section-title  h1{
+        color: #000;
+        font-family: "Didot";
+        font-size: 96px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 14.4px;
+        padding-right: 78px;
+    }
+
+    .section-title-line,
+    .section-title-line-1,
+    .section-title-line-2 {
+        width: 100%;
+        position: relative;
+    }
+
+    .section-title-line::after,
+    .section-title-line-1::after,  
+    .section-title-line-2::after {
+        content: '';
+        display: block;
+        height: 1px;
+        background: #000;
+        position: absolute;
+        top: 50%;
+    }
+
+    .section-title-line::after {
+        width: 100%;
+        right: 0;
+    }
+
+    .section-title-line-1::after {
+        width: calc(100% + 140px);
+        left: -140px;
+    }
+    .section-title-line-2::after {
+        width: calc(100% + 140px);
+        right: -140px;
+    }
+
+    .contact-description {
+        color: #000;
+        font-family: "Zen Kurenaido";
+        font-size: 20px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 3px;
+    }
+
+    .contact-form {
+        margin-top: 45px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .form {
+        width: 100%;
+        padding: 0 140px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .form p , .input-td label {
+        color: #000;
+        font-family: "Zen Kurenaido";
+        font-size: 20px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 3px;
+    }
+
+    .form-table {
+        width: 100%;
+        border-collapse: collapse;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .form-table tbody{
+        width: 100%;
+    }
+
+    .form-table tr {
+        width: 100%;
+        margin: 40px 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .form-table tr:last-of-type > th{
+        align-items: flex-start !important;
+        height: stretch !important;
+    }
+
+    .form-table th {
+        text-align: left;
+        flex: 2;
+    }
+
+    .require-td {
+        text-align: center;
+        flex: 1;
+    }
+
+    .input-td {
+        height: 50px;
+        flex: 6;
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+    }
+
+    .text-td {
+        flex: 6;
+        height: 200px;
+    }
+
+    .text-td textarea {
+        width: 100%;
+        height: 100%;
+        border-radius: 5px;
+        resize: none;
+    }
+
+    #require {
+        color: #ff7979;
+        font-family: "Zen Kurenaido";
+        font-size: 14px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 2.1px;
+    }
+
+    input[type="text"], input[type="email"], textarea {
+        width: 100%;
+        height: 100%;
+        border-radius: 5px;
+        border: 1px solid #909090;
+        background: #FFF;
+        padding: 10px 12px;
+    }
+
+    input[name="institution"]::placeholder,
+    textarea::placeholder {
+        color: #909090;
+        font-family: "Zen Kurenaido";
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 2.1px;
+    }
+
+    .input-td span {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+    }
+
+    .button-div-1 {
+        width: 100%;
+        height: 100%;
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .confirm-button {
+        display: inline-block;
+        padding: 14px 32px 16px;
+        background-color: #ffffff;
+        color: #000000;
+        text-decoration: none;
+        font-family: "Zen Old Mincho";
+        font-size: 20px;
+        letter-spacing: 3px;
+        border: #000000 1px solid;
+        cursor: pointer;
+        margin: 0 78px;
+    }
+
+    .confirm-button:hover,
+    .submit-button:hover {
+        background-color: #707070; /* ホバー時の背景色 */
+        color: #ffffff; /* ホバー時の文字色 */
+        transition: 0.3s ease-in-out; /* ホバー時の変化をスムーズに */
+    }
+
+    .confirm-preview {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 83vw;
+        height: 80vh;
+        background-color: #ffffff;
+        border: 1px solid #000000;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        z-index: 1000 !important;
+        padding: 24px 40px;
+    }
+
+    .is-hidden {
+        display: none !important;
+    }
+
+    .preview-header {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+        margin-bottom: 55px;
+    }
+
+    .preview-header::after {
+        position: absolute;
+        content: '';
+        background: #000;
+        width: 43%;
+        height: 1px;
+        bottom: 0;
+        left: -15px;
+    }
+
+    .preview-header h1 {
+        color: #000;
+        font-family: "Didot";
+        font-size: 40px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 6px;
+    }
+
+    #close-preview img {
+        width: 36px;
+        height: 36px;
+        cursor: pointer;
+    }
+
+    .preview-body {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-grow: 1;
+        overflow-y: hidden;
+    }
+
+    .preview-item-title {
+        color: #000;
+        font-family: "Zen Old Mincho";
+        font-size: 20px;
+        font-style: normal;
+        font-weight: 500;
+        line-height: normal;
+        letter-spacing: 3px;
+    }
+
+    .preview-item-content {
+        color: #000;
+        font-family: "Zen Kurenaido";
+        font-size: 18px !important;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 2.7px !important;
+    }
+
+    .preview-item-left {
+        width: 49%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .preview-item-left span {
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: flex-start;
+    }
+
+    .preview-item-left a {
+        width: 100%;
+        text-decoration: none;
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: flex-start;
+    }
+
+    .preview-item-left h2 {
+        width: 40%;
+    }
+
+    .preview-item-left p {
+        width: 60%;
+        padding: 0px 4px 2px;
+        border-bottom: 1px solid #f0f0f0;
+        position: relative;
+    }
+
+    .preview-item-left p::after {
+        position: absolute;
+        content: '';
+        width: 16px;
+        height: 16px;
+        background-image: url('../../public/icons/editable.svg');
+        background-repeat: no-repeat;
+        background-size: contain;
+        background-position: center;
+        right: 4px;
+        top: calc(50% - 8px);
+        filter: invert(100%) sepia(56%) saturate(104%) hue-rotate(198deg) brightness(113%) contrast(88%);
+    }
+
+    .preview-item-left p:hover{
+        border-bottom: 1px solid #000000;
+        cursor: pointer;
+    }
+
+    .preview-item-left a :has(+ .preview-item-left p:hover) {
+        color: #0db49b !important;
+    }
+
+    .preview-item-left a:hover::after {
+        filter: invert(0%) sepia(91%) saturate(7500%) hue-rotate(62deg) brightness(104%) contrast(93%);
+    }
+
+    .preview-item-left a:focus {
+        border-bottom: 1px solid #0db49b;
+    }
+
+    .preview-item-left a:focus p {
+        color: #0db49b;
+    }
+
+    .preview-item-left a:focus::after {
+        filter: invert(53%) sepia(100%) saturate(357%) hue-rotate(121deg) brightness(87%) contrast(101%);
+    }
+
+    .preview-item-right {
+        width: 49%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+
+    .preview-item-right h2{
+        margin-bottom: 30px;
+    }
+
+    .preview-message-container {
+        width: 100%;
+        height: stretch;
+        box-sizing: border-box;
+        overflow-y: auto;
+        border: 1px solid #f0f0f0;
+        padding: 10px;
+    }
+
+    .preview-message-container p {
+        width: 100%;
+        white-space: pre-wrap;
+    }
+
+    .preview-message-container::after {
+        position: fixed;
+        display: block;
+        content: '';
+        width: 16px;
+        height: 16px;
+        background-image: url('../../public/icons/editable.svg');
+        background-repeat: no-repeat;
+        background-size: contain;
+        background-position: center;
+        right: 44px;
+        bottom: 127px;
+        filter: invert(100%) sepia(56%) saturate(104%) hue-rotate(198deg) brightness(113%) contrast(88%);
+    }
+
+    .preview-message-container:hover {
+        border: 1px solid #000000;
+        cursor: pointer;
+    }
+
+    .preview-message-container:hover::after {
+        filter: invert(0%) sepia(91%) saturate(7500%) hue-rotate(62deg) brightness(104%) contrast(93%);
+    }
+
+    .preview-message-container:has(.preview-message-container a:focus) {
+        border-bottom: 1px solid #0db49b;
+    }
+
+    .preview-message-container a:focus p {
+        color: #0db49b;
+    }
+    
+    .preview-message-container:has(.preview-message-container a:focus) ::after {
+        filter: invert(53%) sepia(100%) saturate(357%) hue-rotate(121deg) brightness(87%) contrast(101%);
+    }
+
+    .button-div-2 {
+        width: 100%;
+        margin-top: 38px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: flex-end;
+    }
+
+    .submit-button {
+        display: inline-block;
+        padding: 14px 32px 16px;
+        background-color: #ffffff;
+        color: #000000;
+        text-decoration: none;
+        font-family: "Zen Old Mincho";
+        font-size: 20px;
+        letter-spacing: 3px;
+        border: #000000 1px solid;
+        cursor: pointer;
+    }
+
+    .mask {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        opacity: .8;
+        z-index: 999 !important;
+        cursor: pointer;
+        transition: all .5s;
+    }
+</style>

@@ -1,0 +1,337 @@
+---
+import '../styles/UA+reset.css';
+const pathname = Astro.url.pathname;
+import { getImage } from 'astro:assets';
+import background from '../assets/footer/background.jpg';
+const optimizedBackground = await getImage({src: background, format: 'webp'});
+---
+
+<footer style={{ background: `linear-gradient(rgba(70, 70, 70, 0.75), rgba(70, 70, 70, 0.75)), url(${optimizedBackground.src})` }}>
+
+    <a href="/" class="footer-title">
+        <h2>早稲田大学公認サークル</h2>
+        <h1>写団シャレード</h1>
+    </a>
+    <div class="footer-links">
+        <div class="links-upper-tier">
+            <a class:list={['link', {active: /^\/About_us\/?$/.test(pathname)}]} href="About_us"><span class="text">About us</span></a>
+            <a class:list={['link', {active: /^\/Activity\/?$/.test(pathname)}]} href="Activity"><span class="text">Activity</span></a>
+            <a class:list={['link', {active: /^\/Gallery\/?$/.test(pathname)}]} href="Gallery"><span class="text">Gallery</span></a>
+            <a class:list={['link', {active: /^\/Portfolio\/?$/.test(pathname)}]} href="Portfolio"><span class="text">Portfolio</span></a>
+        </div>
+        <div class="links-lower-tier">
+            <a class:list={['link', {active: /^\/Contact\/?$/.test(pathname)}]} href="Contact"><span class="text">Contact</span></a>
+            <a class:list={['link', {active: /^\/Disclaimer\/?$/.test(pathname)}]} href="Disclaimer"><span class="text">Disclaimer</span></a>
+        </div>
+    </div>
+    <h3>members only</h3>
+    <div class="member-links">
+        <a class:list={['link', {active: /^\/Login\/?$/.test(pathname)}]} href="Login"><span class="text">Log in</span></a>
+        <a class:list={['link', {active: /^\/Signup\/?$/.test(pathname)}]} href="Signup"><span class="text">Sign in</span></a>
+    </div>
+    <div class="footer-logo">
+        <label for="show-credit-checkbox">
+            <img src="../src/assets/footer/logo.svg" alt="Scharade Logo">
+            <input type="checkbox" id="show-credit-checkbox" style="display: none;">
+            <div class="made-with-love">
+                <p>デザイン・フロントエンド：Kota OKAMOTO</p>
+                <p>フロントエンド：Ryohei TAKAHASHI</p>
+                <p>バックエンド：Sae YOSHIZAKI</p>
+            </div>
+        </label>
+        <h3>©Scharade. All Rights Reserved.</h3>
+    </div>
+</footer>
+</html>
+
+<style>
+    footer {
+        width: 100%;
+        height: 441px;
+        margin-top: 148px;
+        padding: 68px 120px 35px;
+        flex-shrink: 0;
+        box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.25) inset;
+        position: relative;
+    }
+
+    footer h1 {
+        color: #FFF;
+        font-family: "Zen Kurenaido";
+        font-size: 40px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 6px;
+        display:inline-block;
+    }
+
+    footer h2 {
+        color: #FFF;
+        font-family: "Zen Kurenaido";
+        font-size: 20px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 3px;
+    }
+
+    footer h3 {
+        color: #FFF;
+        font-family: "Grandiflora One";
+        font-size: 20px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 3px;
+    }
+
+    footer a {
+        color: #FFF;
+        font-family: "Zen Old Mincho";
+        font-size: 20px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 3px;
+        text-decoration: none;
+        margin-right: 44px;
+        position: relative;
+        cursor: pointer;
+    }
+
+    footer a::after {
+        position: absolute;
+        left: 0; /* aタグの左端からアンダーラインを引く */
+        right: 0; /* aタグの右端からアンダーラインを引く */
+        content: '';
+        width: 100%;
+        height: 1px;
+        background: #b6b6b6;
+        bottom: 0;
+        transform: scale(0, 1);
+        transform-origin: center top; /*変形（アンダーラインの伸長）の原点がaタグ（各メニュー）の右端*/
+        transition: transform 0.3s;
+    }
+
+    footer a:hover::after {
+        transform: scale(1, 1); /* アンダーラインを表示 */
+    }
+
+    .footer-title:active {
+        color: #0db49b;
+    }
+
+    .footer-links {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        margin-top: 40px;
+        margin-bottom: 30px;
+    }
+
+    .links-lower-tier {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        margin-top: 20px;
+    }
+
+    .member-links {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        margin-top: 10px;
+    }
+
+    .link.active {
+        color: #0db49b !important;
+    }
+
+    .link.active::after {
+        background-color: #0db49b !important;
+    }
+
+    .footer-logo {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        position: absolute;
+        bottom: 35px;
+        right: 120px;
+    }
+
+    .footer-logo label {
+        cursor: pointer;
+        position: relative;
+    }
+
+    .footer-logo label::after {
+        position: absolute;
+        left: 0; /* aタグの左端からアンダーラインを引く */
+        bottom: 0;
+        content: '';
+        width: 100%;
+        height: 1px;
+        background: #b6b6b6;
+        transform: scale(0, 1);
+        transition: transform 0.3s;
+    }
+
+    .made-with-love {
+        display: none;
+        color: #FFF;
+        font-family: "Zen Kurenaido";
+        font-size: 14px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 2px;
+        text-align: right;
+        margin-bottom: 5px;
+        margin-top: 20px;
+    }
+    #show-credit-checkbox:checked + .made-with-love {
+        display: block;
+    }
+
+    #show-credit-checkbox:checked + .footer-logo label::after {
+        transform: scale(1, 1); 
+    }
+
+    .footer-logo h3 {
+        margin-top: 25px;
+    }
+
+    @media (max-width: 1024px) {
+    }
+
+    @media (max-width:800px) {
+        footer {
+            padding:30px;
+            margin-top: 60px;
+            height:626px;
+        }
+
+        footer a{
+            margin-right: 0;
+        }
+
+        footer h1{
+            font-size:24px;
+        }
+
+        footer h2{
+            font-size:12px;
+        }
+    
+        footer h3{
+            display:flex;
+            font-size:13px;
+            justify-content: center;
+            margin-top: 35px;
+        }
+
+        footer a::after,.member-links a::after{
+            content:none;
+        }
+
+        .text {
+            display:inline-block;
+            position: relative;
+        }
+
+        .text::after{
+            content:'';
+            position:absolute;
+            left:0;
+            right:0;
+            bottom:0; 
+            height:1px;
+            background:#b6b6b6;
+            transform:scaleX(0);
+            transform-origin:center;
+            transition: transform 0.3s; 
+        }
+
+        .footer-links a:hover .text::after,
+        .member-links a:hover .text::after {
+            transform: scaleX(1);
+        }
+
+        .link.active .text::after {
+            background-color:#0db49b;
+        }
+        
+        .footer-links{
+            display:flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .footer-links a{
+            display: block;
+            width: 100%;
+            text-align: center;
+            margin: 0;
+            padding: 10px 0;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(255,255,255,.6);
+        }
+
+        .links-upper-tier {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .links-upper-tier a:first-child {
+            border-top: 1px solid rgba(255,255,255,.6);
+        }
+
+        .links-lower-tier {
+            flex-direction: column;
+            margin-top:0;
+        }
+
+        .member-links {
+            justify-content: space-around;
+            border-bottom:1px solid rgba(255,255,255,.6);
+            border-top: 1px solid rgba(255,255,255,.6);;
+            position: relative;
+        }
+
+        .member-links::after{
+            content: '';
+            display: block;
+            width: 1px;
+            height: calc(100% - 10px);
+            background: #b6b6b6;
+            position: absolute;
+            top: 5px;
+            left: calc(50% - 0.5px);
+        }
+
+        .member-links a{
+            font-size: 13px;
+            padding-bottom: 10px;
+            padding-top: 10px;
+        }
+
+        .footer-logo {
+            bottom: 30px;
+            right:30px;
+            width:256px;
+        }
+
+        .footer-logo h3{
+            font-size: 10px;
+            margin-top: 12px;
+        }
+    }
+</style>

@@ -6,6 +6,11 @@ export interface Props {
     from: string | null;
 }
 const { from } = Astro.props as Props;
+export interface Props {
+    title: string;
+    from: string | null;
+}
+const { from } = Astro.props as Props;
 ---
 <Layout>
 <Fragment slot="main-slot">
