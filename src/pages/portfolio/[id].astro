@@ -33,7 +33,6 @@ const formattedBio = rawBio.replace(/\n/g, '<br/>');
 const pictures = portfolio.pictures || [];
 ---
 
-<<<<<<< HEAD
 <Layout title={`Portfolio | ${portfolio.name}`} from="Portfolio">
   <div class="profile-section">
     <div class="profile-info">
@@ -113,88 +112,6 @@ const pictures = portfolio.pictures || [];
 </Layout>
 
 <style>
-=======
-<Layout title={`Portfolio | ${portfolio.name}`}>
-  <Fragment slot="main-slot">
-    <div class="portfolio-detail-container">
-      <div class="section-title">
-        <h1>Portfolio</h1>
-        <div class="section-title-line"></div>
-      </div>
-
-      <div class="profile-section">
-        <div class="profile-info">
-          <h2 class="profile-name">{portfolio.name}</h2>
-          
-          <div class="social-links">
-            {portfolio.instagram && (
-              <a href={`https://instagram.com/${portfolio.instagram}`} target="_blank" rel="noopener noreferrer" class="social-icon">
-                <span style="font-family: sans-serif;">📷</span>
-                <span>Instagram</span>
-              </a>
-            )}
-          </div>
-
-          <div class="profile-meta">
-            <p class="tags">#Photo #Portrait</p> 
-            <p class="camera-info">Camera Info...</p>
-          </div>
-
-          <div class="profile-bio">
-            <p set:html={formattedBio} />
-          </div>
-
-          <p class="contact-text">コンタクトはInstagramのDMへ</p>
-        </div>
-
-        <div class="grade-circle-wrapper">
-            <div class="grade-circle">
-                {portfolio.icon ? (
-                  <img 
-                    src={portfolio.icon.url} 
-                    alt={portfolio.name} 
-                    class="grade-icon-img"
-                    width={portfolio.icon.width}
-                    height={portfolio.icon.height}
-                  />
-                ) : (
-                  <>
-                    {gradeNumber && <span class="grade-num">{gradeNumber}</span>}
-                    {gradeText && <span class="grade-txt">{gradeText}</span>}
-                  </>
-                )}
-            </div>
-        </div>
-      </div>
-
-      <div class="divider-line"></div>
-
-      <div class="photos-section">
-        <div class="photos-header">
-            <span class="click-hint">click!! ⤵</span>
-            <div class="pagination-simple">◁ 1 / {pictures.length} ▷</div>
-        </div>
-
-        <div class="photo-grid">
-          {pictures.map((pic) => (
-            <div class="photo-item">
-               <img 
-                 src={pic.url} 
-                 alt="Portfolio Image" 
-                 width={pic.width} 
-                 height={pic.height}
-                 loading="lazy"
-               />
-            </div>
-          ))}
-        </div>
-      </div>
-
-    </div>
-  </Fragment>
-</Layout>
-
-<style>
   .portfolio-detail-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -221,8 +138,7 @@ const pictures = portfolio.pictures || [];
     background: #000;
     margin-top: 15px;
   }
-
->>>>>>> 246114c9b5c422ea4b070944e480aabcd002ad44
+  
   .profile-section {
     display: flex;
     justify-content: space-between;
@@ -232,7 +148,6 @@ const pictures = portfolio.pictures || [];
   }
 
   .profile-info {
-<<<<<<< HEAD
     width: 62.75%;
   }
 
@@ -252,7 +167,6 @@ const pictures = portfolio.pictures || [];
     font-weight: 400;
     line-height: normal;
     letter-spacing: 9.6px;
-=======
     max-width: 60%;
   }
 
@@ -261,13 +175,11 @@ const pictures = portfolio.pictures || [];
     margin-bottom: 20px;
     letter-spacing: 0.1em;
     font-weight: 500;
->>>>>>> 246114c9b5c422ea4b070944e480aabcd002ad44
   }
 
   .social-links {
     display: flex;
     gap: 15px;
-<<<<<<< HEAD
     align-items: center;
   }
   .social-icon {
@@ -352,7 +264,6 @@ const pictures = portfolio.pictures || [];
     align-items: center;
     overflow: hidden;
     z-index: 1 !important;
-=======
     margin-bottom: 20px;
   }
   .social-icon {
@@ -402,7 +313,6 @@ const pictures = portfolio.pictures || [];
       align-items: center;
       position: relative;
       overflow: hidden;
->>>>>>> 246114c9b5c422ea4b070944e480aabcd002ad44
   }
 
   .grade-icon-img {
@@ -411,7 +321,6 @@ const pictures = portfolio.pictures || [];
     object-fit: cover;
   }
 
-<<<<<<< HEAD
   .grade-text-overlay {
     position: absolute;
     width: 100%;
@@ -439,7 +348,8 @@ const pictures = portfolio.pictures || [];
     font-weight: 400;
     line-height: normal;
     letter-spacing: 9.6px;
-=======
+  }
+
   .grade-num {
       font-family: "Didot", serif;
       font-size: 100px;
@@ -456,7 +366,6 @@ const pictures = portfolio.pictures || [];
       right: 20px;
       bottom: 60px;
       color: #333;
->>>>>>> 246114c9b5c422ea4b070944e480aabcd002ad44
   }
 
   .divider-line {
@@ -476,7 +385,6 @@ const pictures = portfolio.pictures || [];
   }
   
   .click-hint {
-<<<<<<< HEAD
     color: #909090;
     font-family: "Zen Kurenaido";
     font-size: 18px;
@@ -485,11 +393,9 @@ const pictures = portfolio.pictures || [];
     line-height: normal;
     letter-spacing: 3px;
     display: inline-block;
-=======
-      font-family: cursive;
-      transform: rotate(-10deg);
-      display: inline-block;
->>>>>>> 246114c9b5c422ea4b070944e480aabcd002ad44
+    font-family: cursive;
+    transform: rotate(-10deg);
+    display: inline-block;
   }
 
   .photo-grid {
@@ -499,7 +405,6 @@ const pictures = portfolio.pictures || [];
   }
 
   .photo-item {
-<<<<<<< HEAD
     aspect-ratio: 1 / 1;
     background: #eee;
     overflow: hidden;
@@ -521,26 +426,38 @@ const pictures = portfolio.pictures || [];
     .section-title h1 {
       font-size: 50px;
     }
+
     .profile-section {
       flex-direction: column-reverse;
       gap: 40px;
       align-items: center;
     }
+
     .profile-info {
       max-width: 100%;
     }
+
     .grade-circle-wrapper {
       align-self: center;
       margin-bottom: 20px;
       width: 150px;
       height: 150px;
     }
-    .grade-num { font-size: 80px; left: -10px; top: 20px; }
-    .grade-txt { font-size: 24px; right: 10px; bottom: 40px; }
-=======
+
+    .grade-num { 
+      font-size: 80px; 
+      left: -10px; 
+      top: 20px; 
+    }
+
+    .grade-txt {
+      font-size: 24px;
+      right: 10px;
+      bottom: 40px;
       aspect-ratio: 1 / 1;
       background: #eee;
       overflow: hidden;
+    }
   }
   
   .photo-item img {
@@ -574,6 +491,5 @@ const pictures = portfolio.pictures || [];
       }
       .grade-num { font-size: 80px; left: -10px; top: 20px; }
       .grade-txt { font-size: 24px; right: 10px; bottom: 40px; }
->>>>>>> 246114c9b5c422ea4b070944e480aabcd002ad44
   }
 </style>

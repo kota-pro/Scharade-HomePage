@@ -37,68 +37,82 @@ const getCategoryFromName = (name: string) => {
 
 <Layout>
   <Fragment slot="main-slot">
-    <div class="gallery-container">
-      <div class="section-title">
+    <div class="section-title">
         <h1>Gallery</h1>
         <div class="section-title-line"></div>
       </div>
-
-      <div class="year-tabs">
-        {
-          tabYears.map((year, index) => (
-            <button
-              class={`year-tab ${index === 0 ? "active" : ""}`}
-              data-year={year}
-            >
-              {year}
-            </button>
-          ))
-        }
-        <div class="year-tabs-line"></div>
-      </div>
-
-      <div class="gallery-content">
-        {categories.map((category) => (
-          <details class="category-section" open={category === "その他"}>
-            <summary class="category-title">
-              <span class="arrow-icon">▷</span> {category}
-            </summary>
-            
-            <div class="gallery-grid">
-              {albums.map((item) => {
-                const itemYear = item.created ? new Date(item.created).getFullYear() : new Date().getFullYear();
-                const itemCategory = getCategoryFromName(item.payload.name);
-                if (itemCategory !== category) return null;
-
-                return (
-                  <div class="gallery-item" data-year={itemYear} style="display: block;">
-                    <a href={`/gallery/${item.id}`} class="gallery-link">
-                      <div class="image-wrapper">
-                        
-                        {item.coverId ? (
-                          <img 
-                            src={`/api/images/${item.coverId}`} 
-                            alt={item.payload.name} 
-                            loading="lazy"
-                            style="width: 100%; height: 200px; object-fit: cover;"
-                          />
-                        ) : (
-                          <div class="placeholder-image" style="width: 100%; height: 200px; background: #eee; display: flex; align-items: center; justify-content: center; color: #888;">
-                            No Image
+  </Fragment>
+  <Fragment slot="menu-slot">
+    <div class="menu-contents-inner">
+      <a href="#" class="page-top-nav">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          ><path
+            fill="currentColor"
+            d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"
+          ></path></svg
+        >
+      </a>
+    </div>
+  </Fragment>
+  <Fragment slot="body-slot">
+    <div class="explanation-area">
+      <p>
+        サークルの普段の活動を各イベントごとにアルバムで分類しています。
+      </p>
+    </div>
+    <div class="tab">
+      {
+        tabYears.map((year, index) => {
+          const inputId = `year-${year}`;
+          return [
+            <input type="radio" id={inputId} name="year" checked={index === 0} />,
+            <label for={inputId}>{year}</label>,
+            <div class="tab-panel">
+              <div class="gallery-content">
+                {categories.map((category) => (
+                  <details class="category-section" name="category-section">
+                    <summary class="category-title">
+                      <img class="arrow-icon" src="/icons/rightarrow.svg" alt="arrow icon"> {category}
+                    </summary>
+                    <div class="gallery-grid">
+                      {albums.map((item) => {
+                        const itemYear = item.created ? new Date(item.created).getFullYear() : new Date().getFullYear();
+                        const itemCategory = getCategoryFromName(item.payload.name);
+                        const showByYear = year === "All" || `${itemYear}` === `${year}`;
+                        if (!showByYear || itemCategory !== category) return null;
+                        return (
+                          <div class="gallery-item" data-year={itemYear}>
+                            <a href={`/Gallery/${item.id}`} class="gallery-link">
+                              <div class="image-wrapper">
+                                {item.coverId ? (
+                                  <img
+                                    src={`/api/images/${item.coverId}`}
+                                    alt={item.payload.name}
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <div class="placeholder-image">
+                                    <span>No Image</span>
+                                  </div>
+                                )}
+                                <p class="image-title">{item.payload.name}</p>
+                              </div>
+                            </a>
                           </div>
-                        )}
-                        
-                        <p class="image-title">{item.payload.name}</p>
-                      </div>
-                    </a>
-                  </div>
-                );
-              })}
-            </div>
-          </details>
-        ))}
-      </div>
-      
+                        );
+                      })}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </div>,
+          ];
+        })
+      }
     </div>
   </Fragment>
 </Layout>
