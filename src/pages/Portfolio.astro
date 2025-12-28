@@ -3,28 +3,121 @@ import Layout from "../layouts/Layout.astro";
 import "../styles/UA+reset.css";
 import "../styles/Portfolio.css";
 
-// ★追加：microCMSからデータを取得する関数をインポート
 import { getPortfolios } from "../lib/microcms";
 
-// フィルター用タブの項目
 const tabs = [
   "All",
-  "50th",
-  "49th",
-  "48th",
-  "47th",
-  "46th",
+  "1st Grade",
+  "2nd Grade",
+  "3rd Grade",
+  "4th Grade",
+  "Master",
+  "International",
   "Graduate",
 ];
 
-// ★修正：microCMSから一覧データを取得
-// 表示に必要なフィールドだけ指定して取得します
 const response = await getPortfolios({
   fields: ["id", "name", "grade", "icon"],
-  limit: 100, // とりあえず100件まで（必要に応じて調整）
+  limit: 100,
 });
 const portfolios = response.contents;
 ---
+
+<Layout title="Sharade | Portfolio">
+  <Fragment slot="main-slot">
+    <div class="portfolio-container">
+      <div class="section-title">
+        <h1>Portfolio</h1>
+        <div class="section-title-line"></div>
+      </div>
+
+      <p class="page-description">
+        サークル員のポートフォリオになります。ぜひご鑑賞ください。
+      </p>
+
+      <div class="filter-tabs-wrapper">
+        <ul class="filter-tabs">
+          {
+            tabs.map((tab, index) => (
+              <li class={`filter-tab ${index === 0 ? "active" : ""}`}>{tab}</li>
+            ))
+          }
+        </ul>
+        <div class="tabs-border-line"></div>
+      </div>
+
+      <div class="pagination top">
+        <span class="page-arrow">◁</span>
+        <span class="page-count">1 / {portfolios.length}</span>
+        <span class="page-arrow">▷</span>
+      </div>
+
+      <details class="member-section" open>
+        <summary class="section-heading">
+          <span class="arrow-icon">▷</span> All Members
+        </summary>
+
+        <div class="member-grid">
+          {
+            portfolios.map((portfolio) => (
+              <a
+                href={`/portfolio/${portfolio.id}`}
+                class="member-card"
+                style="display: block; text-decoration: none; color: inherit;"
+              >
+                <div class="member-image-placeholder">
+                  {portfolio.icon ? (
+                    <img
+                      src={portfolio.icon.url}
+                      alt={portfolio.name}
+                      style="width: 100%; height: 100%; object-fit: cover;"
+                    />
+                  ) : null}
+                </div>
+
+                <div class="member-info">
+                  <span class="member-grade">{portfolio.grade}</span>
+                  <span class="member-name">{portfolio.name}</span>
+                </div>
+              </a>
+            ))
+          }
+        </div>
+      </details>
+
+      <div class="pagination bottom">
+        <span class="page-arrow">◁</span>
+        <span class="page-arrow">◁</span>
+        <span class="page-number">1</span>
+        <span class="page-dots">...</span>
+        <span class="page-arrow">▷</span>
+        <span class="page-arrow">▷</span>
+      </div>
+    </div>
+  </Fragment>
+</Layout>
+
+<script>
+  const details = document.querySelectorAll("details");
+  details.forEach((detail) => {
+    const summary = detail.querySelector("summary");
+    const arrow = summary?.querySelector(".arrow-icon");
+
+    if (arrow) {
+      detail.addEventListener("toggle", () => {
+        arrow.textContent = detail.open ? "▽" : "▷";
+      });
+    }
+  });
+
+  const tabs = document.querySelectorAll(".filter-tab");
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      tabs.forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+    });
+  });
+</script>
 
 <Layout title="Sharade | Portfolio">
   <Fragment slot="main-slot">
@@ -94,18 +187,3 @@ const portfolios = response.contents;
     ))}
   </Fragment>
 </Layout>
-
-<script>
-  {/* アコーディオンの矢印切り替えロジック */}
-  const details = document.querySelectorAll("details");
-  details.forEach((detail) => {
-    const summary = detail.querySelector("summary");
-    const arrow = summary?.querySelector(".arrow-icon") as HTMLElement;
-    
-    if(arrow) {
-        detail.addEventListener("toggle", () => {
-            arrow.style.transform = detail.open ? "rotate(90deg)" : "rotate(0deg)";
-        });
-    }
-  });
-</script>
