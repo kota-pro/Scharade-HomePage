@@ -48,47 +48,53 @@ const portfolios = response.contents;
   </Fragment>
   <Fragment slot="body-slot">
     <div class="explanation-area">
-      <p>
-        サークル員のポートフォリオになります。ぜひご鑑賞ください。
-      </p>
+      <p>サークル員のポートフォリオになります。ぜひご鑑賞ください。</p>
     </div>
-    
+
     {/* メンバーリスト（アコーディオン） */}
-    {tabs.map((tab) => (
-      <details class={`${tab.toLowerCase().replace(/ /g, "_")}_members`} name="member-section">
-        <summary class="section-heading">
-          <img class="arrow-icon" src="/icons/rightarrow.svg" alt="arrow icon">{tab} Members
-        </summary>
-        <div class="member-grid">
-          {/* 各タブに応じたメンバーのカードをここに追加 */}
-          {/* ★修正：microCMSのデータを表示 */}
-          {portfolios.map((portfolio) => (
-            /* 詳細ページへのリンクに変更（aタグ） */
-            <a href={`/Portfolio/${portfolio.id}`} class="member-card" style="display: block; text-decoration: none; color: inherit;">
-              <div class="member-image-placeholder">
-                  {/* アイコン画像があれば表示、なければグレーのまま */}
-                  {portfolio.icon ? (
-                    <img 
-                      src={portfolio.icon.url} 
-                      alt={portfolio.name}
-                    />
-                  ) : (
-                    <img 
-                      src="/images/placeholder_icon.jpeg" 
-                      alt="Placeholder Icon"
-                    />
-                  )}
-              </div>
-              
-              <div class="member-info">
-                <p class="member-grade">{portfolio.grade}</p>
-                <p class="member-name">{portfolio.name}</p>
-              </div>
-            </a>
-          ))}
-        </div>
-      </details>
-    ))}
+    {
+      tabs.map((tab) => (
+        <details
+          class={`${tab.toLowerCase().replace(/ /g, "_")}_members`}
+          name="member-section"
+        >
+          <summary class="section-heading">
+            <img
+              class="arrow-icon"
+              src="/icons/rightarrow.svg"
+              alt="arrow icon"
+            />
+            {tab} Members
+          </summary>
+          <div class="member-grid">
+            {portfolios
+              .filter((p) => {
+                if (tab === "All") return true;
+
+                return p.grade && `${p.grade} Grade` === tab;
+              })
+              .map((portfolio) => (
+                <a href={`/Portfolio/${portfolio.id}`} class="member-card">
+                  <div class="member-image-placeholder">
+                    {portfolio.icon ? (
+                      <img src={portfolio.icon.url} alt={portfolio.name} />
+                    ) : (
+                      <img
+                        src="/images/placeholder_icon.jpeg"
+                        alt="Placeholder Icon"
+                      />
+                    )}
+                  </div>
+                  <div class="member-info">
+                    <p class="member-grade">{portfolio.grade}</p>
+                    <p class="member-name">{portfolio.name}</p>
+                  </div>
+                </a>
+              ))}
+          </div>
+        </details>
+      ))
+    }
   </Fragment>
 </Layout>
 
