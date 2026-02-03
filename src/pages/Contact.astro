@@ -235,30 +235,57 @@ import Layout from '../layouts/Layout.astro';
             mask.classList.toggle(isHidden);
         });
 
-        submitBtn.addEventListener('click', (e) => {
+        submitBtn.addEventListener('click', async (e) => {
             // HTML5 バリデーションを走らせる
             if (!form.checkValidity()) {
-                // 送信を止める
                 e.preventDefault();
                 e.stopPropagation();
-                // プレビューとマスクを必ず非表示に
                 preview.classList.add(isHidden);
                 mask.classList.add(isHidden);
                 body.style.overflow = 'initial';
-                // 必須未入力のフィールドへフォーカス
                 const firstInvalid = form.querySelector(':invalid') as HTMLElement | null;
                 firstInvalid?.focus();
             } else {
-                // 送信を止める（実際の送信を行うなら e.preventDefault() を外す）
                 e.preventDefault();
-                // 成功メッセージを表示
-                preview.classList.add(isHidden);
-                mask.classList.add(isHidden);
-                body.style.overflow = 'initial';
-                // 既存のメッセージ表示方法に合わせて調整
-                alert('送信しました。\nお問い合わせありがとうございます。\n後日 contact@scharade.com からご連絡させていただきます。');
-                // 実送信したい場合は form.submit(); を呼ぶ
-                form.submit();
+
+                submitBtn.disabled = true;
+                submitBtn.value = "Sending...";
+
+                const formData = new FormData(form);
+                
+                const data = {
+                    name: formData.get('name'),
+                    furigana: formData.get('furigana'),
+                    institution: formData.get('institution'),
+                    faculty: formData.get('faculty'),
+                    grade: formData.getAll('grade[]').join(', '),
+                    email: formData.get('Email'),
+                    inquiry: formData.getAll('inquiry[]').join(', '),
+                    message: formData.get('message'),
+                };
+
+                try {
+                    const response = await fetch('/api/contact', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data),
+                    });
+
+                    if (response.ok) {
+                        alert('送信しました。\nお問い合わせありがとうございます。\n後日 contact@scharade.jp からご連絡させていただきます。');
+                        form.reset();
+                    } else {
+                        alert('エラーが発生しました。時間を置いて再度お試しください。');
+                    }
+                } catch (error) {
+                    alert('通信エラーが発生しました。ネットワーク環境を確認してください。');
+                } finally {
+                    preview.classList.add(isHidden);
+                    mask.classList.add(isHidden);
+                    body.style.overflow = 'initial';
+                    submitBtn.disabled = false;
+                    submitBtn.value = "Submit";
+                }
             }
         });
 
