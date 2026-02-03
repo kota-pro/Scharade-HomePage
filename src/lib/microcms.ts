@@ -28,6 +28,7 @@ export type Portfolio = {
   name: string;
   "self-introduction": string;
   instagram?: string;
+  admission_year?: number;
   grade: string;
   icon?: {
     url: string;

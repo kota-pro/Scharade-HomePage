@@ -17,10 +17,29 @@ const tabs = [
 ];
 
 const response = await getPortfolios({
-  fields: ["id", "name", "grade", "icon"],
+  fields: ["id", "name", "grade", "icon", "admission_year"],
   limit: 100,
 });
-const portfolios = response.contents;
+
+const now = new Date();
+const currentYear = now.getFullYear();
+const currentMonth = now.getMonth() + 1;
+
+const academicYear = currentMonth >= 4 ? currentYear : currentYear - 1;
+
+const portfolios = response.contents.map((p) => {
+  if (!p.admission_year) return p;
+  const gradeNumber = academicYear - p.admission_year + 1;
+
+  let calculatedGrade = "";
+  if (gradeNumber === 1) calculatedGrade = "1st";
+  else if (gradeNumber === 2) calculatedGrade = "2nd";
+  else if (gradeNumber === 3) calculatedGrade = "3rd";
+  else if (gradeNumber === 4) calculatedGrade = "4th";
+  else calculatedGrade = "Graduate";
+
+  return { ...p, grade: calculatedGrade };
+});
 ---
 
 <Layout title="Sharade | Portfolio">
