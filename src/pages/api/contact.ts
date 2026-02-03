@@ -11,7 +11,7 @@ export const POST: APIRoute = async ({ request }) => {
       port: 587,
       secure: false,
       auth: {
-        user: "iamuyoha@gmail.com",
+        user: "contact@scharade.jp",
         pass: import.meta.env.GMAIL_PASS,
       },
     });
