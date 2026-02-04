@@ -5,41 +5,18 @@ import "../styles/Portfolio.css";
 
 import { getPortfolios } from "../lib/microcms";
 
-const tabs = [
-  "All",
-  "1st Grade",
-  "2nd Grade",
-  "3rd Grade",
-  "4th Grade",
-  "Master",
-  "International",
-  "Graduate",
-];
-
 const response = await getPortfolios({
-  fields: ["id", "name", "grade", "icon", "admission_year"],
+  fields: ["id", "name", "icon", "generation"],
   limit: 100,
 });
 
-const now = new Date();
-const currentYear = now.getFullYear();
-const currentMonth = now.getMonth() + 1;
+const allPortfolios = response.contents;
 
-const academicYear = currentMonth >= 4 ? currentYear : currentYear - 1;
+const generations = [...new Set(allPortfolios.map((p) => p.generation))]
+  .filter((gen): gen is number => gen !== undefined)
+  .sort((a, b) => b - a);
 
-const portfolios = response.contents.map((p) => {
-  if (!p.admission_year) return p;
-  const gradeNumber = academicYear - p.admission_year + 1;
-
-  let calculatedGrade = "";
-  if (gradeNumber === 1) calculatedGrade = "1st";
-  else if (gradeNumber === 2) calculatedGrade = "2nd";
-  else if (gradeNumber === 3) calculatedGrade = "3rd";
-  else if (gradeNumber === 4) calculatedGrade = "4th";
-  else calculatedGrade = "Graduate";
-
-  return { ...p, grade: calculatedGrade };
-});
+const tabs = ["All", ...generations.map((gen) => `${gen}期`)];
 ---
 
 <Layout title="Sharade | Portfolio">
@@ -49,6 +26,7 @@ const portfolios = response.contents.map((p) => {
       <div class="section-title-line"></div>
     </div>
   </Fragment>
+
   <Fragment slot="menu-slot">
     <div class="menu-contents-inner">
       <a href="#" class="page-top-nav">
@@ -57,25 +35,27 @@ const portfolios = response.contents.map((p) => {
           width="32"
           height="32"
           viewBox="0 0 24 24"
-          ><path
+        >
+          <path
             fill="currentColor"
             d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"
-          ></path></svg
-        >
+          ></path>
+        </svg>
       </a>
     </div>
   </Fragment>
+
   <Fragment slot="body-slot">
     <div class="explanation-area">
       <p>サークル員のポートフォリオになります。ぜひご鑑賞ください。</p>
     </div>
 
-    {/* メンバーリスト（アコーディオン） */}
     {
       tabs.map((tab) => (
         <details
-          class={`${tab.toLowerCase().replace(/ /g, "_")}_members`}
+          class="member-section-details"
           name="member-section"
+          open={tab === "All"}
         >
           <summary class="section-heading">
             <img
@@ -83,29 +63,33 @@ const portfolios = response.contents.map((p) => {
               src="/icons/rightarrow.svg"
               alt="arrow icon"
             />
-            {tab} Members
+            {tab === "All" ? "All Members" : `${tab} Members`}
           </summary>
           <div class="member-grid">
-            {portfolios
+            {allPortfolios
               .filter((p) => {
                 if (tab === "All") return true;
-
-                return p.grade && `${p.grade} Grade` === tab;
+                return p.generation && `${p.generation}期` === tab;
               })
               .map((portfolio) => (
                 <a href={`/Portfolio/${portfolio.id}`} class="member-card">
                   <div class="member-image-placeholder">
-                    {portfolio.icon ? (
-                      <img src={portfolio.icon.url} alt={portfolio.name} />
-                    ) : (
-                      <img
-                        src="/images/placeholder_icon.jpeg"
-                        alt="Placeholder Icon"
-                      />
-                    )}
+                    <img
+                      src={
+                        portfolio.icon
+                          ? portfolio.icon.url
+                          : "/images/placeholder_icon.jpeg"
+                      }
+                      alt={portfolio.name}
+                      loading="lazy"
+                    />
                   </div>
                   <div class="member-info">
-                    <p class="member-grade">{portfolio.grade}</p>
+                    <p class="member-grade">
+                      {portfolio.generation
+                        ? `${portfolio.generation}期生`
+                        : "---"}
+                    </p>
                     <p class="member-name">{portfolio.name}</p>
                   </div>
                 </a>
@@ -120,21 +104,32 @@ const portfolios = response.contents.map((p) => {
 <script>
   const details = document.querySelectorAll("details");
   details.forEach((detail) => {
-    const summary = detail.querySelector("summary");
-    const arrow = summary?.querySelector(".arrow-icon");
-
-    if (arrow) {
-      detail.addEventListener("toggle", () => {
-        arrow.textContent = detail.open ? "▽" : "▷";
-      });
-    }
-  });
-
-  const tabs = document.querySelectorAll(".filter-tab");
-  tabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      tabs.forEach((t) => t.classList.remove("active"));
-      tab.classList.add("active");
+    detail.addEventListener("toggle", () => {
+      const arrow = detail.querySelector(".arrow-icon") as HTMLElement;
+      if (arrow) {
+        arrow.style.transform = detail.open ? "rotate(90deg)" : "rotate(0deg)";
+      }
     });
   });
 </script>
+
+<style>
+  .arrow-icon {
+    transition: transform 0.3s ease;
+    width: 18px;
+    height: 18px;
+    margin-right: 10px;
+  }
+  .section-heading {
+    list-style: none;
+    cursor: pointer;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    padding: 20px 0;
+    border-bottom: 1px solid #eee;
+  }
+  .section-heading::-webkit-details-marker {
+    display: none;
+  }
+</style>

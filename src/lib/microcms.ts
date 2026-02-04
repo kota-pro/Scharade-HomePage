@@ -26,10 +26,12 @@ export type Portfolio = {
   publishedAt: string;
   revisedAt: string;
   name: string;
-  "self-introduction": string;
+  self_introduction?: string;
   instagram?: string;
-  admission_year?: number;
-  grade: string;
+  generation?: number;
+  hashtags?: string[];
+  x_url?: string;
+  camera?: string;
   icon?: {
     url: string;
     height: number;
@@ -47,11 +49,11 @@ export const microcmsClient = createClient({
   apiKey,
 });
 
-export const getPortfolioDetail = async (
+export const getPortfolioDetail = async <T>(
   contentId: string,
   queries?: MicroCMSQueries,
 ) => {
-  return await microcmsClient.getListDetail<Portfolio>({
+  return await microcmsClient.getListDetail<T>({
     endpoint: "portfolio",
     contentId,
     queries,

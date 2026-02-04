@@ -1,495 +1,299 @@
 ---
 export const prerender = false;
 
-import Layout from "../../layouts/Mypost_Layout.astro";
+import Layout from "../../layouts/Layout.astro";
+import {
+  getPortfolios,
+  getPortfolioDetail,
+  type Portfolio,
+} from "../../lib/microcms";
 import "../../styles/UA+reset.css";
-import { getPortfolioDetail } from "../../lib/microcms";
 
+export async function getStaticPaths() {
+  const response = await getPortfolios({ fields: ["id"] });
+  return response.contents.map((content) => ({
+    params: { id: content.id },
+  }));
+}
 const { id } = Astro.params;
-
-if (!id) {
-  return new Response("Not Found", { status: 404 });
-}
-
-let portfolio;
-try {
-  portfolio = await getPortfolioDetail(id as string);
-} catch (e) {
-  console.error("Error fetching portfolio:", e);
-  return new Response("Not Found", { status: 404 });
-}
-
-if (!portfolio) {
-  return new Response("Not Found", { status: 404 });
-}
-
-const rawGrade = portfolio.grade || "";
-const gradeNumber = rawGrade.replace(/[^0-9]/g, ""); 
-const gradeText = rawGrade.replace(/[0-9]/g, "").trim(); 
-
-const rawBio = portfolio["self-introduction"] || "";
-const formattedBio = rawBio.replace(/\n/g, '<br/>');
-
-const pictures = portfolio.pictures || [];
+const portfolio = await getPortfolioDetail<Portfolio>(id as string);
+const genText = portfolio.generation ? `${portfolio.generation}期生` : "---";
+const dummyBoxes = Array.from({ length: 12 });
+const pageTitle = `${portfolio.name} | Portfolio`;
 ---
 
-<Layout title={`Portfolio | ${portfolio.name}`} from="Portfolio">
-  <div class="profile-section">
-    <div class="profile-info">
-      <div class="section-head">
-        <h2 class="profile-name">{portfolio.name}</h2>
-        <div class="social-links">
-          {portfolio.instagram && (
-            <a href={`https://instagram.com/${portfolio.instagram}`} target="_blank" rel="noopener noreferrer" class="social-icon">
-              <img src="/icons/Instagram.svg" alt="Instagram">
-            </a>
-          )}
-        </div>
-      </div>
-
-      <div class="profile-meta">
-        <p class="tags">#Updated At: {new Date(portfolio.updatedAt).toLocaleDateString()}</p>
-        <div>
-          <p class="tags">#夜景</p>
-          <p class="tags">#Snap Shot</p>
-          <p class="tags">#Portrait</p>
-        </div>
-
-      </div>
-
-      <div class="profile-bio">
-        <p set:html={formattedBio} />
-      </div>
+<Layout title={pageTitle}>
+  <Fragment slot="main-slot">
+    <div class="section-title">
+      <h1>Portfolio</h1>
+      <div class="section-title-line"></div>
     </div>
+  </Fragment>
 
-    <div class="grade-circle-wrapper">
-        <div class="grade-circle">
-            {portfolio.icon ? (
-              <img 
-                src={portfolio.icon.url} 
-                alt={portfolio.name} 
-                class="grade-icon-img"
-                width={portfolio.icon.width}
-                height={portfolio.icon.height}
+  <Fragment slot="menu-slot">
+    <div class="menu-contents-inner">
+      <a
+        href="javascript:history.back()"
+        class="page-top-nav"
+        aria-label="Back"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+        >
+          <path
+            fill="currentColor"
+            d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"
+          ></path>
+        </svg>
+      </a>
+    </div>
+  </Fragment>
+
+  <Fragment slot="body-slot">
+    <div class="portfolio-detail-wrapper">
+      <section class="profile-header">
+        <div class="profile-grid">
+          <div class="profile-info">
+            <h2 class="user-name">{portfolio.name}</h2>
+            <div class="tags">
+              {
+                portfolio.hashtags?.map((tag) => (
+                  <span class="tag">#{tag}</span>
+                ))
+              }
+            </div>
+            <p class="camera-info">
+              {portfolio.camera || "Nikon Z5, Nikomat FT"}
+            </p>
+            <p class="self-introduction">
+              {portfolio.self_introduction || "旅行と散歩が好き"}
+            </p>
+
+            <div class="social-links">
+              {
+                portfolio.x_url && (
+                  <a href={portfolio.x_url} target="_blank" class="social-link">
+                    X
+                  </a>
+                )
+              }
+              {
+                portfolio.instagram && (
+                  <a
+                    href={`https://instagram.com/${portfolio.instagram}`}
+                    target="_blank"
+                    class="social-link"
+                  >
+                    Instagram
+                  </a>
+                )
+              }
+            </div>
+          </div>
+
+          <div class="grade-badge">
+            <div class="circle">
+              <img
+                src={portfolio.icon
+                  ? portfolio.icon.url
+                  : "/images/placeholder_icon.jpeg"}
+                alt={portfolio.name}
+                class="profile-icon"
               />
-            ):(
-              <img 
-                src="/images/placeholder_icon.jpeg" 
-                alt="Placeholder Icon" 
-                class="grade-icon-img"
+
+              <span
+                class="suffix"
+                set:html={genText.replace("期", "<br/>期")}
               />
-            )}
+            </div>
+          </div>
         </div>
-        <div class="grade-text-overlay">
-          {gradeNumber && <p class="grade-num">{gradeNumber}</p>}
-          {/* {gradeText && <p class="grade-txt">{gradeText}</p>} */}
-        </div>
-    </div>
-  </div>
-
-  <div class="divider-line"></div>
-
-  <div class="photos-section">
-    <div class="photos-header">
-      <span class="click-hint"><p class="tags">Pictures Count: {pictures.length}</p></span>
-      <div class="pagination-simple">◁ 1 / {pictures.length} ▷</div>
+      </section>
     </div>
 
-    <div class="photo-grid">
-      {pictures.map((pic) => (
-        <div class="photo-item">
-            <img 
-              src={pic.url} 
-              alt="Portfolio Image" 
-              width={pic.width} 
-              height={pic.height}
-              loading="lazy"
-            />
-        </div>
-      ))}
+    <hr class="section-divider" />
+
+    <div class="gallery-container-inner">
+      <div class="placeholder-grid">
+        {
+          dummyBoxes.map((_, i) => (
+            <div class="photo-box">
+              {i === 1 && <span class="click-hint">click!!</span>}
+              <div class="box-inner">
+                <span class="box-label">Photo {i + 1}</span>
+              </div>
+            </div>
+          ))
+        }
+      </div>
     </div>
-  </div>
+  </Fragment>
 </Layout>
 
 <style>
-  .portfolio-detail-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 40px 100px;
-    font-family: "Zen Old Mincho", serif;
-    color: #333;
-  }
-
   .section-title {
     display: flex;
     align-items: center;
-    margin-bottom: 60px;
+    margin-bottom: 55px;
   }
   .section-title h1 {
     font-family: "Didot", serif;
     font-size: 80px;
-    font-weight: 400;
-    margin-right: 40px;
-    letter-spacing: 0.05em;
+    letter-spacing: 14.4px;
+    padding-right: 50px;
+    margin: 0;
   }
   .section-title-line {
     flex-grow: 1;
     height: 1px;
     background: #000;
-    margin-top: 15px;
   }
-  
-  .profile-section {
+
+  .menu-contents-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+  }
+  .page-top-nav {
+    width: 50px;
+    height: 50px;
+    background-color: #fff;
+    border: 1px solid #000;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: sticky;
+    bottom: 50px;
+  }
+
+  .portfolio-detail-wrapper {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+  .profile-grid {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 60px;
-    padding: 0 20px;
   }
-
-  .profile-info {
-    width: 62.75%;
-  }
-
-  .section-head {
+  .user-name {
+    font-size: 2.5rem;
     margin-bottom: 10px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+    font-family: "serif";
   }
-
-  .profile-name {
-    color: #000;
-    font-family: "Zen Old Mincho";
-    font-size: 64px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: normal;
-    letter-spacing: 9.6px;
-    max-width: 60%;
+  .tag {
+    margin-right: 15px;
+    color: #666;
+    font-size: 0.9rem;
   }
-
-  .profile-name {
-    font-size: 48px;
-    margin-bottom: 20px;
-    letter-spacing: 0.1em;
-    font-weight: 500;
+  .camera-info,
+  .self-introduction {
+    margin-bottom: 8px;
+    color: #333;
   }
-
   .social-links {
     display: flex;
-    gap: 15px;
-    align-items: center;
-  }
-  .social-icon {
-    width: 50px;
-    height: 50px;
-    display: inline-block;
-    padding: 10px 10px;
-  }
-
-  .social-icon img {
-    cursor: pointer;
-    filter: invert(59%) sepia(1%) saturate(380%) hue-rotate(24deg) brightness(103%) contrast(99%);
-  }
-
-
-  .social-icon:hover {
-    background-color: #e0dede;
-  }
-
-  .social-icon:hover img {
-    filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(335deg) brightness(106%) contrast(102%);
-  }
-
-  .profile-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    flex-wrap: wrap;
-    margin-bottom: 30px;
-  }
-
-  .tags {
-    color: #909090;
-    font-family: "Zen Kurenaido";
-    font-size: 16px;
-    font-style: normal;
-    font-weight: 200;
-    line-height: normal;
-    letter-spacing: 3px;
-  }
-
-  .profile-meta > div {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
     gap: 20px;
+    margin-top: 15px;
   }
-
-  .profile-bio {
-    white-space: pre-wrap;
-    display: flex;
-    align-items: center;
-  }
-
-  .profile-bio p {
+  .social-link {
+    text-decoration: underline;
+    font-size: 0.9rem;
     color: #000;
-    font-family: "Zen Kurenaido";
-    font-size: 18px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: 1.5;
-    letter-spacing: 3px;
   }
 
-  .grade-circle-wrapper {
-    width: 300px;
-    height: 300px;
-    flex-shrink: 0;
-    margin-top: 20px;
-    z-index: 1 !important;
-    position: relative;
-  }
-  
-  .grade-circle {
-    width: 100%;
-    height: 100%;
-    border: 1px solid #ccc;
+  .grade-badge .circle {
+    width: 170px;
+    height: 170px;
+    background-color: #eee;
     border-radius: 50%;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
     align-items: center;
-    overflow: hidden;
-    z-index: 1 !important;
-    margin-bottom: 20px;
-  }
-  .social-icon {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 0.9rem;
-      color: #888;
-      text-decoration: none;
+    justify-content: center;
+    position: relative;
+    overflow: visible;
   }
 
-  .profile-meta {
-    font-family: "Courier New", monospace;
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 30px;
-    line-height: 1.8;
-  }
-
-  .profile-bio {
-    font-size: 16px;
-    line-height: 2;
-    margin-bottom: 30px;
-    white-space: pre-wrap;
-  }
-
-  .contact-text {
-    font-size: 14px;
-    color: #888;
-  }
-
-  .grade-circle-wrapper {
-      position: relative;
-      width: 200px;
-      height: 200px;
-      flex-shrink: 0; 
-  }
-  
-  .grade-circle {
-      width: 100%;
-      height: 100%;
-      background-color: #ddd;
-      border-radius: 50%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      position: relative;
-      overflow: hidden;
-  }
-
-  .grade-icon-img {
+  .profile-icon {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border-radius: 50%;
+    border: 1px solid #ddd;
   }
-
-  .grade-text-overlay {
+  .grade-badge .number {
+    font-size: 5.5rem;
+    font-family: monospace;
+  }
+  .grade-badge .suffix {
     position: absolute;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 2 !important;
-    left: -102px;
-    top: 37px;
+    right: 10px;
+    bottom: 0px;
+    line-height: 1.1;
+    font-size: 3rem;
+    font-family: "Courier New", monospace;
+    padding: 2px 5px;
+    border-radius: 3px;
   }
 
-  .grade-num {
-    color: #555;
-    font-family: "Grandiflora One";
-    font-size: 200px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: normal;
-    letter-spacing: 30px;
-  }
-  .grade-txt {
-    color: #000;
-    font-family: "Grandiflora One";
-    font-size: 64px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: normal;
-    letter-spacing: 9.6px;
+  .section-divider {
+    border: none;
+    border-top: 1px solid #000;
+    margin: 40px 0;
   }
 
-  .grade-num {
-      font-family: "Didot", serif;
-      font-size: 100px;
-      line-height: 1;
-      font-weight: 400;
-      position: absolute;
-      left: -20px;
-      top: 30px;
-  }
-  .grade-txt {
-      font-family: "Courier New", monospace;
-      font-size: 32px;
-      position: absolute;
-      right: 20px;
-      bottom: 60px;
-      color: #333;
-  }
-
-  .divider-line {
-      width: 100%;
-      height: 1px;
-      background: #ccc;
-      margin-bottom: 40px;
-  }
-
-  .photos-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      font-family: "Courier New", monospace;
-      color: #888;
-  }
-  
-  .click-hint {
-    color: #909090;
-    font-family: "Zen Kurenaido";
-    font-size: 18px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: normal;
-    letter-spacing: 3px;
-    display: inline-block;
-    font-family: cursive;
-    transform: rotate(-10deg);
-    display: inline-block;
-  }
-
-  .photo-grid {
+  .placeholder-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 100px;
   }
-
-  .photo-item {
-    aspect-ratio: 1 / 1;
-    background: #eee;
-    overflow: hidden;
+  .photo-box {
+    position: relative;
+    aspect-ratio: 3 / 2;
+    background-color: #f2f2f2;
+    border: 1px solid #e0e0e0;
   }
-  
-  .photo-item img {
+  .box-inner {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ccc;
   }
-  
-  .photo-item:hover img {
-    transform: scale(1.05);
+  .click-hint {
+    position: absolute;
+    top: -30px;
+    right: -10px;
+    font-family: cursive;
+    font-size: 1.2rem;
+    transform: rotate(15deg);
+    color: #666;
   }
-
 
   @media (max-width: 768px) {
     .section-title h1 {
-      font-size: 50px;
+      font-size: 40px;
+      padding-right: 20px;
     }
-
-    .profile-section {
-      flex-direction: column-reverse;
-      gap: 40px;
-      align-items: center;
+    .profile-grid {
+      flex-direction: column;
     }
-
-    .profile-info {
-      max-width: 100%;
+    .grade-badge {
+      order: -1;
+      margin-bottom: 30px;
     }
-
-    .grade-circle-wrapper {
-      align-self: center;
-      margin-bottom: 20px;
-      width: 150px;
-      height: 150px;
+    .placeholder-grid {
+      grid-template-columns: repeat(2, 1fr);
     }
-
-    .grade-num { 
-      font-size: 80px; 
-      left: -10px; 
-      top: 20px; 
-    }
-
-    .grade-txt {
-      font-size: 24px;
-      right: 10px;
-      bottom: 40px;
-      aspect-ratio: 1 / 1;
-      background: #eee;
-      overflow: hidden;
-    }
-  }
-  
-  .photo-item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.3s ease;
-  }
-  
-  .photo-item:hover img {
-      transform: scale(1.05);
-  }
-
-  @media (max-width: 768px) {
-      .section-title h1 {
-          font-size: 50px;
-      }
-      .profile-section {
-          flex-direction: column-reverse;
-          gap: 40px;
-          align-items: center;
-      }
-      .profile-info {
-          max-width: 100%;
-      }
-      .grade-circle-wrapper {
-          align-self: center;
-          margin-bottom: 20px;
-          width: 150px;
-          height: 150px;
-      }
-      .grade-num { font-size: 80px; left: -10px; top: 20px; }
-      .grade-txt { font-size: 24px; right: 10px; bottom: 40px; }
   }
 </style>
