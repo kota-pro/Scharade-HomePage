@@ -15,10 +15,11 @@ export async function getStaticPaths() {
     params: { id: content.id },
   }));
 }
+
 const { id } = Astro.params;
 const portfolio = await getPortfolioDetail<Portfolio>(id as string);
 const genText = portfolio.generation ? `${portfolio.generation}期生` : "";
-const dummyBoxes = Array.from({ length: 12 });
+const hasPictures = portfolio.pictures && portfolio.pictures.length > 0;
 const pageTitle = `${portfolio.name} | Portfolio`;
 ---
 
@@ -71,7 +72,6 @@ const pageTitle = `${portfolio.name} | Portfolio`;
             <p class="self-introduction">
               {portfolio.self_introduction || "旅行と散歩が好き"}
             </p>
-
             <div class="social-links">
               {
                 portfolio.x_url && (
@@ -93,7 +93,6 @@ const pageTitle = `${portfolio.name} | Portfolio`;
               }
             </div>
           </div>
-
           <div class="grade-badge">
             <div class="circle">
               <img
@@ -103,7 +102,6 @@ const pageTitle = `${portfolio.name} | Portfolio`;
                 alt={portfolio.name}
                 class="profile-icon"
               />
-
               <span
                 class="suffix"
                 set:html={genText.replace("期", "<br/>期")}
@@ -117,21 +115,157 @@ const pageTitle = `${portfolio.name} | Portfolio`;
     <hr class="section-divider" />
 
     <div class="gallery-container-inner">
-      <div class="placeholder-grid">
-        {
-          dummyBoxes.map((_, i) => (
-            <div class="photo-box">
-              {i === 1 && <span class="click-hint">click!!</span>}
-              <div class="box-inner">
-                <span class="box-label">Photo {i + 1}</span>
+      {
+        hasPictures ? (
+          <div class="picture-grid">
+            {portfolio.pictures.map((pic, i) => (
+              <div class="photo-card">
+                {i === 0 && <span class="click-hint">New Work!!</span>}
+                <div class="photo-wrapper">
+                  <img
+                    src={`${pic.url}?w=1200&q=75&fm=webp`}
+                    alt={`${portfolio.name}の作品 ${i + 1}`}
+                    loading="lazy"
+                    class="gallery-image"
+                  />
+                </div>
               </div>
-            </div>
-          ))
-        }
+            ))}
+          </div>
+        ) : (
+          <div class="no-photos">まだ写真が投稿されていません。</div>
+        )
+      }
+    </div>
+
+    <div id="image-modal" class="modal-overlay" aria-hidden="true">
+      <div class="modal-content">
+        <button id="modal-close-btn" class="modal-close" aria-label="Close"
+          >&times;</button
+        >
+        <img id="modal-image" src="" alt="" />
       </div>
     </div>
   </Fragment>
 </Layout>
+
+<script>
+  const CONTAINER_WIDTH = 1200;
+  const TARGET_HEIGHT = 350;
+  const MIN_GAP = 30;
+
+  function layoutJustified() {
+    const container = document.querySelector(".picture-grid") as HTMLElement;
+    if (!container) return;
+
+    container.style.width = `${CONTAINER_WIDTH}px`;
+    container.style.margin = "0 auto";
+    container.style.display = "block";
+
+    const items = Array.from(
+      document.querySelectorAll(".photo-card"),
+    ) as HTMLElement[];
+    if (items.length === 0) return;
+
+    let currentIndex = 0;
+    const rows = [];
+
+    // 1. まず全画像をグループ分け（行の構成を決定）
+    while (currentIndex < items.length) {
+      let bestCount = 1;
+      let minDiff = Infinity;
+
+      for (let n = 1; currentIndex + n <= items.length; n++) {
+        const rowItems = items.slice(currentIndex, currentIndex + n);
+        const totalAR = rowItems.reduce((sum, item) => {
+          const img = item.querySelector("img")!;
+          return sum + img.naturalWidth / img.naturalHeight;
+        }, 0);
+
+        const availableWidth = CONTAINER_WIDTH - (n - 1) * MIN_GAP;
+        const calculatedHeight = availableWidth / totalAR;
+        const diff = Math.abs(TARGET_HEIGHT - calculatedHeight);
+
+        if (diff < minDiff) {
+          minDiff = diff;
+          bestCount = n;
+        } else {
+          break;
+        }
+      }
+      rows.push(items.slice(currentIndex, currentIndex + bestCount));
+      currentIndex += bestCount;
+    }
+
+    // 2. 最後の行が少なくて巨大化する場合、前の行と調整するロジック
+    if (rows.length > 1) {
+      const lastRow = rows[rows.length - 1];
+      const prevRow = rows[rows.length - 2];
+
+      const lastRowAR = lastRow.reduce((sum, item) => {
+        const img = item.querySelector("img")!;
+        return sum + img.naturalWidth / img.naturalHeight;
+      }, 0);
+
+      const lastRowHeight =
+        (CONTAINER_WIDTH - (lastRow.length - 1) * MIN_GAP) / lastRowAR;
+
+      // 最後の行の高さが理想の1.5倍を超えたら、前の行から1枚持ってくる
+      if (lastRowHeight > TARGET_HEIGHT * 1.5 && prevRow.length > 1) {
+        const transferItem = prevRow.pop()!;
+        lastRow.unshift(transferItem);
+      }
+    }
+
+    // 3. 各行を描画
+    rows.forEach((row) => {
+      const rowTotalAR = row.reduce((sum, item) => {
+        const img = item.querySelector("img")!;
+        return sum + img.naturalWidth / img.naturalHeight;
+      }, 0);
+
+      const rowHeight =
+        (CONTAINER_WIDTH - (row.length - 1) * MIN_GAP) / rowTotalAR;
+
+      row.forEach((item, idx) => {
+        const img = item.querySelector("img")!;
+        const ar = img.naturalWidth / img.naturalHeight;
+        item.style.width = `${rowHeight * ar}px`;
+        item.style.height = `${rowHeight}px`;
+        item.style.display = "inline-block";
+        item.style.verticalAlign = "top";
+        item.style.marginRight = idx === row.length - 1 ? "0" : `${MIN_GAP}px`;
+        item.style.marginBottom = `${MIN_GAP}px`;
+        item.style.opacity = "1";
+      });
+    });
+  }
+
+  // モーダル処理
+  const modal = document.getElementById("image-modal");
+  const modalImg = document.getElementById("modal-image") as HTMLImageElement;
+  const closeBtn = document.getElementById("modal-close-btn");
+
+  document.querySelectorAll(".gallery-image").forEach((img) => {
+    img.addEventListener("click", () => {
+      if (!modal || !modalImg) return;
+      const src = img.getAttribute("src")?.split("?")[0];
+      if (src) {
+        modalImg.src = src;
+        modal.classList.add("active");
+        document.body.style.overflow = "hidden";
+      }
+    });
+  });
+
+  closeBtn?.addEventListener("click", () => {
+    modal?.classList.remove("active");
+    document.body.style.overflow = "";
+  });
+
+  window.addEventListener("load", layoutJustified);
+  window.addEventListener("resize", layoutJustified);
+</script>
 
 <style>
   .section-title {
@@ -150,27 +284,6 @@ const pageTitle = `${portfolio.name} | Portfolio`;
     flex-grow: 1;
     height: 1px;
     background: #000;
-  }
-
-  .menu-contents-inner {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-  }
-  .page-top-nav {
-    width: 50px;
-    height: 50px;
-    background-color: #fff;
-    border: 1px solid #000;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: sticky;
-    bottom: 50px;
   }
 
   .portfolio-detail-wrapper {
@@ -194,20 +307,11 @@ const pageTitle = `${portfolio.name} | Portfolio`;
     color: #666;
     font-size: 0.9rem;
   }
-  .camera-info,
-  .self-introduction {
-    margin-bottom: 8px;
-    color: #333;
-  }
-  .social-links {
-    display: flex;
-    gap: 20px;
-    margin-top: 15px;
-  }
   .social-link {
     text-decoration: underline;
     font-size: 0.9rem;
     color: #000;
+    margin-right: 15px;
   }
 
   .grade-badge .circle {
@@ -219,19 +323,13 @@ const pageTitle = `${portfolio.name} | Portfolio`;
     align-items: center;
     justify-content: center;
     position: relative;
-    overflow: visible;
   }
-
   .profile-icon {
     width: 100%;
     height: 100%;
     object-fit: cover;
     border-radius: 50%;
     border: 1px solid #ddd;
-  }
-  .grade-badge .number {
-    font-size: 5.5rem;
-    font-family: monospace;
   }
   .grade-badge .suffix {
     position: absolute;
@@ -240,8 +338,9 @@ const pageTitle = `${portfolio.name} | Portfolio`;
     line-height: 1.1;
     font-size: 3rem;
     font-family: "Courier New", monospace;
-    padding: 2px 5px;
+    padding: 4px 8px;
     border-radius: 3px;
+    text-align: center;
   }
 
   .section-divider {
@@ -250,26 +349,31 @@ const pageTitle = `${portfolio.name} | Portfolio`;
     margin: 40px 0;
   }
 
-  .placeholder-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-    margin-bottom: 100px;
+  .gallery-container-inner {
+    width: 1200px;
+    margin: 0 auto;
   }
-  .photo-box {
-    position: relative;
-    aspect-ratio: 3 / 2;
-    background-color: #f2f2f2;
-    border: 1px solid #e0e0e0;
+  .picture-grid {
+    width: 1200px;
+    font-size: 0;
   }
-  .box-inner {
+  .photo-card {
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .photo-wrapper {
     width: 100%;
     height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #ccc;
   }
+  .photo-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
   .click-hint {
     position: absolute;
     top: -30px;
@@ -278,12 +382,54 @@ const pageTitle = `${portfolio.name} | Portfolio`;
     font-size: 1.2rem;
     transform: rotate(15deg);
     color: #666;
+    z-index: 5;
   }
 
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+  }
+  .modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+  .modal-close {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    color: white;
+    font-size: 50px;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  #modal-image {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+  }
+
+  @media (max-width: 1200px) {
+    .gallery-container-inner,
+    .picture-grid {
+      width: 100%;
+      padding: 0 20px;
+    }
+  }
   @media (max-width: 768px) {
     .section-title h1 {
       font-size: 40px;
-      padding-right: 20px;
     }
     .profile-grid {
       flex-direction: column;
@@ -291,9 +437,6 @@ const pageTitle = `${portfolio.name} | Portfolio`;
     .grade-badge {
       order: -1;
       margin-bottom: 30px;
-    }
-    .placeholder-grid {
-      grid-template-columns: repeat(2, 1fr);
     }
   }
 </style>
