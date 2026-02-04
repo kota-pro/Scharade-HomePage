@@ -17,7 +17,7 @@ export async function getStaticPaths() {
 }
 const { id } = Astro.params;
 const portfolio = await getPortfolioDetail<Portfolio>(id as string);
-const genText = portfolio.generation ? `${portfolio.generation}期生` : "---";
+const genText = portfolio.generation ? `${portfolio.generation}期生` : "";
 const dummyBoxes = Array.from({ length: 12 });
 const pageTitle = `${portfolio.name} | Portfolio`;
 ---
