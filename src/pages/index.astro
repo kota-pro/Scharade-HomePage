@@ -30,11 +30,9 @@ const { contents: posts } = await microcmsClient.getList<Blog>({
   },
 });
 
-// 2. タブの生成（postsの中にタグ情報が入っているので、引数はpostsだけでOK）
 const tabs = buildTabs(posts);
 const tabPostLimit = 3;
 
-// 3. カード画像の取得（APIが存在することを確認したので、これで動きます）
 const response = await microcmsClient.getList({
   endpoint: "card_image",
   queries: { limit: 100 },
