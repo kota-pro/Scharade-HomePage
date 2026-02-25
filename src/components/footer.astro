@@ -14,10 +14,10 @@ const optimizedBackground = await getImage({src: background, format: 'webp'});
     </a>
     <div class="footer-links">
         <div class="links-upper-tier">
-            <a class:list={['link', {active: /^\/About_us\/?$/.test(pathname)}]} href="About_us"><span class="text">About us</span></a>
-            <a class:list={['link', {active: /^\/Activity\/?$/.test(pathname)}]} href="Activity"><span class="text">Activity</span></a>
-            <a class:list={['link', {active: /^\/Gallery\/?$/.test(pathname)}]} href="Gallery"><span class="text">Gallery</span></a>
-            <a class:list={['link', {active: /^\/Portfolio\/?$/.test(pathname)}]} href="Portfolio"><span class="text">Portfolio</span></a>
+            <a class:list={['link', {active: /^\/About_us\/?$/.test(pathname)}]} href="/About_us"><span class="text">About us</span></a>
+            <a class:list={['link', {active: /^\/Activity\/?$/.test(pathname)}]} href="/Activity"><span class="text">Activity</span></a>
+            <a class:list={['link', {active: /^\/Gallery\/?$/.test(pathname)}]} href="/Gallery"><span class="text">Gallery</span></a>
+            <a class:list={['link', {active: /^\/portfolio\/?$/.test(pathname)}]} href="/portfolio"><span class="text">Portfolio</span></a>
         </div>
         <div class="links-lower-tier">
             <a class:list={['link', {active: /^\/Contact\/?$/.test(pathname)}]} href="Contact"><span class="text">Contact</span></a>
