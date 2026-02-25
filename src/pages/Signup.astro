@@ -1,0 +1,149 @@
+---
+import "../styles/Auth.css";
+import Layout from "../layouts/Layout.astro";
+
+const next = Astro.url.searchParams.get("next") ?? "/";
+---
+
+<Layout>
+  <Fragment slot="body-slot">
+    <section class="auth-section">
+      <div class="auth-heading">
+        <p class="auth-pill">Member Only</p>
+        <h1>Account</h1>
+        <p>
+          写団シャレードで活動するためのアカウントを作成します。
+          メールアドレスとパスワードを設定してアカウントを作成します。
+        </p>
+      </div>
+
+      <div class="auth-grid">
+        <div class="auth-card">
+          <h2>Create account</h2>
+          <small>まずは必要な情報を入力してください</small>
+
+          <form class="auth-form" id="signup-form" data-next={next}>
+            <div class="form-field">
+              <label for="signup-name">Name</label>
+              <input id="signup-name" type="text" name="name" autocomplete="name" required />
+              <small class="helper">ログイン後の表示や管理用に使われます。</small>
+            </div>
+
+            <div class="form-field">
+              <label for="signup-portfolio-name">Portfolio display name</label>
+              <input
+                id="signup-portfolio-name"
+                type="text"
+                name="portfolioName"
+                autocomplete="nickname"
+                required
+                maxlength="50"
+                placeholder="例：Sae Yoshizaki / 写団シャレード さえ"
+              />
+              <small class="helper">
+                ポートフォリオページに表示される名前です（あとから編集できます）。
+              </small>
+            </div>
+
+            <div class="form-field">
+              <label for="signup-email">Email</label>
+              <input id="signup-email" type="email" name="email" autocomplete="email" required />
+            </div>
+
+            <div class="form-field">
+              <label for="signup-password">Password</label>
+              <input
+                id="signup-password"
+                type="password"
+                name="password"
+                autocomplete="new-password"
+                required
+                minlength="8"
+              />
+            </div>
+
+            <div class="form-field">
+              <label for="signup-password-confirm">Confirm password</label>
+              <input
+                id="signup-password-confirm"
+                type="password"
+                name="passwordConfirm"
+                autocomplete="new-password"
+                required
+              />
+            </div>
+
+            <div class="auth-actions">
+              <button type="submit" class="primary-button">Create account</button>
+              <p class="auth-message" id="signup-message" aria-live="polite"></p>
+            </div>
+          </form>
+
+          <p class="auth-note">入会審査後、担当者からご登録いただいたメールアドレスに連絡いたします。</p>
+        </div>
+
+        <div class="auth-card">
+          <h2>Need help?</h2>
+          <small>次のステップを参考にしてください</small>
+          <ul class="auth-help-list">
+            <li>1. メールアドレスは実際に受信可能なものを使ってください</li>
+            <li>2. パスワードは8文字以上で設定してください</li>
+            <li>3. 登録後は担当者の承認が必要です</li>
+          </ul>
+          <p class="auth-note">ご不明点はいつでもお問い合わせください。</p>
+          <a class="auth-link" href="/Contact">お問い合わせ</a>
+        </div>
+      </div>
+
+      <script>
+        const form = document.getElementById("signup-form") as HTMLFormElement;
+        const messageEl = document.getElementById("signup-message");
+
+        function setMessage(text: string, kind: string = "") {
+          if (!messageEl) return;
+          messageEl.textContent = text;
+          if (kind) messageEl.dataset.kind = kind;
+          else messageEl.removeAttribute("data-kind");
+        }
+
+        function getNext() {
+          const raw = form?.dataset?.next;
+          return raw && raw.trim() ? raw : "/";
+        }
+
+        form?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          setMessage("");
+          
+          const portfolioNameInput = document.getElementById("signup-portfolio-name") as HTMLInputElement | null;
+          if (portfolioNameInput && !portfolioNameInput.value.trim()) {
+            setMessage("ポートフォリオ表示名を入力してください。", "error");
+            portfolioNameInput.focus();
+            return;
+          }
+
+          try {
+            const fd = new FormData(form);
+            const res = await fetch("/api/auth/signup", { method: "POST", body: fd });
+            const data = await res.json().catch(() => null);
+
+            if (!res.ok) {
+              const msg = data?.message || "登録に失敗しました。入力内容をご確認ください。";
+              setMessage(msg, "error");
+              return;
+            }
+
+            setMessage("登録を受け付けました。入会審査後、担当者から連絡します。", "success");
+
+            const next = getNext();
+            setTimeout(() => {
+              window.location.href = `/Login?next=${encodeURIComponent(next)}`;
+            }, 1200);
+          } catch {
+            setMessage("通信エラーが発生しました。時間をおいて再度お試しください。", "error");
+          }
+        });
+      </script>
+    </section>
+  </Fragment>
+</Layout>

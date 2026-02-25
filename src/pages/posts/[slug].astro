@@ -30,7 +30,6 @@ const post = await microcmsClient.getListDetail<Blog>({
 
 const formattedDate = formatDate(getPublishedDate(post));
 const backLinkMap = {
-  // index: { href: "/", label: "メインページへ戻る" },
   activity: { href: "/Activity", label: "Activityへ戻る" },
   gallery: { href: "/Gallery", label: "Galleryへ戻る" },
 } as const;

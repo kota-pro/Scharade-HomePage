@@ -1,4 +1,4 @@
-/* タイトルエリア */
+
 .section-title {
     display: flex;
     flex-direction: row;
@@ -93,7 +93,7 @@
     letter-spacing: 3.6px;
 }
 
-/* セクション見出し（アコーディオン） */
+
 .section-heading {
     padding: 10px 20px;
     border-top: 1px solid #000;
@@ -147,20 +147,20 @@ details[open] .arrow-icon {
     transform: rotate(90deg);
 }
 
-/* メンバーグリッド（5列） */
+
 .member-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr); /* PCは5列 */
+    grid-template-columns: repeat(5, 1fr); 
     gap: 15px;
     margin-bottom: 50px;
     padding-left: 90px;
 }
 
-/* メンバーカード */
+
 .member-card {
     aspect-ratio: 1/1;
     position: relative;
-    background-color: #d9d9d9; /* プレースホルダーのグレー */
+    background-color: #d9d9d9; 
     cursor: pointer;
     transition: opacity 0.3s;
     border: #fff 5px solid;
@@ -196,7 +196,7 @@ details[open] .arrow-icon {
     width: 100%;
     height: 100%;
     padding: 10px;
-    pointer-events: none; /* 文字の上でもクリック判定を通す */
+    pointer-events: none; 
 }
 
 .member-grade {
@@ -228,10 +228,25 @@ details[open] .arrow-icon {
     mix-blend-mode: exclusion;
 }
 
-/* レスポンシブ対応 */
+.edit-link-wrapper {
+    text-align: right;
+    margin: 30px 0 20px;
+}
+
+.edit-link {
+    font-family: "Zen Old Mincho";
+    letter-spacing: 4px;
+    font-size: 16px;
+    text-decoration: none;
+    color: #000;
+    border-bottom: 1px solid currentColor;
+    padding-bottom: 4px;
+}
+
+
 @media (max-width: 1024px) {
     .member-grid {
-        grid-template-columns: repeat(3, 1fr); /* タブレットは3列 */
+        grid-template-columns: repeat(3, 1fr); 
     }
     .section-title h1 {
         font-size: 60px;
@@ -244,13 +259,13 @@ details[open] .arrow-icon {
     }
     
     .filter-tabs {
-        overflow-x: auto; /* スマホでタブが多い場合はスクロール */
+        overflow-x: auto; 
         white-space: nowrap;
         padding-bottom: 0;
     }
 
     .member-grid {
-        grid-template-columns: repeat(2, 1fr); /* スマホは2列 */
+        grid-template-columns: repeat(2, 1fr); 
         padding-left: 0;
     }
 

@@ -138,25 +138,18 @@ import Layout from '../layouts/Layout.astro';
 </Fragment>
 </Layout>
 
-<!-- 判定のため、JavaScriptを追加 -->
 <script>
     (() => {
-        // チェックボックスのinputタグを取得
         const checkBoxElements = Array.from(document.getElementsByClassName("inquiry-selection")) as HTMLInputElement[];
 
         const errorMessage = "1つ以上の選択肢を選択してください。";
         checkBoxElements
             .forEach(m => {
-                // エラーメッセージを、カスタムなものに変更
                 m.setCustomValidity(errorMessage);
 
-                // 各チェックボックスのチェックのオン・オフ時に、以下の処理が実行されるようにする
                 m.addEventListener("change", () => {
-                    // 1つ以上チェックがされているかどうかを判定
                     const isCheckedAtLeastOne = document.querySelector(".inquiry-selection:checked") !== null;
 
-                    // 1つもチェックがされていなかったら、すべてのチェックボックスを required にする
-                    // 加えて、エラーメッセージも変更する
                     checkBoxElements.forEach(n => {
                         n.required = !isCheckedAtLeastOne
                         n.setCustomValidity(isCheckedAtLeastOne ? "" : errorMessage);
@@ -167,7 +160,6 @@ import Layout from '../layouts/Layout.astro';
 
     function toFullWidthKatakana(str: string): string {
         return str.replace(/[\u3041-\u3096]/g, function(match: string) {
-            // ひらがなを全角カタカナに変換
             return String.fromCharCode(match.charCodeAt(0) + 0x60);
         });
     }
@@ -185,12 +177,6 @@ import Layout from '../layouts/Layout.astro';
     if (inputField) {
         inputField.addEventListener('input', convertInputToKatakana);
     }
-
-    // window.addEventListener("beforeunload", (event) => {
-    //     // 標準の確認ダイアログを表示させる
-    //     event.preventDefault();
-    //     event.returnValue = ''; // 空文字をセット（これで標準ダイアログが出る）
-    // });
 
     document.addEventListener('DOMContentLoaded', () => {
         const form = document.querySelector('.form') as HTMLFormElement;
@@ -236,7 +222,6 @@ import Layout from '../layouts/Layout.astro';
         });
 
         submitBtn.addEventListener('click', async (e) => {
-            // HTML5 バリデーションを走らせる
             if (!form.checkValidity()) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -316,30 +301,23 @@ import Layout from '../layouts/Layout.astro';
             const selector = idToSelector[previewId as keyof typeof idToSelector];
             if (!selector) return;
 
-            // ラジオグループは最初の要素を対象にする
             const target = document.querySelector(selector) as HTMLElement | null;
             if (!target) return;
 
-            // モーダルを閉じてスクロール復帰
             preview.classList.add(isHidden);
             mask.classList.add(isHidden);
             body.style.overflow = 'initial';
 
-            // 次フレームでフォーカス（モーダル非表示後に確実に当てる）
             requestAnimationFrame(() => {
-                // 入力欄にスクロールしてからフォーカス
                 target.scrollIntoView({ block: 'center', behavior: 'smooth' });
-                // preventScroll でスクロールジャンプ抑制（Safariでは無視される場合あり）
                 (target as HTMLElement).focus({ preventScroll: true });
             });
         }
 
-        // 共通ハンドラのユーティリティ
         function attachPreviewLink(linkEl: HTMLParagraphElement) {
             if (!linkEl) return;
             linkEl.addEventListener('click', (e) => {
                 e.preventDefault();
-                // 見た目のフォーカス効果
                 linkEl.focus();
                 focusInputByPreviewId(linkEl.id);
             });
@@ -473,11 +451,10 @@ import Layout from '../layouts/Layout.astro';
         justify-content: center;
     }
 
-    .form {
-        width: 100%;
-        /* padding: 0 140px; */
-        max-width: 920px;
-        display: flex;
+        .form {
+            width: 100%;
+            max-width: 920px;
+            display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
@@ -610,9 +587,9 @@ import Layout from '../layouts/Layout.astro';
 
     .confirm-button:hover,
     .submit-button:hover {
-        background-color: #707070; /* ホバー時の背景色 */
-        color: #ffffff; /* ホバー時の文字色 */
-        transition: 0.3s ease-in-out; /* ホバー時の変化をスムーズに */
+        background-color: #707070;
+        color: #ffffff;
+        transition: 0.3s ease-in-out;
     }
 
     .confirm-preview {
