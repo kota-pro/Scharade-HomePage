@@ -145,11 +145,13 @@ const pathname = Astro.url.pathname;
     header {
         top:0;
         width: 100vw;
-        height: 120px;
+        height: 8.3vw;
+        min-height: 60px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0 120px 0px 82.17px;
+        padding: 0 8.33vw 0px 5.7vw;
+        padding: 0 max(21px, 8.33vw) 0px max(21px, 5.7vw);
         box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
         background: #fff;
         position: fixed;
@@ -170,8 +172,10 @@ const pathname = Astro.url.pathname;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        width: 337.83px;
-        height: 61px;
+        width: 23.5vw;
+        height: 4.2vw;
+        min-width: 144px;
+        min-height: 24px;
         gap: 20px;
     }
 
@@ -183,19 +187,21 @@ const pathname = Astro.url.pathname;
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 75.651px;
-        height: 56.644px;
+        width: 5.25vw;
+        height: 3.93vw;
+        min-width: 32.053px;
+        min-height: 24px;
     }
 
     .header-logo-text:first-child {
         font-family: "Zen Old Mincho", serif;
-        font-size: 13px;
+        font-size: max(5px, 0.9vw);
         margin: 0;
     }
 
     .header-logo-text:last-child {
         font-family: "Zen Old Mincho", serif;
-        font-size: 32px;
+        font-size: max(14px, 2.22vw);
         margin: 0;
     }
 
@@ -464,10 +470,6 @@ const pathname = Astro.url.pathname;
         transition-duration: 0.2s;
     }
 
-    /* nav .inner ul li a:hover {
-        background: #e4e4e4;
-    } */
-
     .member-area {
         width: 100%;
         height: 100%;
@@ -517,8 +519,7 @@ const pathname = Astro.url.pathname;
 
     @media screen and (max-width: 767px) {
         nav {
-            left: -220px;
-            width: 220px;
+            width: 100vw;
         }
     }
     /*============
@@ -527,22 +528,24 @@ const pathname = Astro.url.pathname;
     .toggle_btn {
         display: block;
         position: fixed;
-        top: 37.5px;
-        right: 50px;
-        width: 45px;
-        height: 45px;
+        top: max(2.6vw, 20px);
+        right: max(3.47vw, 20px);
+        width: max(3vw, 20px);
+        height: max(3vw, 20px);
         transition: all .5s;
         cursor: pointer;
         z-index: 4;
     }
     body.open .toggle_btn {
-        right: 595px;
+        right: max(41.33vw, 595px);
+        width: 45px;
+        height: 45px;
     }
     .toggle_btn span {
         display: block;
         position: absolute;
         left: 0;
-        width: 45px;
+        width: max(3.125vw, 20px);
         height: 1px;
         background-color: #000000;
         filter: drop-shadow(4px 4px 4px rgba(0, 0, 0, 0.25));
@@ -550,13 +553,13 @@ const pathname = Astro.url.pathname;
     }
 
     .toggle_btn span:nth-child(1) {
-        top: 5px;
+        top: 11.1%;
     }
     .toggle_btn span:nth-child(2) {
-        top: 22px;
+        top: 48.8%;
     }
     .toggle_btn span:nth-child(3) {
-        bottom: 5px;
+        bottom: 11.1%;
     }
 
     body.open .toggle_btn span {
@@ -581,7 +584,15 @@ const pathname = Astro.url.pathname;
     }
     @media screen and (max-width: 767px) {
         body.open .toggle_btn {
-            right: 250px;
+            right: 50px;
+        }
+
+        .toggle_btn {
+            z-index: 100 !important;
+        }
+
+        body.open .toggle_btn span {
+            background-color: #000;
         }
     }
     /*============
@@ -641,5 +652,22 @@ const pathname = Astro.url.pathname;
             font-size: 14px;
         }
 
+    }
+
+    /*============
+    レスポンシブ対応
+    =============*/
+    @media screen and (max-width: 1200px) {
+        .header-nav {
+            display: none;
+        }
+
+        .hamburger-menu {
+            display: flex;
+        }
+
+        .header-logo {
+            gap: 13px;
+        }
     }
 </style>
