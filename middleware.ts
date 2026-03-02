@@ -26,7 +26,7 @@ export async function onRequest(context: AstroRequest) {
     return route?.isStatic ? null : undefined;
   }
 
-  if (url.pathname === "/Portfolio/edit" || url.pathname === "/portfolio/edit") {
+  if (url.pathname.toLowerCase() === "/portfolio/edit") {
     if (!user) {
       url.searchParams.set("next", url.pathname);
       return new Response(null, {
