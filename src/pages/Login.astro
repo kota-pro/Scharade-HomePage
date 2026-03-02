@@ -1,0 +1,113 @@
+---
+import "../styles/Auth.css";
+import Layout from "../layouts/Layout.astro";
+
+const next = Astro.url.searchParams.get("next") ?? "/";
+---
+
+<Layout>
+  <Fragment slot="body-slot">
+    <section class="auth-section">
+      <div class="auth-heading">
+        <p class="auth-pill">Member Only</p>
+        <h1>Login</h1>
+        <p>
+          写団シャレードのメンバーコンテンツにアクセスするにはメールアドレスと
+          パスワードでログインしてください。
+        </p>
+      </div>
+
+      <div class="auth-grid">
+        <div class="auth-card">
+          <h2>Login</h2>
+          <small>メールアドレスとパスワードでログイン</small>
+
+          <form class="auth-form" id="login-form" data-next={next}>
+            <div class="form-field">
+              <label for="login-email">Email</label>
+              <input id="login-email" type="email" name="email" autocomplete="email" required />
+            </div>
+
+            <div class="form-field">
+              <label for="login-password">Password</label>
+              <input
+                id="login-password"
+                type="password"
+                name="password"
+                autocomplete="current-password"
+                required
+              />
+            </div>
+
+            <div class="form-field">
+              <label>
+                <input type="checkbox" name="remember" />
+                Keep me signed in
+              </label>
+            </div>
+
+            <div class="auth-actions">
+              <button type="submit" class="primary-button">Log in</button>
+              <p class="auth-message" id="login-message" aria-live="polite"></p>
+            </div>
+          </form>
+
+          <p class="auth-note">パスワードを忘れた場合は管理者までご連絡ください。</p>
+        </div>
+
+        <div class="auth-card">
+          <h2>Need an account?</h2>
+          <small>アカウントを作成して当団体へ参加しましょう</small>
+          <p class="auth-note">
+            新しくアカウントを作るには、以下のアカウント作成ページに進んでください。
+          </p>
+          <a class="auth-link" href={`/Signup?next=${encodeURIComponent(next)}`}>アカウントを作成する</a>
+          <p class="auth-note">ご不明点は担当までお問い合わせください。</p>
+        </div>
+      </div>
+
+      <script>
+        const form = document.getElementById("login-form") as HTMLFormElement;
+        const messageEl = document.getElementById("login-message");
+
+        function setMessage(text: string, kind: string = "") {
+          if (!messageEl) return;
+          messageEl.textContent = text;
+          if (kind) messageEl.dataset.kind = kind;
+          else messageEl.removeAttribute("data-kind");
+        }
+
+        function getNext() {
+          const raw = form?.dataset?.next;
+          return raw && raw.trim() ? raw : "/";
+        }
+
+        form?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          setMessage("");
+
+          try {
+            const fd = new FormData(form);
+            const res = await fetch("/api/auth/login", {
+              method: "POST",
+              body: fd,
+            });
+
+            const data = await res.json().catch(() => null);
+
+            if (!res.ok) {
+              const msg = data?.message || "ログインに失敗しました。入力内容をご確認ください。";
+              setMessage(msg, "error");
+              return;
+            }
+
+            setMessage("ログインしました。移動します…", "success");
+            window.location.href = getNext();
+          } catch {
+            setMessage("通信エラーが発生しました。時間をおいて再度お試しください。", "error");
+          }
+        });
+      </script>
+    </section>
+  </Fragment>
+</Layout>

@@ -151,26 +151,26 @@ import Layout from "../layouts/Layout.astro";
     }
 
     .disclaim_container a {
-        position: relative; /* アンダーラインのために相対位置を指定 */
+        position: relative;
         cursor: pointer;
     }
 
     .disclaim_container a::after {
         position: absolute;
-        left: 0px; /* aタグの左端からアンダーラインを引く */
-        right: 0px; /* aタグの右端からアンダーラインを引く */
+        left: 0px;
+        right: 0px;
         content: '';
         width: calc(100%-30px);
         height: 1px;
         background: #000000;
         bottom: 0px;
         transform: scale(0, 1);
-        transform-origin: center top; /*変形（アンダーラインの伸長）の原点がaタグ（各メニュー）の右端*/
-        transition: transform 0.3s;   /*変形の時間*/
+        transform-origin: center top;
+        transition: transform 0.3s;
     }
 
     .disclaim_container a:hover::after {
-        transform: scale(1, 1); /* アンダーラインを表示 */
+        transform: scale(1, 1);
     }
 
     @media (max-width: 768px) {
