@@ -1,0 +1,15 @@
+[
+  {
+    "id": "cbf0f686-d8d2-40c1-86cb-3e746f448012",
+    "name": "吉崎紗恵",
+    "portfolioName": "Sae Yoshizaki",
+    "email": "iamuyoha@gmail.com",
+    "passwordHash": "scrypt$zKJix0eP/wFATtgE5b3IJA==$rEtfji8FBNeED7JVVA2HW/6Pq8ugBnYpx/sAc13yVRo=",
+    "approved": true,
+    "createdAt": "2026-02-24T07:23:57.356Z",
+    "providers": {
+      "credentials": true
+    },
+    "portfolioId": "wpfqu4-8h10"
+  }
+]

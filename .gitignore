@@ -8,4 +8,3 @@ dist
 next-app/.next
 next-app/node_modules
 public/images/photo_library
-.data
