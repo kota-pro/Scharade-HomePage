@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import Layout from "../../layouts/Layout.astro";
+import { getUserFromRequest } from "../../lib/auth";
 import {
   getPortfolios,
   getPortfolioDetail,
@@ -21,6 +22,8 @@ const portfolio = await getPortfolioDetail<Portfolio>(id as string);
 const genText = portfolio.generation ? `${portfolio.generation}期生` : "";
 const hasPictures = portfolio.pictures && portfolio.pictures.length > 0;
 const pageTitle = `${portfolio.name} | Portfolio`;
+const { user } = getUserFromRequest(Astro.request);
+const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
 ---
 
 <Layout title={pageTitle}>
@@ -66,11 +69,16 @@ const pageTitle = `${portfolio.name} | Portfolio`;
                 ))
               }
             </div>
+            {portfolio.grade && (
+              <p class="profile-grade">
+                学年: {portfolio.grade}
+              </p>
+            )}
             <p class="camera-info">
               {portfolio.camera || "Nikon Z5, Nikomat FT"}
             </p>
             <p class="self-introduction">
-              {portfolio.self_introduction || "旅行と散歩が好き"}
+              {portfolio.self_introduction}
             </p>
             <div class="social-links">
               {
@@ -111,6 +119,12 @@ const pageTitle = `${portfolio.name} | Portfolio`;
         </div>
       </section>
     </div>
+
+    {canEditLink && (
+      <div class="edit-link-wrapper">
+        <a class="edit-link" href="/Portfolio/edit">Edit my portfolio</a>
+      </div>
+    )}
 
     <hr class="section-divider" />
 
@@ -170,7 +184,6 @@ const pageTitle = `${portfolio.name} | Portfolio`;
     let currentIndex = 0;
     const rows = [];
 
-    // 1. まず全画像をグループ分け（行の構成を決定）
     while (currentIndex < items.length) {
       let bestCount = 1;
       let minDiff = Infinity;
@@ -197,7 +210,6 @@ const pageTitle = `${portfolio.name} | Portfolio`;
       currentIndex += bestCount;
     }
 
-    // 2. 最後の行が少なくて巨大化する場合、前の行と調整するロジック
     if (rows.length > 1) {
       const lastRow = rows[rows.length - 1];
       const prevRow = rows[rows.length - 2];
@@ -210,14 +222,12 @@ const pageTitle = `${portfolio.name} | Portfolio`;
       const lastRowHeight =
         (CONTAINER_WIDTH - (lastRow.length - 1) * MIN_GAP) / lastRowAR;
 
-      // 最後の行の高さが理想の1.5倍を超えたら、前の行から1枚持ってくる
       if (lastRowHeight > TARGET_HEIGHT * 1.5 && prevRow.length > 1) {
         const transferItem = prevRow.pop()!;
         lastRow.unshift(transferItem);
       }
     }
 
-    // 3. 各行を描画
     rows.forEach((row) => {
       const rowTotalAR = row.reduce((sum, item) => {
         const img = item.querySelector("img")!;
@@ -241,7 +251,6 @@ const pageTitle = `${portfolio.name} | Portfolio`;
     });
   }
 
-  // モーダル処理
   const modal = document.getElementById("image-modal");
   const modalImg = document.getElementById("modal-image") as HTMLImageElement;
   const closeBtn = document.getElementById("modal-close-btn");
@@ -323,6 +332,9 @@ const pageTitle = `${portfolio.name} | Portfolio`;
     align-items: center;
     justify-content: center;
     position: relative;
+  }
+  .self-introduction {
+  white-space: pre-line;
   }
   .profile-icon {
     width: 100%;

@@ -32,6 +32,7 @@ export type Portfolio = {
   hashtags?: string[];
   x_url?: string;
   camera?: string;
+  grade?: string;
   icon?: {
     url: string;
     height: number;

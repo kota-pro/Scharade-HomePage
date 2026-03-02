@@ -1,0 +1,475 @@
+---
+import "../../styles/Auth.css";
+import "../../styles/PortfolioEdit.css";
+import Layout from "../../layouts/Layout.astro";
+import type { Portfolio } from "../../lib/microcms";
+import { getPortfolioDetail } from "../../lib/microcms";
+import { getUserFromRequest } from "../../lib/auth";
+
+const { user } = getUserFromRequest(Astro.request);
+const canEdit = Boolean(user?.approved && user.portfolioId);
+
+const statusInfo = !user
+  ? {
+      title: "ログインが必要です",
+      detail: "ご自身のメールアドレスとパスワードでログインした後にこのページへ戻ってください。",
+    }
+  : !user.approved
+  ? {
+      title: "アカウントが承認待ちです",
+      detail: "承認されるまではプロフィールを更新できません。管理者へご連絡ください。",
+    }
+  : !user.portfolioId
+  ? {
+      title: "ポートフォリオが紐づいていません",
+      detail: "管理者が .data/users.json に portfolioId を追加すると編集できるようになります。",
+    }
+  : null;
+
+let portfolio: Portfolio | null = null;
+if (canEdit && user?.portfolioId) {
+  portfolio = await getPortfolioDetail<Portfolio>(user.portfolioId);
+}
+
+const initialFormData = {
+  name: portfolio?.name ?? "",
+  iconUrl: portfolio?.icon?.url ?? "",
+  hashtags: Array.isArray(portfolio?.hashtags) ? (portfolio?.hashtags as string[]) : [],
+  x_url: portfolio?.x_url ?? "",
+  instagram: portfolio?.instagram ?? "",
+  camera: portfolio?.camera ?? "",
+  self_introduction: portfolio?.self_introduction ?? "",
+  pictures: (portfolio?.pictures ?? []).map((pic) => pic.url).filter(Boolean),
+  grade: portfolio?.grade ?? "",
+};
+
+const HASHTAG_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "夜景", label: "夜景" },
+  { value: "夕焼け", label: "夕焼け" },
+  { value: "朝焼け", label: "朝焼け" },
+  { value: "cityscape", label: "cityscape" },
+  { value: "landscape", label: "landscape" },
+  { value: "seascape", label: "seascape" },
+  { value: "snapshot", label: "snapshot" },
+  { value: "film", label: "film" },
+  { value: "モノクロ", label: "モノクロ" },
+  { value: "ストリート", label: "ストリート" },
+  { value: "ポートレート", label: "ポートレート" },
+  { value: "architecture", label: "architecture" },
+  { value: "nature", label: "nature" },
+  { value: "travel", label: "travel" },
+  { value: "macro", label: "macro" },
+  { value: "event", label: "event" },
+];
+
+const portfolioViewUrl = canEdit ? `/Portfolio/${user?.portfolioId}` : null;
+const hasPortfolio = canEdit;
+
+const GRADE_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "1st Grade", label: "1st Grade（1年）" },
+  { value: "2nd Grade", label: "2nd Grade（2年）" },
+  { value: "3rd Grade", label: "3rd Grade（3年）" },
+  { value: "4th Grade", label: "4th Grade（4年）" },
+  { value: "OB", label: "OB（卒業）" },
+];
+
+const inlineSerialize = (value: unknown) =>
+  JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+
+const initialFormDataSerialized = inlineSerialize(initialFormData);
+const portfolioViewUrlSerialized = inlineSerialize(portfolioViewUrl ?? "");
+---
+
+<Layout title="Edit Portfolio">
+  <Fragment slot="main-slot">
+    <div class="section-title">
+      <h1>Portfolio</h1>
+      <div class="section-title-line"></div>
+    </div>
+  </Fragment>
+
+  <Fragment slot="body-slot">
+    <section class="portfolio-edit-page">
+      <div class="auth-heading">
+        <p class="auth-pill">Member Only</p>
+        <h1>Edit Portfolio</h1>
+        <p>登録済みのプロフィールを編集して、最新の活動内容や写真を届けましょう。</p>
+      </div>
+
+      <div class="portfolio-edit-grid">
+        {hasPortfolio ? (
+          <form id="portfolio-form" class="portfolio-form" method="post" action="#">
+            <div class="form-field">
+              <label for="field-name">Name</label>
+              <input id="field-name" name="name" type="text" value={initialFormData.name} />
+            </div>
+
+            <div class="form-field">
+              <label for="field-icon-file">Icon</label>
+              <input id="field-icon-file" type="file" accept="image/*" />
+              <small class="helper">アイコン画像をアップロードして設定します。</small>
+              <div class="picture-list" id="icon-preview"></div>
+            </div>
+
+            <div class="form-field">
+              <label for="field-hashtags">Hashtags</label>
+              <select id="field-hashtags" name="hashtags" multiple>
+                {HASHTAG_OPTIONS.map(({ value, label }) => (
+                  <option value={value} selected={initialFormData.hashtags.includes(value)}>
+                    #{label}
+                  </option>
+                ))}
+              </select>
+              <small class="helper">複数選択できます（⌘/Ctrl を押しながらクリック、またはドラッグ）。</small>
+            </div>
+
+            <div class="form-field">
+              <label for="field-grade">Grade / 学年</label>
+              <select id="field-grade" name="grade">
+                <option value="">選択なし</option>
+                {GRADE_OPTIONS.map(({ value, label }) => (
+                  <option value={value} selected={initialFormData.grade === value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <small class="helper">あなたの学年を選択してください。</small>
+            </div>
+
+            <div class="form-field">
+              <label for="field-x-url">X (Twitter) URL</label>
+              <input id="field-x-url" name="x_url" type="url" value={initialFormData.x_url} />
+            </div>
+
+            <div class="form-field">
+              <label for="field-instagram">Instagram username or URL</label>
+              <input id="field-instagram" name="instagram" type="text" value={initialFormData.instagram} />
+            </div>
+
+            <div class="form-field">
+              <label for="field-camera">Camera</label>
+              <input id="field-camera" name="camera" type="text" value={initialFormData.camera} />
+            </div>
+
+            <div class="form-field">
+              <label for="field-self-intro">Self introduction</label>
+              <textarea id="field-self-intro" name="self_introduction">{initialFormData.self_introduction}</textarea>
+            </div>
+
+            <div class="upload-area">
+              <label>Pictures</label>
+
+              <div class="form-field">
+                <input id="picture-files" type="file" accept="image/*" multiple />
+                <small class="helper">複数選択してまとめてアップロードできます。</small>
+              </div>
+
+              <div class="picture-list" id="picture-list"></div>
+            </div>
+
+            <div class="status-message" id="status-message" aria-live="polite"></div>
+
+            <div class="form-actions">
+              <button id="submit-button" type="submit" class="primary-button">Save changes</button>
+              <a class="auth-link" href={portfolioViewUrl}>View portfolio</a>
+            </div>
+          </form>
+        ) : (
+          <div class="auth-card">
+            <h2>{statusInfo?.title ?? "編集できません"}</h2>
+            <small class="auth-note">
+              {statusInfo?.detail ?? "編集ステータスを確認してください。"}
+            </small>
+            {user?.email && (
+              <p class="auth-note">
+                Email: {user.email}<br />
+                User ID: {user.id}
+              </p>
+            )}
+            <div class="form-actions">
+              {!user && <a class="auth-link" href="/Login">ログインページへ</a>}
+              <a class="auth-link" href="/Contact">お問い合わせ</a>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+      {hasPortfolio && (
+        <div
+          id="portfolio-edit-data"
+          data-initial={initialFormDataSerialized}
+          data-view-url={portfolioViewUrlSerialized}
+          hidden
+        />
+      )}
+      {hasPortfolio && (
+        <script is:inline>
+          console.log("[portfolio/edit] script loaded");
+
+          const dataEl = document.getElementById("portfolio-edit-data");
+          const parseInitialData = () => {
+            if (!dataEl?.dataset.initial) return {};
+            try {
+              return JSON.parse(dataEl.dataset.initial);
+            } catch (err) {
+              console.error("[portfolio/edit] failed to parse initial data", err);
+              return {};
+            }
+          };
+          const INITIAL_FORM_DATA = parseInitialData();
+          const API_UPDATE_URL = "/api/portfolio/update";
+          const API_UPLOAD_URL = "/api/portfolio/upload";
+          const VIEW_URL = (() => {
+            const raw = dataEl?.dataset.viewUrl;
+            if (!raw) return "";
+            try {
+              return JSON.parse(raw);
+            } catch {
+              return String(raw).replace(/^\"|\"$/g, "");
+            }
+          })();
+
+          function qs(id) {
+            return document.getElementById(id);
+          }
+
+          function init() {
+            console.log("[portfolio/edit] init()", { readyState: document.readyState });
+
+            const form = qs("portfolio-form");
+            const statusEl = qs("status-message");
+            const pictureListEl = qs("picture-list");
+            const iconPreviewEl = qs("icon-preview");
+            const submitBtn = qs("submit-button");
+
+            const iconFileInput = qs("field-icon-file");
+            const pictureFilesInput = qs("picture-files");
+
+            if (!form) {
+              console.error("[portfolio/edit] #portfolio-form not found");
+              return;
+            }
+
+            const pictures = Array.isArray(INITIAL_FORM_DATA && INITIAL_FORM_DATA.pictures)
+              ? INITIAL_FORM_DATA.pictures.slice()
+              : [];
+
+            let iconUrl = (INITIAL_FORM_DATA && typeof INITIAL_FORM_DATA.iconUrl === "string")
+              ? INITIAL_FORM_DATA.iconUrl
+              : "";
+
+            const setStatus = (message, theme) => {
+              if (!statusEl) return;
+              statusEl.textContent = message || "";
+              statusEl.className = (`status-message ${theme || ""}`).trim();
+            };
+
+            const renderIcon = () => {
+              if (!iconPreviewEl) return;
+              iconPreviewEl.innerHTML = "";
+              if (!iconUrl) return;
+
+              const wrap = document.createElement("div");
+              wrap.className = "picture-chip";
+
+              const img = document.createElement("img");
+              img.src = iconUrl;
+              img.alt = "icon preview";
+              img.style.width = "96px";
+              img.style.height = "96px";
+              img.style.objectFit = "cover";
+              img.style.borderRadius = "10px";
+
+              const removeBtn = document.createElement("button");
+              removeBtn.type = "button";
+              removeBtn.innerText = "×";
+              removeBtn.addEventListener("click", () => {
+                iconUrl = "";
+                renderIcon();
+              });
+
+              wrap.appendChild(img);
+              wrap.appendChild(removeBtn);
+              iconPreviewEl.appendChild(wrap);
+            };
+
+            const renderPictures = () => {
+              if (!pictureListEl) return;
+              pictureListEl.innerHTML = "";
+
+              pictures.forEach((url, index) => {
+                const chip = document.createElement("div");
+                chip.className = "picture-chip";
+
+                const img = document.createElement("img");
+                img.src = url;
+                img.alt = `picture-${index}`;
+                img.style.width = "120px";
+                img.style.height = "120px";
+                img.style.objectFit = "cover";
+                img.style.borderRadius = "10px";
+
+                const removeBtn = document.createElement("button");
+                removeBtn.type = "button";
+                removeBtn.innerText = "×";
+                removeBtn.addEventListener("click", () => {
+                  pictures.splice(index, 1);
+                  renderPictures();
+                });
+
+                chip.appendChild(img);
+                chip.appendChild(removeBtn);
+                pictureListEl.appendChild(chip);
+              });
+            };
+
+            async function uploadOneFile(file) {
+              const formData = new FormData();
+              formData.append("file", file, file.name);
+
+              const response = await fetch(API_UPLOAD_URL, {
+                method: "POST",
+                body: formData,
+                credentials: "same-origin",
+              });
+
+              const data = await response.json().catch(() => ({}));
+              if (!response.ok) throw new Error(data && data.message ? data.message : "Upload failed.");
+              if (!data || !data.url) throw new Error("Upload response missing url.");
+              return data.url;
+            }
+
+            renderIcon();
+            renderPictures();
+
+            if (iconFileInput) {
+              iconFileInput.addEventListener("change", async () => {
+                const input = iconFileInput;
+                const file = input instanceof HTMLInputElement ? (input.files && input.files[0]) : null;
+                if (!file) return;
+
+                setStatus("Uploading icon…", "helper");
+                if (submitBtn) submitBtn.disabled = true;
+
+                try {
+                  const url = await uploadOneFile(file);
+                  iconUrl = url;
+                  renderIcon();
+                  setStatus("Icon uploaded!", "success");
+                } catch (err) {
+                  setStatus((err && err.message) ? err.message : "Icon upload failed.", "error");
+                } finally {
+                  if (submitBtn) submitBtn.disabled = false;
+                  if (input instanceof HTMLInputElement) input.value = "";
+                }
+              });
+            }
+
+            if (pictureFilesInput) {
+              pictureFilesInput.addEventListener("change", async () => {
+                const input = pictureFilesInput;
+                const files = input instanceof HTMLInputElement ? Array.from(input.files || []) : [];
+                if (!files.length) return;
+
+                setStatus("Uploading pictures…", "helper");
+                if (submitBtn) submitBtn.disabled = true;
+
+                try {
+                  for (const file of files) {
+                    const url = await uploadOneFile(file);
+                    pictures.push(url);
+                  }
+                  renderPictures();
+                  setStatus("Pictures uploaded!", "success");
+                } catch (err) {
+                  setStatus((err && err.message) ? err.message : "Pictures upload failed.", "error");
+                } finally {
+                  if (submitBtn) submitBtn.disabled = false;
+                  if (input instanceof HTMLInputElement) input.value = "";
+                }
+              });
+            }
+
+            const onSubmit = async (event) => {
+              try {
+                if (event && typeof event.preventDefault === "function") event.preventDefault();
+                if (event && typeof event.stopPropagation === "function") event.stopPropagation();
+
+                console.log("[portfolio/edit] submit intercepted");
+
+                if (submitBtn) submitBtn.disabled = true;
+                setStatus("Sending update…", "helper");
+
+                const select = qs("field-hashtags");
+                const gradeSelect = qs("field-grade");
+                const hashtags = (select instanceof HTMLSelectElement)
+                  ? Array.from(select.selectedOptions).map((opt) => opt.value)
+                  : [];
+                const gradeValue =
+                  gradeSelect instanceof HTMLSelectElement ? gradeSelect.value : "";
+
+                const nameInput = qs("field-name");
+                const xUrlInput = qs("field-x-url");
+                const igInput = qs("field-instagram");
+                const camInput = qs("field-camera");
+                const introInput = qs("field-self-intro");
+
+                const body = {
+                  name: nameInput && "value" in nameInput ? String(nameInput.value || "") : "",
+                  iconUrl: iconUrl,
+                  hashtags,
+                  x_url: xUrlInput && "value" in xUrlInput ? String(xUrlInput.value || "") : "",
+                  instagram: igInput && "value" in igInput ? String(igInput.value || "") : "",
+                  camera: camInput && "value" in camInput ? String(camInput.value || "") : "",
+                  self_introduction: introInput && "value" in introInput ? String(introInput.value || "") : "",
+                  pictures: pictures.slice(),
+                  grade: gradeValue,
+                };
+
+                const response = await fetch(API_UPDATE_URL, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  credentials: "same-origin",
+                  body: JSON.stringify(body),
+                });
+
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                  throw new Error(data && data.message ? data.message : "Update failed.");
+                }
+
+                setStatus("Portfolio updated! 公開ページをご確認ください。", "success");
+                if (VIEW_URL) {
+                  setTimeout(() => {
+                    window.location.href = VIEW_URL;
+                  }, 900);
+                }
+              } catch (err) {
+                setStatus((err && err.message) ? err.message : "Update failed.", "error");
+              } finally {
+                if (submitBtn) submitBtn.disabled = false;
+              }
+            };
+
+            form.addEventListener("submit", onSubmit);
+            form.addEventListener("submit", onSubmit, true);
+            form.onsubmit = onSubmit;
+          }
+
+          try {
+            if (document.readyState === "loading") {
+              document.addEventListener("DOMContentLoaded", init);
+            } else {
+              init();
+            }
+          } catch (e) {
+            console.error("[portfolio/edit] init failed", e);
+          }
+        </script>
+      )}
+    </section>
+  </Fragment>
+</Layout>
