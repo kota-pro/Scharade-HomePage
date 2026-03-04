@@ -1,0 +1,135 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import "../../styles/UA+reset.css";
+import "../../styles/Portfolio.css";
+
+import { getPortfolios } from "../../lib/microcms";
+
+const response = await getPortfolios({
+  fields: ["id", "name", "icon", "generation"],
+  limit: 100,
+});
+
+const allPortfolios = response.contents;
+
+const generations = [...new Set(allPortfolios.map((p) => p.generation))]
+  .filter((gen): gen is number => gen !== undefined)
+  .sort((a, b) => b - a);
+
+const tabs = ["All", ...generations.map((gen) => `${gen}期`)];
+---
+
+<Layout title="Sharade | Portfolio">
+  <Fragment slot="main-slot">
+    <div class="section-title">
+      <h1>Portfolio</h1>
+      <div class="section-title-line"></div>
+    </div>
+  </Fragment>
+
+  <Fragment slot="menu-slot">
+    <div class="menu-contents-inner">
+      <a href="#" class="page-top-nav">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+        >
+          <path
+            fill="currentColor"
+            d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"
+          ></path>
+        </svg>
+      </a>
+    </div>
+  </Fragment>
+
+  <Fragment slot="body-slot">
+    <div class="explanation-area">
+      <p>サークル員のポートフォリオになります。ぜひご鑑賞ください。</p>
+    </div>
+
+    {
+      tabs.map((tab) => (
+        <details
+          class="member-section-details"
+          name="member-section"
+          open={tab === "All"}
+        >
+          <summary class="section-heading">
+            <img
+              class="arrow-icon"
+              src="/icons/rightarrow.svg"
+              alt="arrow icon"
+            />
+            {tab === "All" ? "All Members" : `${tab} Members`}
+          </summary>
+          <div class="member-grid">
+            {allPortfolios
+              .filter((p) => {
+                if (tab === "All") return true;
+                return p.generation && `${p.generation}期` === tab;
+              })
+              .map((portfolio) => (
+                <a href={`/portfolio/${portfolio.id}`} class="member-card">
+                  <div class="member-image-placeholder">
+                    <img
+                      src={
+                        portfolio.icon
+                          ? portfolio.icon.url
+                          : "/images/placeholder_icon.jpeg"
+                      }
+                      alt={portfolio.name}
+                      loading="lazy"
+                    />
+                  </div>
+                  <div class="member-info">
+                    <p class="member-grade">
+                      {portfolio.generation
+                        ? `${portfolio.generation}期生`
+                        : ""}
+                    </p>
+                    <p class="member-name">{portfolio.name}</p>
+                  </div>
+                </a>
+              ))}
+          </div>
+        </details>
+      ))
+    }
+  </Fragment>
+</Layout>
+
+<script>
+  const details = document.querySelectorAll("details");
+  details.forEach((detail) => {
+    detail.addEventListener("toggle", () => {
+      const arrow = detail.querySelector(".arrow-icon") as HTMLElement;
+      if (arrow) {
+        arrow.style.transform = detail.open ? "rotate(90deg)" : "rotate(0deg)";
+      }
+    });
+  });
+</script>
+
+<style>
+  .arrow-icon {
+    transition: transform 0.3s ease;
+    width: 18px;
+    height: 18px;
+    margin-right: 10px;
+  }
+  .section-heading {
+    list-style: none;
+    cursor: pointer;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    padding: 20px 0;
+    border-bottom: 1px solid #eee;
+  }
+  .section-heading::-webkit-details-marker {
+    display: none;
+  }
+</style>
