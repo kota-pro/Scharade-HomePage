@@ -15,7 +15,16 @@ export type LightroomAlbum = {
   };
 };
 
+// アクセストークンのキャッシュ（毎回リフレッシュを防ぐ）
+let cachedAccessToken: string | null = null;
+let tokenExpiresAt = 0;
+
 async function getAccessToken(): Promise<string> {
+  // キャッシュが有効ならそれを返す（有効期限の1分前にリフレッシュ）
+  if (cachedAccessToken && Date.now() < tokenExpiresAt - 60_000) {
+    return cachedAccessToken;
+  }
+
   const params = new URLSearchParams();
   params.append("grant_type", "refresh_token");
   params.append("client_id", CLIENT_ID);
@@ -28,9 +37,18 @@ async function getAccessToken(): Promise<string> {
     body: params,
   });
 
-  if (!response.ok)
-    throw new Error(`Failed to refresh token: ${response.statusText}`);
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => "");
+    console.error(`[Lightroom] Token refresh failed: ${response.status} ${response.statusText}`, errorBody);
+    throw new Error(
+      `Adobe token refresh failed (${response.status}). リフレッシュトークンが期限切れの可能性があります。Adobe Developer Console で再取得してください。`,
+    );
+  }
+
   const data = await response.json();
+  cachedAccessToken = data.access_token;
+  // expires_in はミリ秒単位（通常 86400000 = 24時間）
+  tokenExpiresAt = Date.now() + (data.expires_in || 86_400_000);
   return data.access_token;
 }
 

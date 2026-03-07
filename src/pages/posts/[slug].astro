@@ -5,28 +5,27 @@ import { microcmsClient } from "../../lib/microcms";
 import type { Blog } from "../../types/microcms";
 import { formatDate, getPublishedDate } from "../../utils/blog";
 
-export async function getStaticPaths() {
-  const contents = await microcmsClient.getAllContents<Blog>({
-    endpoint: "blog",
-    queries: {
-      fields: "id,slug",
-    },
-  });
+const { slug } = Astro.params;
 
-  return contents.map((content) => ({
-    params: { slug: content.slug },
-    props: { id: content.id },
-  }));
+if (!slug) {
+  return Astro.redirect("/404");
 }
 
-const { id } = Astro.props as { id: string };
-const post = await microcmsClient.getListDetail<Blog>({
+// slugで投稿を検索
+const { contents } = await microcmsClient.getList<Blog>({
   endpoint: "blog",
-  contentId: id,
   queries: {
+    filters: `slug[equals]${slug}`,
+    limit: 1,
     depth: 2,
   },
 });
+
+if (contents.length === 0) {
+  return Astro.redirect("/404");
+}
+
+const post = contents[0];
 
 const formattedDate = formatDate(getPublishedDate(post));
 const backLinkMap = {
@@ -36,7 +35,7 @@ const backLinkMap = {
 type BackLinkMap = typeof backLinkMap;
 type FromParam = keyof BackLinkMap;
 const isFromParam = (value: string | null): value is FromParam =>
-  value === "Activity" || value === "Gallery";
+  value === "activity" || value === "gallery";
 const fromParam = Astro.url.searchParams.get("from");
 const backLink = isFromParam(fromParam) ? backLinkMap[fromParam] : null;
 const backLinkMapJSON = JSON.stringify(backLinkMap);
