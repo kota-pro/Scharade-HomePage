@@ -3,18 +3,25 @@ import Layout from "../layouts/Layout.astro";
 import "../styles/UA+reset.css";
 import "../styles/Gallery.css";
 import { getAlbums, getAlbumCoverId } from "../lib/lightroom";
-const rawAlbums = await getAlbums();
 
-const albums = await Promise.all(
-  rawAlbums.map(async (album) => {
-    const coverId = await getAlbumCoverId(album.id);
+let albums: Awaited<ReturnType<typeof getAlbums>> extends (infer U)[]
+  ? (U & { coverId: string | null })[]
+  : never[] = [];
+let apiError = "";
 
-    return {
-      ...album,
-      coverId, 
-    };
-  })
-);
+try {
+  const rawAlbums = await getAlbums();
+  albums = await Promise.all(
+    rawAlbums.map(async (album) => {
+      const coverId = await getAlbumCoverId(album.id);
+      return { ...album, coverId };
+    })
+  );
+} catch (e: any) {
+  console.error("[Gallery] Failed to load albums:", e.message);
+  apiError = e.message || "アルバムの読み込みに失敗しました";
+}
+
 const years = Array.from(
   new Set(
     albums.map((item) => {
@@ -64,6 +71,12 @@ const getCategoryFromName = (name: string) => {
         サークルの普段の活動を各イベントごとにアルバムで分類しています。
       </p>
     </div>
+    {apiError ? (
+      <div class="api-error" style="text-align:center; padding:3rem 1rem; color:#c0392b;">
+        <p style="font-size:1.2rem; font-weight:bold;">⚠ アルバムを読み込めませんでした</p>
+        <p style="font-size:0.9rem; margin-top:0.5rem; color:#666;">Adobe Lightroom APIへの接続に失敗しました。管理者にお問い合わせください。</p>
+      </div>
+    ) : (
     <div class="tab">
       {
         tabYears.map((year, index) => {
@@ -114,6 +127,7 @@ const getCategoryFromName = (name: string) => {
         })
       }
     </div>
+    )}
   </Fragment>
 </Layout>
 
