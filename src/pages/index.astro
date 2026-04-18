@@ -42,7 +42,7 @@ const cardImages = response.contents;
 const fixedTexts = [
   {
     title: "Scharade",
-    text: "",
+    text: "〜活動内容紹介〜",
     slug: "",
     image: `<svg xmlns="http://www.w3.org/2000/svg" width="78" height="59" viewBox="0 0 78 59" fill="none">
               <path d="M38.875 52.5666C47.0972 52.5666 53.7626 45.8782 53.7626 37.6278C53.7626 29.3773 47.0972 22.689 38.875 22.689C30.6528 22.689 23.9875 29.3773 23.9875 37.6278C23.9875 45.8782 30.6528 52.5666 38.875 52.5666Z" stroke="white" />
@@ -138,14 +138,20 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
       </div>
     </div>
     <div class="slogan">
-      <img class="slogan-line line-1" src="/icons/Line-1.svg"></img>
+      <picture class="slogan-line line-1">
+        <source media="(min-width: 768px)" srcset="/icons/Line-1.svg" />
+        <img src="/icons/Line-2.svg" alt="SVGの代替テキスト">
+      </picture>
       <h1 class="slogan-text">
         <span>私たちと一緒に</span><span>一生に残る素敵な思い出を</span><span>写真に残しませんか？</span>
       </h1>
       <p class="slogan-subtext">
         Shall we create and capture beautiful memories together?
       </p>
-      <img class="slogan-line line-2" src="/icons/Line-1.svg"></img>
+      <picture class="slogan-line line-2">
+        <source media="(min-width: 768px)" srcset="/icons/Line-1.svg" />
+        <img src="/icons/Line-2.svg" alt="SVGの代替テキスト">
+      </picture>
     </div>
 
     <div class="section-title">
@@ -216,52 +222,40 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
         <a class="view-more-button" href="/Activity">View more</a>
       </div>
       <div class="activity-table">
-        <table>
-          <tbody>
-            {
-              cardRows.map((row, rowIndex) => (
-                <tr>
-                  {row.map((card, columnIndex) => {
-                    const slotIndex = rowIndex * 4 + columnIndex;
-                    const textData = fixedTexts[slotIndex];
+        <div class="activity-table-grid">
+          {
+            cardRows.flat().map((card, slotIndex) => {
+              const textData = fixedTexts[slotIndex];
 
-                    return (
-                      <td>
-                        <div
-                          class="activity-card"
-                          id={`card-${slotIndex + 1}`}
-                          style={`background-image: url(${card.image?.url});`}
-                        >
-                          <div class="activity-card-contents">
-                            {textData?.image ? (
-                              <div
-                                set:html={textData.image}
-                                style="display: contents;"
-                              />
-                            ) : null}
+              return (
+                <div
+                  class="activity-card"
+                  id={`card-${slotIndex + 1}`}
+                  style={`background-image: url(${card.image?.url});`}
+                >
+                  <div class="activity-card-contents">
+                    {textData?.image ? (
+                      <div set:html={textData.image} style="display: contents;" />
+                    ) : null}
 
-                            {textData?.title && <h1>{textData.title}</h1>}
-                            {textData?.text && (
-                              <p class="activity-card-meta">{textData.text}</p>
-                            )}
-                          </div>
+                    {textData?.title && <h1>{textData.title}</h1>}
+                    {textData?.text && (
+                      <p class="activity-card-meta">{textData.text}</p>
+                    )}
+                  </div>
 
-                          {textData?.slug ? (
-                            <a
-                              class="activity-card-link"
-                              href={textData.slug}
-                              aria-label={`${textData.title || "詳細"} ページ`}
-                            />
-                          ) : null}
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))
-            }
-          </tbody>
-        </table>
+                  {textData?.slug ? (
+                    <a
+                      class="activity-card-link"
+                      href={textData.slug}
+                      aria-label={`${textData.title || "詳細"} ページ`}
+                    />
+                  ) : null}
+                </div>
+              );
+            })
+          }
+        </div>
 
         <div class="click-popup-2">
           <div class="arrow-line-2">
@@ -297,7 +291,7 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
       </div>
       <div class="activity-table-text">
         <a href="Contact">
-          <p>撮影依頼も承っております。御依頼はこちらから。</p>
+          <p><span>撮影依頼も承っております。</span><span>御依頼はこちらから。</span></p>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="25"
@@ -312,7 +306,11 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
       </div>
     </div>
     <div class="advertising">
-      <h1>
+      <div class="section-title how-to-join-title">
+          <h1>How&nbsp;to&nbsp;join</h1>
+          <div class="section-title-line"></div>
+      </div>
+      <h1 class="advertising-title">
         あなたの大学生活を、<br />あなたの目線で「写真」に残してみませんか？
       </h1>
       <div class="photo-carousel">
@@ -814,76 +812,76 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
         <div class="photo-carousel-contents">
           <ul>
             <li>
-              <a href={ADphoto1.src} data-lightbox="carousel-contents-group1"
-                ><div class="photo-carousel-content">
+              <a href={ADphoto1.src} data-lightbox="carousel-contents-group1">
+                <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto1.src} alt="広告イメージ" />
-                </div></a
-              >
+                </div>
+              </a>
             </li>
             <li>
-              <a href={ADphoto2.src} data-lightbox="carousel-contents-group1"
-                ><div class="photo-carousel-content">
+              <a href={ADphoto2.src} data-lightbox="carousel-contents-group1">
+                <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto2.src} alt="広告イメージ" />
-                </div></a
-              >
+                </div>
+              </a>
             </li>
             <li>
-              <a href={ADphoto3.src} data-lightbox="carousel-contents-group1"
-                ><div class="photo-carousel-content">
+              <a href={ADphoto3.src} data-lightbox="carousel-contents-group1">
+                <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto3.src} alt="広告イメージ" />
-                </div></a
-              >
+                </div>
+              </a>
             </li>
             <li>
-              <a href={ADphoto4.src} data-lightbox="carousel-contents-group1"
-                ><div class="photo-carousel-content">
+              <a href={ADphoto4.src} data-lightbox="carousel-contents-group1">
+                <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto4.src} alt="広告イメージ" />
-                </div></a
-              >
+                </div>
+              </a>
             </li>
             <li>
-              <a href={ADphoto5.src} data-lightbox="carousel-contents-group1"
-                ><div class="photo-carousel-content">
+              <a href={ADphoto5.src} data-lightbox="carousel-contents-group1">
+                <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto5.src} alt="広告イメージ" />
-                </div></a
-              >
+                </div>
+              </a>
             </li>
           </ul>
           <ul>
             <li>
-              <a href={ADphoto1.src} data-lightbox="carousel-contents-group2"
-                ><div class="photo-carousel-content">
+              <a href={ADphoto1.src} data-lightbox="carousel-contents-group2">
+                <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto1.src} alt="広告イメージ" />
-                </div></a
-              >
+                </div>
+              </a>
             </li>
             <li>
-              <a href={ADphoto2.src} data-lightbox="carousel-contents-group2"
-                ><div class="photo-carousel-content">
+              <a href={ADphoto2.src} data-lightbox="carousel-contents-group2">
+                <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto2.src} alt="広告イメージ" />
-                </div></a
-              >
+                </div>
+              </a>
             </li>
             <li>
-              <a href={ADphoto3.src} data-lightbox="carousel-contents-group2"
-                ><div class="photo-carousel-content">
+              <a href={ADphoto3.src} data-lightbox="carousel-contents-group2">
+                <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto3.src} alt="広告イメージ" />
-                </div></a
-              >
+                </div>
+              </a>
             </li>
             <li>
-              <a href={ADphoto4.src} data-lightbox="carousel-contents-group2"
-                ><div class="photo-carousel-content">
+              <a href={ADphoto4.src} data-lightbox="carousel-contents-group2">
+                <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto4.src} alt="広告イメージ" />
-                </div></a
-              >
+                </div>
+              </a>
             </li>
             <li>
-              <a href={ADphoto5.src} data-lightbox="carousel-contents-group2"
-                ><div class="photo-carousel-content">
+              <a href={ADphoto5.src} data-lightbox="carousel-contents-group2">
+                <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto5.src} alt="広告イメージ" />
-                </div></a
-              >
+                </div>
+              </a>
             </li>
           </ul>
         </div>
@@ -1371,6 +1369,29 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
           </svg>
         </div>
       </div>
+      <div class="how-to-join">
+        <div class="step-1">
+          <h1>01</h1>
+          <div class="how-to-text">
+            <h2>活動に参加する</h2>
+            <p>Instagramなどから新歓企画を確認！<br>Contact、またはInstagramのDMなどで参加したい旨を教えてください！</p>
+          </div>
+        </div>
+        <div class="step-2">
+          <h1>02</h1>
+          <div class="how-to-text">
+            <h2>会費を払う</h2>
+            <p>企画参加後に三役に手渡し、または振込で会費をお支払いいただきます。入会費はなく半期4000円です。</p>
+          </div>
+        </div>
+        <div class="step-3">
+          <h1>03</h1>
+          <div class="how-to-text">
+            <h2>入会完了</h2>
+            <p>これだけで入会できます！<br>部室のプリンターやL判写真用紙、暗室など、お好きにご利用いただけます！</p>
+          </div>
+        </div>
+      </div>
       <div class="button-div">
         <a class="join-button" href="Contact">Contact</a>
       </div>
@@ -1770,6 +1791,15 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
       align-items: center;
       justify-content: center;
       position: relative;
+      /* overflow-x: scroll; */
+    }
+
+    .activity-table-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 290px);
+      gap: 14px;
+      justify-content: center;
+      width: 100%;
     }
 
     .click-popup-2 {
@@ -1876,7 +1906,6 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
       flex-wrap: wrap;
       align-items: center;
       justify-content: center;
-      margin: 7px;
       padding: 16px;
       position: relative;
     }
@@ -2039,7 +2068,11 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
       margin-top: 210px;
     }
 
-    .advertising h1 {
+    .how-to-join {
+      display: none;
+    }
+
+    .advertising-title {
       color: #000;
       font-family: "Zen Kurenaido";
       font-size: 36px;
@@ -2245,6 +2278,10 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
       transition: 0.3s ease-in-out;
     }
 
+    .how-to-join-title {
+      display: none;
+    }
+
     @media screen and (max-width: 768px) {
       .main-visual {
         height: calc(60vh - 8.3vw);
@@ -2302,18 +2339,22 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
         margin: 0;
         flex-direction: row;
         height: 300px;
-        width: 90px;
         position: absolute;
         right: 60px;
         top: 80px;
       }
 
-      .slogan-line {
-        rotate: 90deg;
-        width: 300px;
-        height: 1px;
+      .slogan-line img {
         object-fit: cover;
         overflow: visible;
+      }
+
+      .line-1 {
+        margin-right: 8px;
+      }
+
+      .line-2 {
+        margin-left: 8px;
       }
 
       .slogan-text {
@@ -2360,13 +2401,254 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
         padding: 0 20px;
       }
 
+      .tab-panel {
+        padding: 0;
+      }
+
       .tab > label {
+        font-size: 9px;
+        letter-spacing: 1.8px;
+      }
+
+      .tab > label:nth-child(5) {
+        padding: 0.7em 0.7em 0.5em;
+      }
+
+      .Activity-item {
+        padding: 20px;
+      }
+
+      .Activity-date {
         font-size: 12px;
         letter-spacing: 1.8px;
+        margin-right: 25px;
+      }
+
+      .Activity-tag {
+        font-size: 11px;
+        letter-spacing: 1.65px;
+        margin-right: 10px;
+      }
+
+      .Activity-title {
+        font-size: 18px;
+        letter-spacing: 1.95px;
+        margin: 5px 0px;
+      }
+
+      .Activity-excerpt-container {
+        gap: 8px;
+      }
+
+      .Activity-excerpt-container svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .Activity-excerpt {
+        font-size: 12px;
+        letter-spacing: 0.4px;
+      }
+
+      .tab >input:checked+label +.tab-panel::after{
+        width: 65%;
       }
 
       .view-more-button {
         top: calc(100% - 20px);
+        padding: 10px 20px 12px;
+        color: #000;
+        font-size: 10px;
+        letter-spacing: 1.5px;
+      }
+
+      .activity-table {
+        overflow-y: visible;
+      }
+
+      .activity-table-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .activity-card {
+        width: 100%;
+        height: auto;
+        min-height: 220px;
+        aspect-ratio: 4 / 5;
+        padding: 12px;
+      }
+
+      .activity-card::after {
+        top: 5px;
+        right: 5px;
+        bottom: 5px;
+        left: 5px;
+      }
+
+      .activity-card h1 {
+        font-size: 24px;
+        letter-spacing: 2px;
+        text-align: center;
+      }
+
+      #card-1 h1 {
+        font-size: 24px;
+        letter-spacing: 2px;
+      }
+
+      .activity-card p,
+      .activity-card-meta {
+        opacity: 1;
+        position: static;
+        font-size: 12px;
+        letter-spacing: 1px;
+        text-align: center;
+      }
+
+      .activity-card:hover h1 {
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+
+      .click-popup-2 {
+        display: none;
+      }
+
+      .click-popup-3 {
+        display: none;
+      }
+
+      .activity-table-text {
+        margin-top: 14px;
+      }
+      .activity-table-text p {
+        display: flex;
+        flex-direction: column;
+        margin-right: 5px;
+        font-size: 12px;
+        letter-spacing: 1.8px;
+      }
+
+      .activity-table-text a {
+        margin-top: 0px;
+      }
+
+      .advertising {
+        margin-top: 100px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .advertising-title {
+        font-size: 14px;
+        letter-spacing: 2.1px;
+        margin-left: 10px;
+        margin-bottom: 20px;
+      }
+
+      .how-to-join-title {
+        display: flex;
+        margin-bottom: 40px;
+      }
+
+      .how-to-join-title h1 {
+        font-size: 40px;
+      }
+
+      .photo-carousel {
+        display: none;
+      }
+
+      .how-to-join {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-image: url("../icons/advertising-background.svg");
+        background-repeat: no-repeat;
+        background-position: center;
+      }
+
+      .how-to-join > div:not(:last-child) {
+        margin-bottom: 64px;
+      }
+
+      .step-1 {
+        margin-top: 50px;
+      }
+
+      .step-1,
+      .step-2,
+      .step-3 {
+        position: relative;
+        z-index: 2 !important;
+      }
+
+      .step-3  {
+        margin-bottom: 20px;
+      }
+
+      .how-to-join h1{
+        color: #CFCFCF;
+        font-family: Didot;
+        font-size: 64px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 9.6px;
+        position: absolute;
+        top: -44px;
+        left: 10px;
+        z-index: -1 !important;
+      }
+
+      .how-to-text {
+        margin: 0 50px;
+      }
+
+      .how-to-join h2 {
+        color: #000;
+        font-family: "Zen Old Mincho";
+        font-size: 14px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 2.1px;
+      }
+
+      .how-to-join p {
+        color: #000;
+        font-family: "Zen Kurenaido";
+        font-size: 10px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        letter-spacing: 1.5px;
+      }
+
+      .button-div {
+        padding: 0px;
+        height: initial;
+        margin-right: 20px;
+      }
+
+      .join-button {
+        padding: 10px 20px 12px;
+        font-size: 10px;
+        letter-spacing: 1.5px;
+        margin-top: 20px;
+        margin-right: 20px;
+      }
+    }
+
+    @media screen and (max-width: 480px) {
+      .activity-table-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .activity-card {
+        min-height: 200px;
       }
     }
   </style>

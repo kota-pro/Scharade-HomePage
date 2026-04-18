@@ -854,4 +854,334 @@ import Layout from '../layouts/Layout.astro';
         cursor: pointer;
         transition: all .5s;
     }
+
+    @media (max-width: 768px) {
+        .section-title {
+            margin-bottom: 35px;
+        }
+
+        .section-title h1 {
+            font-size: 60px;
+            letter-spacing: 5px;
+            padding-right: 28px;
+        }
+
+        .page-top-nav {
+            width: 30px;
+            height: 30px;
+        }
+
+        .page-top-nav svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .contact-description {
+            font-size: 16px;
+            letter-spacing: 1.8px;
+            line-height: 1.8;
+        }
+
+        .contact-form {
+            margin-top: 0px;
+        }
+
+        .form {
+            max-width: 100%;
+        }
+
+        .form p,
+        .input-td label {
+            font-size: 16px;
+            letter-spacing: 1.8px;
+        }
+
+        .form-table tr {
+            margin: 20px 0;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .form-table th,
+        .require-td,
+        .input-td,
+        .text-td {
+            flex: none;
+            width: 100%;
+        }
+
+        .require-td {
+            text-align: left;
+        }
+
+        .form-table th p {
+            display: inline-block;
+        }
+
+        .input-td {
+            height: auto;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .input-td span {
+            width: 100%;
+            position: relative;
+            justify-content: flex-start;
+        }
+
+        .input-td span input[type="radio"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .input-td span label {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #909090;
+            border-radius: 5px;
+            background: #fff;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .input-td span input[type="radio"]:checked + label {
+            color: #0db49b;
+            border-color: #0db49b;
+        }
+
+        .form-table tr:nth-of-type(5) .input-td,
+        .form-table tr:nth-of-type(7) .input-td {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .text-td {
+            height: 160px;
+        }
+
+        .button-div-1 {
+            margin-top: 20px;
+        }
+
+        .section-title-line-1::after {
+            left: 0;
+            width: 100%;
+        }
+
+        .section-title-line-2::after {
+            right: 0;
+            width: 100%;
+        }
+
+        .confirm-button,
+        .submit-button {
+            padding: 12px 24px 14px;
+            font-size: 16px;
+            letter-spacing: 2px;
+        }
+
+        .confirm-preview {
+            inset: 0;
+            top: 0;
+            left: 0;
+            transform: none;
+            width: 100vw;
+            height: 100dvh;
+            border: none;
+            border-radius: 0;
+            padding: calc(18px + env(safe-area-inset-top)) 16px calc(18px + env(safe-area-inset-bottom));
+        }
+
+        .preview-header {
+            margin-bottom: 28px;
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 1;
+            padding-bottom: 14px;
+        }
+
+        .preview-header::after {
+            width: 100%;
+            left: 0;
+        }
+
+        .preview-header h1 {
+            font-size: 30px;
+            letter-spacing: 4px;
+        }
+
+        #close-preview {
+            width: 28px;
+            height: 28px;
+        }
+
+        .preview-body {
+            flex-direction: column;
+            gap: 18px;
+            overflow-y: auto;
+            padding-bottom: 8px;
+        }
+
+        .preview-item-left,
+        .preview-item-right {
+            width: 100%;
+        }
+
+        .preview-item-left {
+            gap: 14px;
+        }
+
+        .preview-item-left span {
+            flex-direction: column;
+            gap: 4px;
+            padding: 10px 0px;
+        }
+
+        .preview-item-left h2,
+        .preview-item-left p {
+            width: 100%;
+        }
+
+        .preview-item-title {
+            font-size: 16px;
+            letter-spacing: 2px;
+        }
+
+        .preview-item-content {
+            font-size: 14px !important;
+            letter-spacing: 1.4px !important;
+        }
+
+        .preview-item-right h2 {
+            margin-bottom: 12px;
+        }
+
+        .form-table tr:nth-of-type(5) .input-td span:nth-last-child(1) {
+            grid-column: span 2;
+        }
+        .preview-message-container {
+            min-height: 120px;
+        }
+
+        .preview-message-container::after {
+            right: 22px;
+            bottom: 104px;
+        }
+
+        .button-div-2 {
+            margin-top: 20px;
+            justify-content: center;
+            padding-bottom: calc(4px + env(safe-area-inset-bottom));
+        }
+    }
+
+    @media (max-width: 428px) {
+        .section-title h1 {
+            font-size: 46px;
+            letter-spacing: 4px;
+            padding-right: 18px;
+        }
+
+        .contact-description {
+            font-size: 14px;
+            letter-spacing: 1.4px;
+            line-height: 1.75;
+        }
+
+        .form p,
+        .input-td label,
+        #require {
+            font-size: 13px;
+            letter-spacing: 1px;
+        }
+
+        .form-table tr {
+            margin: 16px 0;
+        }
+
+        .input-td span {
+            width: 100%;
+        }
+
+        .input-td span label {
+            padding: 10px 12px;
+            font-size: 12px;
+            letter-spacing: 0.8px;
+        }
+
+        .form-table tr:nth-of-type(5) .input-td,
+        .form-table tr:nth-of-type(7) .input-td {
+            gap: 8px;
+        }
+
+        .input-td label {
+            white-space: nowrap;
+        }
+
+        .text-td {
+            height: 140px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        textarea {
+            padding: 8px 10px;
+        }
+
+        input[name="institution"]::placeholder,
+        textarea::placeholder {
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        .section-title-line-1,
+        .section-title-line-2 {
+            width: 86%;
+        }
+
+        .confirm-button {
+            margin: 30px;
+        }
+
+        .confirm-preview {
+            padding: calc(16px + env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom));
+        }
+
+        .preview-header {
+            margin-bottom: 20px;
+        }
+
+        .preview-header h1 {
+            font-size: 24px;
+            letter-spacing: 3px;
+        }
+
+        .preview-item-title {
+            font-size: 14px;
+            letter-spacing: 1.5px;
+        }
+
+        .preview-item-content {
+            font-size: 12px !important;
+            letter-spacing: 1px !important;
+        }
+
+        .preview-message-container {
+            min-height: 100px;
+            padding: 4px 8px;
+        }
+
+        .confirm-button,
+        .submit-button {
+            max-width: 260px;
+        }
+    }
 </style>
