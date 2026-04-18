@@ -131,6 +131,23 @@ import equipment5e from '../../public/images/temp.png';
                             </a>
                         </span>
                     </td>
+                    <td rowspan="6" id="map-td-2">
+                        <span>
+                            <div class="map" id="map">
+                                <gmp-map
+                                    center="35.70598589668286, 139.71658843895162"
+                                    zoom="15"
+                                    map-id="DEMO_MAP_ID"
+                                    loading="lazy"
+                                >
+                                    <gmp-advanced-marker
+                                        position="35.70598589668286, 139.71658843895162"
+                                        title="早稲田大学 戸山キャンパス 学生会館E224"
+                                    ></gmp-advanced-marker>
+                                </gmp-map>
+                            </div>
+                        </span>
+                    </td>
                 </tr>
                 <tr>
                     <th scope="row">連絡先</th>
@@ -555,9 +572,12 @@ import equipment5e from '../../public/images/temp.png';
         margin: 0 30px;
     }
 
-
     #map-td {
         padding: 0;
+    }
+
+    #map-td-2 {
+        display: none;
     }
 
     #map-td span{
@@ -1136,5 +1156,194 @@ import equipment5e from '../../public/images/temp.png';
         line-height: normal;
         letter-spacing: 3px;
         white-space: pre-wrap;
+    }
+
+    @media (max-width: 768px) {
+        .menu {
+            top: 150px;
+        }
+
+        .section-title {
+            margin-bottom: 35px;
+        }
+
+        .section-title h1 {
+            font-size: 60px;
+            letter-spacing: 5px;
+            padding-right: 30px;
+        }
+
+        .explanation-about-us {
+            margin-bottom: 80px;
+        }
+
+        .explanation-about-us p {
+            font-size: 16px;
+            letter-spacing: 1.8px;
+            line-height: 1.8;
+        }
+
+        .contents-title {
+            margin-bottom: 12px;
+        }
+
+        .contents-title h1 {
+            font-size: 42px;
+            letter-spacing: 4px;
+        }
+
+        .information table {
+            font-size: 14px;
+            table-layout: fixed;
+            border-bottom: 1px solid #000;
+        }
+
+        .information caption {
+            text-align: left;
+            margin-top: 8px;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        .information tr {
+            display: grid;
+            grid-template-columns: 78px 1fr;
+            align-items: start;
+        }
+
+        .information th,
+        .information td {
+            padding: 10px 8px;
+            font-size: 13px;
+            letter-spacing: 1.2px;
+        }
+
+        .information th {
+            font-size: 13px;
+            padding: 10px 8px;
+        }
+
+        .address-span {
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .address-text {
+            line-height: 1.6;
+        }
+
+        .link-button {
+            width: 32px;
+            height: 32px;
+            padding: 8px;
+            margin-left: 0;
+            flex-shrink: 0;
+        }
+
+        .link-button img {
+            width: 14px;
+            height: 14px;
+        }
+
+        .separator {
+            margin: 0 8px;
+        }
+
+        .map-row {
+            align-items: start;
+        }
+
+        #map-td {
+            display: none;
+        }
+
+        #map-td-2 {
+            display: block;
+        }
+
+        #map {
+            max-width: none;
+            height: 220px;
+            margin: 0;
+        }
+
+        .annual-schedule {
+            margin-top: 90px;
+        }
+
+        .tab {
+            display: flex;
+            flex-wrap: wrap;
+            width: 100%;
+            position: relative;
+        }
+
+        .tab > label {
+            flex: 1 1;
+            min-width: 70px;
+            padding: 0.7em 0.7em 0.5em;
+            font-size: 11px;
+            letter-spacing: 1.6px;
+        }
+
+        .tab > div {
+            width: 100%;
+            padding: 20px;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 428px) {
+        .section-title h1 {
+            font-size: 48px;
+            letter-spacing: 7.2px;
+            padding-right: 39px;
+        }
+
+        .contents-title h1 {
+            font-size: 38px;
+            letter-spacing: 3px;
+        }
+
+        .information tr {
+            grid-template-columns: 60px 1fr;
+        }
+
+        .information th,
+        .information td {
+            font-size: 12px;
+            letter-spacing: 1px;
+            padding: 8px 6px;
+        }
+
+        .information th {
+            font-size: 12px;
+        }
+
+        #map {
+            height: 160px;
+            background: #d0d0d0;
+        }
+
+        .tab > label {
+            font-size: 9px;
+            letter-spacing: 1.8px;
+        }
+
+        .tab > label:nth-child(10) {
+            padding: 0.7em 0.7em 0.5em;
+        }
+
+        .tab > div {
+            padding: 12px;
+        }
+
+        .explanation-about-us p {
+            font-size: 14px;
+            letter-spacing: 1.4px;
+            line-height: 1.75;
+        }
     }
 </style>

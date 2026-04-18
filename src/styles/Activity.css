@@ -93,14 +93,21 @@
 }
 
 .tab {
-    display: flex;
-    flex-wrap: wrap;
+    display: block;
+    width: stretch;
+    max-width: 1200px;
+    margin-bottom: 111px;
     position: relative;
 }
 
-.tab > label {
+.tab-header-scroll {
+    display: flex;
+    flex-wrap: wrap;
+    overflow: visible;
+}
+
+.tab-label {
     flex: 1 1;
-    order: -1;
     min-width: 70px;
     padding: .7em 1em .5em;
     border-bottom: 1px solid #000000;
@@ -116,11 +123,11 @@
     cursor: pointer;
 }
 
-.tab > label:hover {
+.tab-label:hover {
     color: #0db49b;
 }
 
-.tab > input {
+.tab-input {
     display: none;
 }
 
@@ -132,7 +139,7 @@
     position: relative;
 }
 
-.tab > input:checked + label {
+.tab-input:checked + .tab-label {
     background-color: #fff;
     border-color: #000000;
     border-style: solid;
@@ -141,12 +148,12 @@
     color: #0db49b;
 }
 
-.tab > input:checked + label + .tab-panel {
+.tab-panel.is-active {
     display: block;
     background-color: #fff;
 }
 
-.tab > input:checked + label + .tab-panel::after {
+.tab-panel.is-active::after {
     content: '';
     display: block;
     width: 100%;
@@ -258,7 +265,7 @@
     position: relative;
 }
 
-.Activity-item:not(:nth-child(10n),:nth-last-child(1))::after{
+.Activity-item:not(:last-child)::after{
     content: '';
     display: block;
     width: 30%;
@@ -380,4 +387,273 @@
     width: 20px;
     height: 20px;
     vertical-align: top;
+}
+
+@media (max-width: 1024px) {
+    .section-title h1 {
+        font-size: 60px;
+        letter-spacing: 9px;
+        padding-right: 42px;
+    }
+
+    .tab-label {
+        font-size: 13px;
+        letter-spacing: 1.8px;
+    }
+
+    .Activity-item {
+        padding: 20px 30px;
+    }
+
+    .Activity-date {
+        margin-right: 28px;
+        font-size: 17px;
+    }
+
+    .Activity-info .Activity-tag {
+        margin-right: 14px;
+        font-size: 13px;
+    }
+
+    .Activity-title {
+        font-size: 22px;
+        letter-spacing: 2.4px;
+    }
+}
+
+@media (max-width: 768px) {
+    .section-title {
+        margin-bottom: 35px;
+    }
+
+    .page-top-nav {
+        width: 30px;
+        height: 30px;
+    }
+
+    .page-top-nav svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .section-title h1 {
+        font-size: 60px;
+        letter-spacing: 5px;
+        padding-right: 30px;
+    }
+
+    .tab-header-scroll {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .tab-header-scroll::-webkit-scrollbar {
+        display: none;
+        padding-bottom: 2px;
+        height: 3px;
+    }
+
+    .tab-header-scroll::-webkit-scrollbar-thumb {
+        background: #ededed;
+        border-radius: 2px;
+    }
+
+    .tab-header-scroll::-webkit-scrollbar-track {
+        background: #eaeaea;
+    }
+
+    .tab-label {
+        flex: 0 0 auto;
+        min-width: 70px;
+        font-size: 11px;
+        letter-spacing: 1.5px;
+        padding: 0.75em 0.8em 0.55em;
+    }
+
+    .tab-panel {
+        padding: 0.8em 0;
+    }
+
+    .panel-top {
+        margin-bottom: 0px;
+    }
+
+    .panel-bottom {
+        display: flex;
+        justify-content: center;
+        margin-top: 16px;
+    }
+
+    .tab-panel-number {
+        gap: 8px;
+        padding: 0;
+    }
+
+    .tab-panel-number p,
+    .tab-panel-number a,
+    .tab-panel-number input {
+        font-size: 15px;
+        letter-spacing: 1.6px;
+    }
+
+    .tab-panel-number input {
+        width: 32px;
+    }
+
+    .tab-posts-numbers {
+        gap: 8px;
+        margin: 0 8px;
+    }
+
+    .Activity-item {
+        padding: 20px;
+    }
+
+    .Activity-item:not(:last-child)::after {
+        width: 30%;
+        left: 35%;
+    }
+
+    .Activity-item a {
+        flex-direction: row;
+        align-items: center;
+        gap: 0;
+    }
+
+    .Activity-date {
+        margin-right: 25px;
+        font-size: 12px;
+        letter-spacing: 1.8px;
+    }
+
+    .Activity-info .Activity-tag {
+        margin-right: 10px;
+        font-size: 11px;
+        letter-spacing: 1.65px;
+    }
+
+    .Activity-title {
+        margin: 5px 0;
+        font-size: 18px;
+        letter-spacing: 1.95px;
+    }
+
+    .Activity-excerpt-container {
+        gap: 8px;
+    }
+
+    .Activity-excerpt-container svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .Activity-excerpt {
+        font-size: 12px;
+        letter-spacing: 0.4px;
+    }
+
+    .link-button {
+        width: 40px;
+        height: 40px;
+        margin-left: 12px;
+        padding: 10px;
+    }
+
+    .Activity-empty {
+        padding: 16px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 428px) {
+    .section-title h1 {
+        font-size: 48px;
+        letter-spacing: 7.2px;
+        padding-right: 20px;
+    }
+
+    .tab-label {
+        flex: 0 0 auto;
+        min-width: 70px;
+        font-size: 9px;
+        letter-spacing: 1.8px;
+        padding: 0.7em 0.7em 0.5em;
+    }
+
+    .tab-panel-number p,
+    .tab-panel-number a,
+    .tab-panel-number input {
+        font-size: 13px;
+        letter-spacing: 1.2px;
+    }
+
+    .tab-posts-navigation {
+        width: 18px;
+        height: 18px;
+    }
+
+    .tab-posts-double-navigation {
+        width: 22px;
+        height: 18px;
+    }
+
+    .tab-posts-navigation img {
+        width: 18px;
+        height: 18px;
+    }
+
+    .tab-posts-double-navigation img {
+        width: 22px;
+        height: 18px;
+    }
+
+    .tab-posts-numbers {
+        gap: 6px;
+        margin: 0 4px;
+    }
+
+    .Activity-item {
+        padding: 20px;
+    }
+
+    .Activity-date {
+        font-size: 12px;
+        letter-spacing: 1.8px;
+        margin-right: 25px;
+    }
+
+    .Activity-info .Activity-tag {
+        font-size: 11px;
+        letter-spacing: 1.65px;
+        margin-right: 10px;
+    }
+
+    .Activity-title {
+        font-size: 18px;
+        letter-spacing: 1.95px;
+        margin: 5px 0px;
+    }
+
+    .Activity-excerpt {
+        font-size: 12px;
+        line-height: 1.7;
+    }
+
+    .link-button {
+        width: 34px;
+        height: 34px;
+        padding: 8px;
+        margin-left: 8px;
+    }
+
+    .link-button img {
+        width: 16px;
+        height: 16px;
+    }
+
+    .Activity-empty {
+        font-size: 13px;
+    }
 }
