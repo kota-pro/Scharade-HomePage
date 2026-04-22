@@ -124,14 +124,17 @@ import equipment5e from '../../public/images/temp.png';
                     <td>
                         <span class="address-span">
                             <div class="address-text">
-                                〒162-0052<br>東京都新宿区戸山1-24-1&nbsp;&nbsp;早稲田大学学生会館E224
+                                <p>〒162-0052<br><span>東京都新宿区戸山1-24-1</span>&emsp;<span>早稲田大学学生会館E224</span></p>
                             </div>
                             <a href="https://maps.app.goo.gl/WGv8zg5tN3dyiwy8A" class="link-button" target="_blank">
                                 <img src="/icons/link.svg" alt="Link Icon" />
                             </a>
                         </span>
                     </td>
-                    <td rowspan="6" id="map-td-2">
+                </tr>
+                <tr>
+                    <th scope="row"></th>
+                    <td id="map-td-2">
                         <span>
                             <div class="map" id="map">
                                 <gmp-map
@@ -155,7 +158,7 @@ import equipment5e from '../../public/images/temp.png';
                 </tr>
                 <tr>
                     <th scope="row">SNS</th>
-                    <td colspan="2">X（旧twitter）： <a class="href-anchor" href="https://twitter.com/SCHARADE_JP" target="_blank">@SCHARADE_JP</a><span class="separator">/</span>Instagram ： <a class="href-anchor" href="https://www.instagram.com/SCHARADE_JP" target="_blank">@SCHARADE_JP</a></td>
+                    <td colspan="2"><span>X（旧twitter）： <a class="href-anchor" href="https://twitter.com/SCHARADE_JP" target="_blank">@SCHARADE_JP</a></span> &ensp;<span><span class="separator">/</span>Instagram ： <a class="href-anchor" href="https://www.instagram.com/SCHARADE_JP" target="_blank">@SCHARADE_JP</a></span></td>
                 </tr>
             </tbody>
         </table>
@@ -559,6 +562,14 @@ import equipment5e from '../../public/images/temp.png';
         font-weight: 400;
     }
 
+    .information tr:nth-child(6) {
+        display: none;
+    }
+
+    .information tr:nth-child(8)  span {
+        white-space: nowrap;
+    }
+
     .information tr:last-child {
         border-bottom: 1px solid #000;
     }
@@ -596,6 +607,10 @@ import equipment5e from '../../public/images/temp.png';
         display: flex;
         align-items: center;
         justify-content: space-between;
+    }
+
+    .address-text > p > span {
+        white-space: nowrap;
     }
 
     .link-button{
@@ -1195,7 +1210,6 @@ import equipment5e from '../../public/images/temp.png';
         .information table {
             font-size: 14px;
             table-layout: fixed;
-            border-bottom: 1px solid #000;
         }
 
         .information caption {
@@ -1224,7 +1238,6 @@ import equipment5e from '../../public/images/temp.png';
         }
 
         .address-span {
-            align-items: flex-start;
             gap: 8px;
         }
 
@@ -1249,10 +1262,6 @@ import equipment5e from '../../public/images/temp.png';
             margin: 0 8px;
         }
 
-        .map-row {
-            align-items: start;
-        }
-
         #map-td {
             display: none;
         }
@@ -1261,8 +1270,17 @@ import equipment5e from '../../public/images/temp.png';
             display: block;
         }
 
+        .information  tr:nth-child(6) {
+            display: grid;
+        }
+
+        .information tr:nth-child(6) th,
+        .information tr:nth-child(6) td {
+            border-top: none;
+        }
+
         #map {
-            max-width: none;
+            width: stretch;
             height: 220px;
             margin: 0;
         }
@@ -1292,6 +1310,20 @@ import equipment5e from '../../public/images/temp.png';
             gap: 10px;
             flex-wrap: wrap;
             justify-content: center;
+        }
+
+        .faqs-container {
+            padding: 0;
+        }
+
+        .faq h1 {
+            color: #CFCFCF;
+            font-family: Didot;
+            font-size: 64px;
+            font-style: normal;
+            font-weight: 400;
+            line-height: normal;
+            letter-spacing: 9.6px;
         }
     }
 
