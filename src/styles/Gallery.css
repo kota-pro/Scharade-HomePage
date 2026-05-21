@@ -344,3 +344,49 @@ details[open] .arrow-icon {
   padding: 2px 8px;
   border-radius: 2px;
 }
+
+@media (max-width: 768px) {
+  .menu {
+    top: 150px;
+  }
+
+  .section-title {
+    margin-bottom: 35px;
+  }
+
+  .section-title h1 {
+    font-size: 60px;
+    letter-spacing: 5px;
+    padding-right: 30px;
+  }
+
+  .page-top-nav {
+    width: 30px;
+    height: 30px;
+  }
+
+  .page-top-nav svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .explanation-area {
+    margin-bottom: 50px;
+  }
+
+  .explanation-area p {
+    font-size: 18px;
+    letter-spacing: 2.5px;
+  }
+
+  .gallery-grid {
+    grid-template-columns: repeat(3, 1fr);
+    padding-left: 20px;
+    gap: 10px;
+  }
+
+  .image-title {
+    font-size: 12px;
+    padding: 1px 6px;
+  }
+}
