@@ -217,7 +217,7 @@ import equipment5e from '../../public/images/temp.png';
                 <div class="card-cover" id="card-oct" tabindex="0" style={`background-image: url(${oct.src});`}>
                     <div class="card-contents">
                         <h2> 10月 </h2>
-                        <h1> ハロウィン パーティ </h1>
+                        <h1> ハロウィン<br>パーティ </h1>
                         <div class="card-textbox"><p> 部室開放や食事会、撮影会を行います。参加費無料なので雰囲気を知りたい方や同輩や先輩の友達作りなどに最適です！ </p></div>
                     </div>
                 </div>
@@ -273,6 +273,10 @@ import equipment5e from '../../public/images/temp.png';
                     </div>
                 </div>
             </div>
+        </div>
+        <div class="swipe">
+            <p>Swipe!!</p>
+            <img src="/icons/swipearrow.svg" alt="Swipe Icon">
         </div>
     </div>
     <div class="Equipments">
@@ -677,8 +681,8 @@ import equipment5e from '../../public/images/temp.png';
         background-color: #fff;
         position: relative;
         align-items: center;
-        justify-content: space-between;
-        padding: 50px 100px;
+        justify-content: space-around;
+        padding: 50px 0px;
     }
 
     #tab1:checked ~ label[for="tab1"],
@@ -821,8 +825,8 @@ import equipment5e from '../../public/images/temp.png';
     }
 
     #card-apr-may{
-        width: 655px;
-        height: 414px;
+        width: calc(655/1440*100vw);
+        aspect-ratio: 655/414;
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
@@ -842,8 +846,8 @@ import equipment5e from '../../public/images/temp.png';
     #card-jan,
     #card-feb,
     #card-mar {
-        width: 290px;
-        height: 414px;
+        width: calc(290/1440*100vw);
+        aspect-ratio: 138/197;
         background-size: cover;
         background-repeat: no-repeat;
     }
@@ -909,6 +913,16 @@ import equipment5e from '../../public/images/temp.png';
         font-weight: 400;
         line-height: normal;
         letter-spacing: 3.6px;
+    }
+
+    .swipe {
+        width: 100%;
+        display: none;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 10px;
+        margin-top: 20px;
     }
 
     .Equipments {
@@ -1413,6 +1427,25 @@ import equipment5e from '../../public/images/temp.png';
             -webkit-tap-highlight-color: rgba(0,0,0,0);
         }
 
+        #card-apr-may {
+            width: 655px;
+            height: 414px;
+        }
+
+        #card-jun,
+        #card-jul,
+        #card-aug,
+        #card-sep,
+        #card-oct,
+        #card-nov,
+        #card-dec,
+        #card-jan,
+        #card-feb,
+        #card-mar {
+            width: 290px;
+            height: 414px;
+        }
+
         .card-cover:focus::before,
         .card-cover:focus::after,
         .card-cover:focus h1,
@@ -1474,5 +1507,79 @@ import equipment5e from '../../public/images/temp.png';
             letter-spacing: 1.4px;
             line-height: 1.75;
         }
+
+        .swipe {
+            display: flex;
+        }
+
+        .swipe p {
+            color: #000;
+            font-family: "Grandiflora One";
+            font-size: 20px;
+            font-style: normal;
+            font-weight: 400;
+            line-height: normal;
+            letter-spacing: 3px;
+        }
+
+
+        .equipments-list {
+            height: 350px;
+            padding: 0px;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .equipment-item {
+            position: relative;
+            justify-content: flex-start;
+
+        }
+
+        .equipment-description {
+            position: absolute;
+            top: 0;
+            right: 0;
+            margin-left: 0;
+            width: 80%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: start;
+            align-items: flex-end;
+            gap: 20px;
+        }
+
+        .equipment-description h1 {
+            font-size: 64px;
+            letter-spacing: 9.6px;
+            position: absolute;
+            right: -10px;
+        }
+
+        .equipment-description h2 {
+            font-size: 32px;
+            letter-spacing: 4.8px;
+            margin-top: 70px;
+        }
+
+        .equipment-description p {
+            height: auto;
+            max-width: 300px;
+            text-align: right;
+            font-size: 14px;
+            letter-spacing: 1.4px;
+            line-height: 1.75;
+        }
+
+        .equipment-image {
+            width: 280px;
+            height: 350px;
+        }
+        .image-container {
+            width: 280px;
+            height: 100%;
+        }
+
     }
 </style>

@@ -254,6 +254,39 @@ details[open] .arrow-icon {
 }
 
 @media (max-width: 768px) {
+    .menu {
+        top: 150px;
+    }
+
+    .section-title {
+        margin-bottom: 35px;
+    }
+
+    .section-title h1 {
+        font-size: 60px;
+        letter-spacing: 5px;
+        padding-right: 30px;
+    }
+
+    .page-top-nav {
+        width: 30px;
+        height: 30px;
+    }
+
+    .page-top-nav svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .explanation-area {
+        margin-bottom: 50px;
+    }
+
+    .explanation-area p {
+        font-size: 18px;
+        letter-spacing: 2.5px;
+    }
+
     .portfolio-container {
         padding: 0 20px 60px;
     }
@@ -267,10 +300,5 @@ details[open] .arrow-icon {
     .member-grid {
         grid-template-columns: repeat(2, 1fr); 
         padding-left: 0;
-    }
-
-    .section-title h1 {
-        font-size: 40px;
-        margin-right: 20px;
     }
 }
