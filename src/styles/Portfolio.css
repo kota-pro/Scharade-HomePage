@@ -248,9 +248,6 @@ details[open] .arrow-icon {
     .member-grid {
         grid-template-columns: repeat(3, 1fr); 
     }
-    .section-title h1 {
-        font-size: 60px;
-    }
 }
 
 @media (max-width: 768px) {

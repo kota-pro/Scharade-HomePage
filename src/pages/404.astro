@@ -20,32 +20,7 @@ import Layout from '../layouts/Layout.astro';
         </div>
     </div>
 
-    <script>
-        document.getElementById('searchbutton').addEventListener('click', function() {
-            var input = document.getElementById('searchbox').value.toLowerCase();
-            if (!input) return;
-
-            var elements = document.querySelectorAll('p, td, th, h3');
-            var found = false;
-
-            elements.forEach(element => {
-                    if (element.querySelector("span.search-highlight")) {
-                        element.innerHTML = element.textContent;
-                    }
-
-                var text = element.textContent.toLowerCase();
-                var index = text.indexOf(input);
-
-                    if (index >= 0 && !found) {
-                        found = true;
-                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-
-                const regex = new RegExp(`(${input})`, 'gi');
-                element.innerHTML = element.innerHTML.replace(regex, '<span style="background-color: #ffe46f;">$1</span>');
-            });
-        });
-    </script>
+    
 </Fragment>
 </Layout>
 
@@ -55,9 +30,9 @@ import Layout from '../layouts/Layout.astro';
         align-items: center;
         justify-content: center;
         height: calc(100vh - 120px);
-        background: url('../src/assets/404page/Group90.svg') no-repeat;
-        background-size: calc(100vw - 460px);
-        background-position: center 45px;
+        background: url('../src/assets/404page/Oh404.svg') no-repeat;
+        background-size: 70vw;
+        background-position: center 10px;
     }
 
     .errormessage {
@@ -97,7 +72,7 @@ import Layout from '../layouts/Layout.astro';
         left: 0px;
         width: 100%;
         height: 100%;
-        background-image: url('../assets/404page/Rectangle36.svg');
+        background-image: url('../assets/404page/sbox.svg');
         background-size: cover;
         background-repeat: no-repeat;
         z-index: 0 !important;
@@ -129,6 +104,54 @@ import Layout from '../layouts/Layout.astro';
 
     .sbox-inner button:active {
         background: rgba(0, 0, 0, 0.1);
+    }
+
+    @media (max-width: 900px) {
+        .Oh404 {
+            background-size: calc(100vw - 60px);
+            height: 80vw;
+            background-position: center 20px;
+            background-image: url('../assets/404page/Oh404Mobile.svg') !important;
+        }
+
+        .sbox-inner {
+            width: calc(100vw - 60px);
+            max-width: 780px;
+        }
+
+        .sbox-inner::before {
+            background-size: 100% 100%;
+        }
+
+        .sbox-inner input {
+            padding: 0px 0px 0px 15px;
+            font-size: 12px;
+        }
+
+        .sbox-inner button {
+            width: auto;
+            height: 83%;
+            aspect-ratio: 1 / 1;
+        }
+
+        .sbox-inner input::placeholder {
+            font-size: 12px;
+        }
+
+        .errormessage {
+            font-size: 12px;
+            letter-spacing: 1.8px;
+            text-align: left;
+            padding: 0px 30px;
+            margin-top: 20px;
+            margin-bottom: 50px;
+        }
+    }
+
+    @media (max-width: 550px) {
+        .sbox-inner::before {
+            background-image: url('../assets/404page/sboxMobile.svg');
+        }
     }
 </style>
 
