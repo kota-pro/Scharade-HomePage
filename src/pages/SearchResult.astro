@@ -1,0 +1,342 @@
+---
+import Layout from "../layouts/Layout.astro";
+import "../styles/UA+reset.css";
+import { microcmsClient, getPortfolios } from "../lib/microcms";
+import { getAlbums } from "../lib/lightroom";
+import type { Blog } from "../types/microcms";
+import { linkToPost } from "../utils/linkToPost";
+
+const rawPages = import.meta.glob("./**/*.astro", { as: "raw", eager: true });
+
+const stripFrontmatter = (source: string) =>
+  source.replace(/^---[\s\S]*?---/, "");
+
+const stripTags = (source: string) =>
+  source
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const normalizeContent = (parts: Array<string | null | undefined>) =>
+  parts
+    .filter((part): part is string => Boolean(part && part.trim()))
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const buildExcerpt = (content: string) =>
+  content.length > 180 ? `${content.slice(0, 180)}...` : content;
+
+type SearchEntry = {
+  title: string;
+  url: string;
+  content: string;
+  excerpt: string;
+};
+
+const pathToRoute = (filePath: string) => {
+  const normalized = filePath.replace(/^\.\/?/, "").replace(/\\/g, "/");
+  if (normalized === "index.astro") return "/";
+  if (normalized.endsWith("/index.astro")) {
+    return `/${normalized.slice(0, -"/index.astro".length)}`;
+  }
+  return `/${normalized.replace(/\.astro$/, "")}`;
+};
+
+const getFallbackTitle = (route: string) => {
+  if (route === "/") return "Home";
+  const lastSegment = route.split("/").filter(Boolean).pop() ?? route;
+  return lastSegment.replace(/[-_]/g, " ");
+};
+
+const getTitle = (source: string, fallback: string) => {
+  const match = source.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  if (!match) return fallback;
+  const text = stripTags(match[1]);
+  return text || fallback;
+};
+
+const staticIndex: SearchEntry[] = Object.entries(rawPages)
+  .filter(
+    ([path]) =>
+      !path.includes("/SearchResult.astro") &&
+      !path.includes("/404.astro") &&
+      !path.includes("/[")
+  )
+  .map(([path, raw]) => {
+    const route = pathToRoute(path);
+    const body = stripTags(stripFrontmatter(raw));
+    const title = getTitle(raw, getFallbackTitle(route));
+    const excerpt = buildExcerpt(body);
+    return { title, url: route, content: body, excerpt };
+  })
+  .filter((entry) => entry.content);
+
+let portfolioEntries: SearchEntry[] = [];
+try {
+  const portfolioResponse = await getPortfolios({
+    fields: [
+      "id",
+      "name",
+      "self_introduction",
+      "hashtags",
+      "camera",
+      "grade",
+      "generation",
+    ],
+    limit: 100,
+  });
+
+  portfolioEntries = portfolioResponse.contents
+    .map((portfolio) => {
+      const content = normalizeContent([
+        portfolio.name,
+        portfolio.self_introduction,
+        portfolio.camera,
+        portfolio.grade,
+        portfolio.generation ? `${portfolio.generation}期生` : "",
+        ...(portfolio.hashtags ?? []).map((tag) => `#${tag}`),
+      ]);
+      return {
+        title: `Portfolio | ${portfolio.name}`,
+        url: `/Portfolio/${portfolio.id}`,
+        content,
+        excerpt: buildExcerpt(content),
+      };
+    })
+    .filter((entry) => entry.content);
+} catch (error) {
+  console.error("[SearchResult] Failed to load portfolio entries:", error);
+}
+
+let blogEntries: SearchEntry[] = [];
+try {
+  const { contents: posts } = await microcmsClient.getList<Blog>({
+    endpoint: "blog",
+    queries: {
+      limit: 100,
+      orders: "-publishedAt",
+      depth: 1,
+    },
+  });
+
+  blogEntries = posts
+    .map((post) => {
+      const bodyText = stripTags(post.body ?? "");
+      const excerptText = stripTags(post.excerpt ?? "");
+      const content = normalizeContent([
+        post.title,
+        excerptText,
+        bodyText,
+        ...(post.tags ?? []).map((tag) => `#${tag}`),
+      ]);
+      const excerpt = excerptText || buildExcerpt(bodyText || content);
+      return {
+        title: post.title,
+        url: linkToPost(post.slug),
+        content,
+        excerpt,
+      };
+    })
+    .filter((entry) => entry.content);
+} catch (error) {
+  console.error("[SearchResult] Failed to load blog entries:", error);
+}
+
+let galleryEntries: SearchEntry[] = [];
+try {
+  const albums = await getAlbums();
+  galleryEntries = albums
+    .map((album) => {
+      const year = album.created
+        ? new Date(album.created).getFullYear()
+        : null;
+      const title = album.payload?.name
+        ? `Gallery | ${album.payload.name}`
+        : "Gallery";
+      const content = normalizeContent([
+        album.payload?.name,
+        year ? `${year}` : null,
+        "Gallery",
+      ]);
+      return {
+        title,
+        url: `/Gallery/${album.id}`,
+        content,
+        excerpt: buildExcerpt(content),
+      };
+    })
+    .filter((entry) => entry.content);
+} catch (error) {
+  console.error("[SearchResult] Failed to load gallery entries:", error);
+}
+
+const searchIndex = [
+  ...staticIndex,
+  ...portfolioEntries,
+  ...galleryEntries,
+  ...blogEntries,
+].filter((entry) => entry.content);
+
+---
+
+<Layout>
+  <Fragment slot="main-slot">
+    <div class="section-title">
+      <h1>Search</h1>
+      <div class="section-title-line"></div>
+    </div>
+  </Fragment>
+  <Fragment slot="menu-slot">
+    <div class="menu-contents-inner">
+      <a href="javascript:history.back()" class="page-top-nav" aria-label="Back">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+        >
+          <path
+            fill="currentColor"
+            d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"
+          ></path>
+        </svg>
+      </a>
+    </div>
+  </Fragment>
+  <Fragment slot="body-slot">
+    <div class="search-results">
+      <p id="search-summary" class="search-summary"></p>
+      <ul id="search-list" class="search-list"></ul>
+    </div>
+  </Fragment>
+</Layout>
+
+<script define:vars={{ SEARCH_INDEX: searchIndex }}>
+  (() => {
+    const params = new URLSearchParams(window.location.search);
+    const rawQuery = params.get("q") || "";
+    const query = rawQuery.trim();
+    const summaryEl = document.getElementById("search-summary");
+    const listEl = document.getElementById("search-list");
+    if (!summaryEl || !listEl) return;
+
+    if (!query) {
+      summaryEl.textContent = "検索ワードを入力してください。";
+      return;
+    }
+
+    const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
+    const results = SEARCH_INDEX.filter((item) => {
+      const haystack = `${item.title} ${item.content}`.toLowerCase();
+      return tokens.every((token) => haystack.includes(token));
+    });
+
+    summaryEl.textContent = `「${query}」の検索結果：${results.length}件`;
+
+    if (results.length === 0) {
+      const li = document.createElement("li");
+      li.className = "search-empty";
+      li.textContent = "該当するページが見つかりませんでした。";
+      listEl.appendChild(li);
+      return;
+    }
+
+    results.forEach((item) => {
+      const li = document.createElement("li");
+      li.className = "search-item";
+
+      const link = document.createElement("a");
+      link.href = item.url;
+      link.textContent = item.title;
+      li.appendChild(link);
+
+      if (item.excerpt) {
+        const excerpt = document.createElement("p");
+        excerpt.className = "search-excerpt";
+        excerpt.textContent = item.excerpt;
+        li.appendChild(excerpt);
+      }
+
+      listEl.appendChild(li);
+    });
+  })();
+</script>
+
+<style>
+  .section-title {
+    display: flex;
+    align-items: center;
+    margin-bottom: 55px;
+  }
+  .section-title h1 {
+    font-family: "Didot", serif;
+    font-size: 80px;
+    letter-spacing: 14.4px;
+    padding-right: 50px;
+    margin: 0;
+  }
+  .section-title-line {
+    flex-grow: 1;
+    height: 1px;
+    background: #000;
+  }
+
+  .search-results {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .search-summary {
+    margin: 0;
+    font-family: "Zen Old Mincho", serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+  }
+  .search-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .search-item {
+    border-bottom: 1px solid #000;
+    padding-bottom: 16px;
+  }
+  .search-item a {
+    text-decoration: none;
+    color: #000;
+    font-family: "Zen Old Mincho", serif;
+    font-size: 24px;
+    letter-spacing: 2px;
+  }
+  .search-excerpt {
+    margin: 8px 0 0;
+    color: #444;
+    font-family: "Zen Kaku Gothic New", sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .search-empty {
+    color: #444;
+    font-family: "Zen Kaku Gothic New", sans-serif;
+    font-size: 14px;
+  }
+
+  @media (max-width: 768px) {
+    .section-title h1 {
+      font-size: 40px;
+    }
+    .search-item a {
+      font-size: 18px;
+    }
+  }
+</style>

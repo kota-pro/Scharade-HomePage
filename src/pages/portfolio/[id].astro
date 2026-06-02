@@ -69,13 +69,8 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
                 ))
               }
             </div>
-            {portfolio.grade && (
-              <p class="profile-grade">
-                学年: {portfolio.grade}
-              </p>
-            )}
             <p class="camera-info">
-              {portfolio.camera || "Nikon Z5, Nikomat FT"}
+              使用機材：{portfolio.camera || "なし"}
             </p>
             <p class="self-introduction">
               {portfolio.self_introduction}
@@ -101,7 +96,7 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
               }
             </div>
           </div>
-          <div class="grade-badge">
+          <div class="icon">
             <div class="circle">
               <img
                 src={portfolio.icon
@@ -115,6 +110,11 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
                 set:html={genText.replace("期", "<br/>期")}
               />
             </div>
+            {portfolio.grade && (
+              <p class="profile-grade">
+                {portfolio.grade}
+              </p>
+            )}
           </div>
         </div>
       </section>
@@ -164,92 +164,6 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
 </Layout>
 
 <script>
-  const CONTAINER_WIDTH = 1200;
-  const TARGET_HEIGHT = 350;
-  const MIN_GAP = 30;
-
-  function layoutJustified() {
-    const container = document.querySelector(".picture-grid") as HTMLElement;
-    if (!container) return;
-
-    container.style.width = `${CONTAINER_WIDTH}px`;
-    container.style.margin = "0 auto";
-    container.style.display = "block";
-
-    const items = Array.from(
-      document.querySelectorAll(".photo-card"),
-    ) as HTMLElement[];
-    if (items.length === 0) return;
-
-    let currentIndex = 0;
-    const rows = [];
-
-    while (currentIndex < items.length) {
-      let bestCount = 1;
-      let minDiff = Infinity;
-
-      for (let n = 1; currentIndex + n <= items.length; n++) {
-        const rowItems = items.slice(currentIndex, currentIndex + n);
-        const totalAR = rowItems.reduce((sum, item) => {
-          const img = item.querySelector("img")!;
-          return sum + img.naturalWidth / img.naturalHeight;
-        }, 0);
-
-        const availableWidth = CONTAINER_WIDTH - (n - 1) * MIN_GAP;
-        const calculatedHeight = availableWidth / totalAR;
-        const diff = Math.abs(TARGET_HEIGHT - calculatedHeight);
-
-        if (diff < minDiff) {
-          minDiff = diff;
-          bestCount = n;
-        } else {
-          break;
-        }
-      }
-      rows.push(items.slice(currentIndex, currentIndex + bestCount));
-      currentIndex += bestCount;
-    }
-
-    if (rows.length > 1) {
-      const lastRow = rows[rows.length - 1];
-      const prevRow = rows[rows.length - 2];
-
-      const lastRowAR = lastRow.reduce((sum, item) => {
-        const img = item.querySelector("img")!;
-        return sum + img.naturalWidth / img.naturalHeight;
-      }, 0);
-
-      const lastRowHeight =
-        (CONTAINER_WIDTH - (lastRow.length - 1) * MIN_GAP) / lastRowAR;
-
-      if (lastRowHeight > TARGET_HEIGHT * 1.5 && prevRow.length > 1) {
-        const transferItem = prevRow.pop()!;
-        lastRow.unshift(transferItem);
-      }
-    }
-
-    rows.forEach((row) => {
-      const rowTotalAR = row.reduce((sum, item) => {
-        const img = item.querySelector("img")!;
-        return sum + img.naturalWidth / img.naturalHeight;
-      }, 0);
-
-      const rowHeight =
-        (CONTAINER_WIDTH - (row.length - 1) * MIN_GAP) / rowTotalAR;
-
-      row.forEach((item, idx) => {
-        const img = item.querySelector("img")!;
-        const ar = img.naturalWidth / img.naturalHeight;
-        item.style.width = `${rowHeight * ar}px`;
-        item.style.height = `${rowHeight}px`;
-        item.style.display = "inline-block";
-        item.style.verticalAlign = "top";
-        item.style.marginRight = idx === row.length - 1 ? "0" : `${MIN_GAP}px`;
-        item.style.marginBottom = `${MIN_GAP}px`;
-        item.style.opacity = "1";
-      });
-    });
-  }
 
   const modal = document.getElementById("image-modal");
   const modalImg = document.getElementById("modal-image") as HTMLImageElement;
@@ -272,50 +186,85 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
     document.body.style.overflow = "";
   });
 
-  window.addEventListener("load", layoutJustified);
-  window.addEventListener("resize", layoutJustified);
 </script>
 
 <style>
   .section-title {
     display: flex;
-    align-items: center;
+    flex-direction: row;
+    align-items: space-between;
+    justify-content: center;
     margin-bottom: 55px;
   }
+
   .section-title h1 {
-    font-family: "Didot", serif;
-    font-size: 80px;
+    color: #000;
+    font-family: "Didot";
+    font-size: 96px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
     letter-spacing: 14.4px;
-    padding-right: 50px;
-    margin: 0;
+    padding-right: 78px;
   }
+
   .section-title-line {
-    flex-grow: 1;
+    width: 100%;
+    position: relative;
+  }
+
+  .section-title-line::after {
+    content: '';
+    display: block;
+    width: 100%;
     height: 1px;
     background: #000;
+    position: absolute;
+    top: 50%;
+    right: 0;
   }
 
   .portfolio-detail-wrapper {
     width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
     padding: 0 20px;
   }
+
   .profile-grid {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
   }
-  .user-name {
-    font-size: 2.5rem;
-    margin-bottom: 10px;
-    font-family: "serif";
+
+  .profile-info {
+    max-width: calc(5/9 * 100vw);
   }
+  
+  .user-name {
+    margin-bottom: 20px;
+    color: #000;
+    font-family: "Zen Old Mincho";
+    font-size: calc(2/45 * 100vw);
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 9.6px;
+  }
+
+  .tags {
+    margin-bottom: 20px;
+  }
+
   .tag {
     margin-right: 15px;
-    color: #666;
-    font-size: 0.9rem;
+    color: #000;
+    font-family: "Zen Kurenaido";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
   }
+
   .social-link {
     text-decoration: underline;
     font-size: 0.9rem;
@@ -323,19 +272,64 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
     margin-right: 15px;
   }
 
-  .grade-badge .circle {
-    width: 170px;
-    height: 170px;
+  .icon {
+    position: relative;
+    height: stretch;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .circle {
+    width: calc(5/24 * 100vw);
+    height: calc(5/24 * 100vw);
+    max-width: 300px;
+    max-height: 300px;
+    min-width: 170px;
+    min-height: 170px;
     background-color: #eee;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
   }
+
+  .profile-grade {
+    color: #000;
+    font-family: "Grandiflora One";
+    font-size: calc(2/45 * 100vw);
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 9.6px;
+    position: absolute;
+    bottom: 0px;
+    text-align: right;
+    right: 0px;
+  }
+
+  .camera-info {
+    margin-bottom: 20px;
+    color: #000;
+    font-family: "Zen Kurenaido";
+    font-size: calc(1/72 * 100vw);
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
+  }
+
   .self-introduction {
-  white-space: pre-line;
+    white-space: pre-line;
+    color: #000;
+    font-family: "Zen Kurenaido";
+    font-size: calc(1/72 * 100vw);
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
   }
+
   .profile-icon {
     width: 100%;
     height: 100%;
@@ -343,7 +337,8 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
     border-radius: 50%;
     border: 1px solid #ddd;
   }
-  .grade-badge .suffix {
+
+  .icon .suffix {
     position: absolute;
     right: 10px;
     bottom: 0px;
@@ -362,27 +357,33 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
   }
 
   .gallery-container-inner {
-    width: 1200px;
-    margin: 0 auto;
+    width: stretch;
+    padding: 0 20px;
   }
+
   .picture-grid {
-    width: 1200px;
-    font-size: 0;
+    width: stretch;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
   }
+
   .photo-card {
-    opacity: 0;
+    width: 100%;
+    width: stretch;
+    opacity: 1;
     transition: opacity 0.5s ease;
     cursor: pointer;
     overflow: hidden;
   }
+
   .photo-wrapper {
     width: 100%;
-    height: 100%;
   }
+
   .photo-wrapper img {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;
     display: block;
   }
 
@@ -436,19 +437,50 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
     .gallery-container-inner,
     .picture-grid {
       width: 100%;
-      padding: 0 20px;
     }
   }
   @media (max-width: 768px) {
     .section-title h1 {
       font-size: 40px;
     }
+
     .profile-grid {
       flex-direction: column;
+      align-items: center;
     }
-    .grade-badge {
+
+    .profile-info {
+      max-width: 100%;
+    }
+
+    .tag {
+      font-size: 16px;
+    }
+
+    .profile-grade {
+      font-size: 24px;
+      position: static;
+      transform: none;
+      margin-top: 10px;
+    }
+
+    .user-name {
+      font-size: 40px;
+      letter-spacing: 4px;
+    }
+
+    .camera-info,
+    .self-introduction {
+      font-size: 16px;
+    }
+
+    .icon {
       order: -1;
       margin-bottom: 30px;
+    }
+
+    .picture-grid {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     }
   }
 </style>
