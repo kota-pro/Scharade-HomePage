@@ -90,17 +90,20 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
     data-map={backLinkMapJSON}
     hidden={!backLink}
   >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="25"
-      height="25"
-      viewBox="0 0 20 20"
-      ><path
-        fill="currentColor"
-        d="M11.25 17.308L5.942 12l5.308-5.308l.708.708L7.364 12l4.594 4.6zm6.1 0L12.042 12l5.308-5.308l.708.708l-4.594 4.6l4.594 4.6z"
-      ></path></svg
-    >
-    {backLink ? <a href={backLink.href}>{backLink.label}</a> : null}
+    {
+      backLink ? <a href={backLink.href}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="25"
+        height="25"
+        viewBox="0 0 20 20"
+        ><path
+          fill="currentColor"
+          d="M11.25 17.308L5.942 12l5.308-5.308l.708.708L7.364 12l4.594 4.6zm6.1 0L12.042 12l5.308-5.308l.708.708l-4.594 4.6l4.594 4.6z"
+        ></path>
+      </svg>
+      {backLink.label}</a> : null
+    }
   </div>
 </MypostLayout>
 
@@ -243,6 +246,13 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
     color: #0db49b;
   }
 
+  .back-link a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+  }
+
   @media screen and (max-width: 780px) {
     .post-title {
       font-size: 32px;
@@ -261,6 +271,15 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
     .back-link {
       font-size: 12px;
       letter-spacing: 2px;
+    }
+
+    .back-link a {
+      gap: 8px;
+    }
+
+    .back-link a svg {
+      width: 16px;
+      height: 16px;
     }
   }
 </style>
