@@ -376,41 +376,6 @@ for (let i = images.length - 1; i > 0; i--) {
                 </li>
               ))
             }
-            <!-- <li class="photo-carousel-list">
-              <a href={ADphoto1.src} data-lightbox="carousel-contents-group">
-                <div class="photo-carousel-content">
-                  <img loading="lazy" src={ADphoto1.src} alt="広告イメージ" />
-                </div>
-              </a>
-            </li>
-            <li class="photo-carousel-list">
-              <a href={ADphoto2.src} data-lightbox="carousel-contents-group">
-                <div class="photo-carousel-content">
-                  <img loading="lazy" src={ADphoto2.src} alt="広告イメージ" />
-                </div>
-              </a>
-            </li>
-            <li class="photo-carousel-list">
-              <a href={ADphoto3.src} data-lightbox="carousel-contents-group">
-                <div class="photo-carousel-content">
-                  <img loading="lazy" src={ADphoto3.src} alt="広告イメージ" />
-                </div>
-              </a>
-            </li>
-            <li class="photo-carousel-list">
-              <a href={ADphoto4.src} data-lightbox="carousel-contents-group">
-                <div class="photo-carousel-content">
-                  <img loading="lazy" src={ADphoto4.src} alt="広告イメージ" />
-                </div>
-              </a>
-            </li>
-            <li class="photo-carousel-list">
-              <a href={ADphoto5.src} data-lightbox="carousel-contents-group">
-                <div class="photo-carousel-content">
-                  <img loading="lazy" src={ADphoto5.src} alt="広告イメージ" />
-                </div>
-              </a>
-            </li> -->
           </ul>
         </div>
         <div class="lower-film-hole">
@@ -745,7 +710,6 @@ for (let i = images.length - 1; i > 0; i--) {
   .section-title {
     display: flex;
     flex-direction: row;
-    align-items: space-between;
     justify-content: center;
     margin-bottom: 55px;
   }
@@ -1419,17 +1383,7 @@ for (let i = images.length - 1; i > 0; i--) {
     display: block;
   }
 
-  /* .photo-carousel-content {
-    width: 240px;
-    height: 160px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    list-style: none;
-  } */
-
-  .photo-carousel-list::before {
+  .photo-carousel-list a::before {
     content: "";
     position: absolute;
     top: -2px;
@@ -1439,7 +1393,7 @@ for (let i = images.length - 1; i > 0; i--) {
     background-image: url("../assets/advertising/frame-of-picture.svg");
     background-size: 100% 100%;
     background-repeat: no-repeat;
-    user-select: none;
+    user-select: none !important;
     z-index: 2 !important;
   }
 
@@ -1620,7 +1574,7 @@ for (let i = images.length - 1; i > 0; i--) {
       height: 300px;
       position: absolute;
       right: 60px;
-      top: 80px;
+      top: 130px;
     }
 
     .slogan-line img {
@@ -1756,6 +1710,8 @@ for (let i = images.length - 1; i > 0; i--) {
       min-height: 220px;
       aspect-ratio: 4 / 5;
       padding: 12px;
+      position: sticky;
+      top: 100px;
     }
 
     .activity-card::after {

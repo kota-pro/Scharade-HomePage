@@ -355,19 +355,19 @@ details[open] .arrow-icon {
   }
 
   .section-title h1 {
-    font-size: 60px;
-    letter-spacing: 5px;
-    padding-right: 30px;
+    font-size: 48px;
+    letter-spacing: 7.2px;
+    padding-right: 39px;
   }
 
   .page-top-nav {
-    width: 30px;
-    height: 30px;
+    width: 35px;
+    height: 35px;
   }
 
   .page-top-nav svg {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
   }
 
   .explanation-area {
