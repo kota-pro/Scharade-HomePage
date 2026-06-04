@@ -819,35 +819,35 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
         </div>
         <div class="photo-carousel-contents">
           <ul>
-            <li class="photo-carousel-content">
+            <li class="photo-carousel-list">
               <a href={ADphoto1.src} data-lightbox="carousel-contents-group1">
                 <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto1.src} alt="広告イメージ" />
                 </div>
               </a>
             </li>
-            <li class="photo-carousel-content">
+            <li class="photo-carousel-list">
               <a href={ADphoto2.src} data-lightbox="carousel-contents-group1">
                 <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto2.src} alt="広告イメージ" />
                 </div>
               </a>
             </li>
-            <li class="photo-carousel-content">
+            <li class="photo-carousel-list">
               <a href={ADphoto3.src} data-lightbox="carousel-contents-group1">
                 <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto3.src} alt="広告イメージ" />
                 </div>
               </a>
             </li>
-            <li class="photo-carousel-content">
+            <li class="photo-carousel-list">
               <a href={ADphoto4.src} data-lightbox="carousel-contents-group1">
                 <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto4.src} alt="広告イメージ" />
                 </div>
               </a>
             </li>
-            <li class="photo-carousel-content">
+            <li class="photo-carousel-list">
               <a href={ADphoto5.src} data-lightbox="carousel-contents-group1">
                 <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto5.src} alt="広告イメージ" />
@@ -856,35 +856,35 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
             </li>
           </ul>
           <ul>
-            <li class="photo-carousel-content">
+            <li class="photo-carousel-list">
               <a href={ADphoto1.src} data-lightbox="carousel-contents-group2">
                 <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto1.src} alt="広告イメージ" />
                 </div>
               </a>
             </li>
-            <li class="photo-carousel-content">
+            <li class="photo-carousel-list">
               <a href={ADphoto2.src} data-lightbox="carousel-contents-group2">
                 <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto2.src} alt="広告イメージ" />
                 </div>
               </a>
             </li>
-            <li class="photo-carousel-content">
+            <li class="photo-carousel-list">
               <a href={ADphoto3.src} data-lightbox="carousel-contents-group2">
                 <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto3.src} alt="広告イメージ" />
                 </div>
               </a>
             </li>
-            <li class="photo-carousel-content">
+            <li class="photo-carousel-list">
               <a href={ADphoto4.src} data-lightbox="carousel-contents-group2">
                 <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto4.src} alt="広告イメージ" />
                 </div>
               </a>
             </li>
-            <li class="photo-carousel-content">
+            <li class="photo-carousel-list">
               <a href={ADphoto5.src} data-lightbox="carousel-contents-group2">
                 <div class="photo-carousel-content">
                   <img loading="lazy" src={ADphoto5.src} alt="広告イメージ" />
@@ -1406,9 +1406,23 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
     </div>
   </Fragment>
 
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const carousels = Array.from(
+  <script is:inline>
+    (() => {
+      console.log("carousel found",
+        document.querySelectorAll(".photo-carousel-contents").length
+      );
+
+      console.log("carousel start");
+      console.log(carousel.length);
+
+      const carousels =document.querySelector(".photo-carousel-contents");
+      const lists = carousels.querySelectorAll("ul");
+
+      console.log(lists[0].scrollWidth);
+      console.log(lists[0].offsetLeft);
+      console.log(lists[1].offsetLeft);
+      
+      const carousel = Array.from(
         document.querySelectorAll(".photo-carousel-contents"),
       );
       if (carousels.length === 0) return;
@@ -1514,6 +1528,28 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
         }
       });
     })();
+
+    // (() => {
+    //   console.log("script loaded");
+
+    //   const carousels = Array.from(
+    //     document.querySelectorAll(".photo-carousel-contents")
+    //   );
+
+    //   console.log("found:", carousels.length);
+
+    //   if (carousels.length > 0) {
+    //     const lists = carousels[0].querySelectorAll("ul");
+
+    //     console.log("ul count:", lists.length);
+
+    //     if (lists.length >= 2) {
+    //       console.log("width:", lists[0].scrollWidth);
+    //       console.log("offsetA:", lists[0].offsetLeft);
+    //       console.log("offsetB:", lists[1].offsetLeft);
+    //     }
+    //   }
+    // })();
   </script>
 
   <style>
@@ -1918,8 +1954,8 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
 
     .activity-table-grid {
       display: grid;
-      grid-template-columns: repeat(4, 290px);
-      gap: 14px;
+      grid-template-columns: repeat(auto-fit, 290px);
+      gap: 12px;
       justify-content: center;
       width: 100%;
     }
@@ -2008,8 +2044,7 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
     }
 
     .activity-table-text a svg:active {
-      filter: invert(68%) sepia(52%) saturate(3956%) hue-rotate(127deg)
-        brightness(87%) contrast(90%);
+      filter: invert(68%) sepia(52%) saturate(3956%) hue-rotate(127deg) brightness(87%) contrast(90%);
     }
 
     .activity-table-text a:active::after {
@@ -2294,15 +2329,28 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
       position: relative;
       display: flex;
       width: 100%;
+      height: 160px;
       overflow: hidden;
       gap: 20px;
     }
 
-    .photo-carousel-contents ul {
+    /* .photo-carousel-contents ul {
       display: flex;
       flex-wrap: nowrap;
       gap: 20px;
       list-style: none;
+    } */
+
+    .photo-carousel-contents ul {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 20px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
     }
 
     .photo-carousel-content {
@@ -2416,7 +2464,7 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
       }
 
       .activity-table-grid {
-        grid-template-columns: repeat(3, 290px);
+        /* grid-template-columns: repeat(3, 290px); */
         gap: 20px;
       }
 
@@ -2438,7 +2486,7 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
 
     @media screen and (max-width: 920px) {
       .activity-table-grid {
-        grid-template-columns: repeat(2, 290px);
+        /* grid-template-columns: repeat(2, 290px); */
         gap: 50px;
       }
 
@@ -2727,12 +2775,27 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
 
       .how-to-join {
         width: 100%;
+        height: 380px;
         display: flex;
         flex-direction: column;
         align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+
+      .how-to-join::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
         background-image: url("../icons/advertising-background.svg");
         background-repeat: no-repeat;
+        background-size: cover;
+        background-attachment: fixed;
         background-position: center;
+        opacity: 0.8;
       }
 
       .how-to-join > div:not(:last-child) {
@@ -2748,6 +2811,7 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
       .step-3 {
         position: relative;
         z-index: 2 !important;
+        width: 90%;
       }
 
       .step-3  {
@@ -2780,6 +2844,7 @@ for (let i = 0; i < cardImages.length; i += columnCount) {
         font-weight: 400;
         line-height: normal;
         letter-spacing: 2.1px;
+        margin-bottom: 10px;
       }
 
       .how-to-join p {

@@ -82,20 +82,20 @@ const pathname = Astro.url.pathname;
             const hamburgerMenu = document.getElementById("hamburger-menu");
             
             // デバッグ用ログ
-            console.log(`スクロール量: ${scrollY}px`);
-            console.log('header要素:', headerContainer);
-            console.log('logo要素:', headerLogo);
-            console.log('nav要素:', headerNav);
-            console.log('hamburger要素:', hamburgerMenu);
+            // console.log(`スクロール量: ${scrollY}px`);
+            // console.log('header要素:', headerContainer);
+            // console.log('logo要素:', headerLogo);
+            // console.log('nav要素:', headerNav);
+            // console.log('hamburger要素:', hamburgerMenu);
 
             if (scrollY > 120) {
-                console.log('120px以上スクロールされました - scrolledクラスを追加');
+                // console.log('120px以上スクロールされました - scrolledクラスを追加');
                 if (headerContainer) headerContainer.classList.add("scrolled");
                 if (headerLogo) headerLogo.classList.add("scrolled");
                 if (headerNav) headerNav.classList.add("scrolled");
                 if (hamburgerMenu) hamburgerMenu.classList.add("scrolled");
             } else {
-                console.log('120px未満に戻りました - scrolledクラスを削除');
+                // console.log('120px未満に戻りました - scrolledクラスを削除');
                 if (headerContainer) headerContainer.classList.remove("scrolled");
                 if (headerLogo) headerLogo.classList.remove("scrolled");
                 if (headerNav) headerNav.classList.remove("scrolled");
@@ -109,20 +109,20 @@ const pathname = Astro.url.pathname;
         const openClass = 'open';
         
         // デバッグ用のログ
-        console.log('ハンバーガーメニュー初期化');
-        console.log('toggle_btn:', btn);
-        console.log('mask:', mask);
+        // console.log('ハンバーガーメニュー初期化');
+        // console.log('toggle_btn:', btn);
+        // console.log('mask:', mask);
         
         // menu open close
         if (btn) {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
-                console.log('toggle_btnがクリックされました');
-                console.log('現在のbodyクラス:', body.className);
+                // console.log('toggle_btnがクリックされました');
+                // console.log('現在のbodyクラス:', body.className);
                 
                 body.classList.toggle(openClass);
                 
-                console.log('切り替え後のbodyクラス:', body.className);
+                // console.log('切り替え後のbodyクラス:', body.className);
             });
         } else {
             console.error('toggle_btn要素が見つかりません');
@@ -132,7 +132,7 @@ const pathname = Astro.url.pathname;
         if (mask) {
             mask.addEventListener('click', (e) => {
                 e.preventDefault();
-                console.log('maskがクリックされました');
+                // console.log('maskがクリックされました');
                 body.classList.remove(openClass);
             });
         } else {

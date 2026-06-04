@@ -96,7 +96,7 @@ import equipment5e from '../../public/images/temp.png';
                                     center="35.70598589668286, 139.71658843895162"
                                     zoom="15"
                                     map-id="DEMO_MAP_ID"
-                                    loading="lazy"
+                                    decoding="async"
                                 >
                                     <gmp-advanced-marker
                                         position="35.70598589668286, 139.71658843895162"
@@ -141,7 +141,7 @@ import equipment5e from '../../public/images/temp.png';
                                     center="35.70598589668286, 139.71658843895162"
                                     zoom="15"
                                     map-id="DEMO_MAP_ID"
-                                    loading="lazy"
+                                    decoding="async"
                                 >
                                     <gmp-advanced-marker
                                         position="35.70598589668286, 139.71658843895162"
@@ -733,7 +733,7 @@ import equipment5e from '../../public/images/temp.png';
     }
 
     .card-cover {
-        padding: 25px;
+        padding: 16px 25px;
         box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.2);
         flex-shrink: 0;
         border-radius: 10px;
@@ -775,7 +775,7 @@ import equipment5e from '../../public/images/temp.png';
 
     .card-cover h1, .card-cover h2 {
         font-family: "Zen Old Mincho";
-        font-size: 40px;
+        font-size: calc(50/1440 * 100vw);
         font-style: normal;
         font-weight: 400;
         line-height: normal;
@@ -1198,6 +1198,187 @@ import equipment5e from '../../public/images/temp.png';
         white-space: pre-wrap;
     }
 
+    @media (max-width: 1050px) {
+        .menu {
+            top: 120px;
+        }
+
+        .section-title {
+            margin-bottom: 35px;
+        }
+
+        .section-title h1 {
+            font-size: 60px;
+            letter-spacing: 5px;
+            padding-right: 30px;
+        }
+
+        .explanation-about-us {
+            margin-bottom: 80px;
+        }
+
+        .explanation-about-us p {
+            font-size: 16px;
+            letter-spacing: 1.8px;
+            line-height: 1.8;
+        }
+
+        .contents-title {
+            margin-bottom: 12px;
+        }
+
+        .contents-title h1 {
+            font-size: 42px;
+            letter-spacing: 4px;
+        }
+
+        .information table {
+            font-size: 14px;
+            table-layout: fixed;
+        }
+
+        .information caption {
+            text-align: left;
+            margin-top: 8px;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        .information tr {
+            display: grid;
+            grid-template-columns: 78px 1fr;
+            align-items: start;
+        }
+
+        .information th,
+        .information td {
+            padding: 10px 8px;
+            font-size: 13px;
+            letter-spacing: 1.2px;
+        }
+
+        .information th {
+            font-size: 13px;
+            padding: 10px 8px;
+        }
+
+        .address-span {
+            gap: 8px;
+        }
+
+        .address-text {
+            line-height: 1.6;
+        }
+
+        .link-button {
+            width: 32px;
+            height: 32px;
+            padding: 8px;
+            margin-left: 0;
+            flex-shrink: 0;
+        }
+
+        .link-button img {
+            width: 14px;
+            height: 14px;
+        }
+
+        .separator {
+            margin: 0 8px;
+        }
+
+        #map-td {
+            display: none;
+        }
+
+        #map-td-2 {
+            display: block;
+        }
+
+        .information  tr:nth-child(6) {
+            display: grid;
+        }
+
+        .information tr:nth-child(6) th,
+        .information tr:nth-child(6) td {
+            border-top: none;
+        }
+
+        #map {
+            width: stretch;
+            height: 220px;
+            margin: 0;
+        }
+
+        .equipments-list {
+            padding: 0 20px;
+        }
+    }
+
+    @media screen and (max-width: 900px) {
+        .equipments-list {
+            height: 350px;
+            padding: 0px;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .equipment-item {
+            position: relative;
+            justify-content: flex-start;
+
+        }
+
+        .equipment-description {
+            position: absolute;
+            top: 0;
+            right: 0;
+            margin-left: 0;
+            width: 80%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: start;
+            align-items: flex-end;
+            gap: 20px;
+        }
+
+        .equipment-description h1 {
+            font-size: 75px;
+            letter-spacing: 11.25px;
+            position: absolute;
+            right: -10px;
+            top: -20px;
+            color: rgba(0, 0, 0, 0.20);
+        }
+
+        .equipment-description h2 {
+            font-size: 48px;
+            letter-spacing: 7.2px;
+            margin-top: 90px;
+        }
+
+        .equipment-description p {
+            height: auto;
+            max-width: 400px;
+            font-size: 14px;
+            letter-spacing: 1.4px;
+            line-height: 1.6;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+        }
+
+        .equipment-image {
+            width: 280px;
+            height: 350px;
+        }
+        .image-container {
+            width: 280px;
+            height: 100%;
+        }
+    }
+
     @media (max-width: 768px) {
         .menu {
             top: 150px;
@@ -1449,6 +1630,10 @@ import equipment5e from '../../public/images/temp.png';
             -webkit-tap-highlight-color: rgba(0,0,0,0);
         }
 
+        .card-cover h1, .card-cover h2 {
+            font-size: 50px;
+        }
+
         #card-apr-may {
             width: 655px;
             height: 414px;
@@ -1608,6 +1793,5 @@ import equipment5e from '../../public/images/temp.png';
             width: 280px;
             height: 100%;
         }
-
     }
 </style>
