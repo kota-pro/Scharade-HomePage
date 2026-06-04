@@ -35,6 +35,7 @@ const { from } = Astro.props as Props;
         align-items: center;
 		justify-content: flex-end;
 	}
+    
     .page-top-nav {
         width: 50px;
         height: 50px;
@@ -68,26 +69,14 @@ const { from } = Astro.props as Props;
         filter: invert(100%) sepia(0%) saturate(1152%) hue-rotate(311deg) brightness(99%) contrast(105%);
     }
 
-    .post-title {
-        color: #000;
-        font-family: "Zen Old Mincho";
-        font-size: 64px;
-        font-style: normal;
-        font-weight: 400;
-        line-height: normal;
-        letter-spacing: 9.6px;
-        margin-bottom: 48px;
-    }
-
     .section-title {
         display: flex;
         flex-direction: row;
-        align-items: space-between;
         justify-content: center;
         margin-bottom: 55px;
     }
 
-    .section-title  h1{
+    .section-title h1 {
         color: #000;
         font-family: "Didot";
         font-size: 96px;
@@ -104,7 +93,7 @@ const { from } = Astro.props as Props;
     }
 
     .section-title-line::after {
-        content: '';
+        content: "";
         display: block;
         width: 100%;
         height: 1px;
@@ -112,5 +101,27 @@ const { from } = Astro.props as Props;
         position: absolute;
         top: 50%;
         right: 0;
+    }
+
+    @media screen and (max-width: 780px) {
+        .section-title {
+            margin-bottom: 35px;
+        }
+
+        .section-title h1 {
+            font-size: 48px;
+            letter-spacing: 7.2px;
+            padding-right: 39px;
+        }
+
+        .page-top-nav {
+            width: 35px;
+            height: 35px;
+        }
+
+        .page-top-nav svg {
+            width: 22px;
+            height: 22px;
+        }
     }
 </style>

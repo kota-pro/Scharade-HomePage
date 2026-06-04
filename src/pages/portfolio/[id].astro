@@ -24,6 +24,25 @@ const hasPictures = portfolio.pictures && portfolio.pictures.length > 0;
 const pageTitle = `${portfolio.name} | Portfolio`;
 const { user } = getUserFromRequest(Astro.request);
 const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
+
+const backLinkMap = {
+  portfolio: {
+    href: "/Portfolio",
+    label: "Portfolioへ戻る",
+  },
+};
+type BackLinkMap = typeof backLinkMap;
+type FromParam = keyof BackLinkMap;
+const isFromParam = (
+  value: string | null,
+): value is FromParam => {
+  return value !== null && value in backLinkMap;
+};
+const fromParam = Astro.url.searchParams.get("from");
+const backLink = isFromParam(fromParam)
+  ? backLinkMap[fromParam]
+  : null;
+const backLinkMapJSON = JSON.stringify(backLink);
 ---
 
 <Layout title={pageTitle}>
@@ -36,23 +55,9 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
 
   <Fragment slot="menu-slot">
     <div class="menu-contents-inner">
-      <a
-        href="javascript:history.back()"
-        class="page-top-nav"
-        aria-label="Back"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="32"
-          height="32"
-          viewBox="0 0 24 24"
-        >
-          <path
-            fill="currentColor"
-            d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"
-          ></path>
-        </svg>
-      </a>
+        <a href="#" class="page-top-nav">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"/></svg>
+        </a>
     </div>
   </Fragment>
 
@@ -126,6 +131,26 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
     </div>
     )}
 
+    <div
+      class="back-link"
+      id="post-back-link"
+      data-map={backLinkMapJSON}
+      hidden={!backLink}
+    >
+      <a href="javascript:history.back()" class="page-top-nav" aria-label="Back">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="25"
+          height="25"
+          viewBox="0 0 20 20"
+          ><path
+            fill="currentColor"
+            d="M11.25 17.308L5.942 12l5.308-5.308l.708.708L7.364 12l4.594 4.6zm6.1 0L12.042 12l5.308-5.308l.708.708l-4.594 4.6l4.594 4.6z"
+          ></path>
+        </svg>
+      </a>
+    </div>
+
     <hr class="section-divider" />
 
     <div class="gallery-container-inner">
@@ -134,7 +159,6 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
           <div class="picture-grid">
             {portfolio.pictures.map((pic, i) => (
               <div class="photo-card">
-                {i === 0 && <span class="click-hint">New Work!!</span>}
                 <div class="photo-wrapper">
                   <img
                     src={`${pic.url}?w=1200&q=75&fm=webp`}
@@ -186,6 +210,29 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
     document.body.style.overflow = "";
   });
 
+  const container = document.getElementById("post-back-link");
+  if (container) {
+    try {
+      const map = JSON.parse(container.dataset.map ?? "{}");
+      const params = new URLSearchParams(window.location.search);
+      const from = params.get("from");
+      const link = from && map[from];
+      if (link) {
+        if (!container.querySelector("a")) {
+          const anchor = document.createElement("a");
+          anchor.href = link.href;
+          anchor.textContent = link.label;
+          container.appendChild(anchor);
+        }
+        container.hidden = false;
+      } else {
+        container.hidden = true;
+      }
+    } catch (error) {
+      console.error("Failed to render back link", error);
+    }
+  }
+
 </script>
 
 <style>
@@ -222,6 +269,48 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
     position: absolute;
     top: 50%;
     right: 0;
+  }
+
+  .menu-contents-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .page-top-nav {
+    width: 50px;
+    height: 50px;
+    background-color: #fff;
+    border: 1px solid #000;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: sticky;
+    bottom: 50px;
+    z-index: 5;
+    transition: all 0.3s;
+  }
+
+  .page-top-nav svg {
+    width: 32px;
+    height: 32px;
+    rotate: 90deg;
+    transform: all 0.3s;
+  }
+
+  .page-top-nav:hover {
+    background-color: #707070;
+    box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  .page-top-nav:hover svg {
+    filter: invert(100%) sepia(0%) saturate(1152%) hue-rotate(311deg) brightness(99%) contrast(105%);
   }
 
   .portfolio-detail-wrapper {
@@ -387,17 +476,6 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
     display: block;
   }
 
-  .click-hint {
-    position: absolute;
-    top: -30px;
-    right: -10px;
-    font-family: cursive;
-    font-size: 1.2rem;
-    transform: rotate(15deg);
-    color: #666;
-    z-index: 5;
-  }
-
   .modal-overlay {
     position: fixed;
     top: 0;
@@ -433,15 +511,45 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
     object-fit: contain;
   }
 
+  .back-link {
+    margin-top: 48px;
+    font-family: "Zen Kurenaido";
+    font-size: 20px;
+    letter-spacing: 3px;
+    text-align: right;
+    color: #6f6f6f;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 15px;
+  }
+
+  .back-link:hover {
+    color: #0db49b;
+  }
+
   @media (max-width: 1200px) {
     .gallery-container-inner,
     .picture-grid {
       width: 100%;
     }
   }
+
   @media (max-width: 768px) {
     .section-title h1 {
-      font-size: 40px;
+      font-size: 48px;
+      letter-spacing: 7.2px;
+      padding-right: 39px;
+    }
+
+    .page-top-nav {
+      width: 35px;
+      height: 35px;
+    }
+
+    .page-top-nav svg {
+      width: 22px;
+      height: 22px;
     }
 
     .profile-grid {
@@ -455,6 +563,12 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
 
     .tag {
       font-size: 16px;
+      margin-left: 15px;
+      margin-right: 0;
+    }
+
+    .tags {
+      text-align: right;
     }
 
     .profile-grade {
@@ -462,11 +576,13 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
       position: static;
       transform: none;
       margin-top: 10px;
+      text-align: center;
     }
 
     .user-name {
       font-size: 40px;
       letter-spacing: 4px;
+      text-align: center;
     }
 
     .camera-info,
@@ -481,6 +597,11 @@ const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
 
     .picture-grid {
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    .back-link {
+      font-size: 12px;
+      letter-spacing: 2px;
     }
   }
 </style>
