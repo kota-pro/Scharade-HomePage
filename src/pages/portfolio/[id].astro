@@ -137,17 +137,18 @@ const backLinkMapJSON = JSON.stringify(backLink);
       data-map={backLinkMapJSON}
       hidden={!backLink}
     >
-      <a href="javascript:history.back()" class="page-top-nav" aria-label="Back">
+      <a href="javascript:history.back()" aria-label="Back">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="25"
           height="25"
           viewBox="0 0 20 20"
-          ><path
-            fill="currentColor"
-            d="M11.25 17.308L5.942 12l5.308-5.308l.708.708L7.364 12l4.594 4.6zm6.1 0L12.042 12l5.308-5.308l.708.708l-4.594 4.6l4.594 4.6z"
-          ></path>
+        ><path
+          fill="currentColor"
+          d="M11.25 17.308L5.942 12l5.308-5.308l.708.708L7.364 12l4.594 4.6zm6.1 0L12.042 12l5.308-5.308l.708.708l-4.594 4.6l4.594 4.6z"
+        ></path>
         </svg>
+        Portfolioへ戻る
       </a>
     </div>
 
@@ -518,7 +519,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
     letter-spacing: 3px;
     text-align: right;
     color: #6f6f6f;
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: flex-end;
     gap: 15px;
@@ -526,6 +527,13 @@ const backLinkMapJSON = JSON.stringify(backLink);
 
   .back-link:hover {
     color: #0db49b;
+  }
+
+  .back-link a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
   }
 
   @media (max-width: 1200px) {
@@ -602,6 +610,15 @@ const backLinkMapJSON = JSON.stringify(backLink);
     .back-link {
       font-size: 12px;
       letter-spacing: 2px;
+    }
+
+    .back-link a {
+      gap: 8px;
+    }
+
+    .back-link a svg {
+      width: 16px;
+      height: 16px;
     }
   }
 </style>
