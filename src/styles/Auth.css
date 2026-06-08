@@ -93,6 +93,12 @@
   letter-spacing: 2px;
 }
 
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
 .form-field {
   display: flex;
   flex-direction: column;
@@ -152,50 +158,12 @@
   color: #fff;
 }
 
-.auth-divider {
-  position: relative;
-  text-align: center;
-  font-size: 14px;
-  letter-spacing: 4px;
-  color: #000;
-}
 
-.auth-divider::before,
-.auth-divider::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  width: 40%;
-  height: 1px;
-  background-color: #000;
-}
-
-.auth-divider::before {
-  left: 0;
-}
-
-.auth-divider::after {
-  right: 0;
-}
 
 .auth-card small {
   color: #555;
 }
 
-@media (max-width: 720px) {
-  .auth-card {
-    padding: 24px;
-  }
-
-  .auth-card h2 {
-    font-size: 36px;
-    letter-spacing: 6px;
-  }
-
-  .auth-grid {
-    margin-bottom: 60px;
-  }
-}
 .auth-message {
   margin: 0;
   font-family: "Zen Kurenaido";
@@ -228,4 +196,118 @@
 
 .auth-message[data-kind="success"] {
   color: #0b6b1e;
+}
+
+@media (max-width: 720px) {
+  .auth-card {
+    padding: 24px;
+  }
+
+  .auth-card h2 {
+    font-size: 36px;
+    letter-spacing: 6px;
+  }
+
+  .auth-grid {
+    margin-bottom: 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem; 
+    align-items: center;
+  }
+
+  .auth-heading h1 {
+    font-size: 48px;
+    letter-spacing: 12px;
+    margin-top: 10px;
+  }
+
+  .auth-heading p {
+    font-size: 16px;
+    letter-spacing: 3px;
+  }
+
+  .auth-note {
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+
+  .auth-help-list {
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+
+  .auth-pill {
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+
+  .auth-link {
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+
+  .primary-button,
+  .instagram-button {
+    font-size: 14px;
+  }
+
+  .auth-divider {
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+
+  .auth-card small {
+    font-size: 12px;
+  }
+
+  .auth-message {
+    font-size: 12px;
+  }
+
+  .auth-heading {
+    margin-bottom: 24px;
+  }
+
+  .auth-section {
+    padding: 0;
+    margin: 0;
+  }
+
+  .auth-actions {
+    gap: 0.5rem;
+  }
+
+  .form-field {
+    gap: 0.25rem;
+  }
+  
+  .auth-form {
+    gap: 1rem;
+  }
+
+  .auth-card {
+    padding: 16px;
+    width: stretch;
+  }
+
+  .auth-card h2 {
+    font-size: 28px;
+    letter-spacing: 4px;
+  }
+
+  .auth-heading h1 {
+    font-size: 32px;
+    letter-spacing: 8px;
+  }
+
+  .auth-heading p {
+    font-size: 14px;
+    letter-spacing: 2px;
+  }
+
+  .auth-note {
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
 }
