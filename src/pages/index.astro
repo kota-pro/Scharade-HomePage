@@ -19,7 +19,16 @@ const MainImageModules = import.meta.glob<{ default: ImageMetadata }>(
     eager: true,
   }
 );
+const ActivityCardImageModules = import.meta.glob<{ default: ImageMetadata }>(
+  "../assets/activity/*.{jpg,jpeg,png,webp,avif}",
+  {
+    eager: true,
+  }
+);
 const allPhotos = Object.values(MainImageModules);
+const activityCardPhotos = Object.values(ActivityCardImageModules).sort((a, b) =>
+  a.default.src.localeCompare(b.default.src),
+);
 // Fisher-Yates Shuffle
 for (let i = allPhotos.length - 1; i > 0; i--) {
   const j = Math.floor(Math.random() * (i + 1));
@@ -42,12 +51,6 @@ const { contents: posts } = await microcmsClient.getList<Blog>({
 const tabs = buildTabs(posts);
 const tabPostLimit = 3;
 
-const response = await microcmsClient.getList({
-  endpoint: "card_image",
-  queries: { limit: 100 },
-});
-const cardImages = response.contents;
-
 const fixedTexts = [
   {
     title: "Scharade",
@@ -68,12 +71,10 @@ const fixedTexts = [
   { title: "部室", text: "学生会館のE224に部室があります！2階にあるためとてもアクセスがよく、過ごしやすい空間になっています。詳しくはAbout usの方へ。", slug: "" },
 ];
 
-const cardRows = [];
-const columnCount = 4;
-
-for (let i = 0; i < cardImages.length; i += columnCount) {
-  cardRows.push(cardImages.slice(i, i + columnCount));
-}
+const activityCards = fixedTexts.map((textData, index) => ({
+  ...textData,
+  backgroundImage: activityCardPhotos[index % activityCardPhotos.length],
+}));
 
 
 // カルーセル画像のランダムシャッフル
@@ -234,31 +235,29 @@ for (let i = images.length - 1; i > 0; i--) {
       <div class="activity-table">
         <div class="activity-table-grid">
           {
-            cardRows.flat().map((card, slotIndex) => {
-              const textData = fixedTexts[slotIndex];
-
+            activityCards.map((card, slotIndex) => {
               return (
                 <div
                   class="activity-card"
                   id={`card-${slotIndex + 1}`}
-                  style={`background-image: url(${card.image?.url});`}
+                  style={`background-image: url(${card.backgroundImage.default.src});`}
                 >
                   <div class="activity-card-contents">
-                    {textData?.image ? (
-                      <div set:html={textData.image} style="display: contents;" />
+                    {card.image ? (
+                      <div set:html={card.image} style="display: contents;" />
                     ) : null}
 
-                    {textData?.title && <h1>{textData.title}</h1>}
-                    {textData?.text && (
-                      <p class="activity-card-meta">{textData.text}</p>
+                    {card.title && <h1>{card.title}</h1>}
+                    {card.text && (
+                      <p class="activity-card-meta">{card.text}</p>
                     )}
                   </div>
 
-                  {textData?.slug ? (
+                  {card.slug ? (
                     <a
                       class="activity-card-link"
-                      href={textData.slug}
-                      aria-label={`${textData.title || "詳細"} ページ`}
+                      href={card.slug}
+                      aria-label={`${card.title || "詳細"} ページ`}
                     />
                   ) : null}
                 </div>
