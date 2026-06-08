@@ -11,6 +11,7 @@ import {
 } from "../utils/blog";
 import { linkToPost } from "../utils/linkToPost";
 import type { ImageMetadata } from "astro";
+import type { MicroCMSImage } from "microcms-js-sdk";
 
 
 const MainImageModules = import.meta.glob<{ default: ImageMetadata }>(
@@ -50,6 +51,15 @@ const { contents: posts } = await microcmsClient.getList<Blog>({
 
 const tabs = buildTabs(posts);
 const tabPostLimit = 3;
+type CarouselImageEntry = {
+  image?: MicroCMSImage;
+};
+
+const { contents: carouselImageContents } =
+  await microcmsClient.getList<CarouselImageEntry>({
+    endpoint: "card_image",
+    queries: { limit: 100 },
+  });
 
 const fixedTexts = [
   {
@@ -84,13 +94,28 @@ const CarouselImageModules = import.meta.glob<{ default: ImageMetadata }>(
     eager: true,
   }
 );
-const images = Object.values(CarouselImageModules);
+const fallbackCarouselImages = Object.values(CarouselImageModules);
 // Fisher-Yatesシャッフル
-for (let i = images.length - 1; i > 0; i--) {
+for (let i = fallbackCarouselImages.length - 1; i > 0; i--) {
   const j = Math.floor(Math.random() * (i + 1));
-  [images[i], images[j]] =
-    [images[j], images[i]];
+  [fallbackCarouselImages[i], fallbackCarouselImages[j]] =
+    [fallbackCarouselImages[j], fallbackCarouselImages[i]];
 }
+const carouselImages =
+  carouselImageContents
+    .map((item) => item.image)
+    .filter((image): image is MicroCMSImage => Boolean(image?.url))
+    .map((image) => ({
+      src: image.url,
+      alt: "広告イメージ",
+    })) || [];
+const displayCarouselImages =
+  carouselImages.length > 0
+    ? carouselImages
+    : fallbackCarouselImages.map((image) => ({
+        src: image.default.src,
+        alt: "広告イメージ",
+      }));
 ---
 
 <Layout>
@@ -360,16 +385,16 @@ for (let i = images.length - 1; i > 0; i--) {
         <div class="photo-carousel-contents">
           <ul>
             {
-              images.map((images) => (
+              displayCarouselImages.map((image) => (
                 <li class="photo-carousel-list">
                   <a
-                    href={images.default.src}
+                    href={image.src}
                     data-lightbox="carousel-contents-group"
                   >
                     <img
                       loading="lazy"
-                      src={images.default.src}
-                      alt="広告イメージ"
+                      src={image.src}
+                      alt={image.alt}
                     />
                   </a>
                 </li>
