@@ -11,5 +11,18 @@
       "credentials": true
     },
     "portfolioId": "wpfqu4-8h10"
+  },
+  {
+    "id": "c7d6a796-2f09-49ea-8764-13e76156c71c",
+    "name": "岡元昊太",
+    "portfolioName": "岡元昊太",
+    "email": "gangyuankouta93@gmail.com",
+    "passwordHash": "scrypt$DVy/OgMGSNLHdGLF0m4AnA==$mKgo5YPjuhqrYvJ24DgbzXeL9373eBcOlTGIQV8J/Zw=",
+    "approved": true,
+    "createdAt": "2026-06-08T15:20:19.896Z",
+    "providers": {
+      "credentials": true
+    },
+    "portfolioId": "rl3mk41jz"
   }
 ]

@@ -732,6 +732,12 @@ import equipment5e from '../../public/images/temp.png';
         left: 0;
     }
 
+    .tab > label[for="tab5"],
+    .tab > input#tab5 + label,
+    .tab > input#tab5 + label + div {
+        display: none;
+    }
+
     .card-cover {
         padding: 16px 25px;
         box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.2);
@@ -773,7 +779,15 @@ import equipment5e from '../../public/images/temp.png';
         justify-content: space-between;
     }
 
-    .card-cover h1, .card-cover h2 {
+    .card-cover h1 {
+        font-family: "Zen Old Mincho";
+        font-size: calc(40/1440 * 100vw);
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        transition: opacity 0.3s ease 0.1s;
+    }
+    .card-cover h2 {
         font-family: "Zen Old Mincho";
         font-size: calc(50/1440 * 100vw);
         font-style: normal;
