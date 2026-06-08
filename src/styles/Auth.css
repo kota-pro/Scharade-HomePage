@@ -1,3 +1,80 @@
+.section-title {
+  display: flex;
+  flex-direction: row;
+  align-items: space-between;
+  justify-content: center;
+  margin-bottom: 55px;
+}
+
+.section-title h1 {
+  color: #000;
+  font-family: "Didot";
+  font-size: 96px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 14.4px;
+  padding-right: 78px;
+}
+
+.section-title-line {
+  width: 100%;
+  position: relative;
+}
+
+.section-title-line::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 1px;
+  background: #000;
+  position: absolute;
+  top: 50%;
+  right: 0;
+}
+
+.menu-contents-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.page-top-nav {
+  width: 50px;
+  height: 50px;
+  background-color: #fff;
+  border: 1px solid #000;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: sticky;
+  bottom: 50px;
+  z-index: 5;
+  transition: all 0.3s;
+}
+
+.page-top-nav svg {
+  width: 32px;
+  height: 32px;
+  rotate: 90deg;
+  transform: all 0.3s;
+}
+
+.page-top-nav:hover {
+  background-color: #707070;
+  box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
+}
+
+.page-top-nav:hover svg {
+  filter: invert(100%) sepia(0%) saturate(1152%) hue-rotate(311deg) brightness(99%) contrast(105%);
+}
+
 .auth-section {
   max-width: 1180px;
   margin: 0 auto 120px;
@@ -158,8 +235,6 @@
   color: #fff;
 }
 
-
-
 .auth-card small {
   color: #555;
 }
@@ -199,13 +274,24 @@
 }
 
 @media (max-width: 720px) {
-  .auth-card {
-    padding: 24px;
+  .section-title {
+    margin-bottom: 0px;
   }
 
-  .auth-card h2 {
-    font-size: 36px;
-    letter-spacing: 6px;
+  .section-title h1 {
+    font-size: 48px;
+    letter-spacing: 7.2px;
+    padding-right: 39px;
+  }
+
+  .page-top-nav {
+    width: 35px;
+    height: 35px;
+  }
+
+  .page-top-nav svg {
+    width: 22px;
+    height: 22px;
   }
 
   .auth-grid {
@@ -216,19 +302,28 @@
     align-items: center;
   }
 
+  .auth-card {
+    padding: 16px;
+    width: stretch;
+  }
+
+  .auth-card h2 {
+    font-size: 28px;
+    letter-spacing: 4px;
+  }
+
   .auth-heading h1 {
-    font-size: 48px;
-    letter-spacing: 12px;
-    margin-top: 10px;
+    font-size: 32px;
+    letter-spacing: 8px;
   }
 
   .auth-heading p {
-    font-size: 16px;
-    letter-spacing: 3px;
+    font-size: 14px;
+    letter-spacing: 2px;
   }
 
   .auth-note {
-    font-size: 12px;
+    font-size: 10px;
     letter-spacing: 1px;
   }
 
@@ -284,30 +379,5 @@
   
   .auth-form {
     gap: 1rem;
-  }
-
-  .auth-card {
-    padding: 16px;
-    width: stretch;
-  }
-
-  .auth-card h2 {
-    font-size: 28px;
-    letter-spacing: 4px;
-  }
-
-  .auth-heading h1 {
-    font-size: 32px;
-    letter-spacing: 8px;
-  }
-
-  .auth-heading p {
-    font-size: 14px;
-    letter-spacing: 2px;
-  }
-
-  .auth-note {
-    font-size: 10px;
-    letter-spacing: 1px;
   }
 }

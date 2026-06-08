@@ -66,7 +66,33 @@ const backLinkMapJSON = JSON.stringify(backLink);
       <section class="profile-header">
         <div class="profile-grid">
           <div class="profile-info">
-            <h2 class="user-name">{portfolio.name}</h2>
+            <div class="name-and-sns">
+              <h2 class="user-name">{portfolio.name}</h2>
+              <div class="sns">
+                {
+                  portfolio.x_url && (
+                    <a
+                      href={portfolio.x_url}
+                      target="_blank"
+                      class="social-link"
+                    >
+                      <img src="/icons/X.svg" alt="X">
+                    </a>
+                  )
+                }
+                {
+                  portfolio.instagram && (
+                    <a
+                      href={`https://instagram.com/${portfolio.instagram}`}
+                      target="_blank"
+                      class="social-link"
+                    >
+                      <img src="/icons/Instagram.svg" alt="Instagram">
+                    </a>
+                  )
+                }
+              </div>
+            </div>
             <div class="tags">
               {
                 portfolio.hashtags?.map((tag) => (
@@ -80,26 +106,6 @@ const backLinkMapJSON = JSON.stringify(backLink);
             <p class="self-introduction">
               {portfolio.self_introduction}
             </p>
-            <div class="social-links">
-              {
-                portfolio.x_url && (
-                  <a href={portfolio.x_url} target="_blank" class="social-link">
-                    X
-                  </a>
-                )
-              }
-              {
-                portfolio.instagram && (
-                  <a
-                    href={`https://instagram.com/${portfolio.instagram}`}
-                    target="_blank"
-                    class="social-link"
-                  >
-                    Instagram
-                  </a>
-                )
-              }
-            </div>
           </div>
           <div class="icon">
             <div class="circle">
@@ -125,18 +131,18 @@ const backLinkMapJSON = JSON.stringify(backLink);
       </section>
     </div>
 
-    {canEditLink && (
-    <div class="edit-link-wrapper">
-        <a class="edit-link" href="/portfolio/edit">Edit my portfolio</a>
-    </div>
-    )}
-
     <div
       class="back-link"
       id="post-back-link"
       data-map={backLinkMapJSON}
       hidden={!backLink}
     >
+      {canEditLink && (
+      <div class="edit-link-wrapper">
+        <a class="edit-link" href="/Portfolio/edit">Edit my portfolio <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 -2 24 24"><path fill="currentColor" d="M5 19h1.425L16.2 9.225L14.775 7.8L5 17.575zm-2 2v-4.25L17.625 2.175L21.8 6.45L7.25 21zM19 6.4L17.6 5zm-3.525 2.125l-.7-.725L16.2 9.225z"/></svg></a>
+      </div>
+      )}
+
       <a href="javascript:history.back()" aria-label="Back">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -328,9 +334,16 @@ const backLinkMapJSON = JSON.stringify(backLink);
   .profile-info {
     max-width: calc(5/9 * 100vw);
   }
+
+  .name-and-sns {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
   
   .user-name {
-    margin-bottom: 20px;
     color: #000;
     font-family: "Zen Old Mincho";
     font-size: calc(2/45 * 100vw);
@@ -338,6 +351,32 @@ const backLinkMapJSON = JSON.stringify(backLink);
     font-weight: 400;
     line-height: normal;
     letter-spacing: 9.6px;
+  }
+
+  .sns {
+    height: auto;
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+  }
+
+  .sns a {
+    padding: 10px 10px 4px;
+  }
+
+  .sns a:hover {
+    background-color: #e0dede;
+  }
+
+  .sns a:hover img {
+    filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(335deg) brightness(106%) contrast(102%);
+  }
+
+  .sns img {
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+    filter: invert(59%) sepia(1%) saturate(380%) hue-rotate(24deg) brightness(103%) contrast(99%);
   }
 
   .tags {
@@ -353,13 +392,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
     font-weight: 400;
     line-height: normal;
     letter-spacing: 3px;
-  }
-
-  .social-link {
-    text-decoration: underline;
-    font-size: 0.9rem;
-    color: #000;
-    margin-right: 15px;
+    display: inline-block;
   }
 
   .icon {
@@ -385,7 +418,8 @@ const backLinkMapJSON = JSON.stringify(backLink);
   }
 
   .profile-grade {
-    color: #000;
+    color: #ffffff;
+    mix-blend-mode: difference;
     font-family: "Grandiflora One";
     font-size: calc(2/45 * 100vw);
     font-style: normal;
@@ -396,6 +430,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
     bottom: 0px;
     text-align: right;
     right: 0px;
+    text-shadow: 1px 1px 2px rgba(256, 256, 256, 0.3);
   }
 
   .camera-info {
@@ -407,6 +442,8 @@ const backLinkMapJSON = JSON.stringify(backLink);
     font-weight: 400;
     line-height: normal;
     letter-spacing: 3px;
+    border-left: 7px solid #d2d2d2;
+    padding-left: 20px;
   }
 
   .self-introduction {
@@ -418,6 +455,8 @@ const backLinkMapJSON = JSON.stringify(backLink);
     font-weight: 400;
     line-height: normal;
     letter-spacing: 3px;
+    border-left: 7px solid #d2d2d2;
+    padding-left: 20px;
   }
 
   .profile-icon {
@@ -521,11 +560,12 @@ const backLinkMapJSON = JSON.stringify(backLink);
     color: #6f6f6f;
     display: flex !important;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
+    padding: 0px 20px;
     gap: 15px;
   }
 
-  .back-link:hover {
+  .back-link a:hover {
     color: #0db49b;
   }
 
@@ -534,6 +574,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
     align-items: center;
     justify-content: center;
     gap: 15px;
+    margin-left: auto;
   }
 
   @media (max-width: 1200px) {
@@ -544,6 +585,10 @@ const backLinkMapJSON = JSON.stringify(backLink);
   }
 
   @media (max-width: 768px) {
+    .section-title {
+      margin-bottom: 35px;
+    }
+
     .section-title h1 {
       font-size: 48px;
       letter-spacing: 7.2px;
