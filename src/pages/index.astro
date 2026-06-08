@@ -30,12 +30,16 @@ const allPhotos = Object.values(MainImageModules);
 const activityCardPhotos = Object.values(ActivityCardImageModules).sort((a, b) =>
   a.default.src.localeCompare(b.default.src),
 );
-// Fisher-Yates Shuffle
-for (let i = allPhotos.length - 1; i > 0; i--) {
-  const j = Math.floor(Math.random() * (i + 1));
-  [allPhotos[i], allPhotos[j]] =
-    [allPhotos[j], allPhotos[i]];
-}
+const shuffleArray = <T>(items: T[]) => {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+
+  return items;
+};
+
+shuffleArray(allPhotos);
 // 先頭3枚を使用
 const selectedPhotos = allPhotos.slice(0, 3);
 
@@ -94,21 +98,16 @@ const CarouselImageModules = import.meta.glob<{ default: ImageMetadata }>(
     eager: true,
   }
 );
-const fallbackCarouselImages = Object.values(CarouselImageModules);
-// Fisher-Yatesシャッフル
-for (let i = fallbackCarouselImages.length - 1; i > 0; i--) {
-  const j = Math.floor(Math.random() * (i + 1));
-  [fallbackCarouselImages[i], fallbackCarouselImages[j]] =
-    [fallbackCarouselImages[j], fallbackCarouselImages[i]];
-}
-const carouselImages =
+const fallbackCarouselImages = shuffleArray(Object.values(CarouselImageModules));
+const carouselImages = shuffleArray(
   carouselImageContents
     .map((item) => item.image)
     .filter((image): image is MicroCMSImage => Boolean(image?.url))
     .map((image) => ({
       src: image.url,
       alt: "広告イメージ",
-    })) || [];
+    })),
+);
 const displayCarouselImages =
   carouselImages.length > 0
     ? carouselImages
