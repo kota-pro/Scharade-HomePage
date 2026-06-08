@@ -768,7 +768,7 @@ import equipment5e from '../../public/images/temp.png';
         height: 100%;
         display: flex;
         flex-direction: column;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         align-items: center;
         justify-content: space-between;
     }
@@ -1504,6 +1504,7 @@ import equipment5e from '../../public/images/temp.png';
             overflow-y: auto;
             gap: 20px;
             z-index: 5;
+            scroll-snap-type: x mandatory;
         }
 
         .tab > label {
@@ -1629,15 +1630,29 @@ import equipment5e from '../../public/images/temp.png';
             cursor: pointer;
             outline: none;
             -webkit-tap-highlight-color: rgba(0,0,0,0);
+            scroll-snap-align: start;
+        }
+
+        .card-contents {
+            width: stretch;
         }
 
         .card-cover h1, .card-cover h2 {
-            font-size: 50px;
+            font-size: 40px;
+        }
+
+        .card-textbox {
+            height: 161px;
+            width: stretch;
         }
 
         #card-apr-may {
-            width: 655px;
+            width: 290px;
             height: 414px;
+        }
+
+        #card-apr-may-contents {
+            align-items: center;
         }
 
         #card-jun,
