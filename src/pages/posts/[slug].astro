@@ -272,7 +272,10 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
 
   .post-body :global(img) {
     max-width: 100%;
+    max-height: 80vh;
     height: auto;
+    width: auto;
+    aspect-ratio: attr(width) / attr(height) !important;
     display: block;
     margin: 24px auto;
     border: 20px solid #ffffff;
