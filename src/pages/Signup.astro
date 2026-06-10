@@ -20,15 +20,13 @@ const next = Astro.url.searchParams.get("next") ?? "/";
         </a>
     </div>
   </Fragment>
-  
   <Fragment slot="body-slot">
     <section class="auth-section">
       <div class="auth-heading">
         <p class="auth-pill">Member Only</p>
         <h1>Account</h1>
         <p>
-          写団シャレードで活動するためのアカウントを作成します。
-          メールアドレスとパスワードを設定してアカウントを作成します。
+          写団シャレードで活動するためのアカウントを作成します。<br>メールアドレスとパスワードを設定してアカウントを作成します。
         </p>
       </div>
 
@@ -53,10 +51,10 @@ const next = Astro.url.searchParams.get("next") ?? "/";
                 autocomplete="nickname"
                 required
                 maxlength="50"
-                placeholder="例：Sae Yoshizaki / 写団シャレード さえ"
+                placeholder="例：Le Corbusier / ル・コルビュジエ"
               />
               <small class="helper">
-                ポートフォリオページに表示される名前です（あとから編集できます）。
+                ポートフォリオページに表示される名前です。<br>（あとから編集できます）
               </small>
             </div>
 
