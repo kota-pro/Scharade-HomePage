@@ -22,8 +22,8 @@ const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
 				kitId: 'ifd3mog',
 				scriptTimeout: 3000,
 				async: true
-				},
-				h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='https://use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+			},
+			h=d.documentElement,tk=d.createElement("script"),s=d.getElementsByTagName("script")[0];tk.src='https://use.typekit.net/'+config.kitId+'.js';tk.async=true;s.parentNode?.insertBefore(tk,s)
 			})(document);
 		</script>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,16 +36,16 @@ const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
 				scriptTimeout: 3000,
 				async: true
 			},
-			h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='https://use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+			h=d.documentElement,tk=d.createElement("script"),s=d.getElementsByTagName("script")[0];tk.src='https://use.typekit.net/'+config.kitId+'.js';tk.async=true;s.parentNode?.insertBefore(tk,s)
 			})(document);
 		</script>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Grandiflora+One&family=Zen+Kaku+Gothic+New:wght@300;400;500;700;900&family=Zen+Kurenaido&family=Zen+Old+Mincho&display=swap" rel="stylesheet">
 		<link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/css/lightbox.css" rel="stylesheet">
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js" defer></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/js/lightbox.min.js" defer type="text/javascript"></script>
-		<script src={`https://maps.googleapis.com/maps/api/js?lang=ja&key=${googleMapsApiKey}&libraries=maps,marker`} defer></script>
+		<script is:inline src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js" defer></script>
+		<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/js/lightbox.min.js" defer type="text/javascript"></script>
+		<script is:inline src={`https://maps.googleapis.com/maps/api/js?lang=ja&key=${googleMapsApiKey}&libraries=maps,marker`} defer></script>
 	</head>
 	<body>
 		<Header />
