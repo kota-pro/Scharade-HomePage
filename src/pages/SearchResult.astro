@@ -218,7 +218,7 @@ const searchIndex = [
   </Fragment>
 </Layout>
 
-<script define:vars={{ SEARCH_INDEX: searchIndex }}>
+<script is:inline define:vars={{ SEARCH_INDEX: searchIndex }}>
   (() => {
     const params = new URLSearchParams(window.location.search);
     const rawQuery = params.get("q") || "";

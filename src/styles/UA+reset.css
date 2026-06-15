@@ -82,6 +82,7 @@
   font-size: inherit;
 }
 :where([type="search"]) {
+  appearance: textfield;
   -webkit-appearance: textfield;
 }
 @supports (-webkit-touch-callout: none) {

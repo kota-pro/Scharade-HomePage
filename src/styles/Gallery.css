@@ -301,7 +301,7 @@ details[open] .arrow-icon {
 
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 15px;
   margin-top: 20px;
   padding-left: 90px;
@@ -312,7 +312,9 @@ details[open] .arrow-icon {
   background-color: #e0e0e0;
   position: relative;
   overflow: hidden;
-  border-radius: 2px;
+  border: #fff 5px solid;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .image-wrapper {
@@ -346,10 +348,6 @@ details[open] .arrow-icon {
 }
 
 @media (max-width: 768px) {
-  .menu {
-    top: 150px;
-  }
-
   .section-title {
     margin-bottom: 35px;
   }
@@ -379,10 +377,32 @@ details[open] .arrow-icon {
     letter-spacing: 2.5px;
   }
 
+  .tab > label {
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    padding: .5em 0.7em .3em;
+    min-width: 60px;
+  }
+
+  .tab-panel {
+    padding: 1em 0.5em;
+  }
+
   .gallery-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     padding-left: 20px;
     gap: 10px;
+  }
+
+  .category-title {
+    font-size: 24px;
+    gap: 20px;
+    padding: 5px 10px;
+  }
+
+  .arrow-icon {
+    width: 20px;
+    height: 20px;
   }
 
   .image-title {

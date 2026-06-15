@@ -167,12 +167,17 @@ const backLinkMapJSON = JSON.stringify(backLink);
             {portfolio.pictures.map((pic, i) => (
               <div class="photo-card">
                 <div class="photo-wrapper">
+                  <a
+                    href={pic.url}
+                    data-lightbox={`${portfolio.name}s-works`}  
+                  >
                   <img
                     src={`${pic.url}?w=1200&q=75&fm=webp`}
                     alt={`${portfolio.name}の作品 ${i + 1}`}
                     loading="lazy"
                     class="gallery-image"
                   />
+                  </a>
                 </div>
               </div>
             ))}
@@ -182,7 +187,6 @@ const backLinkMapJSON = JSON.stringify(backLink);
         )
       }
     </div>
-
     <div id="image-modal" class="modal-overlay" aria-hidden="true">
       <div class="modal-content">
         <button id="modal-close-btn" class="modal-close" aria-label="Close">&times;</button>
@@ -191,54 +195,6 @@ const backLinkMapJSON = JSON.stringify(backLink);
     </div>
   </Fragment>
 </Layout>
-
-<script>
-
-  const modal = document.getElementById("image-modal");
-  const modalImg = document.getElementById("modal-image") as HTMLImageElement;
-  const closeBtn = document.getElementById("modal-close-btn");
-
-  document.querySelectorAll(".gallery-image").forEach((img) => {
-    img.addEventListener("click", () => {
-      if (!modal || !modalImg) return;
-      const src = img.getAttribute("src")?.split("?")[0];
-      if (src) {
-        modalImg.src = src;
-        modal.classList.add("active");
-        document.body.style.overflow = "hidden";
-      }
-    });
-  });
-
-  closeBtn?.addEventListener("click", () => {
-    modal?.classList.remove("active");
-    document.body.style.overflow = "";
-  });
-
-  const container = document.getElementById("post-back-link");
-  if (container) {
-    try {
-      const map = JSON.parse(container.dataset.map ?? "{}");
-      const params = new URLSearchParams(window.location.search);
-      const from = params.get("from");
-      const link = from && map[from];
-      if (link) {
-        if (!container.querySelector("a")) {
-          const anchor = document.createElement("a");
-          anchor.href = link.href;
-          anchor.textContent = link.label;
-          container.appendChild(anchor);
-        }
-        container.hidden = false;
-      } else {
-        container.hidden = true;
-      }
-    } catch (error) {
-      console.error("Failed to render back link", error);
-    }
-  }
-
-</script>
 
 <style>
   .section-title {
@@ -383,7 +339,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
 
   .tag {
     margin-right: 15px;
-    color: #000;
+    color: #6f6f6f;
     font-family: "Zen Kurenaido";
     font-size: 20px;
     font-style: normal;
@@ -651,13 +607,40 @@ const backLinkMapJSON = JSON.stringify(backLink);
       position: static;
       transform: none;
       margin-top: 10px;
+      margin-left: 12px;
       text-align: center;
+    }
+
+    .profile-grade::first-letter {
+      font-size: 32px;
+      position: static;
+      transform: none;
+    }
+
+    .name-and-sns {
+      flex-direction: column-reverse;
+      align-items: center;
+      gap: 10px;
     }
 
     .user-name {
       font-size: 40px;
       letter-spacing: 4px;
       text-align: center;
+    }
+
+    .sns {
+      justify-content: center;
+      align-items: center;
+    }
+
+    .sns a {
+      padding: 8px 8px 2px;
+    }
+
+    .sns img {
+      width: 20px;
+      height: 20px;
     }
 
     .camera-info,
@@ -667,7 +650,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
 
     .icon {
       order: -1;
-      margin-bottom: 30px;
+      margin-bottom: 10px;
     }
 
     .picture-grid {

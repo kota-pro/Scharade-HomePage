@@ -30,7 +30,7 @@ const allPhotos = Object.values(MainImageModules);
 const activityCardPhotos = Object.values(ActivityCardImageModules).sort((a, b) =>
   a.default.src.localeCompare(b.default.src),
 );
-const shuffleArray = <T>(items: T[]) => {
+const shuffleArray = <T,>(items: T[]) => {
   for (let i = items.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [items[i], items[j]] = [items[j], items[i]];
@@ -1109,7 +1109,11 @@ const displayCarouselImages =
     right: 0;
     bottom: 0;
     left: 0;
+  }
+
+  .activity-card:hover::before {
     background-color: rgba(71, 71, 71, 0.5);
+    transition: background-color 0.3s ease-in-out;
   }
 
   .activity-card::after {
@@ -1134,6 +1138,8 @@ const displayCarouselImages =
     align-items: center;
     justify-content: center;
     z-index: 2;
+    text-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+    
   }
 
   .activity-card h1 {
@@ -1145,11 +1151,12 @@ const displayCarouselImages =
     line-height: normal;
     letter-spacing: 6px;
     transition: 0.3s ease;
+    margin-left: 10px;
   }
 
   .activity-card:hover h1 {
-    margin-top: 20px;
-    margin-bottom: 84px;
+    margin-top: 50px;
+    margin-bottom: 64px;
     transition: 0.3s ease-in-out;
   }
 

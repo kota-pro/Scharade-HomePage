@@ -102,10 +102,11 @@
     list-style: none;
     display: flex;
     align-items: center;
-    gap: 40px;
+    gap: 20px;
     color: #000;
     font-family: "Zen Kurenaido";
     font-size: 32px;
+    padding: 20px 10px;
     font-style: normal;
     font-weight: 400;
     line-height: normal;
@@ -130,9 +131,10 @@ details:last-child {
 }
 
 .arrow-icon {
+    transition: transform 0.3s ease;
     width: 28px;
     height: 28px;
-    transition: transform 0.3s;
+    margin-right: 10px;
 }
 
 details[open] .section-heading {
@@ -280,8 +282,8 @@ details[open] .arrow-icon {
     }
 
     .explanation-area p {
-        font-size: 18px;
-        letter-spacing: 2.5px;
+        font-size: 14px;
+        letter-spacing: 2.1px;
     }
 
     .portfolio-container {
@@ -294,8 +296,30 @@ details[open] .arrow-icon {
         padding-bottom: 0;
     }
 
+    .filter-tabs::-webkit-scrollbar {
+        display: none; 
+    }
+
+    .section-heading {
+        font-size: 24px;
+        gap: 10px;
+        padding: 5px 10px;
+    }
+
+    .arrow-icon {
+        width: 20px;
+        height: 20px;
+    }
+
     .member-grid {
         grid-template-columns: repeat(2, 1fr); 
         padding-left: 0;
+        gap: 10px;
+        padding: 10px;
+    }
+
+    .member-name {
+        font-size: 16px;
+        letter-spacing: 2.4px;
     }
 }

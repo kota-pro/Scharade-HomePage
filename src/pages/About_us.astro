@@ -5,25 +5,25 @@ import "../styles/UA+reset.css"
 import { getImage } from 'astro:assets';
 import apr_may_image from '../assets/annual_schedule/apr_may.JPG';
 const apr_may = await getImage({src: apr_may_image, format: 'webp'});
-import jun_image from '../assets/annual_schedule/jun.JPG';
+import jun_image from '../assets/annual_schedule/jun.jpg';
 const jun = await getImage({src: jun_image, format: 'webp'});
 import jul_image from '../assets/annual_schedule/jul.JPG';
 const jul = await getImage({src: jul_image, format: 'webp'});
-import aug_image from '../assets/annual_schedule/aug.JPG';
+import aug_image from '../assets/annual_schedule/aug.jpg';
 const aug = await getImage({src: aug_image, format: 'webp'});
-import sep_image from '../assets/annual_schedule/sep.JPG';
+import sep_image from '../assets/annual_schedule/sep.jpg';
 const sep = await getImage({src: sep_image, format: 'webp'});
-import oct_image from '../assets/annual_schedule/oct.JPG';
+import oct_image from '../assets/annual_schedule/oct.jpg';
 const oct = await getImage({src: oct_image, format: 'webp'});
-import nov_image from '../assets/annual_schedule/nov.JPG';
+import nov_image from '../assets/annual_schedule/nov.jpg';
 const nov = await getImage({src: nov_image, format: 'webp'});
-import dec_image from '../assets/annual_schedule/dec.JPG';
+import dec_image from '../assets/annual_schedule/dec.jpg';
 const dec = await getImage({src: dec_image, format: 'webp'});
-import jan_image from '../assets/annual_schedule/jan.JPG';
+import jan_image from '../assets/annual_schedule/jan.jpg';
 const jan = await getImage({src: jan_image, format: 'webp'});
 import feb_image from '../assets/annual_schedule/feb.JPG';
 const feb = await getImage({src: feb_image, format: 'webp'});
-import mar_image from '../assets/annual_schedule/mar.JPG';
+import mar_image from '../assets/annual_schedule/mar.jpg';
 const mar = await getImage({src: mar_image, format: 'webp'});
 import others_image from '../assets/annual_schedule/others.JPG';
 const others = await getImage({src: others_image, format: 'webp'});
@@ -879,7 +879,7 @@ import equipment5e from '../../public/images/temp.png';
     }
 
     #card-jun {
-        background-position: center;
+        background-position: 46%;
     }
 
     #card-jul {
@@ -887,7 +887,7 @@ import equipment5e from '../../public/images/temp.png';
     }
 
     #card-aug {
-        background-position: 30%;
+        background-position: center;
     }
 
     #card-sep {
@@ -899,7 +899,8 @@ import equipment5e from '../../public/images/temp.png';
     }
 
     #card-nov {
-        background-position: center;
+        background-size: cover;
+        background-position: 42%;
     }
 
     #card-dec {

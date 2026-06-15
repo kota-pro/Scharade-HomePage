@@ -179,7 +179,7 @@ const ITEMS_PER_PAGE = 10;
   </Fragment>
 </Layout>
 
-<script define:vars={{ ITEMS_PER_PAGE }}>
+<script is:inline define:vars={{ ITEMS_PER_PAGE }}>
   const tabInputs = Array.from(
     document.querySelectorAll('.tab-input')
   );
