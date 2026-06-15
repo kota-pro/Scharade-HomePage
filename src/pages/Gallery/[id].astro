@@ -31,32 +31,6 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
 
 <GalleryLayout title={albumTitle}>
   {photos.length === 0 && <div class="no-photos">No photos found.</div>}
-  {photos.length > 0 && (
-    <div
-      class="gallery-pagination panel-top"
-      data-total-posts={photos.length}
-      data-total-pages={totalPages}
-    >
-      <a class="gallery-posts-navigation prev-btn-top" href="#">
-        <img src="/icons/leftarrow.svg" alt="Prev" />
-      </a>
-
-      <input
-        class="page-input-top"
-        type="text"
-        inputmode="numeric"
-        min="1"
-        max={totalPages}
-        value="1"
-      />
-      <p>/</p>
-      <p>{totalPages}</p>
-
-      <a class="gallery-posts-navigation next-btn-top" href="#">
-        <img src="/icons/rightarrow.svg" alt="Next" />
-      </a>
-    </div>
-  )}
   <div class="gallery-container-inner">
     <div class="justified-grid">
       {
@@ -82,22 +56,22 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
     </div>
   </div>
   {photos.length > 0 && totalPages > 1 && (
-    <div class="gallery-pagination panel-bottom">
-      <a href="#" class="gallery-posts-double-navigation first-btn">
+    <div class="tab-panel-number panel-bottom">
+      <a href="#" class="tab-posts-double-navigation first-btn">
         <img src="/icons/doubleleftarrow.svg" alt="First" />
       </a>
 
-      <a href="#" class="gallery-posts-navigation prev-btn">
+      <a href="#" class="tab-posts-navigation prev-btn">
         <img src="/icons/leftarrow.svg" alt="Prev" />
       </a>
 
-      <div class="gallery-posts-numbers"></div>
+      <div class="tab-posts-numbers"></div>
 
-      <a href="#" class="gallery-posts-navigation next-btn">
+      <a href="#" class="tab-posts-navigation next-btn">
         <img src="/icons/rightarrow.svg" alt="Next" />
       </a>
 
-      <a href="#" class="gallery-posts-double-navigation last-btn">
+      <a href="#" class="tab-posts-double-navigation last-btn">
         <img src="/icons/doublerightarrow.svg" alt="Last" />
       </a>
     </div>
@@ -118,21 +92,17 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
     margin: 0 auto;
   }
 
-  .gallery-pagination {
+  .tab-panel-number {
     width: 100%;
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 0 9px;
-    margin-bottom: 24px;
-    color: #000;
-    font-family: "Zen Kurenaido";
-    letter-spacing: 2px;
   }
 
-  .gallery-pagination a,
-  .gallery-pagination p,
-  .gallery-pagination input {
+  .tab-panel-number p,
+  .tab-panel-number a,
+  .tab-panel-number input {
     color: #000;
     font-family: "Grandiflora One";
     font-size: 20px;
@@ -144,84 +114,59 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
     cursor: default;
   }
 
-  .gallery-pagination:hover {
-    color: #0db49b;
-  }
-
-  .panel-top {
-    justify-content: flex-end;
-    margin-bottom: 24px;
-  }
-
   .panel-bottom {
     justify-content: center;
     margin-top: 24px;
   }
 
-  .page-input-top {
-    width: 40px;
-    text-align: center;
-    border: none;
-    background: none;
-    outline: none;
-    border-bottom: 1px solid #f0f0f0;
-    cursor: text !important;
-  }
-
-  .page-input-top:focus {
-    width: 80px;
-    border-bottom: 1px solid #0db49b;
-    color: #0db49b !important;
-  }
-
-  input.page-input-top::-webkit-outer-spin-button,
-  input.page-input-top::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-  input.page-input-top[type="number"] {
-    -moz-appearance: textfield;
-  }
-
-  .gallery-posts-numbers {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .gallery-posts-number {
-    text-decoration: none;
-  }
-
-  .gallery-posts-numbers {
+  .tab-posts-numbers {
     display: flex;
     gap: 10px;
     margin: 0 15px;
-}
+  }
 
-  .gallery-posts-navigation {
+  .tab-posts-number {
+    text-decoration: none;
+    cursor: pointer !important;
+  }
+
+  .tab-posts-number:hover {
+    color: #0db49b;
+  }
+
+  .tab-posts-navigation {
     text-decoration: none;
     width: 20px;
     height: 20px;
   }
 
-  .gallery-posts-navigation img,
-  .gallery-posts-double-navigation img {
-    margin-bottom: 2px;
-  }
-
-  .gallery-posts-double-navigation {
+  .tab-posts-double-navigation {
     text-decoration: none;
     width: 26px;
     height: 20px;
   }
 
-  .gallery-posts-navigation:hover {
+  .tab-posts-navigation img,
+  .tab-posts-double-navigation img {
+    margin-bottom: 2px;
+  }
+
+  .tab-posts-navigation:hover {
     filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg) brightness(100%) contrast(90%);
   }
 
-  .gallery-posts-double-navigation:hover {
+  .tab-posts-double-navigation:hover {
     filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg) brightness(100%) contrast(90%);
+  }
+
+  .tab-posts-navigation img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .tab-posts-double-navigation img {
+    width: 26px;
+    height: 20px;
   }
 
 
@@ -333,16 +278,16 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
   }
 
   @media screen and (max-width: 780px) {
-    .gallery-pagination {
+    .tab-panel-number {
       gap: 10px;
       font-size: 14px;
     }
 
-    .gallery-posts-numbers {
+    .tab-posts-numbers {
       gap: 8px;
     }
 
-    .gallery-posts-number,
+    .tab-posts-number,
     .separate-slash {
       font-size: 14px;
     }
@@ -536,7 +481,7 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
   const items = Array.from(document.querySelectorAll(".photo-wrapper")).filter(
     (item) => item instanceof HTMLElement,
   );
-  const numbersContainer = document.querySelector(".gallery-posts-numbers");
+  const numbersContainer = document.querySelector(".tab-posts-numbers");
   const btnFirst = document.querySelector(".first-btn");
   const btnPrev = document.querySelector(".prev-btn");
   const btnNext = document.querySelector(".next-btn");
@@ -596,10 +541,10 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
         numbersContainer.appendChild(dots);
       }
 
-      const link = document.createElement("a");
-      link.className = "gallery-posts-number";
-      link.textContent = page.toString();
-      link.href = "#";
+        const link = document.createElement("a");
+        link.className = "tab-posts-number";
+        link.textContent = page.toString();
+        link.href = "#";
 
       if (page === currentPage) {
         link.style.textDecoration = "underline";
