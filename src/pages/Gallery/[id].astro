@@ -37,8 +37,8 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
       data-total-posts={photos.length}
       data-total-pages={totalPages}
     >
-      <p class="total-pages-label">{photos.length} pictures</p>
-      
+      <p class="total-photos-label">{photos.length} pictures</p>
+
       {totalPages > 1 && (
         <div class="pagination-controls">
           <a class="tab-posts-navigation prev-btn-top" href="#">
