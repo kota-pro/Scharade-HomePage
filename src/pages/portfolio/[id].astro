@@ -689,7 +689,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
     const containerWidth = container.clientWidth;
     const items = Array.from(
       container.querySelectorAll(".photo-wrapper"),
-    );
+    ) as HTMLElement[];
 
     const validItems = items.filter((item) => {
       const img = item.querySelector("img");
@@ -698,8 +698,8 @@ const backLinkMapJSON = JSON.stringify(backLink);
 
     if (!validItems.length) return;
 
-    let rows = [];
-    let currentRow = [];
+    let rows: HTMLElement[][] = [];
+    let currentRow: HTMLElement[] = [];
     let currentRowWidth = 0;
 
     validItems.forEach((item) => {
@@ -789,7 +789,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
 
   if (loadedCount === images.length) layoutImages();
 
-  let resizeTimer;
+  let resizeTimer: number;
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
     resizeTimer = window.setTimeout(layoutImages, 100);
