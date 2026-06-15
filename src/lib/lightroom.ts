@@ -8,6 +8,8 @@ const CLIENT_ID = import.meta.env.ADOBE_CLIENT_ID;
 const CLIENT_SECRET = import.meta.env.ADOBE_CLIENT_SECRET;
 const REFRESH_TOKEN = import.meta.env.ADOBE_REFRESH_TOKEN;
 const CATALOG_ID = import.meta.env.LIGHTROOM_CATALOG_ID;
+const LIGHTROOM_API_BASE_URL = "https://lr.adobe.io";
+const LIGHTROOM_MAX_PAGE_LIMIT = 500;
 
 export type LightroomAlbum = {
   id: string;
@@ -153,6 +155,34 @@ async function fetchLightroomJson(accessToken: string, url: string) {
   return JSON.parse(jsonString);
 }
 
+function resolveLightroomUrl(url: string) {
+  return url.startsWith("http") ? url : `${LIGHTROOM_API_BASE_URL}${url}`;
+}
+
+async function fetchPaginatedLightroomResources(
+  accessToken: string,
+  initialUrl: string,
+) {
+  const resources: Array<Record<string, unknown>> = [];
+  let nextUrl: string | null = initialUrl;
+
+  while (nextUrl) {
+    const data = await fetchLightroomJson(accessToken, resolveLightroomUrl(nextUrl));
+    if (!data) break;
+
+    const pageResources = Array.isArray(data.resources)
+      ? (data.resources as Array<Record<string, unknown>>)
+      : [];
+    resources.push(...pageResources);
+
+    const href =
+      typeof data.links?.next?.href === "string" ? data.links.next.href : null;
+    nextUrl = href;
+  }
+
+  return resources;
+}
+
 async function getAlbumDetail(accessToken: string, albumId: string) {
   const url = `https://lr.adobe.io/v2/catalogs/${CATALOG_ID}/albums/${albumId}`;
   const data = await fetchLightroomJson(accessToken, url);
@@ -160,9 +190,10 @@ async function getAlbumDetail(accessToken: string, albumId: string) {
 }
 
 async function listAlbumsBySubtype(accessToken: string, subtype: string) {
-  const url = `https://lr.adobe.io/v2/catalogs/${CATALOG_ID}/albums?subtype=${subtype}&limit=500`;
-  const data = await fetchLightroomJson(accessToken, url);
-  return (data?.resources || []) as Array<Record<string, unknown>>;
+  const url =
+    `${LIGHTROOM_API_BASE_URL}/v2/catalogs/${CATALOG_ID}/albums` +
+    `?subtype=${subtype}&limit=${LIGHTROOM_MAX_PAGE_LIMIT}`;
+  return fetchPaginatedLightroomResources(accessToken, url);
 }
 
 // アクセストークンのキャッシュ（毎回リフレッシュを防ぐ）
@@ -368,25 +399,10 @@ export async function fetchImageBuffer(
 
 export async function getAlbumPhotos(albumId: string): Promise<any[]> {
   const accessToken = await getAccessToken();
-
-  const url = `https://lr.adobe.io/v2/catalogs/${CATALOG_ID}/albums/${albumId}/assets?limit=100`;
-
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "X-API-Key": CLIENT_ID,
-    },
-  });
-
-  if (!response.ok) {
-    console.error(`API Error (getAlbumPhotos):`, await response.text());
-    return [];
-  }
-
-  const text = await response.text();
-  const jsonString = text.replace(/^while\s*\(1\)\s*\{\}\s*/, "");
-  const data = JSON.parse(jsonString);
-  const resources = data.resources || [];
+  const url =
+    `${LIGHTROOM_API_BASE_URL}/v2/catalogs/${CATALOG_ID}/albums/${albumId}/assets` +
+    `?limit=${LIGHTROOM_MAX_PAGE_LIMIT}`;
+  const resources = await fetchPaginatedLightroomResources(accessToken, url);
 
   return resources.map((resource: any) => {
     const assetId = resource.asset?.id;

@@ -31,6 +31,7 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
 
 <GalleryLayout title={albumTitle}>
   {photos.length === 0 && <div class="no-photos">No photos found.</div>}
+<<<<<<< Updated upstream
   {photos.length > 0 && (
     <div
       class="gallery-pagination panel-top"
@@ -57,6 +58,8 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
       </a>
     </div>
   )}
+=======
+>>>>>>> Stashed changes
   <div class="gallery-container-inner">
     <div class="justified-grid">
       {
@@ -157,6 +160,7 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
     justify-content: center;
     margin-top: 24px;
   }
+<<<<<<< Updated upstream
 
   .page-input-top {
     width: 40px;
@@ -183,6 +187,8 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
     -moz-appearance: textfield;
   }
 
+=======
+>>>>>>> Stashed changes
   .gallery-posts-numbers {
     display: flex;
     align-items: center;
@@ -536,14 +542,11 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
   const items = Array.from(document.querySelectorAll(".photo-wrapper")).filter(
     (item) => item instanceof HTMLElement,
   );
-  const inputTop = document.querySelector(".page-input-top");
   const numbersContainer = document.querySelector(".gallery-posts-numbers");
   const btnFirst = document.querySelector(".first-btn");
   const btnPrev = document.querySelector(".prev-btn");
   const btnNext = document.querySelector(".next-btn");
   const btnLast = document.querySelector(".last-btn");
-  const btnPrevTop = document.querySelector(".prev-btn-top");
-  const btnNextTop = document.querySelector(".next-btn-top");
 
   let currentPage = 1;
 
@@ -568,7 +571,6 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
       }
     });
 
-    if (inputTop) inputTop.value = currentPage.toString();
     updatePaginationNumbers();
     requestAnimationFrame(layoutVisibleImagesWhenReady);
   };
@@ -620,23 +622,6 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
       prevPage = page;
     });
   };
-
-  inputTop?.addEventListener("change", (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement)) return;
-    const value = parseInt(target.value, 10);
-    if (!Number.isNaN(value)) renderPage(value);
-  });
-
-  btnPrevTop?.addEventListener("click", (event) => {
-    event.preventDefault();
-    renderPage(currentPage - 1);
-  });
-
-  btnNextTop?.addEventListener("click", (event) => {
-    event.preventDefault();
-    renderPage(currentPage + 1);
-  });
 
   btnFirst?.addEventListener("click", (event) => {
     event.preventDefault();
