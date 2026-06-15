@@ -3,13 +3,13 @@ import Layout from "./Layout.astro";
 import "../styles/UA+reset.css";
 import "../styles/Gallery.css";
 
-const { title = "Gallery" } = Astro.props;
+const {title} = Astro.props;
 ---
 
 <Layout>
   <Fragment slot="main-slot">
     <div class="section-title">
-      <h1>{title}</h1>
+      <h1>Gallery</h1>
       <div class="section-title-line"></div>
     </div>      
   </Fragment>
@@ -30,6 +30,9 @@ const { title = "Gallery" } = Astro.props;
     </div>
   </Fragment>
   <Fragment slot="body-slot">
+    <div class="album-title">
+      <h1> { title }</h1>
+    </div>
     <div class="gallery-detail-wrapper">
       <slot />
     </div>
@@ -37,11 +40,36 @@ const { title = "Gallery" } = Astro.props;
 </Layout>
 
 <style>
+  .album-title {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .album-title h1 {
+    color: #000;
+    font-family: "Zen Old Mincho";
+    font-size: 48px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 7.2px;
+  }
+
   .gallery-detail-wrapper {
     width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+  }
+
+  @media (max-width: 768px) {
+    .album-title h1 {
+      font-size: 24px;
+      letter-spacing: 3.6px;
+    }
   }
 </style>
