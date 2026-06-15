@@ -23,6 +23,11 @@ const portfolio = await getPortfolioDetail<Portfolio>(id as string);
 const gradeText = normalizePortfolioGrade(portfolio.grade);
 const genText = portfolio.generation ? `${portfolio.generation}期生` : "";
 const hasPictures = portfolio.pictures && portfolio.pictures.length > 0;
+const ITEMS_PER_PAGE = 100;
+const totalPages = Math.max(
+  1,
+  Math.ceil((portfolio.pictures?.length ?? 0) / ITEMS_PER_PAGE),
+);
 const pageTitle = `${portfolio.name} | Portfolio`;
 const { user } = getUserFromRequest(Astro.request);
 const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
@@ -141,7 +146,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
     >
       {canEditLink && (
       <div class="edit-link-wrapper">
-        <a class="edit-link" href="/Portfolio/edit">Edit my portfolio <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 -2 24 24"><path fill="currentColor" d="M5 19h1.425L16.2 9.225L14.775 7.8L5 17.575zm-2 2v-4.25L17.625 2.175L21.8 6.45L7.25 21zM19 6.4L17.6 5zm-3.525 2.125l-.7-.725L16.2 9.225z"/></svg></a>
+        <a class="edit-link" href="/portfolio/edit">Edit my portfolio <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 -2 24 24"><path fill="currentColor" d="M5 19h1.425L16.2 9.225L14.775 7.8L5 17.575zm-2 2v-4.25L17.625 2.175L21.8 6.45L7.25 21zM19 6.4L17.6 5zm-3.525 2.125l-.7-.725L16.2 9.225z"/></svg></a>
       </div>
       )}
 
@@ -163,6 +168,34 @@ const backLinkMapJSON = JSON.stringify(backLink);
     <hr class="section-divider" />
 
     <div class="gallery-container-inner">
+      {hasPictures && totalPages > 1 && (
+        <div
+          class="tab-panel-number panel-top"
+          data-total-posts={portfolio.pictures.length}
+          data-total-pages={totalPages}
+        >
+          <p class="total-pages-label">Total {totalPages}</p>
+
+          <a class="tab-posts-navigation prev-btn-top" href="#">
+            <img src="/icons/leftarrow.svg" alt="Prev" />
+          </a>
+
+          <input
+            class="page-input-top"
+            type="text"
+            inputmode="numeric"
+            min="1"
+            max={totalPages}
+            value="1"
+          />
+          <p>/</p>
+          <p>{totalPages}</p>
+
+          <a class="tab-posts-navigation next-btn-top" href="#">
+            <img src="/icons/rightarrow.svg" alt="Next" />
+          </a>
+        </div>
+      )}
       {
         hasPictures ? (
           <div class="justified-grid">
@@ -185,6 +218,28 @@ const backLinkMapJSON = JSON.stringify(backLink);
           <div class="no-photos"><p>まだ写真が投稿されていません。</p></div>
         )
       }
+
+      {hasPictures && totalPages > 1 && (
+        <div class="tab-panel-number panel-bottom">
+          <a href="#" class="tab-posts-double-navigation first-btn">
+            <img src="/icons/doubleleftarrow.svg" alt="First" />
+          </a>
+
+          <a href="#" class="tab-posts-navigation prev-btn">
+            <img src="/icons/leftarrow.svg" alt="Prev" />
+          </a>
+
+          <div class="tab-posts-numbers"></div>
+
+          <a href="#" class="tab-posts-navigation next-btn">
+            <img src="/icons/rightarrow.svg" alt="Next" />
+          </a>
+
+          <a href="#" class="tab-posts-double-navigation last-btn">
+            <img src="/icons/doublerightarrow.svg" alt="Last" />
+          </a>
+        </div>
+      )}
     </div>
     <div id="image-modal" class="modal-overlay" aria-hidden="true">
       <div class="modal-content">
@@ -454,6 +509,118 @@ const backLinkMapJSON = JSON.stringify(backLink);
     padding: 0 20px;
   }
 
+  .tab-panel-number {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 9px;
+  }
+
+  .tab-panel-number p,
+  .tab-panel-number a,
+  .tab-panel-number input {
+    color: #000;
+    font-family: "Grandiflora One";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
+    text-align: center;
+    cursor: default;
+  }
+
+  .panel-top {
+    justify-content: flex-end;
+    margin-bottom: 24px;
+  }
+
+  .panel-bottom {
+    justify-content: center;
+    margin-top: 24px;
+  }
+
+  .total-pages-label {
+    margin-right: 4px;
+  }
+
+  .page-input-top {
+    width: 40px;
+    text-align: center;
+    border: none;
+    background: none;
+    outline: none;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: text !important;
+  }
+
+  .page-input-top:focus {
+    width: 80px;
+    border-bottom: 1px solid #0db49b;
+    color: #0db49b !important;
+  }
+
+  input.page-input-top::-webkit-outer-spin-button,
+  input.page-input-top::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input.page-input-top[type="number"] {
+    -moz-appearance: textfield;
+  }
+
+  .tab-posts-numbers {
+    display: flex;
+    gap: 10px;
+    margin: 0 15px;
+  }
+
+  .tab-posts-number {
+    text-decoration: none;
+    cursor: pointer !important;
+  }
+
+  .tab-posts-number:hover {
+    color: #0db49b;
+  }
+
+  .tab-posts-navigation {
+    text-decoration: none;
+    width: 20px;
+    height: 20px;
+  }
+
+  .tab-posts-double-navigation {
+    text-decoration: none;
+    width: 26px;
+    height: 20px;
+  }
+
+  .tab-posts-navigation img,
+  .tab-posts-double-navigation img {
+    margin-bottom: 2px;
+  }
+
+  .tab-posts-navigation:hover {
+    filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg) brightness(100%) contrast(90%);
+  }
+
+  .tab-posts-double-navigation:hover {
+    filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg) brightness(100%) contrast(90%);
+  }
+
+  .tab-posts-navigation img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .tab-posts-double-navigation img {
+    width: 26px;
+    height: 20px;
+  }
+
   .no-photos {
     width: 100%;
     display: flex;
@@ -674,10 +841,24 @@ const backLinkMapJSON = JSON.stringify(backLink);
       width: 16px;
       height: 16px;
     }
+
+    .tab-panel-number {
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    .tab-posts-numbers {
+      gap: 8px;
+    }
+
+    .tab-posts-number,
+    .separate-slash {
+      font-size: 14px;
+    }
   }
 </style>
 
-<script>
+<script is:inline define:vars={{ ITEMS_PER_PAGE, totalPages }}>
   const TARGET_HEIGHT = 250;
   const GAP = 12;
   const MIN_LAST_ROW_WIDTH = 800;
@@ -687,9 +868,9 @@ const backLinkMapJSON = JSON.stringify(backLink);
     if (!(container instanceof HTMLElement)) return;
 
     const containerWidth = container.clientWidth;
-    const items = Array.from(
-      container.querySelectorAll(".photo-wrapper"),
-    ) as HTMLElement[];
+    const items = Array.from(container.querySelectorAll(".photo-wrapper")).filter(
+      (item) => item instanceof HTMLElement && item.style.display !== "none",
+    );
 
     const validItems = items.filter((item) => {
       const img = item.querySelector("img");
@@ -698,8 +879,8 @@ const backLinkMapJSON = JSON.stringify(backLink);
 
     if (!validItems.length) return;
 
-    let rows: HTMLElement[][] = [];
-    let currentRow: HTMLElement[] = [];
+    let rows = [];
+    let currentRow = [];
     let currentRowWidth = 0;
 
     validItems.forEach((item) => {
@@ -771,27 +952,175 @@ const backLinkMapJSON = JSON.stringify(backLink);
     });
   }
 
-  const images = document.querySelectorAll(".photo-wrapper img");
-  let loadedCount = 0;
+  function layoutVisibleImagesWhenReady() {
+    const visibleItems = Array.from(
+      document.querySelectorAll(".photo-wrapper"),
+    ).filter(
+      (item) => item instanceof HTMLElement && item.style.display !== "none",
+    );
 
-  images.forEach((img) => {
-    if (!(img instanceof HTMLImageElement)) return;
+    if (visibleItems.length === 0) return;
 
-    if (img.complete) {
-      loadedCount++;
-    } else {
-      img.addEventListener("load", () => {
-        loadedCount++;
-        if (loadedCount === images.length) layoutImages();
-      });
+    const pendingImages = [];
+
+    visibleItems.forEach((item) => {
+      const img = item.querySelector("img");
+      if (img instanceof HTMLImageElement && !(img.complete && img.naturalWidth > 0)) {
+        pendingImages.push(img);
+      }
+    });
+
+    if (pendingImages.length === 0) {
+      layoutImages();
+      return;
     }
-  });
 
-  if (loadedCount === images.length) layoutImages();
+    let remaining = pendingImages.length;
+    pendingImages.forEach((img) => {
+      const onDone = () => {
+        img.removeEventListener("load", onDone);
+        img.removeEventListener("error", onDone);
+        remaining -= 1;
+        if (remaining === 0) layoutImages();
+      };
 
-  let resizeTimer: number;
+      img.addEventListener("load", onDone, { once: true });
+      img.addEventListener("error", onDone, { once: true });
+    });
+  }
+
+  let resizeTimer;
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
-    resizeTimer = window.setTimeout(layoutImages, 100);
+    resizeTimer = window.setTimeout(layoutVisibleImagesWhenReady, 100);
   });
+
+  const items = Array.from(document.querySelectorAll(".photo-wrapper")).filter(
+    (item) => item instanceof HTMLElement,
+  );
+  const inputTop = document.querySelector(".page-input-top");
+  const numbersContainer = document.querySelector(".tab-posts-numbers");
+  const btnFirst = document.querySelector(".first-btn");
+  const btnPrev = document.querySelector(".prev-btn");
+  const btnNext = document.querySelector(".next-btn");
+  const btnLast = document.querySelector(".last-btn");
+  const btnPrevTop = document.querySelector(".prev-btn-top");
+  const btnNextTop = document.querySelector(".next-btn-top");
+
+  let currentPage = 1;
+
+  const renderPage = (page) => {
+    if (page < 1) page = 1;
+    if (page > totalPages) page = totalPages;
+    currentPage = page;
+
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+
+    items.forEach((item, index) => {
+      if (index >= startIndex && index < endIndex) {
+        item.style.display = "block";
+        item.style.width = "320px";
+        item.style.height = `${TARGET_HEIGHT}px`;
+        item.style.marginRight = `${GAP}px`;
+        item.style.marginBottom = `${GAP}px`;
+        item.classList.add("is-loaded");
+      } else {
+        item.style.display = "none";
+      }
+    });
+
+    if (inputTop) inputTop.value = currentPage.toString();
+    updatePaginationNumbers();
+    requestAnimationFrame(layoutVisibleImagesWhenReady);
+  };
+
+  const updatePaginationNumbers = () => {
+    if (!numbersContainer) return;
+    numbersContainer.innerHTML = "";
+
+    const pagesSet = new Set([
+      1,
+      2,
+      totalPages - 1,
+      totalPages,
+      currentPage - 1,
+      currentPage,
+      currentPage + 1,
+    ]);
+
+    const sortedPages = Array.from(pagesSet)
+      .filter((page) => page >= 1 && page <= totalPages)
+      .sort((a, b) => a - b);
+
+    let prevPage = 0;
+    sortedPages.forEach((page) => {
+      if (prevPage > 0 && page - prevPage > 1) {
+        const dots = document.createElement("span");
+        dots.className = "separate-slash";
+        dots.textContent = "...";
+        numbersContainer.appendChild(dots);
+      }
+
+      const link = document.createElement("a");
+      link.className = "tab-posts-number";
+      link.textContent = page.toString();
+      link.href = "#";
+
+      if (page === currentPage) {
+        link.style.textDecoration = "underline";
+        link.style.textDecorationThickness = "0.5px";
+        link.style.textUnderlineOffset = "4px";
+      }
+
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        renderPage(page);
+      });
+
+      numbersContainer.appendChild(link);
+      prevPage = page;
+    });
+  };
+
+  inputTop?.addEventListener("change", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) return;
+    const value = parseInt(target.value, 10);
+    if (!Number.isNaN(value)) renderPage(value);
+  });
+
+  btnPrevTop?.addEventListener("click", (event) => {
+    event.preventDefault();
+    renderPage(currentPage - 1);
+  });
+
+  btnNextTop?.addEventListener("click", (event) => {
+    event.preventDefault();
+    renderPage(currentPage + 1);
+  });
+
+  btnFirst?.addEventListener("click", (event) => {
+    event.preventDefault();
+    renderPage(1);
+  });
+
+  btnPrev?.addEventListener("click", (event) => {
+    event.preventDefault();
+    renderPage(currentPage - 1);
+  });
+
+  btnNext?.addEventListener("click", (event) => {
+    event.preventDefault();
+    renderPage(currentPage + 1);
+  });
+
+  btnLast?.addEventListener("click", (event) => {
+    event.preventDefault();
+    renderPage(totalPages);
+  });
+
+  if (items.length > 0) {
+    renderPage(1);
+  }
 </script>

@@ -25,7 +25,7 @@ try {
 }
 
 const albumTitle = albums.find((item) => item.id === id)?.payload.name || "Unknown Album";
-const ITEMS_PER_PAGE = 300;
+const ITEMS_PER_PAGE = 100;
 const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
 ---
 
@@ -37,6 +37,8 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
       data-total-posts={photos.length}
       data-total-pages={totalPages}
     >
+      <p class="total-pages-label">Total {totalPages}</p>
+
       <a class="tab-posts-navigation prev-btn-top" href="#">
         <img src="/icons/leftarrow.svg" alt="Prev" />
       </a>
@@ -143,6 +145,10 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
   .panel-top {
     justify-content: flex-end;
     margin-bottom: 24px;
+  }
+
+  .total-pages-label {
+    margin-right: 4px;
   }
 
   .panel-bottom {
