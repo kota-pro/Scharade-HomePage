@@ -129,12 +129,14 @@ import '../styles/UA+reset.css';
 
 <script>
     window.addEventListener('load', () => {
-        const loader = document.querySelector('.loading-wrapper');
+        const loader = document.querySelector<HTMLElement>('.loading-wrapper');
+
         if (loader) {
             loader.classList.add('loaded');
+
             setTimeout(() => {
                 loader.style.display = 'none';
-            }, 500); // アニメーションの時間に合わせて遅延させる
+            }, 500);
         }
     });
 </script>
