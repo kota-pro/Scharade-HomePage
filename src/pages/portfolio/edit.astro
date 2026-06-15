@@ -3,7 +3,7 @@ import "../../styles/Auth.css";
 import "../../styles/PortfolioEdit.css";
 import Layout from "../../layouts/Layout.astro";
 import type { Portfolio } from "../../lib/microcms";
-import { getPortfolioDetail } from "../../lib/microcms";
+import { getPortfolioDetail, normalizePortfolioGrade } from "../../lib/microcms";
 import { getUserFromRequest } from "../../lib/auth";
 
 const { user } = getUserFromRequest(Astro.request);
@@ -40,7 +40,7 @@ const initialFormData = {
   camera: portfolio?.camera ?? "",
   self_introduction: portfolio?.self_introduction ?? "",
   pictures: (portfolio?.pictures ?? []).map((pic) => pic.url).filter(Boolean),
-  grade: portfolio?.grade ?? "",
+  grade: normalizePortfolioGrade(portfolio?.grade),
 };
 
 const HASHTAG_OPTIONS: Array<{ value: string; label: string }> = [
@@ -62,7 +62,7 @@ const HASHTAG_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "event", label: "event" },
 ];
 
-const portfolioViewUrl = canEdit ? `/Portfolio/${user?.portfolioId}` : null;
+const portfolioViewUrl = canEdit ? `/portfolio/${user?.portfolioId}` : null;
 const hasPortfolio = canEdit;
 
 const GRADE_OPTIONS: Array<{ value: string; label: string }> = [

@@ -32,7 +32,7 @@ export type Portfolio = {
   hashtags?: string[];
   x_url?: string;
   camera?: string;
-  grade?: string;
+  grade?: string | string[];
   icon?: {
     url: string;
     height: number;
@@ -43,6 +43,42 @@ export type Portfolio = {
     height: number;
     width: number;
   }[];
+};
+
+const PORTFOLIO_GRADE_ALIASES: Record<string, string> = {
+  "1st grade": "1st Grade",
+  "2nd grade": "2nd Grade",
+  "3rd grade": "3rd Grade",
+  "4th grade": "4th Grade",
+  international: "International",
+  "master's program": "Master's Program",
+  "masters program": "Master's Program",
+  ob: "OB",
+  "1年": "1st Grade",
+  "2年": "2nd Grade",
+  "3年": "3rd Grade",
+  "4年": "4th Grade",
+  "留学生": "International",
+  "院生": "Master's Program",
+  "卒業": "OB",
+};
+
+export const canonicalizePortfolioGrade = (grade: string): string => {
+  const trimmed = grade.trim();
+  if (!trimmed) return "";
+  return PORTFOLIO_GRADE_ALIASES[trimmed.toLowerCase()] ?? PORTFOLIO_GRADE_ALIASES[trimmed] ?? trimmed;
+};
+
+export const normalizePortfolioGrade = (
+  grade: Portfolio["grade"],
+): string => {
+  if (typeof grade === "string") return canonicalizePortfolioGrade(grade);
+  if (Array.isArray(grade)) {
+    return grade
+      .map((value) => canonicalizePortfolioGrade(String(value)))
+      .find(Boolean) ?? "";
+  }
+  return "";
 };
 
 export const microcmsClient = createClient({
