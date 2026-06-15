@@ -18,7 +18,7 @@ const GRADE_TABS = [
   "4th Grade",
   "Master's Program",
   "International",
-  "OB",
+  "OB/OG",
 ] as const;
 
 const allPortfolios = response.contents.map((portfolio) => ({
@@ -71,7 +71,7 @@ const allPortfolios = response.contents.map((portfolio) => ({
               src="/icons/rightarrow.svg"
               alt="arrow icon"
             />
-            {tab === "All" ? "All Members" : `${tab} Members`}
+            {tab === "All" ? "All Members" : `${tab}`}
           </summary>
           <div class="member-grid">
             {allPortfolios

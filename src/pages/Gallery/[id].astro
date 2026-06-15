@@ -32,7 +32,11 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
 <GalleryLayout title={albumTitle}>
   {photos.length === 0 && <div class="no-photos">No photos found.</div>}
   {photos.length > 0 && (
-    <div class="gallery-pagination panel-top" data-total-posts={photos.length} data-total-pages={totalPages}>
+    <div
+      class="gallery-pagination panel-top"
+      data-total-posts={photos.length}
+      data-total-pages={totalPages}
+    >
       <a class="gallery-posts-navigation prev-btn-top" href="#">
         <img src="/icons/leftarrow.svg" alt="Prev" />
       </a>
@@ -41,6 +45,8 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
         class="page-input-top"
         type="text"
         inputmode="numeric"
+        min="1"
+        max={totalPages}
         value="1"
       />
       <p>/</p>
@@ -64,7 +70,7 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
             <img
               src={`/api/images/${photo.id}`}
               alt={photo.name}
-              loading="lazy"
+              decoding="async"
               data-full-src={`/api/images/full/${photo.id}`}
             />
             <div class="photo-meta">
@@ -116,28 +122,65 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
     width: 100%;
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 16px;
+    gap: 10px;
+    padding: 0 9px;
     margin-bottom: 24px;
     color: #000;
     font-family: "Zen Kurenaido";
     letter-spacing: 2px;
   }
 
+  .gallery-pagination a,
+  .gallery-pagination p,
+  .gallery-pagination input {
+    color: #000;
+    font-family: "Grandiflora One";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
+    text-align: center;
+    cursor: default;
+  }
+
+  .gallery-pagination:hover {
+    color: #0db49b;
+  }
+
+  .panel-top {
+    justify-content: flex-end;
+    margin-bottom: 24px;
+  }
+
   .panel-bottom {
+    justify-content: center;
     margin-top: 24px;
-    margin-bottom: 0;
   }
 
   .page-input-top {
-    width: 3.5rem;
-    border: none;
-    border-bottom: 1px solid #000;
-    background: transparent;
+    width: 40px;
     text-align: center;
-    color: inherit;
-    font: inherit;
+    border: none;
+    background: none;
     outline: none;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: text !important;
+  }
+
+  .page-input-top:focus {
+    width: 80px;
+    border-bottom: 1px solid #0db49b;
+    color: #0db49b !important;
+  }
+
+  input.page-input-top::-webkit-outer-spin-button,
+  input.page-input-top::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input.page-input-top[type="number"] {
+    -moz-appearance: textfield;
   }
 
   .gallery-posts-numbers {
@@ -146,30 +189,41 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
     gap: 12px;
   }
 
-  .gallery-posts-number,
-  .separate-slash {
-    color: inherit;
-    font-family: "Zen Kurenaido";
-    font-size: 18px;
-    letter-spacing: 2px;
-  }
-
   .gallery-posts-number {
     text-decoration: none;
   }
 
-  .gallery-posts-navigation,
-  .gallery-posts-double-navigation {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  .gallery-posts-numbers {
+    display: flex;
+    gap: 10px;
+    margin: 0 15px;
+}
+
+  .gallery-posts-navigation {
+    text-decoration: none;
+    width: 20px;
+    height: 20px;
   }
 
   .gallery-posts-navigation img,
   .gallery-posts-double-navigation img {
-    width: 20px;
+    margin-bottom: 2px;
+  }
+
+  .gallery-posts-double-navigation {
+    text-decoration: none;
+    width: 26px;
     height: 20px;
   }
+
+  .gallery-posts-navigation:hover {
+    filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg) brightness(100%) contrast(90%);
+  }
+
+  .gallery-posts-double-navigation:hover {
+    filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg) brightness(100%) contrast(90%);
+  }
+
 
   .justified-grid {
     display: flex;

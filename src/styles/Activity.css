@@ -193,6 +193,11 @@
     height: 20px;
 }
 
+.tab-posts-navigation img,
+.tab-posts-double-navigation img {
+    margin-bottom: 2px;
+}
+
 .tab-posts-navigation:hover {
     filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg) brightness(100%) contrast(90%);
 }

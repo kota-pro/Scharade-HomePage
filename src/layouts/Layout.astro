@@ -1,5 +1,6 @@
 ---
 import "../styles/UA+reset.css";
+import Loader from "../components/loading.astro";
 import Header from "../components/header.astro";
 import Footer from "../components/footer.astro";
 const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -48,6 +49,7 @@ const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
 		<script is:inline src={`https://maps.googleapis.com/maps/api/js?lang=ja&key=${googleMapsApiKey}&libraries=maps,marker`} defer></script>
 	</head>
 	<body>
+		<Loader />
 		<Header />
 		<slot name="main-slot" />
 		<div class="container">
