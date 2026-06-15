@@ -1,7 +1,9 @@
 import type { APIRoute } from "astro";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import nodemailer from "nodemailer";
 import path from "node:path";
+import { assertReviewConfig, createReviewSignature } from "../../../lib/signupReview";
 
 const DATA_DIR = path.join(process.cwd(), ".data");
 const USERS_PATH = path.join(DATA_DIR, "users.json");
@@ -15,6 +17,9 @@ const PORTFOLIO_ENDPOINT =
   (import.meta as any).env?.MICROCMS_PORTFOLIO_ENDPOINT ??
   process.env.MICROCMS_PORTFOLIO_ENDPOINT ??
   "portfolio";
+const CONTACT_EMAIL = "contact@scharade.jp";
+const GMAIL_PASS =
+  (import.meta as any).env?.GMAIL_PASS ?? process.env.GMAIL_PASS;
 
 type User = {
   id: string;
@@ -60,6 +65,78 @@ function json(status: number, data: any) {
   return new Response(JSON.stringify(data), {
     status,
     headers: { "content-type": "application/json; charset=utf-8" },
+  });
+}
+
+function createMailTransporter() {
+  if (!GMAIL_PASS) {
+    throw new Error("GMAIL_PASS is not configured.");
+  }
+
+  return nodemailer.createTransport({
+    service: "gmail",
+    port: 587,
+    secure: false,
+    auth: {
+      user: CONTACT_EMAIL,
+      pass: GMAIL_PASS,
+    },
+  });
+}
+
+async function sendSignupReviewMail(input: {
+  createdAt: string;
+  email: string;
+  name: string;
+  portfolioId: string;
+  portfolioName: string;
+  request: Request;
+  userId: string;
+}) {
+  assertReviewConfig();
+
+  const transporter = createMailTransporter();
+  const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString();
+  const origin = new URL(input.request.url).origin;
+
+  const makeReviewUrl = (action: "approve" | "reject") => {
+    const params = new URLSearchParams({
+      action,
+      expires,
+      userId: input.userId,
+    });
+    params.set(
+      "sig",
+      createReviewSignature({
+        action,
+        expires,
+        userId: input.userId,
+      }),
+    );
+    return `${origin}/api/auth/review?${params.toString()}`;
+  };
+
+  const mailContent = `
+新しいアカウント申請がありました。
+
+Name: ${input.name}
+Portfolio Name: ${input.portfolioName}
+Email: ${input.email}
+Portfolio ID: ${input.portfolioId}
+Created At: ${input.createdAt}
+
+Approve:
+${makeReviewUrl("approve")}
+
+Reject:
+${makeReviewUrl("reject")}
+  `.trim();
+
+  await transporter.sendMail({
+    from: `"写団シャレード アカウント申請" <${CONTACT_EMAIL}>`,
+    to: CONTACT_EMAIL,
+    subject: `【アカウント申請】${input.name} / ${input.portfolioName}`,
+    text: mailContent,
   });
 }
 
@@ -178,19 +255,46 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
+  const createdAt = new Date().toISOString();
+  const userId = crypto.randomUUID();
+
   users.push({
-    id: crypto.randomUUID(),
+    id: userId,
     name,
     portfolioName,
     email,
     passwordHash: hashPassword(password),
-    approved: true,
-    createdAt: new Date().toISOString(),
+    approved: false,
+    createdAt,
     providers: { credentials: true },
     portfolioId,
   });
 
   writeUsers(users);
 
-  return json(200, { ok: true, message: "Account created." });
+  try {
+    await sendSignupReviewMail({
+      createdAt,
+      email,
+      name,
+      portfolioId,
+      portfolioName,
+      request,
+      userId,
+    });
+  } catch (err: any) {
+    console.error("[auth/signup] failed to send review mail", err);
+    return json(200, {
+      ok: true,
+      message:
+        "Account was created, but the admin notification email failed to send. " +
+        (err?.message ? `(${err.message})` : ""),
+      warning: "admin_notification_failed",
+    });
+  }
+
+  return json(200, {
+    ok: true,
+    message: "Account created and pending approval.",
+  });
 };
