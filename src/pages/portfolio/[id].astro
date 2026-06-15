@@ -145,9 +145,9 @@ const backLinkMapJSON = JSON.stringify(backLink);
       hidden={!backLink}
     >
       {canEditLink && (
-      <div class="edit-link-wrapper">
-        <a class="edit-link" href="/Portfolio/edit">Edit my portfolio <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 -2 24 24"><path fill="currentColor" d="M5 19h1.425L16.2 9.225L14.775 7.8L5 17.575zm-2 2v-4.25L17.625 2.175L21.8 6.45L7.25 21zM19 6.4L17.6 5zm-3.525 2.125l-.7-.725L16.2 9.225z"/></svg></a>
-      </div>
+        <div class="edit-link-wrapper">
+          <a class="edit-link" href="/Portfolio/edit">Edit my portfolio <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 -2 24 24"><path fill="currentColor" d="M5 19h1.425L16.2 9.225L14.775 7.8L5 17.575zm-2 2v-4.25L17.625 2.175L21.8 6.45L7.25 21zM19 6.4L17.6 5zm-3.525 2.125l-.7-.725L16.2 9.225z"/></svg></a>
+        </div>
       )}
 
       <a href="javascript:history.back()" aria-label="Back">
@@ -166,6 +166,10 @@ const backLinkMapJSON = JSON.stringify(backLink);
     </div>
 
     <hr class="section-divider" />
+
+    {hasPictures && (
+      <p class="picture-count">{portfolio.pictures.length} pictures</p>
+    )}
 
     <div class="gallery-container-inner">
       {hasPictures && totalPages > 1 && (
@@ -208,7 +212,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
                   <img
                     src={`${pic.url}?w=1200&q=75&fm=webp`}
                     alt={`${portfolio.name}の作品 ${i + 1}`}
-                    loading="lazy"
+                    decoding="async"
                     class="gallery-image"
                   />
               </a>
@@ -499,7 +503,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
   .section-divider {
     border: none;
     border-top: 1px solid #000;
-    margin: 40px 0;
+    margin: 40px 0 20px;
   }
 
   .gallery-container-inner {
@@ -507,6 +511,19 @@ const backLinkMapJSON = JSON.stringify(backLink);
     max-width: 1600px;
     margin: 0 auto;
     padding: 0 20px;
+  }
+
+  .picture-count {
+    color: #000;
+    font-family: "Grandiflora One";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
+    text-align: right;
+    cursor: default;
+    margin-bottom: 20px;
   }
 
   .tab-panel-number {
