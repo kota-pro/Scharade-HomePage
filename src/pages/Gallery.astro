@@ -3,6 +3,11 @@ import Layout from "../layouts/Layout.astro";
 import "../styles/UA+reset.css";
 import "../styles/Gallery.css";
 import { getAlbums, getAlbumCoverId } from "../lib/lightroom";
+import {
+  GALLERY_CATEGORY_LABELS,
+  GALLERY_CATEGORY_ORDER,
+  type GalleryAlbumCategory,
+} from "../data/galleryAlbums";
 
 let albums: Awaited<ReturnType<typeof getAlbums>> extends (infer U)[]
   ? (U & { coverId: string | null })[]
@@ -15,39 +20,45 @@ try {
     rawAlbums.map(async (album) => {
       const coverId = await getAlbumCoverId(album.id);
       return { ...album, coverId };
-    })
+    }),
   );
-} catch (e: any) {
-  console.error("[Gallery] Failed to load albums:", e.message);
-  apiError = e.message || "アルバムの読み込みに失敗しました";
+} catch (error: any) {
+  console.error("[Gallery] Failed to load albums:", error?.message ?? error);
+  apiError = error?.message || "アルバムの読み込みに失敗しました";
 }
 
+const visibleAlbums = albums.filter((album) => !album.hidden);
 const years = Array.from(
   new Set(
-    albums.map((item) => {
-      return item.created
+    visibleAlbums.map((item) =>
+      item.created
         ? new Date(item.created).getFullYear()
-        : new Date().getFullYear();
-    }),
+        : new Date().getFullYear(),
+    ),
   ),
 ).sort((a, b) => b - a);
+const tabYears = ["All", ...years.map(String)];
 
-const tabYears = ["All", ...years];
-const categories = ["撮影会", "合宿", "展示", "その他"];
-const getCategoryFromName = (name: string) => {
-  if (name.includes("撮影会")) return "撮影会";
-  if (name.includes("合宿")) return "合宿";
-  if (name.includes("展示")) return "展示";
-  return "その他";
+const getAlbumsForYearAndCategory = (
+  year: string,
+  category: GalleryAlbumCategory,
+) => {
+  return visibleAlbums.filter((item) => {
+    const itemYear = item.created
+      ? String(new Date(item.created).getFullYear())
+      : String(new Date().getFullYear());
+    const showByYear = year === "All" || itemYear === year;
+    return showByYear && item.category === category;
+  });
 };
 ---
 
 <Layout>
   <Fragment slot="main-slot">
     <div class="section-title">
-        <h1>Gallery</h1>
-        <div class="section-title-line"></div>
-      </div>
+      <h1>Gallery</h1>
+      <div class="section-title-line"></div>
+    </div>
   </Fragment>
   <Fragment slot="menu-slot">
     <div class="menu-contents-inner">
@@ -67,98 +78,98 @@ const getCategoryFromName = (name: string) => {
   </Fragment>
   <Fragment slot="body-slot">
     <div class="explanation-area">
-      <p>
-        サークルの普段の活動を各イベントごとにアルバムで分類しています。
-      </p>
+      <p>サークルの普段の活動を各イベントごとにアルバムで分類しています。</p>
     </div>
     {apiError ? (
-      <div class="api-error" style="text-align:center; padding:3rem 1rem; color:#c0392b;">
-        <p style="font-size:1.2rem; font-weight:bold;">⚠ アルバムを読み込めませんでした</p>
-        <p style="font-size:0.9rem; margin-top:0.5rem; color:#666;">Adobe Lightroom APIへの接続に失敗しました。管理者にお問い合わせください。</p>
+      <div
+        class="api-error"
+        style="text-align:center; padding:3rem 1rem; color:#c0392b;"
+      >
+        <p style="font-size:1.2rem; font-weight:bold;">
+          ⚠ アルバムを読み込めませんでした
+        </p>
+        <p style="font-size:0.9rem; margin-top:0.5rem; color:#666;">
+          Adobe Lightroom APIへの接続に失敗しました。管理者にお問い合わせください。
+        </p>
       </div>
     ) : (
-    <div class="tab">
-      {
-        tabYears.map((year, index) => {
-          const inputId = `year-${year}`;
-          return [
-            <input type="radio" id={inputId} name="year" checked={index === 0} />,
-            <label for={inputId}>{year}</label>,
-            <div class="tab-panel">
-              <div class="gallery-content">
-                {categories.map((category) => (
-                  <details class="category-section" name="category-section">
-                    <summary class="category-title">
-                      <img class="arrow-icon" src="/icons/rightarrow.svg" alt="arrow icon"> {category}
-                    </summary>
-                    <div class="gallery-grid">
-                      {albums.map((item) => {
-                        const itemYear = item.created ? new Date(item.created).getFullYear() : new Date().getFullYear();
-                        const itemCategory = getCategoryFromName(item.payload.name);
-                        const showByYear = year === "All" || `${itemYear}` === `${year}`;
-                        if (!showByYear || itemCategory !== category) return null;
-                        return (
-                          <div class="gallery-item" data-year={itemYear}>
-                            <a href={`/Gallery/${item.id}`} class="gallery-link">
-                              <div class="image-wrapper">
-                                {item.coverId ? (
-                                  <img
-                                    src={`/api/images/${item.coverId}`}
-                                    alt={item.payload.name}
-                                    loading="lazy"
-                                  />
-                                ) : (
-                                  <div class="placeholder-image">
-                                    <span>No Image</span>
+      <div class="tab">
+        {
+          tabYears.map((year, index) => {
+            const inputId = `year-${year}`;
+            return [
+              <input
+                type="radio"
+                id={inputId}
+                name="year"
+                checked={index === 0}
+              />,
+              <label for={inputId}>{year}</label>,
+              <div class="tab-panel">
+                <div class="gallery-content">
+                  {GALLERY_CATEGORY_ORDER.map((category) => {
+                    const categoryAlbums = getAlbumsForYearAndCategory(
+                      year,
+                      category,
+                    );
+                    return (
+                      <details class="category-section" name="category-section">
+                        <summary class="category-title">
+                          <img
+                            class="arrow-icon"
+                            src="/icons/rightarrow.svg"
+                            alt="arrow icon"
+                          />
+                          {GALLERY_CATEGORY_LABELS[category]}
+                        </summary>
+                        <div class="gallery-grid">
+                          {categoryAlbums.map((item) => {
+                            const itemYear = item.created
+                              ? new Date(item.created).getFullYear()
+                              : new Date().getFullYear();
+                            return (
+                              <div class="gallery-item" data-year={itemYear}>
+                                <a href={`/Gallery/${item.id}`} class="gallery-link">
+                                  <div class="image-wrapper">
+                                    {item.coverId ? (
+                                      <img
+                                        src={`/api/images/${item.coverId}`}
+                                        alt={item.payload.name}
+                                        loading="lazy"
+                                      />
+                                    ) : (
+                                      <div class="placeholder-image">
+                                        <span>No Image</span>
+                                      </div>
+                                    )}
+                                    <p class="image-title">{item.payload.name}</p>
                                   </div>
-                                )}
-                                <p class="image-title">{item.payload.name}</p>
+                                </a>
                               </div>
-                            </a>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </details>
-                ))}
-              </div>
-            </div>,
-          ];
-        })
-      }
-    </div>
+                            );
+                          })}
+                        </div>
+                      </details>
+                    );
+                  })}
+                </div>
+              </div>,
+            ];
+          })
+        }
+      </div>
     )}
   </Fragment>
 </Layout>
 
 <script>
-  const tabs = document.querySelectorAll(".year-tab");
-  
-  tabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      tabs.forEach((t) => t.classList.remove("active"));
-      tab.classList.add("active");
-
-      const selectedYear = tab.getAttribute("data-year");
-      const items = document.querySelectorAll(".gallery-item");
-
-      items.forEach((item) => {
-        const itemYear = item.getAttribute("data-year");
-
-        if (selectedYear === "All" || itemYear === selectedYear) {
-          (item as HTMLElement).style.display = "block";
-        } else {
-          (item as HTMLElement).style.display = "none";
-        }
-      });
-    });
-  });
-
   const details = document.querySelectorAll("details");
   details.forEach((detail) => {
     const updateArrow = () => {
       const arrow = detail.querySelector(".arrow-icon");
-      if (arrow) arrow.textContent = detail.open ? "▽" : "▷";
+      if (arrow instanceof HTMLElement) {
+        arrow.style.transform = detail.open ? "rotate(90deg)" : "rotate(0deg)";
+      }
     };
     detail.addEventListener("toggle", updateArrow);
     updateArrow();

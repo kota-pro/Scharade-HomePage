@@ -1,7 +1,11 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import "../styles/UA+reset.css";
-import { microcmsClient, getPortfolios } from "../lib/microcms";
+import {
+  microcmsClient,
+  getPortfolios,
+  normalizePortfolioGrade,
+} from "../lib/microcms";
 import { getAlbums } from "../lib/lightroom";
 import type { Blog } from "../types/microcms";
 import { linkToPost } from "../utils/linkToPost";
@@ -96,7 +100,7 @@ try {
         portfolio.name,
         portfolio.self_introduction,
         portfolio.camera,
-        portfolio.grade,
+        normalizePortfolioGrade(portfolio.grade),
         portfolio.generation ? `${portfolio.generation}期生` : "",
         ...(portfolio.hashtags ?? []).map((tag) => `#${tag}`),
       ]);
