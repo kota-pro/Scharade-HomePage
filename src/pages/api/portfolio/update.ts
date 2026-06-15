@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { getUserFromRequest } from "../../../lib/auth";
+import { canonicalizePortfolioGrade } from "../../../lib/microcms";
 
 const SERVICE_DOMAIN =
   (import.meta as any).env?.MICROCMS_SERVICE_DOMAIN ??
@@ -98,13 +99,15 @@ export const POST: APIRoute = async ({ request }) => {
   let gradeValue: string | null = null;
   if (GRADE_FIELD_ID) {
     if (typeof payload.grade === "string") {
-      const v = payload.grade.trim();
+      const v = canonicalizePortfolioGrade(payload.grade);
       if (v) {
         gradeValue = v;
         updateBody[GRADE_FIELD_ID] = v;
       }
     } else if (Array.isArray(payload.grade)) {
-      const arr = payload.grade.map((x) => String(x).trim()).filter(Boolean);
+      const arr = payload.grade
+        .map((x) => canonicalizePortfolioGrade(String(x)))
+        .filter(Boolean);
       if (arr.length) {
         updateBody[GRADE_FIELD_ID] = arr;
       }

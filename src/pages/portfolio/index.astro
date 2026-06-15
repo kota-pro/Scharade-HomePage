@@ -72,7 +72,7 @@ const tabs = ["All", ...generations.map((gen) => `${gen}期`)];
                 return p.generation && `${p.generation}期` === tab;
               })
               .map((portfolio) => (
-                <a href={`/Portfolio/${portfolio.id}`} class="member-card">
+                <a href={`/portfolio/${portfolio.id}`} class="member-card">
                   <div class="member-image-placeholder">
                     <img
                       src={
