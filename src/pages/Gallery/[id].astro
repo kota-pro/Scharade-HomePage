@@ -25,7 +25,8 @@ try {
 }
 
 const albumTitle = albums.find((item) => item.id === id)?.payload.name || "Unknown Album";
-const ITEMS_PER_PAGE = 100;
+const ITEMS_PER_PAGE = 300;
+const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
 ---
 
 <GalleryLayout>
@@ -33,14 +34,35 @@ const ITEMS_PER_PAGE = 100;
   <div class="album-header">
     <p>{albumTitle}</p>
   </div>
+  {photos.length > 0 && (
+    <div class="gallery-pagination panel-top" data-total-posts={photos.length} data-total-pages={totalPages}>
+      <a class="gallery-posts-navigation prev-btn-top" href="#">
+        <img src="/icons/leftarrow.svg" alt="Prev" />
+      </a>
+
+      <input
+        class="page-input-top"
+        type="text"
+        inputmode="numeric"
+        value="1"
+      />
+      <p>/</p>
+      <p>{totalPages}</p>
+
+      <a class="gallery-posts-navigation next-btn-top" href="#">
+        <img src="/icons/rightarrow.svg" alt="Next" />
+      </a>
+    </div>
+  )}
   <div class="gallery-container-inner">
     <div class="justified-grid">
       {
-        photos.map((photo) => (
+        photos.map((photo, photoIndex) => (
           <a
             class="photo-wrapper photo-trigger"
             href={`/api/images/full/${photo.id}`}
-            data-lightbox={albumTitle}  
+            data-lightbox={albumTitle}
+            data-index={photoIndex}
           >
             <img
               src={`/api/images/${photo.id}`}
@@ -56,6 +78,27 @@ const ITEMS_PER_PAGE = 100;
       }
     </div>
   </div>
+  {photos.length > 0 && totalPages > 1 && (
+    <div class="gallery-pagination panel-bottom">
+      <a href="#" class="gallery-posts-double-navigation first-btn">
+        <img src="/icons/doubleleftarrow.svg" alt="First" />
+      </a>
+
+      <a href="#" class="gallery-posts-navigation prev-btn">
+        <img src="/icons/leftarrow.svg" alt="Prev" />
+      </a>
+
+      <div class="gallery-posts-numbers"></div>
+
+      <a href="#" class="gallery-posts-navigation next-btn">
+        <img src="/icons/rightarrow.svg" alt="Next" />
+      </a>
+
+      <a href="#" class="gallery-posts-double-navigation last-btn">
+        <img src="/icons/doublerightarrow.svg" alt="Last" />
+      </a>
+    </div>
+  )}
 
   <div id="image-modal" class="modal-overlay" aria-hidden="true">
     <div class="modal-content">
@@ -91,6 +134,65 @@ const ITEMS_PER_PAGE = 100;
     margin: 0 auto;
   }
 
+  .gallery-pagination {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    color: #000;
+    font-family: "Zen Kurenaido";
+    letter-spacing: 2px;
+  }
+
+  .panel-bottom {
+    margin-top: 24px;
+    margin-bottom: 0;
+  }
+
+  .page-input-top {
+    width: 3.5rem;
+    border: none;
+    border-bottom: 1px solid #000;
+    background: transparent;
+    text-align: center;
+    color: inherit;
+    font: inherit;
+    outline: none;
+  }
+
+  .gallery-posts-numbers {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .gallery-posts-number,
+  .separate-slash {
+    color: inherit;
+    font-family: "Zen Kurenaido";
+    font-size: 18px;
+    letter-spacing: 2px;
+  }
+
+  .gallery-posts-number {
+    text-decoration: none;
+  }
+
+  .gallery-posts-navigation,
+  .gallery-posts-double-navigation {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .gallery-posts-navigation img,
+  .gallery-posts-double-navigation img {
+    width: 20px;
+    height: 20px;
+  }
+
   .justified-grid {
     display: flex;
     flex-wrap: wrap;
@@ -109,8 +211,10 @@ const ITEMS_PER_PAGE = 100;
     float: left;
     margin-right: 12px;
     margin-bottom: 12px;
-    opacity: 0;
+    opacity: 1;
     transition: opacity 0.5s ease-in-out;
+    width: 320px;
+    height: 250px;
   }
   .photo-wrapper.is-loaded {
     opacity: 1;
@@ -202,6 +306,20 @@ const ITEMS_PER_PAGE = 100;
       letter-spacing: 4.8px;
     }
 
+    .gallery-pagination {
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    .gallery-posts-numbers {
+      gap: 8px;
+    }
+
+    .gallery-posts-number,
+    .separate-slash {
+      font-size: 14px;
+    }
+
     .modal-close {
       top: 10px;
       right: 10px;
@@ -212,7 +330,7 @@ const ITEMS_PER_PAGE = 100;
   }
 </style>
 
-<script>
+<script define:vars={{ ITEMS_PER_PAGE, totalPages }}>
   const TARGET_HEIGHT = 250;
   const GAP = 12;
   const MIN_LAST_ROW_WIDTH = 800;
@@ -224,7 +342,7 @@ const ITEMS_PER_PAGE = 100;
     const containerWidth = container.clientWidth;
     const items = Array.from(
       document.querySelectorAll(".photo-wrapper"),
-    ) as HTMLElement[];
+    ).filter((item) => (item as HTMLElement).style.display !== "none") as HTMLElement[];
 
     const validItems = items.filter((item) => {
       const img = item.querySelector("img") as HTMLImageElement;
@@ -296,6 +414,41 @@ const ITEMS_PER_PAGE = 100;
     });
   }
 
+  function layoutVisibleImagesWhenReady() {
+    const visibleItems = Array.from(
+      document.querySelectorAll(".photo-wrapper"),
+    ).filter((item) => (item as HTMLElement).style.display !== "none") as HTMLElement[];
+
+    if (visibleItems.length === 0) return;
+
+    const pendingImages: HTMLImageElement[] = [];
+
+    visibleItems.forEach((item) => {
+      const img = item.querySelector("img");
+      if (img instanceof HTMLImageElement && !(img.complete && img.naturalWidth > 0)) {
+        pendingImages.push(img);
+      }
+    });
+
+    if (pendingImages.length === 0) {
+      layoutImages();
+      return;
+    }
+
+    let remaining = pendingImages.length;
+    pendingImages.forEach((img) => {
+      const onDone = () => {
+        img.removeEventListener("load", onDone);
+        img.removeEventListener("error", onDone);
+        remaining -= 1;
+        if (remaining === 0) layoutImages();
+      };
+
+      img.addEventListener("load", onDone, { once: true });
+      img.addEventListener("error", onDone, { once: true });
+    });
+  }
+
   // const modal = document.getElementById("image-modal");
   // const modalImg = document.getElementById("modal-image") as HTMLImageElement;
   // const closeBtn = document.getElementById("modal-close-btn");
@@ -338,181 +491,132 @@ const ITEMS_PER_PAGE = 100;
   //   if (e.key === "Escape" && modal?.classList.contains("active")) closeModal();
   // });
 
-  const allImgs = document.querySelectorAll(".photo-wrapper img");
-  let loadedCount = 0;
-  allImgs.forEach((img) => {
-    const htmlImg = img as HTMLImageElement;
-    if (htmlImg.complete) {
-      loadedCount++;
-    } else {
-      htmlImg.addEventListener("load", () => {
-        loadedCount++;
-        if (loadedCount === allImgs.length) layoutImages();
-      });
-    }
-  });
-
-  if (loadedCount === allImgs.length) layoutImages();
-
   let resizeTimer: number;
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
-    resizeTimer = window.setTimeout(layoutImages, 100);
+    resizeTimer = window.setTimeout(layoutVisibleImagesWhenReady, 100);
   });
-  layoutImages();
-</script>
+  const items = Array.from(document.querySelectorAll(".photo-wrapper")) as HTMLElement[];
+  const inputTop = document.querySelector(".page-input-top") as HTMLInputElement | null;
+  const numbersContainer = document.querySelector(".gallery-posts-numbers");
+  const btnFirst = document.querySelector(".first-btn");
+  const btnPrev = document.querySelector(".prev-btn");
+  const btnNext = document.querySelector(".next-btn");
+  const btnLast = document.querySelector(".last-btn");
+  const btnPrevTop = document.querySelector(".prev-btn-top");
+  const btnNextTop = document.querySelector(".next-btn-top");
 
+  let currentPage = 1;
 
-<script is:inline define:vars={{ ITEMS_PER_PAGE }}>
-  // Pagination logic for tab panels
+  const renderPage = (page: number) => {
+    if (page < 1) page = 1;
+    if (page > totalPages) page = totalPages;
+    currentPage = page;
 
-  const tabInputs = Array.from(
-    document.querySelectorAll('.tab-input')
-  );
-  const tabPanels = Array.from(
-    document.querySelectorAll('.tab-panel')
-  );
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
 
-  function setActiveTab(index) {
-    tabPanels.forEach((panel, panelIndex) => {
-      panel.classList.toggle('is-active', panelIndex === index);
+    items.forEach((item, index) => {
+      if (index >= startIndex && index < endIndex) {
+        item.style.display = "block";
+        item.style.width = "320px";
+        item.style.height = `${TARGET_HEIGHT}px`;
+        item.style.marginRight = `${GAP}px`;
+        item.style.marginBottom = `${GAP}px`;
+        item.classList.add("is-loaded");
+      } else {
+        item.style.display = "none";
+      }
     });
-  }
 
-  tabInputs.forEach((input, index) => {
-    input.addEventListener('change', () => {
-      if (input.checked) setActiveTab(index);
+    if (inputTop) inputTop.value = currentPage.toString();
+    updatePaginationNumbers();
+    requestAnimationFrame(layoutVisibleImagesWhenReady);
+  };
+
+  const updatePaginationNumbers = () => {
+    if (!numbersContainer) return;
+    numbersContainer.innerHTML = "";
+
+    const pagesSet = new Set([
+      1,
+      2,
+      totalPages - 1,
+      totalPages,
+      currentPage - 1,
+      currentPage,
+      currentPage + 1,
+    ]);
+
+    const sortedPages = Array.from(pagesSet)
+      .filter((page) => page >= 1 && page <= totalPages)
+      .sort((a, b) => a - b);
+
+    let prevPage = 0;
+    sortedPages.forEach((page) => {
+      if (prevPage > 0 && page - prevPage > 1) {
+        const dots = document.createElement("span");
+        dots.className = "separate-slash";
+        dots.textContent = "...";
+        numbersContainer.appendChild(dots);
+      }
+
+      const link = document.createElement("a");
+      link.className = "gallery-posts-number";
+      link.textContent = page.toString();
+      link.href = "#";
+
+      if (page === currentPage) {
+        link.style.textDecoration = "underline";
+        link.style.textDecorationThickness = "0.5px";
+        link.style.textUnderlineOffset = "4px";
+      }
+
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        renderPage(page);
+      });
+
+      numbersContainer.appendChild(link);
+      prevPage = page;
     });
+  };
+
+  inputTop?.addEventListener("change", (event) => {
+    const target = event.target as HTMLInputElement;
+    const value = parseInt(target.value, 10);
+    if (!Number.isNaN(value)) renderPage(value);
   });
 
-  const initialActiveIndex = tabInputs.findIndex((input) => input.checked);
-  setActiveTab(initialActiveIndex >= 0 ? initialActiveIndex : 0);
+  btnPrevTop?.addEventListener("click", (event) => {
+    event.preventDefault();
+    renderPage(currentPage - 1);
+  });
 
-  document.querySelectorAll(".tab-panel").forEach((panel) => {
-    const totalPages = parseInt(panel.getAttribute("data-total-pages") || "1");
-    const totalPosts = parseInt(panel.getAttribute("data-total-posts") || "0");
+  btnNextTop?.addEventListener("click", (event) => {
+    event.preventDefault();
+    renderPage(currentPage + 1);
+  });
 
-    if (totalPosts === 0) return;
-
-    let currentPage = 1;
-
-    const posts = panel.querySelectorAll(".Activity-item");
-    const inputTop = panel.querySelector(".page-input-top");
-    const numbersContainer = panel.querySelector(".tab-posts-numbers");
-
-    const btnFirst = panel.querySelector(".first-btn");
-    const btnPrev = panel.querySelector(".prev-btn");
-    const btnNext = panel.querySelector(".next-btn");
-    const btnLast = panel.querySelector(".last-btn");
-
-    const btnPrevTop = panel.querySelector(".prev-btn-top");
-    const btnNextTop = panel.querySelector(".next-btn-top");
-
-    const renderPage = (page) => {
-      if (page < 1) page = 1;
-      if (page > totalPages) page = totalPages;
-      currentPage = page;
-
-      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-      const endIndex = startIndex + ITEMS_PER_PAGE;
-
-      posts.forEach((post, index) => {
-        if (index >= startIndex && index < endIndex) {
-          post.style.display = "block";
-        } else {
-          post.style.display = "none";
-        }
-      });
-
-      if (inputTop) inputTop.value = currentPage.toString();
-      updatePaginationNumbers();
-    };
-
-    const updatePaginationNumbers = () => {
-      if (!numbersContainer) return;
-      numbersContainer.innerHTML = "";
-
-      const pagesSet = new Set([
-        1,
-        2,
-        totalPages - 1,
-        totalPages,
-        currentPage - 1,
-        currentPage,
-        currentPage + 1,
-      ]);
-
-      const sortedPages = Array.from(pagesSet)
-        .filter((p) => p >= 1 && p <= totalPages)
-        .sort((a, b) => a - b);
-
-      let prevPage = 0;
-      sortedPages.forEach((p) => {
-        if (prevPage > 0 && p - prevPage > 1) {
-          const dots = document.createElement("span");
-          dots.className = "separate-slash";
-          dots.textContent = "...";
-          numbersContainer.appendChild(dots);
-        }
-
-        const a = document.createElement("a");
-        a.className = "tab-posts-number";
-        a.textContent = p.toString();
-        a.href = "#";
-
-        if (p === currentPage) {
-          a.style.textDecoration = "underline";
-          a.style.textDecorationThickness = "0.5px";
-          a.style.textUnderlineOffset = "4px";
-        }
-
-        a.addEventListener("click", (e) => {
-          e.preventDefault();
-          renderPage(p);
-        });
-
-        numbersContainer.appendChild(a);
-        prevPage = p;
-      });
-    };
-
-    if (inputTop) {
-      inputTop.addEventListener("change", (e) => {
-        const val = parseInt(e.target.value);
-        if (!isNaN(val)) renderPage(val);
-      });
-    }
-
-    btnPrevTop?.addEventListener("click", (e) => {
-      e.preventDefault();
-      renderPage(currentPage - 1);
-    });
-
-    btnNextTop?.addEventListener("click", (e) => {
-      e.preventDefault();
-      renderPage(currentPage + 1);
-    });
-
-    btnFirst?.addEventListener("click", (e) => {
-      e.preventDefault();
-      renderPage(1);
-    });
-
-    btnPrev?.addEventListener("click", (e) => {
-      e.preventDefault();
-      renderPage(currentPage - 1);
-    });
-
-    btnNext?.addEventListener("click", (e) => {
-      e.preventDefault();
-      renderPage(currentPage + 1);
-    });
-
-    btnLast?.addEventListener("click", (e) => {
-      e.preventDefault();
-      renderPage(totalPages);
-    });
-
+  btnFirst?.addEventListener("click", (event) => {
+    event.preventDefault();
     renderPage(1);
   });
+
+  btnPrev?.addEventListener("click", (event) => {
+    event.preventDefault();
+    renderPage(currentPage - 1);
+  });
+
+  btnNext?.addEventListener("click", (event) => {
+    event.preventDefault();
+    renderPage(currentPage + 1);
+  });
+
+  btnLast?.addEventListener("click", (event) => {
+    event.preventDefault();
+    renderPage(totalPages);
+  });
+
+  renderPage(1);
 </script>

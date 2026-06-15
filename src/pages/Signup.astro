@@ -146,7 +146,11 @@ const next = Astro.url.searchParams.get("next") ?? "/";
               return;
             }
 
-            setMessage("登録を受け付けました。入会審査後、担当者から連絡します。", "success");
+            const msg =
+              data?.message ||
+              "登録を受け付けました。入会審査後、担当者から連絡します。";
+            const kind = data?.warning ? "error" : "success";
+            setMessage(msg, kind);
 
             const next = getNext();
             setTimeout(() => {

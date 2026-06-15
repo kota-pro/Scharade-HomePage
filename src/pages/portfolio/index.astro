@@ -3,20 +3,28 @@ import Layout from "../../layouts/Layout.astro";
 import "../../styles/UA+reset.css";
 import "../../styles/Portfolio.css";
 
-import { getPortfolios } from "../../lib/microcms";
+import { getPortfolios, normalizePortfolioGrade } from "../../lib/microcms";
 
 const response = await getPortfolios({
-  fields: ["id", "name", "icon", "generation"],
+  fields: ["id", "name", "icon", "grade"],
   limit: 100,
 });
 
-const allPortfolios = response.contents;
+const GRADE_TABS = [
+  "All",
+  "1st Grade",
+  "2nd Grade",
+  "3rd Grade",
+  "4th Grade",
+  "Master's Program",
+  "International",
+  "OB",
+] as const;
 
-const generations = [...new Set(allPortfolios.map((p) => p.generation))]
-  .filter((gen): gen is number => gen !== undefined)
-  .sort((a, b) => b - a);
-
-const tabs = ["All", ...generations.map((gen) => `${gen}期`)];
+const allPortfolios = response.contents.map((portfolio) => ({
+  ...portfolio,
+  gradeText: normalizePortfolioGrade(portfolio.grade),
+}));
 ---
 
 <Layout title="Sharade | Portfolio">
@@ -51,7 +59,7 @@ const tabs = ["All", ...generations.map((gen) => `${gen}期`)];
     </div>
 
     {
-      tabs.map((tab) => (
+      GRADE_TABS.map((tab) => (
         <details
           class="member-section-details"
           name="member-section"
@@ -69,7 +77,7 @@ const tabs = ["All", ...generations.map((gen) => `${gen}期`)];
             {allPortfolios
               .filter((p) => {
                 if (tab === "All") return true;
-                return p.generation && `${p.generation}期` === tab;
+                return p.gradeText === tab;
               })
               .map((portfolio) => (
                 <a href={`/portfolio/${portfolio.id}`} class="member-card">
@@ -85,11 +93,7 @@ const tabs = ["All", ...generations.map((gen) => `${gen}期`)];
                     />
                   </div>
                   <div class="member-info">
-                    <p class="member-grade">
-                      {portfolio.generation
-                        ? `${portfolio.generation}期生`
-                        : ""}
-                    </p>
+                    <p class="member-grade">{portfolio.gradeText}</p>
                     <p class="member-name">{portfolio.name}</p>
                   </div>
                 </a>

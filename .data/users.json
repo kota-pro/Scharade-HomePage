@@ -24,5 +24,18 @@
       "credentials": true
     },
     "portfolioId": "rl3mk41jz"
+  },
+  {
+    "id": "ae0e06f0-4400-43bc-b6d0-b0207f40100e",
+    "name": "Test君",
+    "portfolioName": "テスト君",
+    "email": "test@gmail.com",
+    "passwordHash": "scrypt$JfNGbnI4QLaK/9AbRrR1fQ==$fnUllvN8s+aE7DtYQZQamSqHvbY6YDJ7rw4nYGvdDRM=",
+    "approved": true,
+    "createdAt": "2026-06-15T03:02:53.462Z",
+    "providers": {
+      "credentials": true
+    },
+    "portfolioId": "4p4-2_qjma"
   }
 ]
