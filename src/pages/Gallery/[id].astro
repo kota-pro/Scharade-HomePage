@@ -352,6 +352,19 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
       font-size: 14px;
     }
 
+    .panel-top {
+      margin-bottom: 16px;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 0;
+    }
+
+    .tab-panel-number p {
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-align: right;
+    }
+
     .tab-posts-numbers {
       gap: 8px;
     }
@@ -360,6 +373,32 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
     .separate-slash {
       font-size: 14px;
     }
+
+    .pagination-controls {
+      width: 100%;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .pagination-controls img {
+      width: 16px;
+      height: 16px;
+    }
+
+    .pagination-controls .page-input-top {
+      width: 30px;
+      font-size: 14px;
+    }
+
+    .pagination-controls .page-input-top:focus {
+      width: 50px;
+      font-size: 14px;
+    }
+
+    .pagination-controls p {
+      font-size: 14px;
+    }
+
 
     .modal-close {
       top: 10px;

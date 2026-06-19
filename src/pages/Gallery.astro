@@ -139,7 +139,11 @@ const getAlbumsForYearAndCategory = (
                                       />
                                     ) : (
                                       <div class="placeholder-image">
-                                        <span>No Image</span>
+                                        <img
+                                          src="/images/temp.png"
+                                          alt="placeholder"
+                                          loading="lazy"
+                                        />
                                       </div>
                                     )}
                                     <p class="image-title">{item.payload.name}</p>
