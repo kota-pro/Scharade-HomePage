@@ -62,7 +62,7 @@ const HASHTAG_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "event", label: "event" },
 ];
 
-const portfolioViewUrl = canEdit ? `/Portfolio/${user?.portfolioId}` : null;
+const portfolioViewUrl = canEdit ? `/portfolio/${user?.portfolioId}` : null;
 const hasPortfolio = canEdit;
 
 const GRADE_OPTIONS: Array<{ value: string; label: string }> = [
