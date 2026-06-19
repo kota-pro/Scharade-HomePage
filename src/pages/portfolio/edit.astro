@@ -62,7 +62,7 @@ const HASHTAG_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "event", label: "event" },
 ];
 
-const portfolioViewUrl = canEdit ? `/portfolio/${user?.portfolioId}` : null;
+const portfolioViewUrl = canEdit ? `/Portfolio/${user?.portfolioId}` : null;
 const hasPortfolio = canEdit;
 
 const GRADE_OPTIONS: Array<{ value: string; label: string }> = [
@@ -230,8 +230,8 @@ const portfolioViewUrlSerialized = inlineSerialize(portfolioViewUrl ?? "");
             }
           };
           const INITIAL_FORM_DATA = parseInitialData();
-          const API_UPDATE_URL = "/api/portfolio/update";
-          const API_UPLOAD_URL = "/api/portfolio/upload";
+          const API_UPDATE_URL = "/api/Portfolio/update";
+          const API_UPLOAD_URL = "/api/Portfolio/upload";
           const VIEW_URL = (() => {
             const raw = dataEl?.dataset.viewUrl;
             if (!raw) return "";
