@@ -2,71 +2,60 @@
 export const prerender = false;
 
 import GalleryLayout from "../../layouts/Gallery_Layout.astro";
-import { getAlbumPhotos, getAlbums, getAlbumCoverId } from "../../lib/lightroom";
+import { getAlbumPhotosPage, getAlbumTitle } from "../../lib/lightroom";
 
 const { id } = Astro.params;
-const photos = await getAlbumPhotos(id as string);
-let albums: Awaited<ReturnType<typeof getAlbums>> extends (infer U)[]
-  ? (U & { coverId: string | null })[]
-  : never[] = [];
-let apiError = "";
-
-try {
-  const rawAlbums = await getAlbums();
-  albums = await Promise.all(
-    rawAlbums.map(async (album) => {
-      const coverId = await getAlbumCoverId(album.id);
-      return { ...album, coverId };
-    })
-  );
-} catch (e: any) {
-  console.error("[Gallery] Failed to load albums:", e.message);
-  apiError = e.message || "アルバムの読み込みに失敗しました";
-}
-
-const albumTitle = albums.find((item) => item.id === id)?.payload.name || "Unknown Album";
 const ITEMS_PER_PAGE = 100;
-const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
+const initialPhotoPage = await getAlbumPhotosPage(id as string, {
+  limit: ITEMS_PER_PAGE,
+});
+const initialPhotos = initialPhotoPage.photos;
+const initialNextCursor = initialPhotoPage.nextCursor;
+const albumTitle = (await getAlbumTitle(id as string)) || "Unknown Album";
+const initialTotalPages = Math.max(
+  1,
+  Math.ceil(initialPhotos.length / ITEMS_PER_PAGE),
+);
 ---
 
 <GalleryLayout title={albumTitle}>
-  {photos.length === 0 &&  <div class="no-photos">No photos found.</div>}
-  {photos.length > 0 && (
-    <div
-      class="tab-panel-number panel-top"
-      data-total-posts={photos.length}
-      data-total-pages={totalPages}
-    >
-      <p class="total-photos-label">{photos.length} pictures</p>
+  {initialPhotos.length === 0 && <div class="no-photos">No photos found.</div>}
+  {
+    initialPhotos.length > 0 && (
+      <div class="tab-panel-number panel-top">
+        <p class="total-pages-label">
+          Total <span class="total-pages-count">{initialTotalPages}</span>
+        </p>
 
-      {totalPages > 1 && (
-        <div class="pagination-controls">
-          <a class="tab-posts-navigation prev-btn-top" href="#">
-            <img src="/icons/leftarrow.svg" alt="Prev" />
-          </a>
+        {initialTotalPages > 1 && (
+          <div class="pagination-controls">
+            <a class="tab-posts-navigation prev-btn-top" href="#">
+              <img src="/icons/leftarrow.svg" alt="Prev" />
+            </a>
 
-          <input
-            class="page-input-top"
-            type="text"
-            inputmode="numeric"
-            min="1"
-            max={totalPages}
-            value="1"
-          />
-          <p>/</p>
-          <p>{totalPages}</p>
+            <input
+              class="page-input-top"
+              type="text"
+              inputmode="numeric"
+              min="1"
+              max={initialTotalPages}
+              value="1"
+            />
+            <p>/</p>
+            <p class="total-pages-value">{initialTotalPages}</p>
 
-          <a class="tab-posts-navigation next-btn-top" href="#">
-            <img src="/icons/rightarrow.svg" alt="Next" />
-          </a>
-        </div>
-      )}
-    </div>
-  )}
+            <a class="tab-posts-navigation next-btn-top" href="#">
+              <img src="/icons/rightarrow.svg" alt="Next" />
+            </a>
+          </div>
+        )}
+      </div>
+    )
+  }
   <div class="gallery-container-inner">
     <div class="justified-grid">
       {
-        photos.map((photo, photoIndex) => (
+        initialPhotos.map((photo, photoIndex) => (
           <a
             class="photo-wrapper photo-trigger"
             href={`/api/images/full/${photo.id}`}
@@ -87,31 +76,41 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
       }
     </div>
   </div>
-  {photos.length > 0 && totalPages > 1 && (
-    <div class="tab-panel-number panel-bottom">
-      <a href="#" class="tab-posts-double-navigation first-btn">
-        <img src="/icons/doubleleftarrow.svg" alt="First" />
-      </a>
+  {
+    initialPhotos.length > 0 && (
+      <div
+        class:list={[
+          "tab-panel-number",
+          "panel-bottom",
+          { "panel-hidden": initialTotalPages <= 1 },
+        ]}
+      >
+        <a href="#" class="tab-posts-double-navigation first-btn">
+          <img src="/icons/doubleleftarrow.svg" alt="First" />
+        </a>
 
-      <a href="#" class="tab-posts-navigation prev-btn">
-        <img src="/icons/leftarrow.svg" alt="Prev" />
-      </a>
+        <a href="#" class="tab-posts-navigation prev-btn">
+          <img src="/icons/leftarrow.svg" alt="Prev" />
+        </a>
 
-      <div class="tab-posts-numbers"></div>
+        <div class="tab-posts-numbers" />
 
-      <a href="#" class="tab-posts-navigation next-btn">
-        <img src="/icons/rightarrow.svg" alt="Next" />
-      </a>
+        <a href="#" class="tab-posts-navigation next-btn">
+          <img src="/icons/rightarrow.svg" alt="Next" />
+        </a>
 
-      <a href="#" class="tab-posts-double-navigation last-btn">
-        <img src="/icons/doublerightarrow.svg" alt="Last" />
-      </a>
-    </div>
-  )}
+        <a href="#" class="tab-posts-double-navigation last-btn">
+          <img src="/icons/doublerightarrow.svg" alt="Last" />
+        </a>
+      </div>
+    )
+  }
 
   <div id="image-modal" class="modal-overlay" aria-hidden="true">
     <div class="modal-content">
-      <button id="modal-close-btn" class="modal-close" aria-label="Close">&times;</button>
+      <button id="modal-close-btn" class="modal-close" aria-label="Close"
+        >&times;</button
+      >
       <img id="modal-image" src="" alt="" />
     </div>
   </div>
@@ -161,6 +160,10 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
   .panel-bottom {
     justify-content: center;
     margin-top: 24px;
+  }
+
+  .panel-hidden {
+    display: none;
   }
 
   .page-input-top {
@@ -221,11 +224,13 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
   }
 
   .tab-posts-navigation:hover {
-    filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg) brightness(100%) contrast(90%);
+    filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg)
+      brightness(100%) contrast(90%);
   }
 
   .tab-posts-double-navigation:hover {
-    filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg) brightness(100%) contrast(90%);
+    filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg)
+      brightness(100%) contrast(90%);
   }
 
   .tab-posts-navigation img {
@@ -237,7 +242,6 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
     width: 26px;
     height: 20px;
   }
-
 
   .justified-grid {
     display: flex;
@@ -399,7 +403,6 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
       font-size: 14px;
     }
 
-
     .modal-close {
       top: 10px;
       right: 10px;
@@ -410,7 +413,16 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
   }
 </style>
 
-<script is:inline define:vars={{ ITEMS_PER_PAGE, totalPages }}>
+<script
+  is:inline
+  define:vars={{
+    ITEMS_PER_PAGE,
+    initialNextCursor,
+    initialTotalPages,
+    id,
+    albumTitle,
+  }}
+>
   const TARGET_HEIGHT = 250;
   const GAP = 12;
   const MIN_LAST_ROW_WIDTH = 800;
@@ -515,7 +527,10 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
 
     visibleItems.forEach((item) => {
       const img = item.querySelector("img");
-      if (img instanceof HTMLImageElement && !(img.complete && img.naturalWidth > 0)) {
+      if (
+        img instanceof HTMLImageElement &&
+        !(img.complete && img.naturalWidth > 0)
+      ) {
         pendingImages.push(img);
       }
     });
@@ -586,11 +601,12 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
     clearTimeout(resizeTimer);
     resizeTimer = window.setTimeout(layoutVisibleImagesWhenReady, 100);
   });
-  const items = Array.from(document.querySelectorAll(".photo-wrapper")).filter(
-    (item) => item instanceof HTMLElement,
-  );
+  const grid = document.querySelector(".justified-grid");
   const inputTop = document.querySelector(".page-input-top");
   const numbersContainer = document.querySelector(".tab-posts-numbers");
+  const totalPagesCount = document.querySelector(".total-pages-count");
+  const totalPagesValue = document.querySelector(".total-pages-value");
+  const bottomPanel = document.querySelector(".panel-bottom");
   const btnFirst = document.querySelector(".first-btn");
   const btnPrev = document.querySelector(".prev-btn");
   const btnNext = document.querySelector(".next-btn");
@@ -598,7 +614,57 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
   const btnPrevTop = document.querySelector(".prev-btn-top");
   const btnNextTop = document.querySelector(".next-btn-top");
 
+  let totalPages = initialTotalPages;
+  let nextCursor = initialNextCursor;
   let currentPage = 1;
+
+  const getItems = () =>
+    Array.from(document.querySelectorAll(".photo-wrapper")).filter(
+      (item) => item instanceof HTMLElement,
+    );
+
+  const createPhotoElement = (photo, photoIndex) => {
+    const link = document.createElement("a");
+    link.className = "photo-wrapper photo-trigger";
+    link.href = `/api/images/full/${photo.id}`;
+    link.dataset.lightbox = albumTitle;
+    link.dataset.index = photoIndex.toString();
+    link.style.display = "none";
+
+    const img = document.createElement("img");
+    img.src = `/api/images/${photo.id}`;
+    img.alt = photo.name;
+    img.decoding = "async";
+    img.setAttribute("data-full-src", `/api/images/full/${photo.id}`);
+
+    const meta = document.createElement("div");
+    meta.className = "photo-meta";
+
+    const name = document.createElement("span");
+    name.className = "photo-name";
+    name.textContent = photo.name;
+
+    meta.appendChild(name);
+    link.appendChild(img);
+    link.appendChild(meta);
+
+    return link;
+  };
+
+  const updatePaginationMeta = () => {
+    totalPages = Math.max(1, Math.ceil(getItems().length / ITEMS_PER_PAGE));
+
+    if (inputTop instanceof HTMLInputElement) {
+      inputTop.max = totalPages.toString();
+      inputTop.value = currentPage.toString();
+    }
+
+    if (totalPagesCount) totalPagesCount.textContent = totalPages.toString();
+    if (totalPagesValue) totalPagesValue.textContent = totalPages.toString();
+    if (bottomPanel instanceof HTMLElement) {
+      bottomPanel.classList.toggle("panel-hidden", totalPages <= 1);
+    }
+  };
 
   const renderPage = (page) => {
     if (page < 1) page = 1;
@@ -607,6 +673,7 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
 
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
+    const items = getItems();
 
     items.forEach((item, index) => {
       if (index >= startIndex && index < endIndex) {
@@ -621,7 +688,9 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
       }
     });
 
-    if (inputTop) inputTop.value = currentPage.toString();
+    if (inputTop instanceof HTMLInputElement) {
+      inputTop.value = currentPage.toString();
+    }
     updatePaginationNumbers();
     requestAnimationFrame(layoutVisibleImagesWhenReady);
   };
@@ -653,10 +722,10 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
         numbersContainer.appendChild(dots);
       }
 
-        const link = document.createElement("a");
-        link.className = "tab-posts-number";
-        link.textContent = page.toString();
-        link.href = "#";
+      const link = document.createElement("a");
+      link.className = "tab-posts-number";
+      link.textContent = page.toString();
+      link.href = "#";
 
       if (page === currentPage) {
         link.style.textDecoration = "underline";
@@ -672,6 +741,37 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
       numbersContainer.appendChild(link);
       prevPage = page;
     });
+  };
+
+  const fetchRemainingPhotos = async () => {
+    while (nextCursor) {
+      const cursor = nextCursor;
+      nextCursor = null;
+
+      try {
+        const response = await fetch(
+          `/api/gallery/${id}?cursor=${encodeURIComponent(cursor)}`,
+        );
+        if (!response.ok) break;
+
+        const data = await response.json();
+        const photos = Array.isArray(data.photos) ? data.photos : [];
+        const currentItemCount = getItems().length;
+
+        photos.forEach((photo, index) => {
+          if (!(grid instanceof HTMLElement)) return;
+          grid.appendChild(createPhotoElement(photo, currentItemCount + index));
+        });
+
+        nextCursor =
+          typeof data.nextCursor === "string" ? data.nextCursor : null;
+        updatePaginationMeta();
+        renderPage(currentPage);
+      } catch (error) {
+        console.error("[Gallery] Failed to load more photos:", error);
+        break;
+      }
+    }
   };
 
   inputTop?.addEventListener("change", (event) => {
@@ -711,5 +811,7 @@ const totalPages = Math.max(1, Math.ceil(photos.length / ITEMS_PER_PAGE));
     renderPage(totalPages);
   });
 
+  updatePaginationMeta();
   renderPage(1);
+  void fetchRemainingPhotos();
 </script>

@@ -25,6 +25,16 @@ export type LightroomAlbum = {
   };
 };
 
+export type LightroomPhoto = {
+  id: string;
+  name: string;
+};
+
+export type LightroomPhotoPage = {
+  photos: LightroomPhoto[];
+  nextCursor: string | null;
+};
+
 const CATEGORY_LABEL_TO_KEY: Record<string, GalleryAlbumCategory | "hidden"> = {
   "合宿": "camp",
   "撮影会": "shooting",
@@ -156,7 +166,7 @@ async function fetchLightroomJson(accessToken: string, url: string) {
 }
 
 function resolveLightroomUrl(url: string) {
-  return url.startsWith("http") ? url : `${LIGHTROOM_API_BASE_URL}${url}`;
+  return new URL(url, `${LIGHTROOM_API_BASE_URL}/`).toString();
 }
 
 async function fetchPaginatedLightroomResources(
@@ -181,6 +191,14 @@ async function fetchPaginatedLightroomResources(
   }
 
   return resources;
+}
+
+function mapLightroomResourceToPhoto(resource: Record<string, any>): LightroomPhoto {
+  const assetId = resource.asset?.id;
+  return {
+    id: assetId || resource.id,
+    name: resource.payload?.importSource?.fileName || "Photo",
+  };
 }
 
 async function getAlbumDetail(accessToken: string, albumId: string) {
@@ -347,6 +365,17 @@ export async function getAlbums(): Promise<LightroomAlbum[]> {
   });
 }
 
+export async function getAlbumTitle(albumId: string): Promise<string | null> {
+  const accessToken = await getAccessToken();
+  const album = await getAlbumDetail(accessToken, albumId);
+  const payload =
+    typeof album?.payload === "object" && album.payload !== null
+      ? (album.payload as { name?: string })
+      : {};
+
+  return typeof payload.name === "string" ? payload.name : null;
+}
+
 export async function getAlbumCoverId(albumId: string): Promise<string | null> {
   const accessToken = await getAccessToken();
   const url = `https://lr.adobe.io/v2/catalogs/${CATALOG_ID}/albums/${albumId}/assets?limit=1`;
@@ -404,13 +433,34 @@ export async function getAlbumPhotos(albumId: string): Promise<any[]> {
     `?limit=${LIGHTROOM_MAX_PAGE_LIMIT}`;
   const resources = await fetchPaginatedLightroomResources(accessToken, url);
 
-  return resources.map((resource: any) => {
-    const assetId = resource.asset?.id;
-    return {
-      id: assetId || resource.id,
-      name: resource.payload?.importSource?.fileName || "Photo",
-    };
-  });
+  return resources.map((resource) => mapLightroomResourceToPhoto(resource));
+}
+
+export async function getAlbumPhotosPage(
+  albumId: string,
+  options: { cursor?: string | null; limit?: number } = {},
+): Promise<LightroomPhotoPage> {
+  const accessToken = await getAccessToken();
+  const { cursor = null, limit = 100 } = options;
+  const url = cursor
+    ? resolveLightroomUrl(cursor)
+    : `${LIGHTROOM_API_BASE_URL}/v2/catalogs/${CATALOG_ID}/albums/${albumId}/assets?limit=${limit}`;
+  const data = await fetchLightroomJson(accessToken, url);
+
+  if (!data) {
+    return { photos: [], nextCursor: null };
+  }
+
+  const resources = Array.isArray(data.resources)
+    ? (data.resources as Array<Record<string, any>>)
+    : [];
+  const nextCursor =
+    typeof data.links?.next?.href === "string" ? data.links.next.href : null;
+
+  return {
+    photos: resources.map((resource) => mapLightroomResourceToPhoto(resource)),
+    nextCursor,
+  };
 }
 
 export async function fetchHighResImageBuffer(
