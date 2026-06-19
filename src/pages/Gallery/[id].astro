@@ -10,7 +10,6 @@ const initialPhotoPage = await getAlbumPhotosPage(id as string, {
   limit: ITEMS_PER_PAGE,
 });
 const initialPhotos = initialPhotoPage.photos;
-const initialNextCursor = initialPhotoPage.nextCursor;
 const albumTitle = (await getAlbumTitle(id as string)) || "Unknown Album";
 const initialTotalPages = Math.max(
   1,
@@ -27,8 +26,12 @@ const initialTotalPages = Math.max(
           Total <span class="total-pages-count">{initialPhotos.length}</span>
         </p>
 
-        {initialTotalPages > 1 && (
-          <div class="pagination-controls">
+          <div
+            class:list={[
+              "pagination-controls",
+              { "pagination-controls-hidden": initialTotalPages <= 1 },
+            ]}
+          >
             <a class="tab-posts-navigation prev-btn-top" href="#">
               <img src="/icons/leftarrow.svg" alt="Prev" />
             </a>
@@ -48,7 +51,7 @@ const initialTotalPages = Math.max(
               <img src="/icons/rightarrow.svg" alt="Next" />
             </a>
           </div>
-        )}
+        </div>
       </div>
     )
   }
@@ -146,15 +149,29 @@ const initialTotalPages = Math.max(
   }
 
   .pagination-controls {
-    /* width: 100px; */
     display: flex;
     align-items: center;
     gap: 10px;
   }
 
+  .pagination-controls-hidden {
+    display: none;
+  }
+
+  .top-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 16px;
+  }
+
   .panel-top {
     justify-content: space-between;
     margin-bottom: 24px;
+  }
+
+  .picture-count {
+    text-align: left !important;
   }
 
   .panel-bottom {
@@ -379,9 +396,14 @@ const initialTotalPages = Math.max(
     }
 
     .pagination-controls {
-      width: 100%;
-      justify-content: flex-end;
       gap: 8px;
+    }
+
+    .top-pagination {
+      width: 100%;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
     .pagination-controls img {
@@ -417,7 +439,6 @@ const initialTotalPages = Math.max(
   is:inline
   define:vars={{
     ITEMS_PER_PAGE,
-    initialNextCursor,
     initialTotalPages,
     id,
     albumTitle,
@@ -606,7 +627,9 @@ const initialTotalPages = Math.max(
   const numbersContainer = document.querySelector(".tab-posts-numbers");
   const totalPagesCount = document.querySelector(".total-pages-count");
   const totalPagesValue = document.querySelector(".total-pages-value");
+  const pictureCountValue = document.querySelector(".picture-count-value");
   const bottomPanel = document.querySelector(".panel-bottom");
+  const topPaginationControls = document.querySelector(".pagination-controls");
   const btnFirst = document.querySelector(".first-btn");
   const btnPrev = document.querySelector(".prev-btn");
   const btnNext = document.querySelector(".next-btn");
@@ -615,7 +638,6 @@ const initialTotalPages = Math.max(
   const btnNextTop = document.querySelector(".next-btn-top");
 
   let totalPages = initialTotalPages;
-  let nextCursor = initialNextCursor;
   let currentPage = 1;
 
   const getItems = () =>
@@ -659,10 +681,19 @@ const initialTotalPages = Math.max(
       inputTop.value = currentPage.toString();
     }
 
+    if (pictureCountValue) {
+      pictureCountValue.textContent = getItems().length.toString();
+    }
     if (totalPagesCount) totalPagesCount.textContent = totalPages.toString();
     if (totalPagesValue) totalPagesValue.textContent = totalPages.toString();
     if (bottomPanel instanceof HTMLElement) {
       bottomPanel.classList.toggle("panel-hidden", totalPages <= 1);
+    }
+    if (topPaginationControls instanceof HTMLElement) {
+      topPaginationControls.classList.toggle(
+        "pagination-controls-hidden",
+        totalPages <= 1,
+      );
     }
   };
 
@@ -744,33 +775,25 @@ const initialTotalPages = Math.max(
   };
 
   const fetchRemainingPhotos = async () => {
-    while (nextCursor) {
-      const cursor = nextCursor;
-      nextCursor = null;
+    try {
+      const response = await fetch(
+        `/api/gallery/${id}?remaining=1&offset=${getItems().length}`,
+      );
+      if (!response.ok) return;
 
-      try {
-        const response = await fetch(
-          `/api/gallery/${id}?cursor=${encodeURIComponent(cursor)}`,
-        );
-        if (!response.ok) break;
+      const data = await response.json();
+      const photos = Array.isArray(data.photos) ? data.photos : [];
+      const currentItemCount = getItems().length;
 
-        const data = await response.json();
-        const photos = Array.isArray(data.photos) ? data.photos : [];
-        const currentItemCount = getItems().length;
+      photos.forEach((photo, index) => {
+        if (!(grid instanceof HTMLElement)) return;
+        grid.appendChild(createPhotoElement(photo, currentItemCount + index));
+      });
 
-        photos.forEach((photo, index) => {
-          if (!(grid instanceof HTMLElement)) return;
-          grid.appendChild(createPhotoElement(photo, currentItemCount + index));
-        });
-
-        nextCursor =
-          typeof data.nextCursor === "string" ? data.nextCursor : null;
-        updatePaginationMeta();
-        renderPage(currentPage);
-      } catch (error) {
-        console.error("[Gallery] Failed to load more photos:", error);
-        break;
-      }
+      updatePaginationMeta();
+      renderPage(currentPage);
+    } catch (error) {
+      console.error("[Gallery] Failed to load more photos:", error);
     }
   };
 
