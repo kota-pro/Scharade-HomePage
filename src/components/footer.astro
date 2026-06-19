@@ -24,7 +24,7 @@ const optimizedBackground = await getImage({src: background, format: 'webp'});
             <a class:list={['link', {active: /^\/Disclaimer\/?$/.test(pathname)}]} href="/Disclaimer"><span class="text">Disclaimer</span></a>
         </div>
     </div>
-    <h3>members only</h3>
+    <h3>Members only</h3>
     <div class="member-links">
         <a class:list={['link', {active: /^\/Login\/?$/.test(pathname)}]} href="Login"><span class="text">Log in</span></a>
         <a class:list={['link', {active: /^\/Signup\/?$/.test(pathname)}]} href="Signup"><span class="text">Sign in</span></a>
@@ -35,7 +35,6 @@ const optimizedBackground = await getImage({src: background, format: 'webp'});
             <input type="checkbox" id="show-credit-checkbox" style="display: none;">
             <div class="made-with-love">
                 <p>デザイン・フロントエンド：Kota OKAMOTO</p>
-                <p>フロントエンド：Ryohei TAKAHASHI</p>
                 <p>バックエンド：Sae YOSHIZAKI</p>
             </div>
         </label>
