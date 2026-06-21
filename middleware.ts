@@ -15,13 +15,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(request.url);
   const { user } = getUserFromRequest(request);
 
-  if (url.pathname === "/Portfolio" || url.pathname.startsWith("/Portfolio/")) {
-    const normalizedPath =
-      `/portfolio${url.pathname.slice("/Portfolio".length)}` || "/portfolio";
-    const redirectUrl = new URL(request.url);
-    redirectUrl.pathname = normalizedPath;
-    return Response.redirect(redirectUrl, 301);
-  }
+  // if (url.pathname === "/Portfolio" || url.pathname.startsWith("/Portfolio/")) {
+  //   const normalizedPath =
+  //     `/portfolio${url.pathname.slice("/Portfolio".length)}` || "/portfolio";
+  //   const redirectUrl = new URL(request.url);
+  //   redirectUrl.pathname = normalizedPath;
+  //   return Response.redirect(redirectUrl, 301);
+  // }
 
   if (url.pathname.startsWith("/api/portfolio")) {
     if (!user) {
@@ -46,7 +46,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
   }
 
-  if (url.pathname.toLowerCase() === "/portfolio/edit") {
+  if (url.pathname.toLowerCase() === "/Portfolio/edit") {
     if (!user) {
       return Response.redirect(
         `/Login?next=${encodeURIComponent(url.pathname)}`,
