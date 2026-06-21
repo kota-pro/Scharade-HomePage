@@ -1,11 +1,11 @@
-import { defineMiddleware } from "astro:middleware";
+// import { defineMiddleware } from "astro:middleware";
 
-export const onRequest = defineMiddleware(async (context, next) => {
-  const { pathname, search } = context.url;
+// export const onRequest = defineMiddleware(async (context, next) => {
+//   const { pathname, search } = context.url;
 
-  if (pathname === "/Portfolio" || pathname.startsWith("/Portfolio/")) {
-    return context.redirect(`${pathname.toLowerCase()}${search}`, 301);
-  }
+//   if (pathname === "/Portfolio" || pathname.startsWith("/Portfolio/")) {
+//     return context.redirect(`${pathname.toLowerCase()}${search}`, 301);
+//   }
 
-  return next();
-});
+//   return next();
+// });
