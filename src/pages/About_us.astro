@@ -21,7 +21,7 @@ import dec_image from '../assets/annual_schedule/dec.jpg';
 const dec = await getImage({src: dec_image, format: 'webp'});
 import jan_image from '../assets/annual_schedule/jan.jpg';
 const jan = await getImage({src: jan_image, format: 'webp'});
-import feb_image from '../assets/annual_schedule/feb.JPG';
+import feb_image from '../assets/annual_schedule/feb.jpeg';
 const feb = await getImage({src: feb_image, format: 'webp'});
 import mar_image from '../assets/annual_schedule/mar.jpg';
 const mar = await getImage({src: mar_image, format: 'webp'});
@@ -34,26 +34,26 @@ import equipment1b from '../assets/equipments/darkroom2.jpg';
 import equipment1c from '../assets/equipments/darkroom3.jpg';
 import equipment1d from '../assets/equipments/darkroom4.jpg';
 import equipment1e from '../assets/equipments/darkroom5.jpg';
-import equipment2a from '../../public/images/temp.png';
-import equipment2b from '../../public/images/temp.png';
-import equipment2c from '../../public/images/temp.png';
-import equipment2d from '../../public/images/temp.png';
-import equipment2e from '../../public/images/temp.png';
-import equipment3a from '../../public/images/temp.png';
-import equipment3b from '../../public/images/temp.png';
-import equipment3c from '../../public/images/temp.png';
-import equipment3d from '../../public/images/temp.png';
-import equipment3e from '../../public/images/temp.png';
-import equipment4a from '../../public/images/temp.png';
-import equipment4b from '../../public/images/temp.png';
-import equipment4c from '../../public/images/temp.png';
-import equipment4d from '../../public/images/temp.png';
-import equipment4e from '../../public/images/temp.png';
-import equipment5a from '../../public/images/temp.png';
-import equipment5b from '../../public/images/temp.png';
-import equipment5c from '../../public/images/temp.png';
-import equipment5d from '../../public/images/temp.png';
-import equipment5e from '../../public/images/temp.png';
+import equipment2a from '../assets/equipments/desktopPc1.jpg';
+import equipment2b from '../assets/equipments/desktopPc2.jpg';
+import equipment2c from '../assets/equipments/desktopPc3.jpeg';
+import equipment2d from '../assets/equipments/desktopPc4.jpg';
+import equipment2e from '../assets/equipments/desktopPc5.jpg';
+import equipment3a from '../assets/equipments/4kTv1.jpg';
+import equipment3b from '../assets/equipments/4kTv2.jpg';
+import equipment3c from '../assets/equipments/4kTv3.jpg';
+import equipment3d from '../assets/equipments/4kTv4.jpg';
+import equipment3e from '../assets/equipments/4kTv5.jpg';
+import equipment4a from '../assets/equipments/printing1.jpg';
+import equipment4b from '../assets/equipments/printing2.jpg';
+import equipment4c from '../assets/equipments/printing3.jpg';
+import equipment4d from '../assets/equipments/printing4.jpg';
+import equipment4e from '../assets/equipments/printing5.jpg';
+import equipment5a from '../assets/equipments/other1.jpg';
+import equipment5b from '../assets/equipments/other2.jpg';
+import equipment5c from '../assets/equipments/other3.jpg';
+import equipment5d from '../assets/equipments/other4.jpg';
+import equipment5e from '../assets/equipments/other5.jpg';
 ---
 <Layout>
 <Fragment slot="main-slot">
@@ -310,8 +310,8 @@ import equipment5e from '../../public/images/temp.png';
                 </div>
                 <div class="equipment-description">
                     <h1>No.2</h1>
-                    <h2>Desktop PC</h2>
-                    <p>高解像度の画像編集や動画編集が可能なデスクトップPCです。モニターは適切な色が再現されるものを使用しています！<br>また、lightroomやPhotoshopなどのソフトウェアが無料で利用可能です。</p>
+                    <h2>Desktop PC<br>&スピーカー</h2>
+                    <p>高解像度の画像編集や動画編集が可能なデスクトップPCです。モニターは適切な色が再現されるものを使用しています！また、lightroomやPhotoshopなどのソフトウェアが無料で利用可能です。<br>スピーカーとアンプも完備しており、音質の高い音楽を楽しむことができます。</p>
                 </div>
             </div>
             <div class="equipment-item">
@@ -342,8 +342,8 @@ import equipment5e from '../../public/images/temp.png';
                 </div>
                 <div class="equipment-description">
                     <h1>No.4</h1>
-                    <h2>プリンター</h2>
-                    <p>最大A2サイズまで高品質な写真プリントが可能なプリンターです。</p>
+                    <h2>プリンター<br>&スキャナー</h2>
+                    <p>最大A2サイズまで高品質な写真プリントが可能なプリンターです。また、フィルムスキャナーも完備しており、お店で1000円程度かかるフィルムのデジタル化も可能です。</p>
                 </div>
             </div>
             <div class="equipment-item">
@@ -1371,6 +1371,8 @@ import equipment5e from '../../public/images/temp.png';
             font-size: 48px;
             letter-spacing: 7.2px;
             margin-top: 90px;
+            color: #fff;
+            text-shadow: #5c5c5c 2px 2px 4px;
         }
 
         .equipment-description p {
@@ -1379,7 +1381,7 @@ import equipment5e from '../../public/images/temp.png';
             font-size: 14px;
             letter-spacing: 1.4px;
             line-height: 1.6;
-            padding: 10px;
+            padding: 5px;
             background-color: rgba(255, 255, 255, 0.8);
             border-radius: 10px;
         }
@@ -1794,7 +1796,7 @@ import equipment5e from '../../public/images/temp.png';
             position: absolute;
             right: -10px;
             top: -10px;
-            color: rgba(0, 0, 0, 0.70);
+            color: rgba(255, 255, 255, 0.7);
             text-shadow: 1px 1px 4px rgba(255,255,255,0.5);
         }
 
@@ -1802,7 +1804,6 @@ import equipment5e from '../../public/images/temp.png';
             font-size: 32px;
             letter-spacing: 4.8px;
             margin-top: 90px;
-            text-shadow: 1px 1px 4px rgba(255,255,255,0.5);
         }
 
         .equipment-description p {
@@ -1812,7 +1813,7 @@ import equipment5e from '../../public/images/temp.png';
             letter-spacing: 1.4px;
             line-height: 1.75;
             background: rgba(255, 255, 255, 0.8);
-            padding: 10px;
+            padding: 5px;
             border-radius: 10px;
         }
 
