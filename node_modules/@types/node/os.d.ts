@@ -1,13 +1,5 @@
-/**
- * The `node:os` module provides operating system-related utility methods and
- * properties. It can be accessed using:
- *
- * ```js
- * import os from 'node:os';
- * ```
- * @see [source](https://github.com/nodejs/node/blob/v24.x/lib/os.js)
- */
-declare module "os" {
+declare module "node:os" {
+    import { NonSharedBuffer } from "buffer";
     interface CpuInfo {
         model: string;
         speed: number;
@@ -30,10 +22,10 @@ declare module "os" {
         mac: string;
         internal: boolean;
         cidr: string | null;
+        scopeid?: number;
     }
     interface NetworkInterfaceInfoIPv4 extends NetworkInterfaceBase {
         family: "IPv4";
-        scopeid?: undefined;
     }
     interface NetworkInterfaceInfoIPv6 extends NetworkInterfaceBase {
         family: "IPv6";
@@ -231,6 +223,15 @@ declare module "os" {
      * @since v2.3.0
      */
     function homedir(): string;
+    interface UserInfoOptions {
+        encoding?: BufferEncoding | "buffer" | undefined;
+    }
+    interface UserInfoOptionsWithBufferEncoding extends UserInfoOptions {
+        encoding: "buffer";
+    }
+    interface UserInfoOptionsWithStringEncoding extends UserInfoOptions {
+        encoding?: BufferEncoding | undefined;
+    }
     /**
      * Returns information about the currently effective user. On POSIX platforms,
      * this is typically a subset of the password file. The returned object includes
@@ -241,11 +242,12 @@ declare module "os" {
      * environment variables for the home directory before falling back to the
      * operating system response.
      *
-     * Throws a [`SystemError`](https://nodejs.org/docs/latest-v24.x/api/errors.html#class-systemerror) if a user has no `username` or `homedir`.
+     * Throws a [`SystemError`](https://nodejs.org/docs/latest-v26.x/api/errors.html#class-systemerror) if a user has no `username` or `homedir`.
      * @since v6.0.0
      */
-    function userInfo(options: { encoding: "buffer" }): UserInfo<Buffer>;
-    function userInfo(options?: { encoding: BufferEncoding }): UserInfo<string>;
+    function userInfo(options?: UserInfoOptionsWithStringEncoding): UserInfo<string>;
+    function userInfo(options: UserInfoOptionsWithBufferEncoding): UserInfo<NonSharedBuffer>;
+    function userInfo(options: UserInfoOptions): UserInfo<string | NonSharedBuffer>;
     type SignalConstants = {
         [key in NodeJS.Signals]: number;
     };
@@ -420,7 +422,7 @@ declare module "os" {
      * compiled. Possible values are `'arm'`, `'arm64'`, `'ia32'`, `'loong64'`,
      * `'mips'`, `'mipsel'`, `'ppc64'`, `'riscv64'`, `'s390x'`, and `'x64'`.
      *
-     * The return value is equivalent to [process.arch](https://nodejs.org/docs/latest-v24.x/api/process.html#processarch).
+     * The return value is equivalent to [process.arch](https://nodejs.org/docs/latest-v26.x/api/process.html#processarch).
      * @since v0.5.0
      */
     function arch(): NodeJS.Architecture;
@@ -491,6 +493,6 @@ declare module "os" {
     function setPriority(priority: number): void;
     function setPriority(pid: number, priority: number): void;
 }
-declare module "node:os" {
-    export * from "os";
+declare module "os" {
+    export * from "node:os";
 }
