@@ -970,11 +970,12 @@
   }
 
   .main-visual-logo img {
+    width: auto;
     height: 13.6vw;
     aspect-ratio: 220/54.44;
     position: absolute;
     right: 20px;
-    top: 420px;
+    top: 370px;
   }
 
   .main-visual-photos {
