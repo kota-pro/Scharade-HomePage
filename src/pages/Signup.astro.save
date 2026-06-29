@@ -1,5 +1,4 @@
----
-import "../styles/Auth.css";
+port "../styles/Auth.css";
 import Layout from "../layouts/Layout.astro";
 
 const next = Astro.url.searchParams.get("next") ?? "/";
@@ -127,8 +126,7 @@ const next = Astro.url.searchParams.get("next") ?? "/";
         form?.addEventListener("submit", async (e) => {
           e.preventDefault();
           setMessage("");
-
-          const submitButton = form?.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+          
           const portfolioNameInput = document.getElementById("signup-portfolio-name") as HTMLInputElement | null;
           if (portfolioNameInput && !portfolioNameInput.value.trim()) {
             setMessage("ポートフォリオ表示名を入力してください。", "error");
@@ -137,33 +135,12 @@ const next = Astro.url.searchParams.get("next") ?? "/";
           }
 
           try {
-            if (submitButton) submitButton.disabled = true;
             const fd = new FormData(form);
-            const payload = {
-              name: String(fd.get("name") ?? ""),
-              portfolioName: String(fd.get("portfolioName") ?? ""),
-              email: String(fd.get("email") ?? ""),
-              password: String(fd.get("password") ?? ""),
-              passwordConfirm: String(fd.get("passwordConfirm") ?? ""),
-            };
-            const res = await fetch("/api/auth/signup", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
-            });
-            const rawText = await res.text();
-            let data = null;
-            try {
-              data = rawText ? JSON.parse(rawText) : null;
-            } catch {
-              data = null;
-            }
+            const res = await fetch("/api/auth/signup", { method: "POST", body: fd });
+            const data = await res.json().catch(() => null);
 
             if (!res.ok) {
-              const msg =
-                data?.message ||
-                rawText ||
-                "登録に失敗しました。入力内容をご確認ください。";
+              const msg = data?.message || "登録に失敗しました。入力内容をご確認ください。";
               setMessage(msg, "error");
               return;
             }
@@ -171,23 +148,11 @@ const next = Astro.url.searchParams.get("next") ?? "/";
             const msg =
               data?.message ||
               "登録を受け付けました。入会審査後、担当者から連絡します。";
-            setMessage(msg, "success");
-
-            const next = getNext();
+            const kind = data?.warning ? "error" : "success";
+            setMessage(msg
+・            const next = getNext();
             setTimeout(() => {
               window.location.href = `/Login?next=${encodeURIComponent(next)}`;
-            }, 1200);
-          } catch (err) {
-            const message =
-              err instanceof Error && err.message
-                ? err.message
-                : "通信エラーが発生しました。時間をおいて再度お試しください。";
-            setMessage(message, "error");
-          } finally {
-            if (submitButton) submitButton.disabled = false;
-          }
-        });
-      </script>
-    </section>
-  </Fragment>
-</Layout>
+            }, 1200
+         } catch {
+            setMessage("通信エラーが発生しました。時間をおいて再度お試しください。", "err

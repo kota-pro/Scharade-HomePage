@@ -229,8 +229,8 @@ const portfolioViewUrlSerialized = inlineSerialize(portfolioViewUrl ?? "");
             }
           };
           const INITIAL_FORM_DATA = parseInitialData();
-          const API_UPDATE_URL = "/api/Portfolio/update";
-          const API_UPLOAD_URL = "/api/Portfolio/upload";
+          const API_UPDATE_URL = "/api/portfolio/update";
+          const API_UPLOAD_URL = "/api/portfolio/upload";
           const VIEW_URL = (() => {
             const raw = dataEl?.dataset.viewUrl;
             if (!raw) return "";
