@@ -1,4 +1,5 @@
 ---
+export const prerender = false;
 import Layout from "../layouts/Layout.astro";
 import "../styles/UA+reset.css";
 import {
@@ -12,9 +13,12 @@ import { linkToPost } from "../utils/linkToPost";
 
 const rawPages = import.meta.glob("./**/*.astro", { as: "raw", eager: true });
 
-const stripFrontmatter = (source: string) =>
+const stripFrontmatter = (source: string) => {
+  if (typeof source !== 'string') {
+    return '';
+  }
   source.replace(/^---[\s\S]*?---/, "");
-
+}
 const stripTags = (source: string) =>
   source
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
