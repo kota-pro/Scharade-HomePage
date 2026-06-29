@@ -13,20 +13,23 @@ import { linkToPost } from "../utils/linkToPost";
 
 const rawPages = import.meta.glob("./**/*.astro", { as: "raw", eager: true });
 
-const stripFrontmatter = (source: string) => {
-  if (typeof source !== 'string') {
-    return '';
-  }
-  source.replace(/^---[\s\S]*?---/, "");
-}
-const stripTags = (source: string) =>
-  source
+// 🛠️ 安全ガード：文字列以外が来てもクラッシュしないように修正
+const stripFrontmatter = (source: unknown) => {
+  if (typeof source !== "string") return "";
+  return source.replace(/^---[\s\S]*?---/, "");
+};
+
+// 🛠️ 安全ガード：文字列以外が来てもクラッシュしないように修正
+const stripTags = (source: unknown) => {
+  if (typeof source !== "string") return "";
+  return source
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<!--[\s\S]*?-->/g, " ")
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+};
 
 const normalizeContent = (parts: Array<string | null | undefined>) =>
   parts
@@ -60,7 +63,9 @@ const getFallbackTitle = (route: string) => {
   return lastSegment.replace(/[-_]/g, " ");
 };
 
-const getTitle = (source: string, fallback: string) => {
+// 🛠️ 安全ガード：文字列以外が来てもクラッシュしないように修正
+const getTitle = (source: unknown, fallback: string) => {
+  if (typeof source !== "string") return fallback;
   const match = source.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
   if (!match) return fallback;
   const text = stripTags(match[1]);
@@ -75,9 +80,16 @@ const staticIndex: SearchEntry[] = Object.entries(rawPages)
       !path.includes("/[")
   )
   .map(([path, raw]) => {
+    // 🛠️ 本番環境でオブジェクト（{ default: "..." }）になってしまう罠を解消する処理
+    const rawString = typeof raw === "string" 
+      ? raw 
+      : (raw && typeof raw === "object" && "default" in raw) 
+        ? String((raw as any).default) 
+        : "";
+
     const route = pathToRoute(path);
-    const body = stripTags(stripFrontmatter(raw));
-    const title = getTitle(raw, getFallbackTitle(route));
+    const body = stripTags(stripFrontmatter(rawString));
+    const title = getTitle(rawString, getFallbackTitle(route));
     const excerpt = buildExcerpt(body);
     return { title, url: route, content: body, excerpt };
   })
