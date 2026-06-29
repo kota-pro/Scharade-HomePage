@@ -3,10 +3,9 @@ import {
   GALLERY_ALBUM_NAME_METADATA,
   type GalleryAlbumCategory,
 } from "../data/galleryAlbums";
+import { getAdobeAccessToken } from "./adobeAuth";
 
 const CLIENT_ID = import.meta.env.ADOBE_CLIENT_ID;
-const CLIENT_SECRET = import.meta.env.ADOBE_CLIENT_SECRET;
-const REFRESH_TOKEN = import.meta.env.ADOBE_REFRESH_TOKEN;
 const CATALOG_ID = import.meta.env.LIGHTROOM_CATALOG_ID;
 const LIGHTROOM_API_BASE_URL = "https://lr.adobe.io";
 const LIGHTROOM_MAX_PAGE_LIMIT = 500;
@@ -214,45 +213,8 @@ async function listAlbumsBySubtype(accessToken: string, subtype: string) {
   return fetchPaginatedLightroomResources(accessToken, url);
 }
 
-// アクセストークンのキャッシュ（毎回リフレッシュを防ぐ）
-let cachedAccessToken: string | null = null;
-let tokenExpiresAt = 0;
-
-async function getAccessToken(): Promise<string> {
-  // キャッシュが有効ならそれを返す（有効期限の1分前にリフレッシュ）
-  if (cachedAccessToken && Date.now() < tokenExpiresAt - 60_000) {
-    return cachedAccessToken;
-  }
-
-  const params = new URLSearchParams();
-  params.append("grant_type", "refresh_token");
-  params.append("client_id", CLIENT_ID);
-  params.append("client_secret", CLIENT_SECRET);
-  params.append("refresh_token", REFRESH_TOKEN);
-
-  const response = await fetch("https://ims-na1.adobelogin.com/ims/token/v3", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: params,
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text().catch(() => "");
-    console.error(`[Lightroom] Token refresh failed: ${response.status} ${response.statusText}`, errorBody);
-    throw new Error(
-      `Adobe token refresh failed (${response.status}). リフレッシュトークンが期限切れの可能性があります。Adobe Developer Console で再取得してください。`,
-    );
-  }
-
-  const data = await response.json();
-  cachedAccessToken = data.access_token;
-  // expires_in はミリ秒単位（通常 86400000 = 24時間）
-  tokenExpiresAt = Date.now() + (data.expires_in || 86_400_000);
-  return data.access_token;
-}
-
 export async function getAlbums(): Promise<LightroomAlbum[]> {
-  const accessToken = await getAccessToken();
+  const accessToken = await getAdobeAccessToken();
 
   const [collections, collectionSets] = await Promise.all([
     listAlbumsBySubtype(accessToken, "collection"),
@@ -366,7 +328,7 @@ export async function getAlbums(): Promise<LightroomAlbum[]> {
 }
 
 export async function getAlbumTitle(albumId: string): Promise<string | null> {
-  const accessToken = await getAccessToken();
+  const accessToken = await getAdobeAccessToken();
   const album = await getAlbumDetail(accessToken, albumId);
   const payload =
     typeof album?.payload === "object" && album.payload !== null
@@ -377,7 +339,7 @@ export async function getAlbumTitle(albumId: string): Promise<string | null> {
 }
 
 export async function getAlbumCoverId(albumId: string): Promise<string | null> {
-  const accessToken = await getAccessToken();
+  const accessToken = await getAdobeAccessToken();
   const url = `https://lr.adobe.io/v2/catalogs/${CATALOG_ID}/albums/${albumId}/assets?limit=1`;
 
   const response = await fetch(url, {
@@ -411,7 +373,7 @@ export async function getAlbumCoverId(albumId: string): Promise<string | null> {
 export async function fetchImageBuffer(
   assetId: string,
 ): Promise<ArrayBuffer | null> {
-  const accessToken = await getAccessToken();
+  const accessToken = await getAdobeAccessToken();
   const url = `https://lr.adobe.io/v2/catalogs/${CATALOG_ID}/assets/${assetId}/renditions/640`;
 
   const response = await fetch(url, {
@@ -427,7 +389,7 @@ export async function fetchImageBuffer(
 }
 
 export async function getAlbumPhotos(albumId: string): Promise<any[]> {
-  const accessToken = await getAccessToken();
+  const accessToken = await getAdobeAccessToken();
   const url =
     `${LIGHTROOM_API_BASE_URL}/v2/catalogs/${CATALOG_ID}/albums/${albumId}/assets` +
     `?limit=${LIGHTROOM_MAX_PAGE_LIMIT}`;
@@ -440,7 +402,7 @@ export async function getAlbumPhotosPage(
   albumId: string,
   options: { cursor?: string | null; limit?: number } = {},
 ): Promise<LightroomPhotoPage> {
-  const accessToken = await getAccessToken();
+  const accessToken = await getAdobeAccessToken();
   const { cursor = null, limit = 100 } = options;
   const url = cursor
     ? resolveLightroomUrl(cursor)
@@ -466,7 +428,7 @@ export async function getAlbumPhotosPage(
 export async function fetchHighResImageBuffer(
   assetId: string,
 ): Promise<ArrayBuffer | null> {
-  const accessToken = await getAccessToken();
+  const accessToken = await getAdobeAccessToken();
   const url = `https://lr.adobe.io/v2/catalogs/${CATALOG_ID}/assets/${assetId}/renditions/2048`;
 
   const response = await fetch(url, {
