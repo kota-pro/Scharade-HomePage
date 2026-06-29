@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { getDataDir } from "./dataDir";
 
 export type User = {
   id: string;
@@ -22,7 +23,7 @@ export type Session = {
   createdAt: string;
 };
 
-const DATA_DIR = path.join(process.cwd(), ".data");
+const DATA_DIR = getDataDir(import.meta.url);
 const USERS_PATH = path.join(DATA_DIR, "users.json");
 const SESSIONS_PATH = path.join(DATA_DIR, "sessions.json");
 

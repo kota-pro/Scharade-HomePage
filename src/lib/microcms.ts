@@ -1,10 +1,9 @@
 import { createClient, type MicroCMSQueries } from "microcms-js-sdk";
+import { getAdobeAccessToken } from "./adobeAuth";
 
 const serviceDomain = import.meta.env.MICROCMS_SERVICE_DOMAIN;
 const apiKey = import.meta.env.MICROCMS_API_KEY;
 const CLIENT_ID = import.meta.env.ADOBE_CLIENT_ID;
-const CLIENT_SECRET = import.meta.env.ADOBE_CLIENT_SECRET;
-const REFRESH_TOKEN = import.meta.env.ADOBE_REFRESH_TOKEN;
 const CATALOG_ID = import.meta.env.LIGHTROOM_CATALOG_ID;
 
 export type LightroomAlbum = {
@@ -104,27 +103,8 @@ export const getPortfolios = async (queries?: MicroCMSQueries) => {
   });
 };
 
-async function getAccessToken(): Promise<string> {
-  const params = new URLSearchParams();
-  params.append("grant_type", "refresh_token");
-  params.append("client_id", CLIENT_ID);
-  params.append("client_secret", CLIENT_SECRET);
-  params.append("refresh_token", REFRESH_TOKEN);
-
-  const response = await fetch("https://ims-na1.adobelogin.com/ims/token/v3", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: params,
-  });
-
-  if (!response.ok)
-    throw new Error(`Failed to refresh token: ${response.statusText}`);
-  const data = await response.json();
-  return data.access_token;
-}
-
 export async function getAlbums(): Promise<LightroomAlbum[]> {
-  const accessToken = await getAccessToken();
+  const accessToken = await getAdobeAccessToken();
   const url = `https://lr.adobe.io/v2/catalogs/${CATALOG_ID}/albums?subtype=collection`;
 
   const response = await fetch(url, {
@@ -143,7 +123,7 @@ export async function getAlbums(): Promise<LightroomAlbum[]> {
 }
 
 export async function getAlbumCoverId(albumId: string): Promise<string | null> {
-  const accessToken = await getAccessToken();
+  const accessToken = await getAdobeAccessToken();
   const url = `https://lr.adobe.io/v2/catalogs/${CATALOG_ID}/albums/${albumId}/assets?limit=1`;
 
   const response = await fetch(url, {
@@ -176,7 +156,7 @@ export async function getAlbumCoverId(albumId: string): Promise<string | null> {
 export async function fetchImageBuffer(
   assetId: string,
 ): Promise<ArrayBuffer | null> {
-  const accessToken = await getAccessToken();
+  const accessToken = await getAdobeAccessToken();
   const url = `https://lr.adobe.io/v2/catalogs/${CATALOG_ID}/assets/${assetId}/renditions/thumbnail2x`;
 
   const response = await fetch(url, {
@@ -194,7 +174,7 @@ export async function fetchImageBuffer(
 }
 
 export async function getAlbumPhotos(albumId: string): Promise<any[]> {
-  const accessToken = await getAccessToken();
+  const accessToken = await getAdobeAccessToken();
   let allPhotos: any[] = [];
 
   let nextHref: string | null =
@@ -251,7 +231,7 @@ export async function getAlbumPhotos(albumId: string): Promise<any[]> {
 export async function fetchHighResImageBuffer(
   assetId: string,
 ): Promise<ArrayBuffer | null> {
-  const accessToken = await getAccessToken();
+  const accessToken = await getAdobeAccessToken();
 
   const url = `https://lr.adobe.io/v2/catalogs/${CATALOG_ID}/assets/${assetId}/renditions/2048`;
 
