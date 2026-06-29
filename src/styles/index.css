@@ -976,6 +976,8 @@
     position: absolute;
     right: 20px;
     top: 370px;
+    flex-shrink: 0;
+    flex-basis: auto;
   }
 
   .main-visual-photos {
