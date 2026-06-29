@@ -15,7 +15,7 @@ import type { ImageMetadata } from "astro";
 import type { MicroCMSImage } from "microcms-js-sdk";
 
 import { Image } from 'astro:assets';
-import logo from './public/header/logo.svg';
+import logo from '/public/header/logo.svg';
 
 const MainImageModules = import.meta.glob<{ default: ImageMetadata }>(
   "../assets/main-images/*.{jpg,jpeg,png,webp,avif}",
