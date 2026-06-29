@@ -103,9 +103,15 @@ const next = Astro.url.searchParams.get("next") ?? "/";
 
           try {
             const fd = new FormData(form);
+            const payload = {
+              email: String(fd.get("email") ?? ""),
+              password: String(fd.get("password") ?? ""),
+              remember: fd.get("remember") != null,
+            };
             const res = await fetch("/api/auth/login", {
               method: "POST",
-              body: fd,
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
             });
 
             const data = await res.json().catch(() => null);

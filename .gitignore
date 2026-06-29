@@ -20,4 +20,4 @@ next-app/out/
 next-app/.env
 next-app/.env.*
 
-public/images/photo_library/
+.data/
