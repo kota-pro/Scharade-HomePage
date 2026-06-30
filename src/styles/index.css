@@ -879,6 +879,7 @@
 
   .main-visual-logo {
     width: stretch;
+    width: -webkit-stretch;
   }
 
   .main-visual-logo img {
@@ -965,6 +966,7 @@
 
   .main-visual-logo {
     width: stretch;
+    width: -webkit-stretch;
     height: 100%;
     align-items: flex-end;
   }
