@@ -305,8 +305,8 @@
 
   .auth-card {
     padding: 16px;
-    width: -webkit-fill-available;
     width: stretch;
+    width: -webkit-fill-available;
   }
 
   .auth-card h2 {
