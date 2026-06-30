@@ -185,6 +185,7 @@
 .tab {
   display: flex;
   flex-wrap: wrap;
+  width: -webkit-fill-available;
   width: stretch;
   max-width: 1440px;
   margin-bottom: 111px;
@@ -878,8 +879,8 @@
   }
 
   .main-visual-logo {
+    width: -webkit-fill-available;
     width: stretch;
-    width: -webkit-stretch;
   }
 
   .main-visual-logo img {
@@ -965,8 +966,8 @@
   }
 
   .main-visual-logo {
+    width: -webkit-fill-available;
     width: stretch;
-    width: -webkit-stretch;
     height: 100%;
     align-items: flex-end;
   }
