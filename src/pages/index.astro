@@ -134,10 +134,11 @@ const displayCarouselImages =
               class={`main-visual-photo${index + 1}`}
               data-lightbox="main-photo"
             >
-              <img
-                loading="lazy"
-                src={photo.default.src}
+              <Image
+                src={photo.default}
                 alt={`写団シャレードの活動写真${index + 1}`}
+                height={160}
+                width={240}
               />
             </a>
           ))
@@ -393,10 +394,11 @@ const displayCarouselImages =
                     href={image.src}
                     data-lightbox="carousel-contents-group"
                   >
-                    <img
-                      loading="lazy"
+                    <Image
                       src={image.src}
                       alt={image.alt}
+                      height={160}
+                      width={240}
                     />
                   </a>
                 </li>
