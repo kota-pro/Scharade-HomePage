@@ -492,7 +492,8 @@ import Layout from '../layouts/Layout.astro';
 
     .form-table tr:last-of-type > th{
         align-items: flex-start !important;
-        height: stretch !important;
+        height: -webkit-fill-available;
+        height: stretch;
     }
 
     .form-table th {
@@ -733,6 +734,7 @@ import Layout from '../layouts/Layout.astro';
 
     .preview-item-left p {
         width: 60%;
+        height: -webkit-fill-available;
         height: stretch;
         padding: 0px 4px 2px;
         border-bottom: 1px solid #f0f0f0;
@@ -778,6 +780,7 @@ import Layout from '../layouts/Layout.astro';
 
     .preview-message-container {
         width: 100%;
+        height: -webkit-fill-available;
         height: stretch;
         box-sizing: border-box;
         overflow-y: auto;
@@ -789,6 +792,7 @@ import Layout from '../layouts/Layout.astro';
     .preview-message-container p {
         display: block;
         width: 100%;
+        height: -webkit-fill-available;
         height: stretch;
         white-space: pre-wrap;
     }

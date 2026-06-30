@@ -94,6 +94,7 @@
 
 .tab {
     display: block;
+    width: -webkit-fill-available;
     width: stretch;
     max-width: 1200px;
     margin-bottom: 111px;

@@ -152,6 +152,7 @@
 
   .form-actions {
     flex-direction: column;
+    align-items: -webkit-fill-available;
     align-items: stretch;
   }
 }
