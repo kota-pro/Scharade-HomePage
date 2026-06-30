@@ -299,7 +299,7 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
     height: 5%;
     display: block;
     position: absolute;
-    top: -20px;
+    top: -15px;
     left: 35%;
     transform: rotate(var(--tape-rotate));
     z-index: 10 !important;
@@ -395,13 +395,18 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
 
     .post-body :global(figure) {
       margin: 16px auto;
+      display: table;
     }
 
     .post-body :global(img) {
       border-width: 10px;
       margin: 0;
-      width: stretch;
+      width: fit-content;
       width: -webkit-fill-available;
+    }
+
+    .post-body :global(.taped-image::after) {
+      top: -7px;
     }
 
     .back-link {
