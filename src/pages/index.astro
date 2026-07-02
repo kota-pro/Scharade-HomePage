@@ -50,7 +50,7 @@ const selectedPhotos = allPhotos.slice(0, 3);
 const { contents: posts } = await microcmsClient.getList<Blog>({
   endpoint: "blog",
   queries: {
-    limit: 100,
+    limit: 20,
     orders: "-publishedAt",
     depth: 2,
   },
@@ -65,7 +65,7 @@ type CarouselImageEntry = {
 const { contents: carouselImageContents } =
   await microcmsClient.getList<CarouselImageEntry>({
     endpoint: "card_image",
-    queries: { limit: 100 },
+    queries: { limit: 20 },
   });
 
 const fixedTexts = [

@@ -1,9 +1,3 @@
-/* .portfolio-edit-page {
-  max-width: 1180px;
-  margin: 0 auto 120px;
-  padding: 0 40px;
-} */
-
 .portfolio-edit-page h1 {
   font-family: "Zen Old Mincho";
   font-size: 72px;
@@ -141,10 +135,6 @@
 }
 
 @media (max-width: 768px) {
-  /* .portfolio-edit-page {
-    padding: 0 20px;
-  } */
-
   .portfolio-edit-page h1 {
     font-size: 48px;
     letter-spacing: 8px;

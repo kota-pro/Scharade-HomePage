@@ -4,6 +4,13 @@ import Loader from "../components/loading.astro";
 import Header from "../components/header.astro";
 import Footer from "../components/footer.astro";
 const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
+const pathname = Astro.url.pathname;
+const needsLightbox =
+	pathname === "/" ||
+	pathname.startsWith("/Gallery") ||
+	pathname.startsWith("/Portfolio/");
+const needsMaps = pathname === "/About_us";
+const showLoader = pathname === "/";
 ---
 
 <!DOCTYPE html>
@@ -16,7 +23,7 @@ const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
 		<title>写団シャレード</title>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;500;700;900&family=Zen+Kurenaido&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=Grandiflora+One&family=Zen+Kaku+Gothic+New:wght@300;400;500;700;900&family=Zen+Kurenaido&family=Zen+Old+Mincho&display=swap" rel="stylesheet">
 		<script>
 			(function(d) {
 				var config = {
@@ -24,32 +31,22 @@ const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
 				scriptTimeout: 3000,
 				async: true
 			},
-			h=d.documentElement,tk=d.createElement("script"),s=d.getElementsByTagName("script")[0];tk.src='https://use.typekit.net/'+config.kitId+'.js';tk.async=true;s.parentNode?.insertBefore(tk,s)
+			tk=d.createElement("script"),s=d.getElementsByTagName("script")[0];tk.src='https://use.typekit.net/'+config.kitId+'.js';tk.async=true;s.parentNode?.insertBefore(tk,s)
 			})(document);
 		</script>
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;500;700;900&family=Zen+Kurenaido&family=Zen+Old+Mincho&display=swap" rel="stylesheet">
-		<script>
-			(function(d) {
-			var config = {
-				kitId: 'ifd3mog',
-				scriptTimeout: 3000,
-				async: true
-			},
-			h=d.documentElement,tk=d.createElement("script"),s=d.getElementsByTagName("script")[0];tk.src='https://use.typekit.net/'+config.kitId+'.js';tk.async=true;s.parentNode?.insertBefore(tk,s)
-			})(document);
-		</script>
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Grandiflora+One&family=Zen+Kaku+Gothic+New:wght@300;400;500;700;900&family=Zen+Kurenaido&family=Zen+Old+Mincho&display=swap" rel="stylesheet">
-		<link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/css/lightbox.css" rel="stylesheet">
-		<script is:inline src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js" defer></script>
-		<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/js/lightbox.min.js" defer type="text/javascript"></script>
-		<script is:inline src={`https://maps.googleapis.com/maps/api/js?lang=ja&key=${googleMapsApiKey}&libraries=maps,marker`} defer></script>
+		{needsLightbox && (
+			<>
+				<link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/css/lightbox.css" rel="stylesheet">
+				<script is:inline src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js" defer></script>
+				<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/js/lightbox.min.js" defer type="text/javascript"></script>
+			</>
+		)}
+		{needsMaps && (
+			<script is:inline src={`https://maps.googleapis.com/maps/api/js?lang=ja&key=${googleMapsApiKey}&libraries=maps,marker`} defer></script>
+		)}
 	</head>
 	<body>
-		<Loader />
+		{showLoader && <Loader />}
 		<Header />
 		<slot name="main-slot" />
 		<div class="container">

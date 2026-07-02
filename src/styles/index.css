@@ -394,7 +394,6 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  /* overflow-x: scroll; */
 }
 
 .activity-table-grid {
@@ -927,7 +926,6 @@
   }
 
   .activity-table-grid {
-    /* grid-template-columns: repeat(3, 290px); */
     gap: 20px;
   }
 
@@ -949,7 +947,6 @@
 
 @media screen and (max-width: 920px) {
   .activity-table-grid {
-    /* grid-template-columns: repeat(2, 290px); */
     gap: 50px;
   }
 
