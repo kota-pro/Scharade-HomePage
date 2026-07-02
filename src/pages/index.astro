@@ -17,19 +17,12 @@ import type { MicroCMSImage } from "microcms-js-sdk";
 import { Image } from 'astro:assets';
 import logo from '/public/header/logo.svg';
 
-const MainImageModules = import.meta.glob<{ default: ImageMetadata }>(
-  "../assets/main-images/*.{jpg,jpeg,png,webp,avif}",
-  {
-    eager: true,
-  }
-);
 const ActivityCardImageModules = import.meta.glob<{ default: ImageMetadata }>(
   "../assets/activity/*.{jpg,jpeg,png,webp,avif}",
   {
     eager: true,
   }
 );
-const allPhotos = Object.values(MainImageModules);
 const activityCardPhotos = Object.values(ActivityCardImageModules).sort((a, b) =>
   a.default.src.localeCompare(b.default.src),
 );
@@ -41,11 +34,6 @@ const shuffleArray = <T,>(items: T[]) => {
 
   return items;
 };
-
-shuffleArray(allPhotos);
-// 先頭3枚を使用
-const selectedPhotos = allPhotos.slice(0, 3);
-
 
 const { contents: posts } = await microcmsClient.getList<Blog>({
   endpoint: "blog",
@@ -118,6 +106,8 @@ const displayCarouselImages =
         src: image.default.src,
         alt: "広告イメージ",
       }));
+
+const mainVisualImages = displayCarouselImages.slice(0, 3);
 ---
 
 <Layout>
@@ -128,15 +118,15 @@ const displayCarouselImages =
       </div>
       <div class="main-visual-photos">
         {
-          selectedPhotos.map((photo, index) => (
+          mainVisualImages.map((photo, index) => (
             <a
-              href={photo.default.src}
+              href={photo.src}
               class={`main-visual-photo${index + 1}`}
               data-lightbox="main-photo"
             >
               <Image
-                src={photo.default}
-                alt={`写団シャレードの活動写真${index + 1}`}
+                src={photo.src}
+                alt={photo.alt || `写団シャレードの活動写真${index + 1}`}
                 height={160}
                 width={240}
               />
