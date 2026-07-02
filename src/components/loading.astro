@@ -131,15 +131,23 @@ import '../styles/UA+reset.css';
 </style>
 
 <script>
-    window.addEventListener('load', () => {
+    const hideLoader = () => {
         const loader = document.querySelector<HTMLElement>('.loading-wrapper');
+        if (!loader || loader.classList.contains('loaded')) return;
 
-        if (loader) {
-            loader.classList.add('loaded');
+        loader.classList.add('loaded');
+        window.setTimeout(() => {
+            loader.style.display = 'none';
+        }, 220);
+    };
 
-            setTimeout(() => {
-                loader.style.display = 'none';
-            }, 500);
-        }
-    });
+    // Do not block rendering until all assets finish loading.
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', hideLoader, { once: true });
+    } else {
+        hideLoader();
+    }
+
+    // Safety fallback in case lifecycle events are delayed.
+    window.setTimeout(hideLoader, 1200);
 </script>
