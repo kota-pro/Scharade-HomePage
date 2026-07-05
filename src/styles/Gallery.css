@@ -8,7 +8,7 @@
 
 .section-title  h1{
   color: #000;
-  font-family: "Didot";
+  font-family: "linotype-didot", serif;
   font-size: 96px;
   font-style: normal;
   font-weight: 400;
@@ -155,6 +155,82 @@
   position: absolute;
   top: 100%;
   left: 0;
+}
+
+/* 古い年度のラベルは非表示 */
+.older-year-label {
+  display: none !important;
+}
+
+/* セレクトボックスを囲むラッパーのスタイル (通常のタブ label と似たスタイル) */
+.tab-select-wrapper {
+  flex: 1 1;
+  order: -1;
+  min-width: 70px;
+  border-bottom: 1px solid #000000;
+  border-radius: 0;
+  background-color: #fdfdfd;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-select-wrapper select {
+  width: 100%;
+  height: 100%;
+  padding: .7em 2em .5em 1em; /* 矢印スペースのため右パディングを広めに */
+  border: none;
+  background: transparent;
+  color: #000000;
+  font-family: "Zen Old Mincho";
+  font-size: 15px;
+  letter-spacing: 2.25px;
+  font-weight: 400;
+  font-style: normal;
+  text-align: center;
+  text-align-last: center;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+/* セレクトボックスのカスタム下矢印 */
+.tab-select-wrapper::after {
+  content: '▼';
+  font-size: 8px;
+  position: absolute;
+  right: 12px;
+  pointer-events: none;
+  color: #000000;
+  transition: color 0.3s;
+}
+
+.tab-select-wrapper:hover select {
+  color: #0db49b;
+}
+
+.tab-select-wrapper:hover::after {
+  color: #0db49b;
+}
+
+/* アクティブ状態 (選択されたラジオボタン label と同じ見た目) */
+.tab-select-wrapper.active {
+  background-color: #fff;
+  border-color: #000000;
+  border-style: solid;
+  border-width: 1px 1px 0px 1px;
+  border-radius: 2px 2px 0px 0px;
+}
+
+.tab-select-wrapper.active select {
+  color: #0db49b;
+}
+
+.tab-select-wrapper.active::after {
+  color: #0db49b;
 }
 
 .tab-panel-number {
@@ -384,6 +460,16 @@ details[open] .arrow-icon {
     letter-spacing: 1.5px;
     padding: .5em 0.7em .3em;
     min-width: 60px;
+  }
+
+  .tab-select-wrapper select {
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    padding: .5em 1.5em .3em 0.7em;
+  }
+  .tab-select-wrapper::after {
+    right: 8px;
+    font-size: 7px;
   }
 
   .tab-panel {

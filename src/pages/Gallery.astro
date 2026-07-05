@@ -37,7 +37,10 @@ const years = Array.from(
     ),
   ),
 ).sort((a, b) => b - a);
-const tabYears = ["All", ...years.map(String)];
+
+const recentYears = years.slice(0, 3).map(String);
+const olderYears = years.slice(3).map(String);
+const displayYears = ["All", ...recentYears];
 
 const getAlbumsForYearAndCategory = (
   year: string,
@@ -94,8 +97,9 @@ const getAlbumsForYearAndCategory = (
       </div>
     ) : (
       <div class="tab">
+        {/* 通常表示するタブ (All + 最新3年) */}
         {
-          tabYears.map((year, index) => {
+          displayYears.map((year, index) => {
             const inputId = `year-${year}`;
             return [
               <input
@@ -161,12 +165,93 @@ const getAlbumsForYearAndCategory = (
             ];
           })
         }
+
+        {/* 非表示で出力しておく古い年度のパネル */}
+        {
+          olderYears.map((year) => {
+            const inputId = `year-${year}`;
+            return [
+              <input
+                type="radio"
+                id={inputId}
+                name="year"
+              />,
+              <label for={inputId} class="older-year-label">{year}</label>,
+              <div class="tab-panel">
+                <div class="gallery-content">
+                  {GALLERY_CATEGORY_ORDER.map((category) => {
+                    const categoryAlbums = getAlbumsForYearAndCategory(
+                      year,
+                      category,
+                    );
+                    return (
+                      <details class="category-section" name="category-section">
+                        <summary class="category-title">
+                          <img
+                            class="arrow-icon"
+                            src="/icons/rightarrow.svg"
+                            alt="arrow icon"
+                          />
+                          {GALLERY_CATEGORY_LABELS[category]}
+                        </summary>
+                        <div class="gallery-grid">
+                          {categoryAlbums.map((item) => {
+                            const itemYear = item.created
+                              ? new Date(item.created).getFullYear()
+                              : new Date().getFullYear();
+                            return (
+                              <div class="gallery-item" data-year={itemYear}>
+                                <a href={`/Gallery/${item.id}`} class="gallery-link">
+                                  <div class="image-wrapper">
+                                    {item.coverId ? (
+                                      <img
+                                        src={`/api/images/${item.coverId}`}
+                                        alt={item.payload.name}
+                                        loading="lazy"
+                                      />
+                                    ) : (
+                                      <div class="placeholder-image">
+                                        <img
+                                          src="/images/temp.png"
+                                          alt="placeholder"
+                                          loading="lazy"
+                                        />
+                                      </div>
+                                    )}
+                                    <p class="image-title">{item.payload.name}</p>
+                                  </div>
+                                </a>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </details>
+                    );
+                  })}
+                </div>
+              </div>,
+            ];
+          })
+        }
+
+        {/* 古い年度を選択するためのセレクトボックス */}
+        {olderYears.length > 0 && (
+          <div class="tab-select-wrapper">
+            <select id="older-years-select" aria-label="過去の年度を選択">
+              <option value="" disabled selected>...</option>
+              {olderYears.map((year) => (
+                <option value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
     )}
   </Fragment>
 </Layout>
 
 <script>
+  // details arrow control
   const details = document.querySelectorAll("details");
   details.forEach((detail) => {
     const updateArrow = () => {
@@ -177,5 +262,36 @@ const getAlbumsForYearAndCategory = (
     };
     detail.addEventListener("toggle", updateArrow);
     updateArrow();
+  });
+
+  // タブとセレクトボックスの連携制御
+  const selectEl = document.getElementById("older-years-select") as HTMLSelectElement | null;
+  const tabInputs = document.querySelectorAll<HTMLInputElement>('input[name="year"]');
+  const selectWrapper = document.querySelector(".tab-select-wrapper");
+
+  if (selectEl) {
+    selectEl.addEventListener("change", (e) => {
+      const target = e.target as HTMLSelectElement;
+      const selectedYear = target.value;
+      if (selectedYear) {
+        const targetInput = document.getElementById(`year-${selectedYear}`) as HTMLInputElement | null;
+        if (targetInput) {
+          targetInput.checked = true;
+          selectWrapper?.classList.add("active");
+        }
+      }
+    });
+  }
+
+  tabInputs.forEach((input) => {
+    input.addEventListener("change", () => {
+      const inputId = input.id;
+      const year = inputId.replace("year-", "");
+      
+      if (selectEl && !Array.from(selectEl.options).some(opt => opt.value === year)) {
+        selectEl.value = "";
+        selectWrapper?.classList.remove("active");
+      }
+    });
   });
 </script>
