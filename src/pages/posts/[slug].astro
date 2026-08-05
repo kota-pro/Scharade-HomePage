@@ -5,6 +5,10 @@ import { microcmsClient } from "../../lib/microcms";
 import type { Blog } from "../../types/microcms";
 import { formatDate, getPublishedDate } from "../../utils/blog";
 
+import {
+  optimizeMicrocmsHtml,
+  optimizeMicrocmsImage,
+} from "../../utils/microcmsImage";
 const { slug } = Astro.params;
 
 if (!slug) {
@@ -27,6 +31,7 @@ if (contents.length === 0) {
 
 const post = contents[0];
 
+const optimizedBody = optimizeMicrocmsHtml(post.body ?? "");
 const formattedDate = formatDate(getPublishedDate(post));
 const backLinkMap = {
   activity: { href: "/Activity", label: "Activityへ戻る" },
@@ -73,7 +78,10 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
           return (
             <figure class="post-eyecatch" style={tapeStyles}>
               <img
-                src={image.url}
+                src={optimizeMicrocmsImage(image.url, {
+                  width: 1600,
+                  quality: 75,
+                })}
                 alt={image.alt || post.title}
                 loading="lazy"
               />
@@ -83,7 +91,7 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
       </div>
     ) : null
   }
-  <div class="post-body" set:html={post.body ?? ""} />
+  <div class="post-body" set:html={optimizedBody} />
   <div
     class="back-link"
     id="post-back-link"
@@ -91,18 +99,22 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
     hidden={!backLink}
   >
     {
-      backLink ? <a href={backLink.href}>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="25"
-        height="25"
-        viewBox="0 0 20 20"
-        ><path
-          fill="currentColor"
-          d="M11.25 17.308L5.942 12l5.308-5.308l.708.708L7.364 12l4.594 4.6zm6.1 0L12.042 12l5.308-5.308l.708.708l-4.594 4.6l4.594 4.6z"
-        ></path>
-      </svg>
-      {backLink.label}</a> : null
+      backLink ? (
+        <a href={backLink.href}>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="25"
+            height="25"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fill="currentColor"
+              d="M11.25 17.308L5.942 12l5.308-5.308l.708.708L7.364 12l4.594 4.6zm6.1 0L12.042 12l5.308-5.308l.708.708l-4.594 4.6l4.594 4.6z"
+            />
+          </svg>
+          {backLink.label}
+        </a>
+      ) : null
     }
   </div>
 </MypostLayout>
@@ -118,7 +130,7 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
   .post-title {
     color: #000;
     font-family: "Zen Old Mincho";
-    font-size: calc(64/1440 * 100vw);
+    font-size: calc(64 / 1440 * 100vw);
     font-style: normal;
     font-weight: 400;
     line-height: normal;
@@ -453,9 +465,7 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
     const images = Array.from(postBody.querySelectorAll("img"));
 
     images.forEach((img) => {
-      const wrapper =
-        img.closest("figure") ||
-        img.parentElement;
+      const wrapper = img.closest("figure") || img.parentElement;
 
       if (!(wrapper instanceof HTMLElement)) return;
       if (wrapper.classList.contains("taped-image")) return;
@@ -464,7 +474,10 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
       const rotateDeg = Math.floor(Math.random() * 41) * 0.5 - 10;
 
       wrapper.classList.add("taped-image");
-      wrapper.style.setProperty("--tape-url", `url(/images/tapes/asset${tapeNum}.svg)`);
+      wrapper.style.setProperty(
+        "--tape-url",
+        `url(/images/tapes/asset${tapeNum}.svg)`,
+      );
       wrapper.style.setProperty("--tape-rotate", `${rotateDeg}deg`);
     });
   }

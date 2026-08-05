@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { getUserFromRequest } from "../../../lib/auth";
+import sharp from "sharp";
 
 const SERVICE_DOMAIN =
   (import.meta as any).env?.MICROCMS_SERVICE_DOMAIN ??
@@ -38,7 +39,10 @@ export const POST: APIRoute = async ({ request }) => {
 
   const { user } = getUserFromRequest(request);
   if (!user) {
-    return jsonResponse({ ok: false, message: "Authentication required." }, 401);
+    return jsonResponse(
+      { ok: false, message: "Authentication required." },
+      401,
+    );
   }
 
   if (!user.approved) {
@@ -59,8 +63,8 @@ export const POST: APIRoute = async ({ request }) => {
     typeof File !== "undefined" && fileEntry instanceof File
       ? fileEntry
       : fileEntry instanceof Blob
-      ? fileEntry
-      : null;
+        ? fileEntry
+        : null;
 
   if (!fileLike) {
     return jsonResponse(
@@ -70,18 +74,46 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const mime = (fileLike as any).type ? String((fileLike as any).type) : "";
-  const size = typeof (fileLike as any).size === "number" ? (fileLike as any).size : 0;
   if (mime && !mime.startsWith("image/")) {
-    return jsonResponse({ ok: false, message: "Only image files are allowed." }, 400);
+    return jsonResponse(
+      { ok: false, message: "Only image files are allowed." },
+      400,
+    );
   }
-  if (size && size > 5 * 1024 * 1024) {
-    return jsonResponse({ ok: false, message: "File too large (max 5MB)." }, 413);
+
+  let optimizedBuffer: Buffer;
+  try {
+    optimizedBuffer = await sharp(Buffer.from(await fileLike.arrayBuffer()))
+      .rotate()
+      .resize({
+        width: 2400,
+        height: 2400,
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 78, effort: 4 })
+      .toBuffer();
+  } catch {
+    return jsonResponse(
+      {
+        ok: false,
+        message: "画像を圧縮できませんでした。別の画像をお試しください。",
+      },
+      400,
+    );
   }
 
   const uploadData = new FormData();
-  const fileName =
-    typeof File !== "undefined" && fileLike instanceof File ? fileLike.name : "upload.jpg";
-  uploadData.append("file", fileLike, fileName);
+  const originalName =
+    typeof File !== "undefined" && fileLike instanceof File
+      ? fileLike.name
+      : "upload";
+  const fileName = `${originalName.replace(/\.[^.]+$/, "") || "upload"}.webp`;
+  uploadData.append(
+    "file",
+    new Blob([new Uint8Array(optimizedBuffer).buffer], { type: "image/webp" }),
+    fileName,
+  );
 
   let response: Response;
   const targetUrl = buildUploadUrl(SERVICE_DOMAIN);
@@ -96,7 +128,10 @@ export const POST: APIRoute = async ({ request }) => {
     });
   } catch (error) {
     return jsonResponse(
-      { ok: false, message: `microCMS upload request failed: ${(error as Error).message}` },
+      {
+        ok: false,
+        message: `microCMS upload request failed: ${(error as Error).message}`,
+      },
       502,
     );
   }
@@ -126,7 +161,10 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const data = await response.json().catch(() => null);
-  const uploadUrl = data && typeof data === "object" && "url" in data ? (data as any).url : null;
+  const uploadUrl =
+    data && typeof data === "object" && "url" in data
+      ? (data as any).url
+      : null;
 
   if (!uploadUrl || typeof uploadUrl !== "string") {
     return jsonResponse(

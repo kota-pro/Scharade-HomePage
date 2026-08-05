@@ -231,7 +231,6 @@ const portfolioViewUrlSerialized = inlineSerialize(portfolioViewUrl ?? "");
           const INITIAL_FORM_DATA = parseInitialData();
           const API_UPDATE_URL = "/api/portfolio/update";
           const API_UPLOAD_URL = "/api/portfolio/upload";
-          const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
           const VIEW_URL = (() => {
             const raw = dataEl?.dataset.viewUrl;
             if (!raw) return "";
@@ -336,13 +335,39 @@ const portfolioViewUrlSerialized = inlineSerialize(portfolioViewUrl ?? "");
               });
             };
 
-            async function uploadOneFile(file) {
-              if (file && typeof file.size === "number" && file.size > MAX_UPLOAD_BYTES) {
-                throw new Error(`${file.name}: File too large (max 5MB).`);
+            async function compressImage(file) {
+              const bitmap = await createImageBitmap(file);
+              const maxDimension = 2400;
+              const scale = Math.min(
+                1,
+                maxDimension / Math.max(bitmap.width, bitmap.height),
+              );
+              const canvas = document.createElement("canvas");
+              canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+              canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+              const context = canvas.getContext("2d");
+              if (!context) {
+                bitmap.close();
+                throw new Error("画像を圧縮できませんでした。");
               }
+              context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+              bitmap.close();
+
+              const blob = await new Promise((resolve) =>
+                canvas.toBlob(resolve, "image/webp", 0.78),
+              );
+              if (!blob) throw new Error("画像を圧縮できませんでした。");
+
+              const baseName = file.name.replace(/\.[^.]+$/, "") || "upload";
+              return new File([blob], `${baseName}.webp`, {
+                type: "image/webp",
+              });
+            }
+            async function uploadOneFile(file) {
+              const optimizedFile = await compressImage(file);
 
               const formData = new FormData();
-              formData.append("file", file, file.name);
+              formData.append("file", optimizedFile, optimizedFile.name);
 
               const response = await fetch(API_UPLOAD_URL, {
                 method: "POST",
