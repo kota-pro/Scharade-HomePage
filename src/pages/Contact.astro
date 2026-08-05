@@ -44,9 +44,9 @@ import Layout from '../layouts/Layout.astro';
                     </tr>
                     <tr>
                         <th><p id="grade" class="a-anchor">学年</p></th>
-                        <td class="require-td"></td>
+                        <td class="require-td"><p id="require">必須</p></td>
                         <td class="input-td">
-                            <span><input class="grade-selection" type="radio" value="1年" name="grade[]" id="grade-1"><label for="grade-1">1年</label></span>
+                            <span><input class="grade-selection" type="radio" value="1年" name="grade[]" id="grade-1" required><label for="grade-1">1年</label></span>
                             <span><input class="grade-selection" type="radio" value="2年" name="grade[]" id="grade-2"><label for="grade-2">2年</label></span>
                             <span><input class="grade-selection" type="radio" value="3年" name="grade[]" id="grade-3"><label for="grade-3">3年</label></span>
                             <span><input class="grade-selection" type="radio" value="4年" name="grade[]" id="grade-4"><label for="grade-4">4年</label></span>
@@ -197,6 +197,16 @@ import Layout from '../layouts/Layout.astro';
         const mask = document.querySelector('.mask') as HTMLDivElement;
         const isHidden = 'is-hidden';
 
+        function scrollToInvalidField(field: HTMLElement) {
+            const targetRow = field.closest('tr') as HTMLElement | null;
+            const target = targetRow ?? field;
+
+            requestAnimationFrame(() => {
+                target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                field.focus({ preventScroll: true });
+            });
+        }
+
         confirmBtn.addEventListener('click', () => {
             preview.classList.toggle(isHidden);
             body.style.overflow = 'hidden';
@@ -223,14 +233,16 @@ import Layout from '../layouts/Layout.astro';
         });
 
         submitBtn.addEventListener('click', async (e) => {
-            if (!form.checkValidity()) {
+            if (!form.reportValidity()) {
                 e.preventDefault();
                 e.stopPropagation();
                 preview.classList.add(isHidden);
                 mask.classList.add(isHidden);
                 body.style.overflow = 'initial';
                 const firstInvalid = form.querySelector(':invalid') as HTMLElement | null;
-                firstInvalid?.focus();
+                if (firstInvalid) {
+                    scrollToInvalidField(firstInvalid);
+                }
             } else {
                 e.preventDefault();
 
