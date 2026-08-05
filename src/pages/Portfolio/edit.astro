@@ -335,9 +335,39 @@ const portfolioViewUrlSerialized = inlineSerialize(portfolioViewUrl ?? "");
               });
             };
 
+            async function compressImage(file) {
+              const bitmap = await createImageBitmap(file);
+              const maxDimension = 2400;
+              const scale = Math.min(
+                1,
+                maxDimension / Math.max(bitmap.width, bitmap.height),
+              );
+              const canvas = document.createElement("canvas");
+              canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+              canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+              const context = canvas.getContext("2d");
+              if (!context) {
+                bitmap.close();
+                throw new Error("画像を圧縮できませんでした。");
+              }
+              context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+              bitmap.close();
+
+              const blob = await new Promise((resolve) =>
+                canvas.toBlob(resolve, "image/webp", 0.78),
+              );
+              if (!blob) throw new Error("画像を圧縮できませんでした。");
+
+              const baseName = file.name.replace(/\.[^.]+$/, "") || "upload";
+              return new File([blob], `${baseName}.webp`, {
+                type: "image/webp",
+              });
+            }
             async function uploadOneFile(file) {
+              const optimizedFile = await compressImage(file);
+
               const formData = new FormData();
-              formData.append("file", file, file.name);
+              formData.append("file", optimizedFile, optimizedFile.name);
 
               const response = await fetch(API_UPLOAD_URL, {
                 method: "POST",
@@ -345,9 +375,16 @@ const portfolioViewUrlSerialized = inlineSerialize(portfolioViewUrl ?? "");
                 credentials: "same-origin",
               });
 
-              const data = await response.json().catch(() => ({}));
-              if (!response.ok) throw new Error(data && data.message ? data.message : "Upload failed.");
-              if (!data || !data.url) throw new Error("Upload response missing url.");
+              if (response.status === 413) {
+                throw new Error(`${file.name}: Upload failed because the production server rejected the file size (HTTP 413). Check nginx/client_max_body_size.`);
+              }
+
+              const contentType = response.headers.get("content-type") || "";
+              const data = contentType.includes("application/json")
+                ? await response.json().catch(() => ({}))
+                : {};
+              if (!response.ok) throw new Error(`${file.name}: ${data && data.message ? data.message : "Upload failed."}`);
+              if (!data || !data.url) throw new Error(`${file.name}: Upload response missing url.`);
               return data.url;
             }
 
@@ -387,12 +424,14 @@ const portfolioViewUrlSerialized = inlineSerialize(portfolioViewUrl ?? "");
                 if (submitBtn) submitBtn.disabled = true;
 
                 try {
+                  let uploadedCount = 0;
                   for (const file of files) {
                     const url = await uploadOneFile(file);
                     pictures.push(url);
+                    uploadedCount += 1;
                   }
                   renderPictures();
-                  setStatus("Pictures uploaded!", "success");
+                  setStatus(`Pictures uploaded! (${uploadedCount}/${files.length})`, "success");
                 } catch (err) {
                   setStatus((err && err.message) ? err.message : "Pictures upload failed.", "error");
                 } finally {

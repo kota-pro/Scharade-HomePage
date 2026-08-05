@@ -14,17 +14,18 @@ import { linkToPost } from "../utils/linkToPost";
 import type { ImageMetadata } from "astro";
 import type { MicroCMSImage } from "microcms-js-sdk";
 
-import { Image } from 'astro:assets';
-import logo from '/public/header/logo.svg';
+import { optimizeMicrocmsImage } from "../utils/microcmsImage";
+import { Image } from "astro:assets";
+import logo from "/public/header/logo.svg";
 
 const ActivityCardImageModules = import.meta.glob<{ default: ImageMetadata }>(
   "../assets/activity/*.{jpg,jpeg,png,webp,avif}",
   {
     eager: true,
-  }
+  },
 );
-const activityCardPhotos = Object.values(ActivityCardImageModules).sort((a, b) =>
-  a.default.src.localeCompare(b.default.src),
+const activityCardPhotos = Object.values(ActivityCardImageModules).sort(
+  (a, b) => a.default.src.localeCompare(b.default.src),
 );
 const shuffleArray = <T,>(items: T[]) => {
   for (let i = items.length - 1; i > 0; i--) {
@@ -67,13 +68,41 @@ const fixedTexts = [
               <path d="M38.912 57.5644C28.6195 57.681 19.6918 49.2352 19.1617 38.9708C18.024 24.0762 34.051 13.2251 47.3658 19.7482C54.2205 23.0194 58.6975 29.9188 58.701 37.7072" stroke="white" />
             </svg>`,
   },
-  { title: "定例会", text: "月に2回、E212の部室にて定例会を行なっています！定例会ではカメラ講習、ボドゲ大会などを行なっています。", slug: "" },
-  { title: "撮影会", text: "月に２回、東京近辺で撮影会を行なっています！神楽坂撮影会、星空ドライブ撮影会、ディズニー撮影会など。", slug: "" },
-  { title: "展示", text: "年に5回、学生会館や外部のスペースを借りて展示を行なっています！自分の作品を多くの方に見てもらえるので技術の向上になります。", slug: "" },
-  { title: "夏合宿", text: "8月~9月頃に1泊2日か2泊3日の合宿を行います！2025年には石川・富山、2024年には熱海・伊東に行きました。", slug: "" },
-  { title: "春合宿", text: "2月~3月頃に1泊2日か2泊3日の合宿を行います！2025年には宮城・福島、2024年には長野に行きました。", slug: "" },
-  { title: "新歓", text: "4月~5月は新入生歓迎企画を行います！ビラを配ったり食事会をしたりなど、色々な人と話せるいい機会になります。", slug: "" },
-  { title: "部室", text: "学生会館のE224に部室があります！2階にあるためとてもアクセスがよく、過ごしやすい空間になっています。詳しくはAbout usの方へ。", slug: "" },
+  {
+    title: "定例会",
+    text: "月に2回、E212の部室にて定例会を行なっています！定例会ではカメラ講習、ボドゲ大会などを行なっています。",
+    slug: "",
+  },
+  {
+    title: "撮影会",
+    text: "月に２回、東京近辺で撮影会を行なっています！神楽坂撮影会、星空ドライブ撮影会、ディズニー撮影会など。",
+    slug: "",
+  },
+  {
+    title: "展示",
+    text: "年に5回、学生会館や外部のスペースを借りて展示を行なっています！自分の作品を多くの方に見てもらえるので技術の向上になります。",
+    slug: "",
+  },
+  {
+    title: "夏合宿",
+    text: "8月~9月頃に1泊2日か2泊3日の合宿を行います！2025年には石川・富山、2024年には熱海・伊東に行きました。",
+    slug: "",
+  },
+  {
+    title: "春合宿",
+    text: "2月~3月頃に1泊2日か2泊3日の合宿を行います！2025年には宮城・福島、2024年には長野に行きました。",
+    slug: "",
+  },
+  {
+    title: "新歓",
+    text: "4月~5月は新入生歓迎企画を行います！ビラを配ったり食事会をしたりなど、色々な人と話せるいい機会になります。",
+    slug: "",
+  },
+  {
+    title: "部室",
+    text: "学生会館のE224に部室があります！2階にあるためとてもアクセスがよく、過ごしやすい空間になっています。詳しくはAbout usの方へ。",
+    slug: "",
+  },
 ];
 
 const activityCards = fixedTexts.map((textData, index) => ({
@@ -81,21 +110,22 @@ const activityCards = fixedTexts.map((textData, index) => ({
   backgroundImage: activityCardPhotos[index % activityCardPhotos.length],
 }));
 
-
 // カルーセル画像のランダムシャッフル
 const CarouselImageModules = import.meta.glob<{ default: ImageMetadata }>(
   "../assets/ads-images/*.{jpg,jpeg,png,webp,avif}",
   {
     eager: true,
-  }
+  },
 );
-const fallbackCarouselImages = shuffleArray(Object.values(CarouselImageModules));
+const fallbackCarouselImages = shuffleArray(
+  Object.values(CarouselImageModules),
+);
 const carouselImages = shuffleArray(
   carouselImageContents
     .map((item) => item.image)
     .filter((image): image is MicroCMSImage => Boolean(image?.url))
     .map((image) => ({
-      src: image.url,
+      src: optimizeMicrocmsImage(image.url, { width: 1600, quality: 75 }),
       alt: "広告イメージ",
     })),
 );
@@ -169,17 +199,19 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
     <div class="slogan">
       <picture class="slogan-line line-1">
         <source media="(min-width: 769px)" srcset="/icons/Line-1.svg" />
-        <img src="/icons/Line-2.svg" alt="SVGの代替テキスト">
+        <img src="/icons/Line-2.svg" alt="SVGの代替テキスト" />
       </picture>
       <h1 class="slogan-text">
-        <span>私たちと一緒に</span><span>一生に残る素敵な思い出を</span><span>写真に残しませんか？</span>
+        <span>私たちと一緒に</span><span>一生に残る素敵な思い出を</span><span
+          >写真に残しませんか？</span
+        >
       </h1>
       <p class="slogan-subtext">
         Shall we create and capture beautiful memories together?
       </p>
       <picture class="slogan-line line-2">
         <source media="(min-width: 769px)" srcset="/icons/Line-1.svg" />
-        <img src="/icons/Line-2.svg" alt="SVGの代替テキスト">
+        <img src="/icons/Line-2.svg" alt="SVGの代替テキスト" />
       </picture>
     </div>
 
@@ -266,9 +298,7 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
                     ) : null}
 
                     {card.title && <h1>{card.title}</h1>}
-                    {card.text && (
-                      <p class="activity-card-meta">{card.text}</p>
-                    )}
+                    {card.text && <p class="activity-card-meta">{card.text}</p>}
                   </div>
 
                   {card.slug ? (
@@ -318,7 +348,11 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
       </div>
       <div class="activity-table-text">
         <a href="Contact">
-          <p><span>撮影依頼も承っております。</span><span>御依頼はこちらから。</span></p>
+          <p>
+            <span>撮影依頼も承っております。</span><span
+              >御依頼はこちらから。</span
+            >
+          </p>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="25"
@@ -334,8 +368,8 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
     </div>
     <div class="advertising">
       <div class="section-title how-to-join-title">
-          <h1>How&nbsp;to&nbsp;join</h1>
-          <div class="section-title-line"></div>
+        <h1>How&nbsp;to&nbsp;join</h1>
+        <div class="section-title-line"></div>
       </div>
       <h1 class="advertising-title">
         あなたの大学生活を、<br />あなたの目線で「写真」に残してみませんか？
@@ -380,10 +414,7 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
             {
               displayCarouselImages.map((image) => (
                 <li class="photo-carousel-list">
-                  <a
-                    href={image.src}
-                    data-lightbox="carousel-contents-group"
-                  >
+                  <a href={image.src} data-lightbox="carousel-contents-group">
                     <Image
                       src={image.src}
                       alt={image.alt}
@@ -405,21 +436,29 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
           <h1>01</h1>
           <div class="how-to-text">
             <h2>活動に参加する</h2>
-            <p>Instagramなどから新歓企画を確認！<br>Contact、またはInstagramのDMなどで参加したい旨を教えてください！</p>
+            <p>
+              Instagramなどから新歓企画を確認！<br
+              />Contact、またはInstagramのDMなどで参加したい旨を教えてください！
+            </p>
           </div>
         </div>
         <div class="step-2">
           <h1>02</h1>
           <div class="how-to-text">
             <h2>会費を払う</h2>
-            <p>企画参加後に三役に手渡し、または振込で会費をお支払いいただきます。入会費はなく半期4000円です。</p>
+            <p>
+              企画参加後に三役に手渡し、または振込で会費をお支払いいただきます。入会費はなく半期4000円です。
+            </p>
           </div>
         </div>
         <div class="step-3">
           <h1>03</h1>
           <div class="how-to-text">
             <h2>入会完了</h2>
-            <p>これだけで入会できます！<br>部室のプリンターやL判写真用紙、暗室など、お好きにご利用いただけます！</p>
+            <p>
+              これだけで入会できます！<br
+              />部室のプリンターやL判写真用紙、暗室など、お好きにご利用いただけます！
+            </p>
           </div>
         </div>
       </div>
@@ -433,13 +472,13 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
 <script is:inline type="text/javascript">
   (() => {
     const carousels = Array.from(
-      document.querySelectorAll(".photo-carousel-contents")
+      document.querySelectorAll(".photo-carousel-contents"),
     );
 
     if (carousels.length === 0) return;
 
     const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
+      "(prefers-reduced-motion: reduce)",
     );
 
     const minWidth = 140;
@@ -465,28 +504,20 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
       let gap = 0;
 
       const updateItemSize = () => {
-        const containerWidth =
-          carousel.clientWidth || window.innerWidth;
+        const containerWidth = carousel.clientWidth || window.innerWidth;
 
         const itemWidth = Math.round(
-          Math.max(
-            minWidth,
-            Math.min(maxWidth, containerWidth * 0.28)
-          )
+          Math.max(minWidth, Math.min(maxWidth, containerWidth * 0.28)),
         );
 
-        const itemHeight = Math.round(
-          itemWidth * aspectRatio
-        );
+        const itemHeight = Math.round(itemWidth * aspectRatio);
 
-        carousel
-          .querySelectorAll(".photo-carousel-list")
-          .forEach((node) => {
-            if (!(node instanceof HTMLElement)) return;
+        carousel.querySelectorAll(".photo-carousel-list").forEach((node) => {
+          if (!(node instanceof HTMLElement)) return;
 
-            node.style.width = `${itemWidth}px`;
-            node.style.height = `${itemHeight}px`;
-          });
+          node.style.width = `${itemWidth}px`;
+          node.style.height = `${itemHeight}px`;
+        });
 
         carousel.querySelectorAll("ul li").forEach((node) => {
           if (!(node instanceof HTMLElement)) return;
@@ -499,19 +530,15 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
       const measure = () => {
         const styles = getComputedStyle(carousel);
 
-        gap = parseFloat(
-          styles.columnGap || styles.gap || "0"
-        );
+        gap = parseFloat(styles.columnGap || styles.gap || "0");
 
         listWidth = originalList.scrollWidth;
       };
 
       const render = () => {
-        lists[0].style.transform =
-          `translateX(${offset}px)`;
+        lists[0].style.transform = `translateX(${offset}px)`;
 
-        lists[1].style.transform =
-          `translateX(${offset + listWidth + gap}px)`;
+        lists[1].style.transform = `translateX(${offset + listWidth + gap}px)`;
       };
 
       const step = (timestamp) => {
@@ -525,10 +552,7 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
 
         offset -= speedPxPerSec * delta;
 
-        if (
-          listWidth > 0 &&
-          Math.abs(offset) >= listWidth + gap
-        ) {
+        if (listWidth > 0 && Math.abs(offset) >= listWidth + gap) {
           offset = 0;
         }
 
@@ -555,22 +579,16 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
 
       window.addEventListener("resize", refresh);
 
-      if (
-        typeof prefersReducedMotion.addEventListener ===
-        "function"
-      ) {
-        prefersReducedMotion.addEventListener(
-          "change",
-          () => {
-            cancelAnimationFrame(rafId);
+      if (typeof prefersReducedMotion.addEventListener === "function") {
+        prefersReducedMotion.addEventListener("change", () => {
+          cancelAnimationFrame(rafId);
 
-            lastTime = 0;
+          lastTime = 0;
 
-            if (!prefersReducedMotion.matches) {
-              rafId = requestAnimationFrame(step);
-            }
+          if (!prefersReducedMotion.matches) {
+            rafId = requestAnimationFrame(step);
           }
-        );
+        });
       }
     };
 

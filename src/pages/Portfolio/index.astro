@@ -4,9 +4,9 @@ import "../../styles/UA+reset.css";
 import "../../styles/Portfolio.css";
 
 import { getPortfolios, normalizePortfolioGrade } from "../../lib/microcms";
+import { optimizeMicrocmsImage } from "../../utils/microcmsImage";
 
 const response = await getPortfolios({
-  fields: ["id", "name", "icon", "grade"],
   limit: 100,
 });
 
@@ -25,6 +25,15 @@ const allPortfolios = response.contents.map((portfolio) => ({
   ...portfolio,
   gradeText: normalizePortfolioGrade(portfolio.grade),
 }));
+
+const executives = allPortfolios
+  .filter((portfolio) => portfolio.isExecutive || Boolean(portfolio.role))
+  .sort(
+    (a, b) =>
+      (a.displayOrder ?? Number.MAX_SAFE_INTEGER) -
+        (b.displayOrder ?? Number.MAX_SAFE_INTEGER) ||
+      a.name.localeCompare(b.name, "ja"),
+  );
 ---
 
 <Layout title="Sharade | Portfolio">
@@ -59,6 +68,42 @@ const allPortfolios = response.contents.map((portfolio) => ({
     </div>
 
     {
+      executives.length > 0 && (
+        <details class="member-section-details executive-section" open>
+          <summary class="section-heading">
+            <img class="arrow-icon" src="/icons/rightarrow.svg" alt="" />
+            Executives / 幹部
+          </summary>
+          <div class="member-grid">
+            {executives.map((portfolio) => (
+              <a href={`/Portfolio/${portfolio.id}`} class="member-card">
+                <div class="member-image-placeholder">
+                  <img
+                    src={
+                      portfolio.icon
+                        ? optimizeMicrocmsImage(portfolio.icon.url, {
+                            width: 480,
+                            quality: 78,
+                          })
+                        : "/images/placeholder_icon.jpeg"
+                    }
+                    alt={portfolio.name}
+                    loading="lazy"
+                  />
+                </div>
+                <div class="member-info">
+                  <p class="member-grade">
+                    {portfolio.role || portfolio.gradeText}
+                  </p>
+                  <p class="member-name">{portfolio.name}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </details>
+      )
+    }
+    {
       GRADE_TABS.map((tab) => (
         <details
           class="member-section-details"
@@ -85,7 +130,10 @@ const allPortfolios = response.contents.map((portfolio) => ({
                     <img
                       src={
                         portfolio.icon
-                          ? portfolio.icon.url
+                          ? optimizeMicrocmsImage(portfolio.icon.url, {
+                              width: 480,
+                              quality: 78,
+                            })
                           : "/images/placeholder_icon.jpeg"
                       }
                       alt={portfolio.name}

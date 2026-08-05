@@ -9,6 +9,7 @@ import {
   normalizePortfolioGrade,
   type Portfolio,
 } from "../../lib/microcms";
+import { optimizeMicrocmsImage } from "../../utils/microcmsImage";
 import "../../styles/UA+reset.css";
 
 export async function getStaticPaths() {
@@ -40,15 +41,11 @@ const backLinkMap = {
 };
 type BackLinkMap = typeof backLinkMap;
 type FromParam = keyof BackLinkMap;
-const isFromParam = (
-  value: string | null,
-): value is FromParam => {
+const isFromParam = (value: string | null): value is FromParam => {
   return value !== null && value in backLinkMap;
 };
 const fromParam = Astro.url.searchParams.get("from");
-const backLink = isFromParam(fromParam)
-  ? backLinkMap[fromParam]
-  : null;
+const backLink = isFromParam(fromParam) ? backLinkMap[fromParam] : null;
 const backLinkMapJSON = JSON.stringify(backLink);
 ---
 
@@ -62,9 +59,18 @@ const backLinkMapJSON = JSON.stringify(backLink);
 
   <Fragment slot="menu-slot">
     <div class="menu-contents-inner">
-        <a href="#" class="page-top-nav">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"/></svg>
-        </a>
+      <a href="#" class="page-top-nav">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          ><path
+            fill="currentColor"
+            d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"
+          ></path></svg
+        >
+      </a>
     </div>
   </Fragment>
 
@@ -83,7 +89,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
                       target="_blank"
                       class="social-link"
                     >
-                      <img src="/icons/X.svg" alt="X">
+                      <img src="/icons/X.svg" alt="X" />
                     </a>
                   )
                 }
@@ -94,7 +100,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
                       target="_blank"
                       class="social-link"
                     >
-                      <img src="/icons/Instagram.svg" alt="Instagram">
+                      <img src="/icons/Instagram.svg" alt="Instagram" />
                     </a>
                   )
                 }
@@ -118,7 +124,10 @@ const backLinkMapJSON = JSON.stringify(backLink);
             <div class="circle">
               <img
                 src={portfolio.icon
-                  ? portfolio.icon.url
+                  ? optimizeMicrocmsImage(portfolio.icon.url, {
+                      width: 640,
+                      quality: 80,
+                    })
                   : "/images/placeholder_icon.jpeg"}
                 alt={portfolio.name}
                 class="profile-icon"
@@ -128,11 +137,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
                 set:html={genText.replace("期", "<br/>期")}
               />
             </div>
-            {gradeText && (
-              <p class="profile-grade">
-                {gradeText}
-              </p>
-            )}  
+            {gradeText && <p class="profile-grade">{gradeText}</p>}
           </div>
         </div>
       </section>
@@ -144,11 +149,26 @@ const backLinkMapJSON = JSON.stringify(backLink);
       data-map={backLinkMapJSON}
       hidden={!backLink}
     >
-      {canEditLink && (
-        <div class="edit-link-wrapper">
-          <a class="edit-link" href="/Portfolio/edit">Edit my portfolio <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 -2 24 24"><path fill="currentColor" d="M5 19h1.425L16.2 9.225L14.775 7.8L5 17.575zm-2 2v-4.25L17.625 2.175L21.8 6.45L7.25 21zM19 6.4L17.6 5zm-3.525 2.125l-.7-.725L16.2 9.225z"/></svg></a>
-        </div>
-      )}
+      {
+        canEditLink && (
+          <div class="edit-link-wrapper">
+            <a class="edit-link" href="/Portfolio/edit">
+              Edit my portfolio{" "}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 -2 24 24"
+              >
+                <path
+                  fill="currentColor"
+                  d="M5 19h1.425L16.2 9.225L14.775 7.8L5 17.575zm-2 2v-4.25L17.625 2.175L21.8 6.45L7.25 21zM19 6.4L17.6 5zm-3.525 2.125l-.7-.725L16.2 9.225z"
+                />
+              </svg>
+            </a>
+          </div>
+        )
+      }
 
       <a href="javascript:history.back()" aria-label="Back">
         <svg
@@ -156,10 +176,10 @@ const backLinkMapJSON = JSON.stringify(backLink);
           width="25"
           height="25"
           viewBox="0 0 20 20"
-        ><path
-          fill="currentColor"
-          d="M11.25 17.308L5.942 12l5.308-5.308l.708.708L7.364 12l4.594 4.6zm6.1 0L12.042 12l5.308-5.308l.708.708l-4.594 4.6l4.594 4.6z"
-        ></path>
+          ><path
+            fill="currentColor"
+            d="M11.25 17.308L5.942 12l5.308-5.308l.708.708L7.364 12l4.594 4.6zm6.1 0L12.042 12l5.308-5.308l.708.708l-4.594 4.6l4.594 4.6z"
+          ></path>
         </svg>
         Portfolioへ戻る
       </a>
@@ -167,39 +187,43 @@ const backLinkMapJSON = JSON.stringify(backLink);
 
     <hr class="section-divider" />
 
-    {hasPictures && (
-      <p class="picture-count">{portfolio.pictures.length} pictures</p>
-    )}
+    {
+      hasPictures && (
+        <p class="picture-count">{portfolio.pictures.length} pictures</p>
+      )
+    }
 
     <div class="gallery-container-inner">
-      {hasPictures && totalPages > 1 && (
-        <div
-          class="tab-panel-number panel-top"
-          data-total-posts={portfolio.pictures.length}
-          data-total-pages={totalPages}
-        >
-          <p class="total-pages-label">Total {totalPages}</p>
+      {
+        hasPictures && totalPages > 1 && (
+          <div
+            class="tab-panel-number panel-top"
+            data-total-posts={portfolio.pictures.length}
+            data-total-pages={totalPages}
+          >
+            <p class="total-pages-label">Total {totalPages}</p>
 
-          <a class="tab-posts-navigation prev-btn-top" href="#">
-            <img src="/icons/leftarrow.svg" alt="Prev" />
-          </a>
+            <a class="tab-posts-navigation prev-btn-top" href="#">
+              <img src="/icons/leftarrow.svg" alt="Prev" />
+            </a>
 
-          <input
-            class="page-input-top"
-            type="text"
-            inputmode="numeric"
-            min="1"
-            max={totalPages}
-            value="1"
-          />
-          <p>/</p>
-          <p>{totalPages}</p>
+            <input
+              class="page-input-top"
+              type="text"
+              inputmode="numeric"
+              min="1"
+              max={totalPages}
+              value="1"
+            />
+            <p>/</p>
+            <p>{totalPages}</p>
 
-          <a class="tab-posts-navigation next-btn-top" href="#">
-            <img src="/icons/rightarrow.svg" alt="Next" />
-          </a>
-        </div>
-      )}
+            <a class="tab-posts-navigation next-btn-top" href="#">
+              <img src="/icons/rightarrow.svg" alt="Next" />
+            </a>
+          </div>
+        )
+      }
       {
         hasPictures ? (
           <div class="justified-grid">
@@ -209,45 +233,54 @@ const backLinkMapJSON = JSON.stringify(backLink);
                 href={pic.url}
                 data-lightbox={`${portfolio.name}s-works`}
               >
-                  <img
-                    src={`${pic.url}?w=1200&q=75&fm=webp`}
-                    alt={`${portfolio.name}の作品 ${i + 1}`}
-                    decoding="async"
-                    class="gallery-image"
-                  />
+                <img
+                  src={optimizeMicrocmsImage(pic.url, {
+                    width: 1600,
+                    quality: 75,
+                  })}
+                  alt={`${portfolio.name}の作品 ${i + 1}`}
+                  decoding="async"
+                  class="gallery-image"
+                />
               </a>
             ))}
           </div>
         ) : (
-          <div class="no-photos"><p>まだ写真が投稿されていません。</p></div>
+          <div class="no-photos">
+            <p>まだ写真が投稿されていません。</p>
+          </div>
         )
       }
 
-      {hasPictures && totalPages > 1 && (
-        <div class="tab-panel-number panel-bottom">
-          <a href="#" class="tab-posts-double-navigation first-btn">
-            <img src="/icons/doubleleftarrow.svg" alt="First" />
-          </a>
+      {
+        hasPictures && totalPages > 1 && (
+          <div class="tab-panel-number panel-bottom">
+            <a href="#" class="tab-posts-double-navigation first-btn">
+              <img src="/icons/doubleleftarrow.svg" alt="First" />
+            </a>
 
-          <a href="#" class="tab-posts-navigation prev-btn">
-            <img src="/icons/leftarrow.svg" alt="Prev" />
-          </a>
+            <a href="#" class="tab-posts-navigation prev-btn">
+              <img src="/icons/leftarrow.svg" alt="Prev" />
+            </a>
 
-          <div class="tab-posts-numbers"></div>
+            <div class="tab-posts-numbers" />
 
-          <a href="#" class="tab-posts-navigation next-btn">
-            <img src="/icons/rightarrow.svg" alt="Next" />
-          </a>
+            <a href="#" class="tab-posts-navigation next-btn">
+              <img src="/icons/rightarrow.svg" alt="Next" />
+            </a>
 
-          <a href="#" class="tab-posts-double-navigation last-btn">
-            <img src="/icons/doublerightarrow.svg" alt="Last" />
-          </a>
-        </div>
-      )}
+            <a href="#" class="tab-posts-double-navigation last-btn">
+              <img src="/icons/doublerightarrow.svg" alt="Last" />
+            </a>
+          </div>
+        )
+      }
     </div>
     <div id="image-modal" class="modal-overlay" aria-hidden="true">
       <div class="modal-content">
-        <button id="modal-close-btn" class="modal-close" aria-label="Close">&times;</button>
+        <button id="modal-close-btn" class="modal-close" aria-label="Close"
+          >&times;</button
+        >
         <img id="modal-image" src="" alt="" />
       </div>
     </div>
@@ -280,7 +313,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
   }
 
   .section-title-line::after {
-    content: '';
+    content: "";
     display: block;
     width: 100%;
     height: 1px;
@@ -329,7 +362,8 @@ const backLinkMapJSON = JSON.stringify(backLink);
   }
 
   .page-top-nav:hover svg {
-    filter: invert(100%) sepia(0%) saturate(1152%) hue-rotate(311deg) brightness(99%) contrast(105%);
+    filter: invert(100%) sepia(0%) saturate(1152%) hue-rotate(311deg)
+      brightness(99%) contrast(105%);
   }
 
   .portfolio-detail-wrapper {
@@ -344,7 +378,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
   }
 
   .profile-info {
-    max-width: calc(1/2 * 100vw);
+    max-width: calc(1 / 2 * 100vw);
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -357,11 +391,11 @@ const backLinkMapJSON = JSON.stringify(backLink);
     justify-content: space-between;
     gap: 20px;
   }
-  
+
   .user-name {
     color: #000;
     font-family: "Zen Old Mincho";
-    font-size: calc(2/45 * 100vw);
+    font-size: calc(2 / 45 * 100vw);
     font-style: normal;
     font-weight: 400;
     line-height: normal;
@@ -385,14 +419,16 @@ const backLinkMapJSON = JSON.stringify(backLink);
   }
 
   .sns a:hover img {
-    filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(335deg) brightness(106%) contrast(102%);
+    filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(335deg)
+      brightness(106%) contrast(102%);
   }
 
   .sns img {
     width: 25px;
     height: 25px;
     cursor: pointer;
-    filter: invert(59%) sepia(1%) saturate(380%) hue-rotate(24deg) brightness(103%) contrast(99%);
+    filter: invert(59%) sepia(1%) saturate(380%) hue-rotate(24deg)
+      brightness(103%) contrast(99%);
   }
 
   .tag {
@@ -417,8 +453,8 @@ const backLinkMapJSON = JSON.stringify(backLink);
   }
 
   .circle {
-    width: calc(5/24 * 100vw);
-    height: calc(5/24 * 100vw);
+    width: calc(5 / 24 * 100vw);
+    height: calc(5 / 24 * 100vw);
     max-width: 300px;
     max-height: 300px;
     min-width: 170px;
@@ -434,7 +470,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
     color: #ffffff;
     mix-blend-mode: difference;
     font-family: "Grandiflora One";
-    font-size: calc(2/45 * 100vw);
+    font-size: calc(2 / 45 * 100vw);
     font-style: normal;
     font-weight: 400;
     line-height: normal;
@@ -449,7 +485,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
   }
 
   .profile-grade::first-letter {
-    font-size: calc(3/45 * 100vw);
+    font-size: calc(3 / 45 * 100vw);
     position: absolute;
     top: 0;
     text-align: left;
@@ -459,7 +495,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
   .camera-info {
     color: #000;
     font-family: "Zen Kurenaido";
-    font-size: calc(1/72 * 100vw);
+    font-size: calc(1 / 72 * 100vw);
     font-style: normal;
     font-weight: 400;
     line-height: normal;
@@ -472,7 +508,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
     white-space: pre-line;
     color: #000;
     font-family: "Zen Kurenaido";
-    font-size: calc(1/72 * 100vw);
+    font-size: calc(1 / 72 * 100vw);
     font-style: normal;
     font-weight: 400;
     line-height: normal;
@@ -622,11 +658,13 @@ const backLinkMapJSON = JSON.stringify(backLink);
   }
 
   .tab-posts-navigation:hover {
-    filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg) brightness(100%) contrast(90%);
+    filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg)
+      brightness(100%) contrast(90%);
   }
 
   .tab-posts-double-navigation:hover {
-    filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg) brightness(100%) contrast(90%);
+    filter: invert(56%) sepia(30%) saturate(7333%) hue-rotate(139deg)
+      brightness(100%) contrast(90%);
   }
 
   .tab-posts-navigation img {
@@ -899,7 +937,9 @@ const backLinkMapJSON = JSON.stringify(backLink);
     if (!(container instanceof HTMLElement)) return;
 
     const containerWidth = container.clientWidth;
-    const items = Array.from(container.querySelectorAll(".photo-wrapper")).filter(
+    const items = Array.from(
+      container.querySelectorAll(".photo-wrapper"),
+    ).filter(
       (item) => item instanceof HTMLElement && item.style.display !== "none",
     );
 
@@ -996,7 +1036,10 @@ const backLinkMapJSON = JSON.stringify(backLink);
 
     visibleItems.forEach((item) => {
       const img = item.querySelector("img");
-      if (img instanceof HTMLImageElement && !(img.complete && img.naturalWidth > 0)) {
+      if (
+        img instanceof HTMLImageElement &&
+        !(img.complete && img.naturalWidth > 0)
+      ) {
         pendingImages.push(img);
       }
     });
