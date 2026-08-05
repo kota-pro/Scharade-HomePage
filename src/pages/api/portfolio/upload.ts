@@ -4,16 +4,34 @@ import { getUserFromRequest } from "../../../lib/auth";
 const SERVICE_DOMAIN =
   (import.meta as any).env?.MICROCMS_SERVICE_DOMAIN ??
   process.env.MICROCMS_SERVICE_DOMAIN;
-const API_KEY =
+const MANAGEMENT_API_KEY =
+  (import.meta as any).env?.MICROCMS_MANAGEMENT_API_KEY ??
+  process.env.MICROCMS_MANAGEMENT_API_KEY ??
+  (import.meta as any).env?.MICROCMS_API_KEY ??
+  process.env.MICROCMS_API_KEY;
+
+const CONTENT_API_KEY =
   (import.meta as any).env?.MICROCMS_API_KEY ?? process.env.MICROCMS_API_KEY;
 
 const buildUploadUrl = (serviceId: string) =>
   `https://${serviceId}.microcms-management.io/api/v1/media`;
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!SERVICE_DOMAIN || !API_KEY) {
+  if (!SERVICE_DOMAIN || !MANAGEMENT_API_KEY) {
+    const missing = [
+      !SERVICE_DOMAIN ? "MICROCMS_SERVICE_DOMAIN" : null,
+      !MANAGEMENT_API_KEY
+        ? "MICROCMS_MANAGEMENT_API_KEY (or MICROCMS_API_KEY fallback)"
+        : null,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
     return jsonResponse(
-      { ok: false, message: "Server misconfigured. Missing microCMS credentials." },
+      {
+        ok: false,
+        message: `Server misconfigured. Missing microCMS credentials: ${missing}.`,
+      },
       500,
     );
   }
@@ -72,7 +90,7 @@ export const POST: APIRoute = async ({ request }) => {
     response = await fetch(targetUrl, {
       method: "POST",
       headers: {
-        "X-MICROCMS-API-KEY": API_KEY,
+        "X-MICROCMS-API-KEY": MANAGEMENT_API_KEY,
       },
       body: uploadData,
     });
@@ -85,8 +103,24 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (!response.ok) {
     const text = await response.text().catch(() => "Upload failed.");
+    const usingFallbackKey = !(
+      (import.meta as any).env?.MICROCMS_MANAGEMENT_API_KEY ??
+      process.env.MICROCMS_MANAGEMENT_API_KEY
+    );
+    const credentialHint =
+      response.status === 401 || response.status === 403
+        ? usingFallbackKey
+          ? " The media upload endpoint usually requires a management API key with media write permission."
+          : " Check whether the management API key has media write permission."
+        : "";
+
     return jsonResponse(
-      { ok: false, message: `microCMS upload error (${response.status}): ${text}` },
+      {
+        ok: false,
+        message: `microCMS upload error (${response.status}): ${text}${credentialHint}`,
+        usingFallbackContentApiKey: usingFallbackKey,
+        contentApiKeyConfigured: Boolean(CONTENT_API_KEY),
+      },
       response.status,
     );
   }

@@ -15,9 +15,18 @@ const next = Astro.url.searchParams.get("next") ?? "/";
 
   <Fragment slot="menu-slot">
     <div class="menu-contents-inner">
-        <a href="#" class="page-top-nav">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"/></svg>
-        </a>
+      <a href="#" class="page-top-nav">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          ><path
+            fill="currentColor"
+            d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"
+          ></path></svg
+        >
+      </a>
     </div>
   </Fragment>
 
@@ -40,7 +49,13 @@ const next = Astro.url.searchParams.get("next") ?? "/";
           <form class="auth-form" id="login-form" data-next={next}>
             <div class="form-field">
               <label for="login-email">Email</label>
-              <input id="login-email" type="email" name="email" autocomplete="email" required />
+              <input
+                id="login-email"
+                type="email"
+                name="email"
+                autocomplete="email"
+                required
+              />
             </div>
 
             <div class="form-field">
@@ -67,7 +82,9 @@ const next = Astro.url.searchParams.get("next") ?? "/";
             </div>
           </form>
 
-          <p class="auth-note">パスワードを忘れた場合は管理者までご連絡ください。</p>
+          <a class="auth-link" href="/ForgotPassword"
+            >パスワードをお忘れですか？</a
+          >
         </div>
 
         <div class="auth-card">
@@ -76,7 +93,9 @@ const next = Astro.url.searchParams.get("next") ?? "/";
           <p class="auth-note">
             新しくアカウントを作るには、以下のアカウント作成ページに進んでください。
           </p>
-          <a class="auth-link" href={`/Signup?next=${encodeURIComponent(next)}`}>アカウントを作成する</a>
+          <a class="auth-link" href={`/Signup?next=${encodeURIComponent(next)}`}
+            >アカウントを作成する</a
+          >
           <p class="auth-note">ご不明点は担当までお問い合わせください。</p>
         </div>
       </div>
@@ -117,7 +136,9 @@ const next = Astro.url.searchParams.get("next") ?? "/";
             const data = await res.json().catch(() => null);
 
             if (!res.ok) {
-              const msg = data?.message || "ログインに失敗しました。入力内容をご確認ください。";
+              const msg =
+                data?.message ||
+                "ログインに失敗しました。入力内容をご確認ください。";
               setMessage(msg, "error");
               return;
             }
@@ -125,7 +146,10 @@ const next = Astro.url.searchParams.get("next") ?? "/";
             setMessage("ログインしました。移動します…", "success");
             window.location.href = getNext();
           } catch {
-            setMessage("通信エラーが発生しました。時間をおいて再度お試しください。", "error");
+            setMessage(
+              "通信エラーが発生しました。時間をおいて再度お試しください。",
+              "error",
+            );
           }
         });
       </script>
