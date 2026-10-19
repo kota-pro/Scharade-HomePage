@@ -1,0 +1,27 @@
+---
+import Icon from "./PortfolioShareIcon.astro";
+import "../styles/PortfolioShare.css";
+interface Props { name: string; id: string; }
+const { name, id } = Astro.props;
+const url = new URL(`/Portfolio/${encodeURIComponent(id)}`, Astro.site).href;
+---
+<dialog id="portfolio-share-dialog" class="portfolio-share-dialog" aria-labelledby="portfolio-share-title" data-share-url={url} data-share-filename={`Scharade-Portfolio-${id}.png`}>
+  <button type="button" class="portfolio-share-close" aria-label="共有画面を閉じる" autofocus><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" d="m5 5 14 14M19 5 5 19" /></svg></button>
+  <h2 id="portfolio-share-title">Share Portfolio</h2>
+  <p class="portfolio-share-name">{name}</p>
+  <div class="portfolio-share-qr-area" aria-busy="true">
+    <button type="button" class="portfolio-share-qr" aria-label="QR画像をコピー" disabled><img width="1024" height="1024" alt={`${name}のPortfolioのQRコード`} hidden /></button>
+    <p class="portfolio-share-loading">QRコードを準備しています…</p>
+  </div>
+  <p class="portfolio-share-help">QRコードをタップすると画像をコピーできます。</p>
+  <label for="portfolio-share-url">Portfolio link</label>
+  <input id="portfolio-share-url" type="text" value={url} readonly aria-describedby="portfolio-share-link-help" />
+  <p id="portfolio-share-link-help" class="portfolio-share-help">リンクをタップしてコピー</p>
+  <div class="portfolio-share-actions">
+    <button type="button" id="portfolio-share-copy-link"><Icon kind="link" /><span>リンクをコピー</span></button>
+    <a id="portfolio-share-download" download={`Scharade-Portfolio-${id}.png`} aria-disabled="true"><span class="share-download-icon"><Icon kind="download" /></span><span class="share-saved-icon" hidden><Icon kind="saved" /></span><span>ダウンロード</span></a>
+  </div>
+  <p class="portfolio-share-status" role="status" aria-live="polite"></p>
+  <button type="button" class="portfolio-share-retry" hidden>QRコードを再生成</button>
+</dialog>
+<script src="../scripts/portfolioShare.ts"></script>

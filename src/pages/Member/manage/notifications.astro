@@ -1,0 +1,64 @@
+---
+import ActivityShareButton from "../../../components/ActivityShareButton.astro";
+import crypto from "node:crypto";
+import StaffLayout from "../../../layouts/StaffLayout.astro";
+import ActivityRecipients from "../../../components/ActivityRecipients.astro";
+import { readUsers } from "../../../lib/auth";
+import { readActivities } from "../../../lib/activities";
+import { activityDate } from "../../../lib/activityTypes";
+const users = readUsers()
+  .filter((u) => u.approved)
+  .map((u) => ({ id: u.id, name: u.name }));
+const notices = readActivities()
+  .notifications.filter((n) => !n.eventId)
+  .slice(-30)
+  .reverse();
+---
+
+<StaffLayout title="お知らせの送信">
+  <h2>通常のお知らせを送信</h2>
+  {
+    Astro.url.searchParams.has("saved") && (
+      <p role="status">お知らせを送信しました。</p>
+    )
+  }
+  <form
+    class="activity-form"
+    data-activity-action="notification.send"
+    data-id={crypto.randomUUID()}
+  >
+    <label>件名<input name="title" required maxlength="200" /></label>
+    <label
+      >本文<textarea name="body" required maxlength="10000" rows="6"
+      ></textarea></label
+    >
+    <ActivityRecipients users={users} />
+    <button class="member-submit" type="submit">お知らせを送信</button><p
+      data-status
+      role="status"
+      aria-live="polite"
+    >
+    </p>
+  </form>
+  <section class="admin-section">
+    <h3>最近送信したお知らせ</h3><ul class="activity-list">
+      {
+        notices.map((n) => (
+          <li>
+            <div class="activity-title-row"><details>
+              <>
+                <summary>{n.title}</summary>
+                <p>
+                  {activityDate(n.createdAt)} · {n.senderName} · 宛先{" "}
+                  {n.recipientIds.length}人
+                </p>
+                <div class="activity-prose">{n.body}</div>
+              </>
+            </details><ActivityShareButton kind="notifications" eventId={n.eventId} id={n.id} title={n.title} /></div>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+  <a class="member-back" href="/Member/manage">運営画面へ戻る</a>
+</StaffLayout>

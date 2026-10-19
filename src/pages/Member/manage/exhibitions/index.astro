@@ -1,0 +1,63 @@
+---
+import StaffLayout from "../../../../layouts/StaffLayout.astro";
+import { readExhibitions } from "../../../../lib/exhibitions.ts";
+import "../../../../styles/Exhibitions.css";
+const store = readExhibitions();
+const cleanup = (store.deletions ?? []).filter(d=>d.status === "pending");
+const exhibitions = store.exhibitions.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+---
+
+<StaffLayout title="写真展管理">
+  <main class="exhibition-page">
+    <p><a class="member-back" href="/Member/manage">管理・運営へ戻る</a></p>
+    <h2>写真展管理</h2>
+    {Astro.url.searchParams.has("deleted") && <p class="exhibition-status success">写真展を削除しました。外部ファイルの整理も順次実行します。</p>}
+    {cleanup.length>0 && <section class="exhibition-panel"><h3>削除処理の状況</h3><ul>{cleanup.map(d=><li>{d.title}：外部ファイルを整理中{d.error && <p class="exhibition-status error">{d.error}（自動で再試行します）</p>}</li>)}</ul></section>}
+    <p>出展フォーム、Lightroomアルバム、タイトルボード、展示室の壁面配置を一つの写真展ごとに管理します。</p>
+    <section class="exhibition-panel">
+      <h3>写真展を作成</h3>
+      <form id="create-exhibition" class="exhibition-form">
+        <label>写真展名 <input name="title" maxlength="150" required /></label>
+        <div class="exhibition-actions"><button>作成して設定を開く</button></div>
+        <p class="exhibition-status" aria-live="polite"></p>
+      </form>
+    </section>
+    <section>
+      <h3>写真展一覧</h3>
+      {!exhibitions.length && <p>まだ写真展はありません。</p>}
+      <div class="exhibition-grid">
+        {exhibitions.map(exhibition => (
+          <article class="exhibition-card">
+            <h3>{exhibition.title}</h3>
+            <p class="exhibition-muted">{{ draft: "下書き", open: "受付中", closed: "受付終了" }[exhibition.status]} · 更新 {new Date(exhibition.updatedAt).toLocaleString("ja-JP")}</p>
+            <div class="exhibition-actions">
+              <a class="exhibition-button secondary" href={`/Member/manage/exhibitions/${exhibition.id}`}>通知・参加者・受付設定</a>
+              <a class="exhibition-button secondary" href={`/Member/manage/exhibitions/${exhibition.id}/form`}>フォーム作成</a>
+              <a class="exhibition-button secondary" href={`/Member/manage/exhibitions/${exhibition.id}/layout`}>展示室・壁面レイアウト</a>
+              <a class="exhibition-button secondary" href={`/Member/manage/exhibitions/${exhibition.id}/submissions`}>提出内容・QR確認</a>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  </main>
+</StaffLayout>
+<script>
+  import { operationNotice, flashNotice } from "../../../../scripts/siteNotice";
+  import { readExhibitionResponse } from "../../../../scripts/exhibitionResponse";
+  const form = document.querySelector<HTMLFormElement>("#create-exhibition");
+  form?.addEventListener("submit", async event => {
+    event.preventDefault();
+    const status = form.querySelector<HTMLElement>(".exhibition-status")!;
+    const button = form.querySelector<HTMLButtonElement>("button")!;
+    button.disabled = true; status.className = "exhibition-status"; status.textContent = "作成しています…"; operationNotice(status.textContent,false,"exhibition-create");
+    try {
+      const title = String(new FormData(form).get("title") ?? "");
+      const response = await fetch("/api/member/exhibitions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", title }) });
+      const data = await readExhibitionResponse(response);
+      if (!response.ok || !data.ok) throw new Error(data.message ?? "作成できませんでした。");
+      flashNotice("写真展を作成しました。");
+      location.href = `/Member/manage/exhibitions/${data.exhibition.id}`;
+    } catch (error) { status.classList.add("error"); status.textContent = error instanceof Error ? error.message : "作成できませんでした。"; operationNotice(status.textContent,true,"exhibition-create"); button.disabled = false; }
+  });
+</script>

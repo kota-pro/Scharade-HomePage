@@ -1,0 +1,98 @@
+/* Text links: match header feedback without restyling framed buttons or media. */
+:root
+  :is(
+    .admin-page a,
+    .breadcrumb-bar a,
+    .auth-link,
+    .back-link a,
+    .service-notice a,
+    .review > a,
+    .post-body a,
+    .preview-banner a,
+    .menu-item,
+    .tab-posts-number
+  ):not(
+    :where(
+      .admin-button,
+      .admin-page-top,
+      .admin-account-page-arrow,
+      .admin-link-list a,
+      [aria-disabled="true"],
+      :has(img, picture)
+    )
+  ):is(:hover, :focus-visible) {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+:root .auth-link {
+  text-decoration: none;
+}
+
+:root
+  :is(
+    .admin-page a,
+    .breadcrumb-bar a,
+    .auth-link,
+    .back-link a,
+    .service-notice a,
+    .review > a,
+    .post-body a,
+    .preview-banner a,
+    .menu-item,
+    .tab-posts-number,
+    .href-anchor,
+    .sitemap-list a,
+    .activity-table-text a,
+    .footer-links a,
+    .member-links a
+  ):not(
+    :where(
+      .admin-button,
+      .admin-page-top,
+      .admin-account-page-arrow,
+      [aria-disabled="true"],
+      :has(img, picture)
+    )
+  ):is(:focus, :active) {
+  color: #0db49b;
+}
+
+/* Existing animated underlines retain their placement and use the clicked color. */
+:root
+  :is(
+    .admin-link-list a,
+    .sitemap-list a,
+    .href-anchor,
+    .activity-table-text a
+  ):is(:focus, :active)::after {
+  background-color: #0db49b;
+}
+:root
+  :is(
+    .admin-link-list a,
+    .sitemap-list a,
+    .href-anchor,
+    .activity-table-text a
+  ):focus-visible::after {
+  transform: scaleX(1);
+}
+:root :is(.footer-links a, .member-links a):is(:focus, :active) .text {
+  color: #0db49b;
+}
+:root :is(.footer-links a, .member-links a):is(:focus, :active)::after,
+:root .footer-links a:is(:focus, :active) .text::after {
+  background-color: #0db49b;
+}
+:root :is(.footer-links a, .member-links a):focus-visible::after,
+:root .footer-links a:focus-visible .text::after {
+  transform: scaleX(1);
+}
+@media (max-width: 800px) {
+  /* Member links contain plain text; unlike the other footer links they have no .text span. */
+  :root .member-links a:is(:hover, :focus-visible) {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+}

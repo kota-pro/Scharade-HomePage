@@ -1,16 +1,42 @@
 ---
 import "../styles/UA+reset.css";
+import "../styles/global.css";
+import "../styles/textLinks.css";
+import "../styles/SiteNotice.css";
+import "../styles/MobileApp.css";
 import Loader from "../components/loading.astro";
 import Header from "../components/header.astro";
 import Footer from "../components/footer.astro";
-const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
-const pathname = Astro.url.pathname;
+import Breadcrumbs from "../components/Breadcrumbs.astro";
+import PageTopNav from "../components/PageTopNav.astro";
+import { breadcrumbsFor, type BreadcrumbItem } from "../lib/breadcrumbs";
+import { getContent, isPageKey } from "../lib/siteContent";
+interface Props {
+  title?: string;
+  description?: string;
+  breadcrumbs?: BreadcrumbItem[];
+}
+const common = getContent("common", Astro.locals.preview);
+const {
+  title,
+  description = `${common.affiliation} ${common.name}の公式サイトです。`,
+  breadcrumbs = breadcrumbsFor(Astro.url.pathname, title),
+} = Astro.props;
+const pageTitle = title || breadcrumbs.at(-1)?.label;
 const needsLightbox =
-	pathname === "/" ||
-	pathname.startsWith("/Gallery") ||
-	pathname.startsWith("/Portfolio/");
-const needsMaps = pathname === "/About_us";
-const showLoader = pathname === "/";
+  Astro.url.pathname === "/About_us" ||
+  Astro.url.pathname === "/" ||
+  Astro.url.pathname.startsWith("/Gallery") ||
+  Astro.url.pathname.startsWith("/Portfolio/");
+const editorKey = Astro.url.searchParams.get("editor") ?? "";
+const editorLink = isPageKey(editorKey)
+  ? `/Admin/content/${editorKey}`
+  : "/Admin";
+
+const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
+const needsMaps = Astro.url.pathname === "/About_us";
+const showLoader = Astro.url.pathname === "/";
+const appShell = Astro.locals.appShell && !Astro.locals.preview;
 ---
 
 <!DOCTYPE html>
@@ -18,10 +44,10 @@ const showLoader = pathname === "/";
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<meta name="description" content="写団シャレードは早稲田大学公認の写真サークルである、写団シャレードの公式サイトです。">
+		<meta name="description" content={description}>
 		<link rel="icon" type="image/svg+xml" href="/icons/camera.svg" />
 		<meta name="generator" content={Astro.generator} />
-		<title>写団シャレード</title>
+		<title>{pageTitle && pageTitle !== "Home" ? `${pageTitle} | ${common.name}` : common.name}</title>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Grandiflora+One&family=Zen+Kaku+Gothic+New:wght@300;400;500;700;900&family=Zen+Kurenaido&family=Zen+Old+Mincho&display=swap" rel="stylesheet">
@@ -38,18 +64,21 @@ const showLoader = pathname === "/";
 		</script>
 		{needsLightbox && (
 			<>
-				<link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/css/lightbox.css" rel="stylesheet">
-				<script is:inline src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js" defer></script>
-				<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/js/lightbox.min.js" defer type="text/javascript"></script>
+				<link href="/vendor/lightbox2/css/lightbox.css" rel="stylesheet">
+				<script is:inline src="/vendor/jquery/jquery-3.6.0.min.js" defer></script>
+				<script is:inline src="/vendor/lightbox2/js/lightbox-2.11.4.min.js" defer type="text/javascript"></script>
 			</>
 		)}
 		{needsMaps && (
 			<script is:inline src={`https://maps.googleapis.com/maps/api/js?lang=ja&key=${googleMapsApiKey}&libraries=maps,marker`} defer></script>
 		)}
 	</head>
-	<body>
+	<body data-app-shell={appShell ? "1" : undefined} data-app-client={Astro.locals.appShell ? "1" : undefined}>
 		{showLoader && <Loader />}
-		<Header />
+		{!appShell && <Header />}
+        {Astro.locals.preview && <aside class="preview-banner"><strong>下書きのプレビュー</strong> この内容はまだ公開されていません。 <a href={editorLink}>編集画面へ戻る</a></aside>}
+        <Breadcrumbs items={breadcrumbs} />
+		<main id="main-content">
 		<slot name="main-slot" />
 		<div class="container">
 			<div class="for-padding"></div>
@@ -57,11 +86,14 @@ const showLoader = pathname === "/";
 				<slot name="body-slot" />
 			</div>
 			<div class="menu-contents">
-				<slot name="menu-slot" />
+				<slot name="menu-slot"><PageTopNav /></slot>
 			</div>
 		</div>
 		<div><slot name="setting-none" /></div>
-		<Footer />
+		</main>
+		{!appShell && <Footer />}
+		<script>import "../scripts/mobileBridge";</script>
+		<script>import { setupNotices } from "../scripts/siteNotice"; setupNotices();</script>
 	</body>
 </html>
 
@@ -102,3 +134,5 @@ const showLoader = pathname === "/";
 	}
 </style>
 
+
+<style>.preview-banner {padding:12px max(16px,8.333%);background:#fff1ca;font:14px/1.8 sans-serif}.preview-banner a {text-decoration:underline}</style>

@@ -1,0 +1,50 @@
+---
+import { genderLabels, gradeLabels } from "../lib/activityTypes";
+---
+<div class="grouping-participant-import">
+  <details>
+    <summary>フォームのスプレッドシートから追加</summary>
+    <label>参加者フォームのスプレッドシートURL<input type="url" data-participant-url placeholder="https://docs.google.com/spreadsheets/d/…/edit#gid=…" /></label>
+    <button type="button" data-participant-load>シートを読み込む</button>
+    <p>Google連携アカウントが閲覧できるシートを指定してください。取り込み後の確認画面で、参加しない人を除外できます。</p>
+    <div data-participant-mapping hidden>
+      <p data-participant-source></p>
+      <div class="grouping-import-fields">{[["name", "名前"], ["grade", "学年"], ["gender", "性別"], ["lineName", "LINE名（任意）"]].map(([key, label]) => <label>{label}の列<select data-participant-column={key} aria-label={`${label}の列`} /></label>)}</div>
+      <button type="button" data-participant-remap>選択した列で読み直す</button>
+    </div>
+  </details>
+  <details>
+    <summary>名前・学年・性別で追加</summary>
+    <div class="grouping-import-fields" data-participant-manual>
+      <label>名前<input data-guest-field="name" maxlength="200" /></label>
+      <label>学年<select data-guest-field="grade"><option value="">選択してください</option>{Object.entries(gradeLabels).map(([value,label]) => <option value={value}>{label}</option>)}</select></label>
+      <label>性別<select data-guest-field="gender"><option value="">選択してください</option>{Object.entries(genderLabels).map(([value,label]) => <option value={value}>{label}</option>)}</select></label>
+      <label>LINE名（任意）<input data-guest-field="lineName" maxlength="200" /></label>
+    </div>
+    <button type="button" data-participant-manual-add>確認一覧に追加</button>
+  </details>
+  <section data-participant-preview hidden>
+    <h4>追加する参加者を確認</h4>
+    <p>不要な行のチェックを外し、名前・学年・性別を確認してください。既存の人と同一人物かどうかも確認してください。</p>
+    <div class="activity-actions"><button type="button" data-preview-select="all">全選択</button><button type="button" data-preview-select="none">全解除</button></div>
+    <div data-participant-rows></div>
+    <button type="button" data-participant-confirm>確認した人を参加者に追加</button>
+    <button type="button" data-participant-clear>確認一覧を閉じる</button>
+  </section>
+  <p data-participant-status role="status" aria-live="polite"></p>
+</div>
+<script src="../scripts/groupingParticipants.ts"></script>
+<style is:global>
+  .grouping-participant-import { margin: 24px 0; }
+  .grouping-participant-import details, .grouping-import-row { border: 1px solid #ddd; padding: 16px; margin: 14px 0; }
+  .grouping-participant-import summary { cursor: pointer; margin-bottom: 16px; }
+  .grouping-participant-import label { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .grouping-participant-import input, .grouping-participant-import select { box-sizing: border-box; max-width: 100%; width: 100%; padding: 10px; font: inherit; }
+  .grouping-participant-import button { font: inherit; cursor: pointer; padding: 10px 14px; margin: 12px 8px 8px 0; min-height: 44px; }
+  .grouping-participant-import p { overflow-wrap: anywhere; }
+  .grouping-import-fields { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+  .grouping-import-row > label:first-child { flex-direction: row; align-items: center; margin-bottom: 12px; }
+  .grouping-import-row > label:first-child input { width: auto; }
+  [data-participant-status][data-error="true"] { color: #9b2525; }
+  @media(max-width: 600px) { .grouping-import-fields { grid-template-columns: minmax(0,1fr); } }
+</style>

@@ -1,0 +1,18 @@
+---
+import GroupEditor from "./GroupEditor.astro";
+import { groupingSummary } from "../lib/activities";
+import type { ActivityEvent, ActivityStore } from "../lib/activityTypes";
+import type { User } from "../lib/auth";
+interface Props {
+  data: ActivityStore;
+  event: ActivityEvent;
+  users: User[];
+}
+const { data, event, users } = Astro.props;
+---
+
+<GroupEditor
+  plan={event}
+  summary={groupingSummary(data, event, users)}
+  destination={`/Member/manage/events/${event.id}#grouping`}
+/>

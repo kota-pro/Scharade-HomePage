@@ -1,86 +1,29 @@
 import type { APIRoute } from "astro";
 import crypto from "node:crypto";
-import fs from "node:fs";
-import nodemailer from "nodemailer";
-import path from "node:path";
-import { assertReviewConfig, createReviewSignature } from "../../../lib/signupReview";
+import { mailTransport } from "../../../lib/mail.ts";
+import {
+  assertReviewConfig,
+  createReviewSignature,
+} from "../../../lib/signupReview.ts";
 
-const DATA_DIR = path.join(process.cwd(), ".data");
-const USERS_PATH = path.join(DATA_DIR, "users.json");
-
-const SERVICE_DOMAIN =
-  (import.meta as any).env?.MICROCMS_SERVICE_DOMAIN ??
-  process.env.MICROCMS_SERVICE_DOMAIN;
-const API_KEY =
-  (import.meta as any).env?.MICROCMS_API_KEY ?? process.env.MICROCMS_API_KEY;
-const PORTFOLIO_ENDPOINT =
-  (import.meta as any).env?.MICROCMS_PORTFOLIO_ENDPOINT ??
-  process.env.MICROCMS_PORTFOLIO_ENDPOINT ??
-  "portfolio";
+import { readUsers, updateUsers } from "../../../lib/auth.ts";
+import { hashPasswordAsync, validNewPassword } from "../../../lib/passwords.ts";
+import { PASSWORD_POLICY_ERROR } from "../../../lib/passwordPolicy.ts";
+import { fetchWithTimeout } from "../../../lib/http.ts";
+import { env, siteOrigin } from "../../../lib/config.ts";
+import { withStoreLock } from "../../../lib/store.ts";
+import { requestSignupCode, confirmSignupEmail, normalizeSignupEmail, validSignupEmail, SignupVerificationError } from "../../../lib/signupVerification.ts";
+import { audit } from "../../../lib/audit.ts";
 const CONTACT_EMAIL = "contact@scharade.jp";
-const GMAIL_PASS =
-  (import.meta as any).env?.GMAIL_PASS ?? process.env.GMAIL_PASS;
-
-type User = {
-  id: string;
-  name: string;
-  portfolioName: string;
-  email: string;
-  passwordHash: string;
-  approved: boolean;
-  createdAt: string;
-  providers: { credentials?: true };
-  portfolioId?: string;
-};
-
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-function readUsers(): User[] {
-  ensureDataDir();
-  if (!fs.existsSync(USERS_PATH)) return [];
-  const raw = fs.readFileSync(USERS_PATH, "utf8");
-  if (!raw.trim()) return [];
-  return JSON.parse(raw) as User[];
-}
-
-function writeUsers(users: User[]) {
-  ensureDataDir();
-  fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2), "utf8");
-}
 
 function normalizeEmail(email: string) {
-  return email.trim().toLowerCase();
-}
-
-function hashPassword(password: string): string {
-  const salt = crypto.randomBytes(16);
-  const keylen = 32;
-  const hash = crypto.scryptSync(password, salt, keylen);
-  return `scrypt$${salt.toString("base64")}$${hash.toString("base64")}`;
+  return normalizeSignupEmail(email);
 }
 
 function json(status: number, data: any) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "content-type": "application/json; charset=utf-8" },
-  });
-}
-
-function createMailTransporter() {
-  if (!GMAIL_PASS) {
-    throw new Error("GMAIL_PASS is not configured.");
-  }
-
-  return nodemailer.createTransport({
-    service: "gmail",
-    port: 587,
-    secure: false,
-    auth: {
-      user: CONTACT_EMAIL,
-      pass: GMAIL_PASS,
-    },
+    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "private, no-store" },
   });
 }
 
@@ -95,9 +38,9 @@ async function sendSignupReviewMail(input: {
 }) {
   assertReviewConfig();
 
-  const transporter = createMailTransporter();
+  const transporter = mailTransport();
   const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString();
-  const origin = new URL(input.request.url).origin;
+  const origin = siteOrigin(input.request);
 
   const makeReviewUrl = (action: "approve" | "reject") => {
     const params = new URLSearchParams({
@@ -143,10 +86,11 @@ ${makeReviewUrl("reject")}
 async function createPortfolioInMicroCMS(
   portfolioName: string,
 ): Promise<string> {
+  const SERVICE_DOMAIN = env("MICROCMS_SERVICE_DOMAIN"), API_KEY = env("MICROCMS_SERVER_API_KEY"), PORTFOLIO_ENDPOINT = env("MICROCMS_PORTFOLIO_ENDPOINT") || "portfolio";
   if (!SERVICE_DOMAIN || !API_KEY) {
     const missing = [
       !SERVICE_DOMAIN ? "MICROCMS_SERVICE_DOMAIN" : null,
-      !API_KEY ? "MICROCMS_API_KEY" : null,
+      !API_KEY ? "MICROCMS_SERVER_API_KEY" : null,
     ].filter(Boolean);
     throw new Error(
       `microCMS is not configured. Missing: ${missing.join(", ")}`,
@@ -155,11 +99,11 @@ async function createPortfolioInMicroCMS(
 
   const url = `https://${SERVICE_DOMAIN}.microcms.io/api/v1/${PORTFOLIO_ENDPOINT}`;
 
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "X-API-KEY": API_KEY,
+      "X-MICROCMS-API-KEY": API_KEY,
     },
     body: JSON.stringify({
       name: portfolioName,
@@ -187,12 +131,21 @@ async function createPortfolioInMicroCMS(
   return id;
 }
 
+async function removeUnlinkedPortfolio(id: string) {
+  // This ID was created by this request. Never remove a Portfolio now linked to an account.
+  if (readUsers().some(user => user.portfolioId === id)) return;
+  const domain = env("MICROCMS_SERVICE_DOMAIN"), key = env("MICROCMS_SERVER_API_KEY"), endpoint = env("MICROCMS_PORTFOLIO_ENDPOINT") || "portfolio";
+  const response = await fetchWithTimeout(`https://${domain}.microcms.io/api/v1/${endpoint}/${encodeURIComponent(id)}`, { method: "DELETE", headers: { "X-MICROCMS-API-KEY": key } });
+  if (!response.ok && response.status !== 404) throw new Error("Signup cleanup failed");
+}
+
 export const POST: APIRoute = async ({ request }) => {
   let name = "";
   let portfolioName = "";
   let email = "";
   let password = "";
   let passwordConfirm = "";
+  let action = "complete", verificationToken = "", code = "";
 
   const ct = request.headers.get("content-type") ?? "";
   if (ct.includes("application/json")) {
@@ -202,6 +155,7 @@ export const POST: APIRoute = async ({ request }) => {
     email = String(body?.email ?? "");
     password = String(body?.password ?? "");
     passwordConfirm = String(body?.passwordConfirm ?? "");
+    action = String(body?.action ?? "complete"); verificationToken = String(body?.verificationToken ?? ""); code = String(body?.code ?? "");
   } else {
     const form = await request.formData();
     name = String(form.get("name") ?? "");
@@ -209,13 +163,30 @@ export const POST: APIRoute = async ({ request }) => {
     email = String(form.get("email") ?? "");
     password = String(form.get("password") ?? "");
     passwordConfirm = String(form.get("passwordConfirm") ?? "");
+    action = String(form.get("action") ?? "complete"); verificationToken = String(form.get("verificationToken") ?? ""); code = String(form.get("code") ?? "");
   }
 
   name = name.trim();
   portfolioName = portfolioName.trim();
   email = normalizeEmail(email);
 
-  if (!name) return json(400, { ok: false, message: "Name is required." });
+  if (action === "request-code") {
+    try {
+      const verification = await requestSignupCode(email);
+      return json(200, { ok: true, verificationRequired: true, ...verification, message: "入力したメールアドレスに届く確認コードを入力してください。" });
+    } catch (error) {
+      if (error instanceof SignupVerificationError) return json(error.status, { ok: false, message: error.message });
+      console.error("[auth/signup] confirmation request failed");
+      return json(503, { ok: false, message: "メール確認を準備できませんでした。時間をおいて再度お試しください。" });
+    }
+  }
+  if (action !== "complete") return json(400, { ok: false, message: "登録の操作を確認してください。" });
+
+  if (!name || name.length > 80)
+    return json(400, {
+      ok: false,
+      message: "名前は80文字以内で入力してください。",
+    });
 
   if (!portfolioName) {
     return json(400, { ok: false, message: "Portfolio name is required." });
@@ -227,50 +198,56 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
-  if (!email) return json(400, { ok: false, message: "Email is required." });
-  if (password.length < 8) {
+  if (!validSignupEmail(email))
     return json(400, {
       ok: false,
-      message: "Password must be at least 8 characters.",
+      message: "メールアドレスを確認してください。",
+    });
+  if (!validNewPassword(password)) {
+    return json(400, {
+      ok: false,
+      message: PASSWORD_POLICY_ERROR,
     });
   }
   if (password !== passwordConfirm) {
     return json(400, { ok: false, message: "Passwords do not match." });
   }
 
-  const users = readUsers();
-  if (users.some((u) => u.email === email)) {
-    return json(409, { ok: false, message: "Email already exists." });
-  }
-
-  let portfolioId: string;
   try {
-    portfolioId = await createPortfolioInMicroCMS(portfolioName);
-  } catch (err: any) {
-    return json(502, {
-      ok: false,
-      message:
-        "Account was not created because portfolio provisioning failed. " +
-        (err?.message ? `(${err.message})` : ""),
-    });
+    await confirmSignupEmail(verificationToken, email, code);
+  } catch (error) {
+    if (error instanceof SignupVerificationError) return json(error.status, { ok: false, message: error.message, verificationRequired: error.restart });
+    console.error("[auth/signup] confirmation failed");
+    return json(503, { ok: false, message: "メール確認ができませんでした。コードを再取得してください。", verificationRequired: true });
   }
 
-  const createdAt = new Date().toISOString();
-  const userId = crypto.randomUUID();
-
-  users.push({
-    id: userId,
-    name,
-    portfolioName,
-    email,
-    passwordHash: hashPassword(password),
-    approved: false,
-    createdAt,
-    providers: { credentials: true },
-    portfolioId,
-  });
-
-  writeUsers(users);
+  let provisioned: { response: Response } | { createdAt: string; userId: string; portfolioId: string };
+  try {
+    const emailKey = crypto.createHash("sha256").update(email).digest("hex");
+    provisioned = await withStoreLock(`signup-provision-${emailKey}`, async () => {
+      if (readUsers().some(user => normalizeEmail(user.email) === email)) return { response: json(409, { ok: false, message: "このメールアドレスは登録済みです。ログイン、またはパスワードの再設定をご利用ください。", verificationRequired: true }) };
+      const passwordHash = await hashPasswordAsync(password), createdAt = new Date().toISOString(), userId = crypto.randomUUID();
+      let portfolioId: string;
+      try { portfolioId = await createPortfolioInMicroCMS(portfolioName); }
+      catch { return { response: json(502, { ok: false, message: "Portfolioを準備できませんでした。時間をおいて確認コードを再取得し、お試しください。", verificationRequired: true }) }; }
+      try {
+        await updateUsers(current => {
+          if (current.some(user => normalizeEmail(user.email) === email)) throw new Error("duplicate");
+          current.push({ id: userId, name, portfolioName, email, passwordHash, role: "member", approved: false, createdAt, providers: { credentials: true }, portfolioId });
+        });
+      } catch {
+        try { await removeUnlinkedPortfolio(portfolioId); } catch { console.error("[auth/signup] unlinked Portfolio cleanup failed"); }
+        return { response: json(503, { ok: false, message: "アカウントを保存できませんでした。確認コードを再取得してお試しください。", verificationRequired: true }) };
+      }
+      return { createdAt, userId, portfolioId };
+    });
+  } catch {
+    console.error("[auth/signup] provisioning failed");
+    return json(503, { ok: false, message: "登録が混み合っています。時間をおいて確認コードを再取得し、お試しください。", verificationRequired: true });
+  }
+  if ("response" in provisioned) return provisioned.response;
+  const { createdAt, userId, portfolioId } = provisioned;
+  try { await audit(userId, "auth.signup.email-confirmed", userId); } catch { console.error("[auth/signup] audit failed after saving"); }
 
   try {
     await sendSignupReviewMail({
@@ -283,12 +260,11 @@ export const POST: APIRoute = async ({ request }) => {
       userId,
     });
   } catch (err: any) {
-    console.error("[auth/signup] failed to send review mail", err);
+    console.error("[auth/signup] failed to send review mail");
     return json(200, {
       ok: true,
       message:
-        "Account was created, but the admin notification email failed to send. " +
-        (err?.message ? `(${err.message})` : ""),
+        "申請を保存しましたが管理者への通知に失敗しました。お問い合わせから承認をご依頼ください。",
       warning: "admin_notification_failed",
     });
   }

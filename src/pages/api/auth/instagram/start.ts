@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import crypto from "node:crypto";
+import { safeReturnPath } from "../../../../lib/http.ts";
 
 function isProd() {
   return process.env.NODE_ENV === "production";
@@ -11,12 +12,18 @@ export const GET: APIRoute = async ({ cookies, redirect, url }) => {
 
   if (!clientId || !redirectUri) {
     return new Response(
-      JSON.stringify({ ok: false, message: "Missing INSTAGRAM_CLIENT_ID or INSTAGRAM_REDIRECT_URI" }),
-      { status: 500, headers: { "content-type": "application/json; charset=utf-8" } }
+      JSON.stringify({
+        ok: false,
+        message: "Missing INSTAGRAM_CLIENT_ID or INSTAGRAM_REDIRECT_URI",
+      }),
+      {
+        status: 500,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      },
     );
   }
 
-  const next = url.searchParams.get("next") || "/";
+  const next = safeReturnPath(url.searchParams.get("next"), "/");
 
   const state = crypto.randomBytes(16).toString("hex");
   cookies.set("ig_state", state, {

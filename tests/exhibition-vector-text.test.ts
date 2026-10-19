@@ -1,0 +1,7 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {styleTextRange,richTextLayout,annotationRuns} from '../src/lib/exhibitionRichText.ts';
+import {outlinedAnnotationText,measureVectorText,vectorTextIssues} from '../src/lib/exhibitionVectorText.ts';
+import type {RoomAnnotation} from '../src/lib/exhibitionTypes.ts';
+const a=():RoomAnnotation=>({id:crypto.randomUUID(),kind:'text',x:100,y:100,width:200,height:200,rotation:0,fontSize:100,text:'展示室の名前\n写真展 ABC',color:'#343434'});
+test('styles apply only to the selected Japanese range and survive newlines',()=>{const v=a();styleTextRange(v,3,6,{bold:true,underline:true,color:'#0db49b'});assert.equal(annotationRuns(v).map(r=>r.text).join(''),v.text);assert.equal(annotationRuns(v).find(r=>r.bold)?.text,'の名前');styleTextRange(v,3,6,{bold:false});assert.equal(annotationRuns(v).some(r=>r.bold),false);const layout=richTextLayout(annotationRuns(v),100,measureVectorText);assert.equal(Math.max(...layout.chunks.map(r=>r.y)),230);});
+test('exported tool text contains actual glyph paths and preserves styles, without editable SVG text',()=>{const v=a();styleTextRange(v,3,6,{bold:true,italic:true,underline:true,color:'#0db49b'});const svg=outlinedAnnotationText(v);assert.ok(svg.includes('<path'));assert.ok(svg.includes('skewX(-12)'));assert.ok(svg.includes('#0db49b'));assert.ok(!svg.includes('<text'));assert.deepEqual(vectorTextIssues(v),[]);v.text='\u{10ffff}';v.runs=undefined;assert.ok(vectorTextIssues(v).length);});

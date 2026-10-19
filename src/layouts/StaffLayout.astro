@@ -1,0 +1,17 @@
+---
+import AdminLayout from "./AdminLayout.astro";
+import ActivityShareDialog from "../components/ActivityShareDialog.astro";
+import "../styles/Member.css";
+import "../styles/Activities.css";
+interface Props { title: string; }
+const { title } = Astro.props;
+---
+
+<AdminLayout title={title} heading="Staff" pageClass="staff-page">
+  <noscript><p class="member-notice">通知・投票・保存操作にはJavaScriptを有効にしてください。</p></noscript>
+  <slot />
+  <ActivityShareDialog slot="body-after" />
+</AdminLayout>
+<script>
+  import "../scripts/activities";
+</script>

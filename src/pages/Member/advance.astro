@@ -1,0 +1,123 @@
+---
+import MemberLayout from "../../layouts/MemberLayout.astro";
+import { advanceIntegrationConfigured } from "../../lib/advanceRequests";
+import "../../styles/AdvanceForm.css";
+const user = Astro.locals.user!;
+const configured = advanceIntegrationConfigured();
+const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Tokyo" }).format(new Date());
+type Field = { id: string; name: string; label: string; type?: "date" | "number" | "file" | "textarea" | "select"; required?: boolean; maxLength?: number; placeholder?: string; hint?: string; autocomplete?: string; refundFor?: "bank" | "paypay"; pattern?: string; inputmode?: "numeric"; };
+const groups: { title: string; hint?: string; fields: Field[] }[] = [
+  { title: "立替の内容", fields: [
+    { id: "expense-date", name: "expenseDate", label: "立替日", type: "date", required: true },
+    { id: "advance-amount", name: "amount", label: "金額・円", type: "number", required: true },
+    { id: "advance-item", name: "item", label: "項目名・用途", required: true, maxLength: 200, placeholder: "例：撮影会の備品代" },
+    { id: "receipt-file", name: "receiptUrl", label: "領収書", type: "file", hint: "JPEG・PNG・WebP・PDF／1ファイル・10MBまで。送信時に会計用のGoogle Driveへ保存します。" },
+    { id: "refund-method", name: "refundMethod", label: "希望の返金方法", type: "select", required: true },
+    { id: "refund-line-name", name: "refundLineName", label: "PayPay連絡用のLINE名", required: true, maxLength: 100, refundFor: "paypay", hint: "PayPayでの返金について連絡できるLINEの表示名を入力してください。" },
+    { id: "refund-bank-name", name: "bankName", label: "銀行名", required: true, maxLength: 100, refundFor: "bank", placeholder: "例：○○銀行" },
+    { id: "refund-bank-account-name", name: "bankAccountName", label: "口座に登録している名前", required: true, maxLength: 100, refundFor: "bank", hint: "振込先の口座名義を、銀行に登録している表記で入力してください。" },
+    { id: "refund-bank-branch-name", name: "bankBranchName", label: "店名", required: true, maxLength: 100, refundFor: "bank", placeholder: "例：○○支店" },
+    { id: "refund-bank-branch-code", name: "bankBranchCode", label: "店番号", required: true, maxLength: 3, refundFor: "bank", pattern: "[0-9０-９]{3}", inputmode: "numeric", hint: "先頭の0を含め、3桁の数字で入力してください。" },
+    { id: "refund-bank-account-number", name: "bankAccountNumber", label: "口座番号", required: true, maxLength: 8, refundFor: "bank", pattern: "[0-9０-９]{1,8}", inputmode: "numeric", hint: "振込用の口座番号を、先頭の0も省略せず入力してください。" },
+    { id: "advance-notes", name: "notes", label: "備考", type: "textarea", maxLength: 3000, placeholder: "補足があればご記入ください。" },
+  ] },
+  { title: "申請者の情報", hint: "名簿との照合に使います。表示名が本名と異なる場合も、名簿上の氏名を入力してください。", fields: [
+    { id: "roster-name", name: "rosterName", label: "名簿上の氏名", required: true, maxLength: 100, autocomplete: "name" },
+    { id: "roster-university", name: "university", label: "大学名", maxLength: 100 },
+    { id: "roster-line", name: "lineName", label: "LINE名", maxLength: 100 },
+  ] },
+];
+---
+<MemberLayout title="立替申請">
+  <section class="advance-page" aria-labelledby="advance-heading">
+    <header class="advance-intro">
+      <h2 id="advance-heading">立替申請</h2>
+      <p>サークルのために支払った費用を申請できます。<br />入力後に内容を確認し、申請を送信してください。</p>
+      <p class="advance-hint">会計担当者が内容を確認してから精算します。</p>
+    </header>
+    {!configured && <p class="member-notice" role="status">立替申請の受付準備中です。会計担当者へお問い合わせください。</p>}
+    <form id="advance-form" class="advance-form" data-user-id={user.id}>
+      <div class="advance-row advance-account-row">
+        <div class="advance-label">申請アカウント</div>
+        <div><p id="advance-account">{user.name}</p><p class="advance-hint">ログイン中の本人の申請として登録します。</p></div>
+      </div>
+      {groups.map(group => (
+        <fieldset class="advance-group">
+          <legend>{group.title}</legend>
+          {group.hint && <p class="advance-hint advance-group-hint">{group.hint}</p>}
+          {group.fields.map(field => (
+            <div class="advance-row" data-refund-for={field.refundFor} hidden={Boolean(field.refundFor)}>
+              <label for={field.id} class="advance-label">{field.label}<span class:list={["advance-field-badge", { "is-required": field.required }]}>（{field.required ? "必須" : "任意"}）</span></label>
+              <div class="advance-input">
+                {field.type === "select" ? (
+                  <select id={field.id} name={field.name} required aria-controls="refund-line-name refund-bank-name refund-bank-account-name refund-bank-branch-name refund-bank-branch-code refund-bank-account-number">
+                    <option value="">選択してください</option>
+                    <option value="bank">口座振込</option>
+                    <option value="paypay">PayPay</option>
+                    <option value="cash">現金手渡し</option>
+                  </select>
+                ) : field.type === "textarea" ? (
+                  <textarea id={field.id} name={field.name} maxlength={field.maxLength} placeholder={field.placeholder} rows="4"></textarea>
+                ) : field.type === "file" ? (
+                  <div class="advance-receipt-upload">
+                    <input id="receipt-file" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf" aria-describedby="receipt-file-hint receipt-selection" />
+                    <input id="receipt-url" name="receiptUrl" type="hidden" />
+                    <p id="receipt-selection" class="advance-hint" aria-live="polite">ファイルは選択されていません。</p>
+                    <button id="receipt-remove" class="advance-receipt-remove" type="button" hidden>添付を解除する</button>
+                  </div>
+                ) : (
+                  <input id={field.id} name={field.name} type={field.type || "text"} required={field.required && !field.refundFor} disabled={Boolean(field.refundFor)} maxlength={field.maxLength} placeholder={field.placeholder} autocomplete={field.refundFor ? "off" : field.autocomplete} pattern={field.pattern}
+                    max={field.type === "date" ? today : field.type === "number" ? Number.MAX_SAFE_INTEGER : undefined}
+                    min={field.type === "number" ? "1" : undefined} step={field.type === "number" ? "1" : undefined} inputmode={field.inputmode || (field.type === "number" ? "numeric" : undefined)}
+                    aria-describedby={field.hint ? `${field.id}-hint` : undefined} />
+                )}
+                {field.hint && <p id={`${field.id}-hint`} class="advance-hint">{field.hint}</p>}
+              </div>
+            </div>
+          ))}
+        </fieldset>
+      ))}
+      <div class="advance-confirm-action">
+        <button class="advance-button" type="submit" disabled={!configured}><span lang="en">Confirm</span><small>入力内容を確認する</small></button>
+      </div>
+      <p id="advance-status" class="member-status advance-status" role="status" aria-live="polite" tabindex="-1" hidden></p>
+    </form>
+    <a class="member-back" href="/Member">メンバーページへ戻る</a>
+  </section>
+  <dialog id="advance-preview" class="advance-dialog" aria-labelledby="advance-preview-title" aria-describedby="advance-preview-description">
+    <header class="advance-preview-header">
+      <h2 id="advance-preview-title" lang="en">Confirm</h2>
+      <button id="advance-close" class="advance-close" type="button" aria-label="確認画面を閉じる" autofocus><span></span><span></span></button>
+    </header>
+    <div class="advance-preview-body">
+      <p id="advance-preview-description">申請内容をご確認ください。各項目の「修正」から入力に戻れます。</p>
+      <div class="advance-preview-account"><span>申請アカウント</span><p>{user.name}</p></div>
+      <div class="advance-preview-columns">
+        {groups.map(group => (
+          <section>
+            <h3>{group.title}</h3>
+            <dl>
+              {group.fields.map(field => (
+                <div class="advance-preview-item" data-refund-for={field.refundFor} hidden={Boolean(field.refundFor)}>
+                  <dt>{field.label}<button class="advance-edit" type="button" data-edit-field={field.id} aria-label={`${field.label}を修正`}>修正</button></dt>
+                  <dd data-preview-field={field.name}></dd>
+                  {field.type === "file" && <dd class="advance-receipt-image"><img id="receipt-preview-image" alt="添付する領収書のプレビュー" hidden /></dd>}
+                </div>
+              ))}
+            </dl>
+          </section>
+        ))}
+      </div>
+    </div>
+    <div class="advance-preview-footer">
+      <p id="advance-send-status" class="member-status" role="status" aria-live="polite" tabindex="-1" hidden></p>
+      <div class="advance-preview-actions">
+        <button id="advance-back" class="advance-back-button" type="button">入力に戻る</button>
+        <button id="advance-send" class="advance-button" type="button"><span lang="en">Submit</span><small>この内容で申請する</small></button>
+      </div>
+    </div>
+  </dialog>
+</MemberLayout>
+<script>
+  import "../../scripts/advanceForm";
+</script>

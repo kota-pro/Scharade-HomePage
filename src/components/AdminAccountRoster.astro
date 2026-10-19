@@ -1,0 +1,58 @@
+---
+import { readActivities } from "../lib/activities";
+import { toAdminAccountRoster, accountDate } from "../lib/adminAccounts";
+import { rosterSourceUrl } from "../lib/activityRoster";
+interface Props {
+  accountId: string;
+}
+let roster: ReturnType<typeof toAdminAccountRoster> | null = null;
+try {
+  roster = toAdminAccountRoster(Astro.props.accountId, readActivities().roster);
+} catch {
+  // Keep registration details available when the separate roster store cannot be read.
+}
+---
+
+<div class="admin-account-roster-status">
+  <dt>名簿内の情報</dt>
+  <dd>
+    {
+      roster ? (
+        <span>{roster.status}</span>
+      ) : (
+        <span role="alert">
+          名簿の情報を取得できませんでした。時間をおいて再読み込みしてください。
+        </span>
+      )
+    }
+    <small><a href="/Admin/grouping-roster">Google名簿の更新・連携へ</a></small
+    >
+  </dd>
+</div>
+{
+  roster?.fields.map(([label, value]) => (
+    <div class="admin-account-roster-field">
+      <>
+        <dt>{label}</dt>
+        <dd>{value}</dd>
+      </>
+    </div>
+  ))
+}
+{
+  roster?.fetchedAt && (
+    <div>
+      <dt>現在の名簿の参照元・最終取得</dt>
+      <dd>
+        <a
+          href={rosterSourceUrl(roster.source)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {roster.title}
+        </a>
+        <small>{accountDate(roster.fetchedAt)}（日本時間）</small>
+      </dd>
+    </div>
+  )
+}

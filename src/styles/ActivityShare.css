@@ -1,0 +1,28 @@
+body:has(#activity-share-dialog[open]) { overflow: hidden; }
+.activity-title-row { display: flex; align-items: flex-start; gap: 12px; width: 100%; }
+.activity-title-row > :first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.activity-title-row > h2 { margin-top: 0; }
+.member-page button.activity-share-trigger {
+  display: flex; align-items: flex-start; justify-content: flex-start;
+  margin-left: auto; width: 45px; height: 46px;
+  min-width: 0; min-height: 0; padding: 10px 10px 4px;
+  border: 0; border-radius: 0; color: #000; background: transparent; transition: none;
+}
+.activity-share-trigger svg {
+  display: block; width: 25px; height: 25px;
+  filter: invert(59%) sepia(1%) saturate(380%) hue-rotate(24deg) brightness(103%) contrast(99%);
+}
+.member-page button.activity-share-trigger:not(:disabled):hover { color: #000; background: #e0dede; }
+.activity-share-trigger:hover svg {
+  filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(335deg) brightness(106%) contrast(102%);
+}
+.member-page button.activity-share-trigger:focus-visible { outline: 2px solid #777; outline-offset: 3px; }
+.member-page button.activity-share-trigger[hidden] { display: none; }
+@media (max-width: 768px) {
+  .member-page button.activity-share-trigger { width: 36px; height: 37px; padding: 8px 8px 2px; }
+  .activity-share-trigger svg { width: 20px; height: 20px; }
+}
+#activity-share-url {
+  width: 100%; min-width: 0; box-sizing: border-box; padding: 12px; border: 1px solid #ddd;
+  border-radius: 6px; color: #333; background: #fafafa; font: 16px/1.5 "Zen Kurenaido", sans-serif; cursor: copy;
+}

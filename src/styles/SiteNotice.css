@@ -1,0 +1,16 @@
+.site-notices {
+  position: fixed; inset: max(90px, 8.6vw) 20px auto auto; margin: 0; padding: 0;
+  width: min(400px, calc(100vw - 32px)); height: auto; min-height: 0; max-height: 45dvh;
+  box-sizing: border-box; border: 0; background: transparent;
+  overflow: auto; overscroll-behavior: contain; z-index: 2147483647; pointer-events: none; display: grid; gap: 10px;
+  font-family: "Zen Old Mincho", serif; color: #272727;
+}
+.site-notices:empty { display: none; }
+.site-notices::backdrop { background: transparent; pointer-events: none; }
+.site-notice { box-sizing: border-box; min-width: 0; display: flex; align-items: start; gap: 12px; padding: 14px 16px; background: #fff; border: 1px solid #b3cac1; border-left: 4px solid #548573; box-shadow: 0 4px 22px #0002; border-radius: 5px; pointer-events: none; }
+.site-notice[data-kind="error"] { border-color: #d8b3b3; border-left-color: #a32b2b; }
+.site-notice[data-kind="progress"] { border-left-color: #7893ae; }
+.site-notice p { margin: 0; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; flex: 1; }
+.site-notices .site-notice > button { all: unset; box-sizing: border-box; display: flex; align-items: center; justify-content: center; flex: 0 0 32px; width: 32px; height: 32px; min-width: 32px; min-height: 32px; max-width: 32px; font: inherit; font-size: 22px; line-height: 1; background: transparent; color: #333; cursor: pointer; pointer-events: auto; }
+.site-notices .site-notice > button:focus-visible { outline: 2px solid #0b8978; outline-offset: 2px; }
+@media (max-width: 600px) { .site-notices { inset: auto 16px max(16px, env(safe-area-inset-bottom)) auto; width: min(400px, calc(100vw - 32px)); } }

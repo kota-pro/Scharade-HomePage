@@ -1,0 +1,112 @@
+---
+import { displayName } from "../lib/groupPresentation";
+import { isAdmin } from "../lib/auth";
+import GroupingParticipantImport from "./GroupingParticipantImport.astro";
+import { activeGuests, rosterParticipants } from "../lib/groupingParticipants";
+import ActivityRecipients from "./ActivityRecipients.astro";
+import type { ActivityStore } from "../lib/activityTypes";
+import { activityDate } from "../lib/activityTypes";
+import type { GroupingRun, GroupingTools } from "../lib/groupingTools";
+interface Props {
+  activities: ActivityStore;
+  data: GroupingTools;
+  run?: GroupingRun;
+}
+const { activities, data, run } = Astro.props;
+const records = activities.roster?.records || [];
+const available = records.filter((r) => r.active && r.gender && r.grade);
+const candidates = [...new Map([...rosterParticipants(activities), ...activeGuests(data.guests), ...(run?.guests || [])].map(p => [p.id, p])).values()];
+const choices = candidates.map(p => ({ id: p.id, name: displayName(p), grade: p.grade }));
+for (const id of run?.participantIds || [])
+  if (!choices.some((r) => r.id === id))
+    choices.push({
+      id,
+      grade: undefined!,
+      name: `${displayName(records.find((r) => r.key === id) || { name: "名簿から削除されたメンバー" })}（継続状態・性別・学年の確認が必要）`,
+    });
+const previous = data.runs
+  .filter((r) => r.id !== run?.id && r.publishedGroups)
+  .sort((a, b) =>
+    b.publishedGroups!.publishedAt.localeCompare(
+      a.publishedGroups!.publishedAt,
+    ),
+  );
+if (
+  run?.previousSnapshot &&
+  run.previousSnapshot.id === run.previousRunId &&
+  !previous.some((r) => r.id === run.previousRunId)
+) {
+  previous.push({
+    ...run,
+    ...run.previousSnapshot,
+    title: `${run.previousSnapshot.title}（削除済み・参照履歴）`,
+  });
+}
+const selectedPrevious = run?.previousRunId ?? previous[0]?.id ?? "";
+---
+
+<p>
+  所属名簿・保存済みの追加参加者から選ぶか、フォームの回答や名前入力で参加者を追加できます。企画の作成や参加投票は不要です。
+</p>
+<p>
+  {
+    activities.roster
+      ? `名簿の最終取得：${activityDate(activities.roster.fetchedAt)} · 選択可能 ${available.length}人`
+      : "所属名簿は未取得です。フォームの読み込みや名前入力でも参加者を追加できます。"
+  }
+  {isAdmin(Astro.locals.user) && <a href="/Admin/grouping-roster">班分け用名簿</a>}
+</p>
+{
+  records.some((r) => r.active && (!r.gender || !r.grade)) && (
+    <p class="activity-warning">
+      性別・学年が未確認のメンバーは選択できません。管理者が元のGoogle名簿を確認・更新してください。
+    </p>
+  )
+}
+<div data-grouping-participants data-candidates={JSON.stringify(candidates)}>
+<p>追加参加者は最後に利用してから3か月間、別の班分けでも選択できます。期限後も保存済みの班分けには記録が残ります。</p>
+<GroupingParticipantImport />
+<form
+  class="activity-form"
+  data-activity-action="run.save"
+  data-endpoint="/api/member/grouping"
+  data-run-id={run?.id}
+  data-revision={run?.revision}
+  data-redirect="/Member/manage/grouping/{runId}"
+>
+  <label
+    >班分け名<input
+      name="title"
+      value={run?.title}
+      maxlength="200"
+      required
+      placeholder="例：10月の撮影会"
+    /></label
+  >
+  <ActivityRecipients
+    users={choices}
+    selected={run?.participantIds || []}
+    legend="参加者"
+    fieldName="participantIds"
+  />
+  <label
+    >前回の班分け<select name="previousRunId" aria-label="前回の班分け"
+      ><option value="" selected={!selectedPrevious}>参照しない</option>{
+        previous.map((p) => (
+          <option value={p.id} selected={selectedPrevious === p.id}>
+            {p.title}（{activityDate(p.publishedGroups!.publishedAt)}確定）
+          </option>
+        ))
+      }</select
+    ></label
+  >
+  <p>
+    前回と同じ組合せをできるだけ減らします。参加者や条件によって、同じ組合せが残る場合があります。
+  </p>
+  <button type="submit" class="member-submit"
+    >{run ? "参加者・履歴を保存" : "参加者を保存して班分けへ"}</button
+  >
+  <p data-status role="status" aria-live="polite"></p>
+</form>
+
+</div>

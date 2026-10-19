@@ -1,106 +1,105 @@
 import crypto from "node:crypto";
-import fs from "node:fs";
-import path from "node:path";
-import { getDataDir } from "./dataDir";
+import { readData, writeData, withStoreLock } from "./store.ts";
+import { readUsers, readSessions } from "./auth.ts";
+import { hashPasswordAsync, validNewPassword, verifyPasswordAsync } from "./passwords.ts";
+export { hashPassword } from "./passwords.ts";
 
 export const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
-
 type PasswordResetToken = {
   tokenHash: string;
   userId: string;
   createdAt: string;
   expiresAt: string;
 };
-
-const DATA_DIR = getDataDir(import.meta.url);
-const TOKENS_PATH = path.join(DATA_DIR, "password-reset-tokens.json");
-
-function readTokens(): PasswordResetToken[] {
-  if (!fs.existsSync(TOKENS_PATH)) return [];
-  const raw = fs.readFileSync(TOKENS_PATH, "utf8");
-  if (!raw.trim()) return [];
-
-  try {
-    return JSON.parse(raw) as PasswordResetToken[];
-  } catch {
-    return [];
-  }
-}
-
-function writeTokens(tokens: PasswordResetToken[]) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(TOKENS_PATH, JSON.stringify(tokens, null, 2), "utf8");
-}
-
-function hashToken(token: string) {
-  return crypto.createHash("sha256").update(token).digest("hex");
-}
-
-function validTokens(now = Date.now()) {
-  return readTokens().filter(
-    (entry) => new Date(entry.expiresAt).getTime() > now,
+function readTokens() {
+  const tokens = readData<PasswordResetToken[]>(
+    "password-reset-tokens.json",
+    [],
   );
+  if (!Array.isArray(tokens))
+    throw new Error("再設定データの形式が正しくありません。");
+  return tokens;
 }
+const hashToken = (token: string) =>
+  crypto.createHash("sha256").update(token).digest("hex");
+const validTokens = () =>
+  readTokens().filter((t) => Date.parse(t.expiresAt) > Date.now());
+export class ResetAccountChangedError extends Error {}
 
-export function createPasswordResetToken(userId: string) {
-  const now = Date.now();
-  const token = crypto.randomBytes(32).toString("base64url");
-  const tokens = validTokens(now).filter((entry) => entry.userId !== userId);
-
-  tokens.push({
-    tokenHash: hashToken(token),
-    userId,
-    createdAt: new Date(now).toISOString(),
-    expiresAt: new Date(now + PASSWORD_RESET_TTL_MS).toISOString(),
+export async function createPasswordResetToken(
+  userId: string,
+  expectedEmail?: string,
+) {
+  return withStoreLock("auth", () => {
+    const user = readUsers().find((user) => user.id === userId);
+    if (
+      !user ||
+      (expectedEmail !== undefined &&
+        user.email.trim().toLowerCase() !== expectedEmail.trim().toLowerCase())
+    )
+      throw new ResetAccountChangedError(
+        "Account changed before reset token creation",
+      );
+    const now = Date.now();
+    const token = crypto.randomBytes(32).toString("base64url");
+    const tokens = validTokens().filter((t) => t.userId !== userId);
+    tokens.push({
+      tokenHash: hashToken(token),
+      userId,
+      createdAt: new Date(now).toISOString(),
+      expiresAt: new Date(now + PASSWORD_RESET_TTL_MS).toISOString(),
+    });
+    writeData("password-reset-tokens.json", tokens);
+    return token;
   });
-  writeTokens(tokens);
-
-  return token;
 }
-
 export function findPasswordResetToken(token: string) {
-  if (!token) return null;
-  const now = Date.now();
-  const tokens = validTokens(now);
-  const tokenHash = hashToken(token);
-  const entry = tokens.find((candidate) => {
-    const actual = Buffer.from(candidate.tokenHash, "hex");
-    const expected = Buffer.from(tokenHash, "hex");
-    return (
-      actual.length === expected.length &&
-      crypto.timingSafeEqual(actual, expected)
-    );
-  });
-
-  if (tokens.length !== readTokens().length) writeTokens(tokens);
-  return entry ?? null;
+  if (!token || token.length > 200) return null;
+  return validTokens().find((t) => t.tokenHash === hashToken(token)) ?? null;
 }
-
-export function consumePasswordResetToken(token: string) {
-  const tokenHash = hashToken(token);
-  const tokens = validTokens();
-  const entry = tokens.find((candidate) => candidate.tokenHash === tokenHash);
-  if (!entry) return null;
-
-  writeTokens(
-    tokens.filter(
-      (candidate) =>
-        candidate.tokenHash !== tokenHash && candidate.userId !== entry.userId,
+export async function revokePasswordResetToken(token: string) {
+  await withStoreLock("auth", () =>
+    writeData(
+      "password-reset-tokens.json",
+      validTokens().filter((t) => t.tokenHash !== hashToken(token)),
     ),
   );
-  return entry;
 }
 
-export function revokePasswordResetToken(token: string) {
-  if (!token) return;
-  const tokenHash = hashToken(token);
-  writeTokens(
-    validTokens().filter((candidate) => candidate.tokenHash !== tokenHash),
+/** Call only while holding the auth lock. */
+export function revokeUserPasswordResetTokens(userId: string) {
+  writeData(
+    "password-reset-tokens.json",
+    validTokens().filter((token) => token.userId !== userId),
   );
 }
-
-export function hashPassword(password: string) {
-  const salt = crypto.randomBytes(16);
-  const hash = crypto.scryptSync(password, salt, 32);
-  return `scrypt$${salt.toString("base64")}$${hash.toString("base64")}`;
+export async function resetPassword(token: string, password: string) {
+  const initial = findPasswordResetToken(token);
+  if (!initial || !validNewPassword(password)) return false;
+  const previous = readUsers().find(u => u.id === initial.userId);
+  if (previous?.mustResetPassword && previous.passwordHash && await verifyPasswordAsync(password, previous.passwordHash)) return false;
+  const passwordHash = await hashPasswordAsync(password);
+  return withStoreLock("auth", () => {
+    const entry = findPasswordResetToken(token);
+    if (!entry) return false;
+    const users = readUsers();
+    const user = users.find((u) => u.id === entry.userId);
+    if (!user) return false;
+    if (user.passwordHash !== previous?.passwordHash || (user.authVersion ?? 0) !== (previous?.authVersion ?? 0)) return false;
+    // Invalidate existing sessions even if the process stops before session cleanup.
+    user.passwordHash = passwordHash;
+    delete user.mustResetPassword;
+    user.providers.credentials = true;
+    user.authVersion = (user.authVersion ?? 0) + 1;
+    writeData(
+      "password-reset-tokens.json",
+      validTokens().filter((t) => t.userId !== entry.userId),
+    );
+    writeData("users.json", users);
+    writeData(
+      "sessions.json",
+      readSessions().filter((s) => s.userId !== user.id),
+    );
+    return true;
+  });
 }

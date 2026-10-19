@@ -1,14 +1,15 @@
 ---
+import PageTopNav from "../../components/PageTopNav.astro";
 import Layout from "../../layouts/Layout.astro";
 import "../../styles/UA+reset.css";
 import "../../styles/Portfolio.css";
 
-import { getPortfolios, normalizePortfolioGrade } from "../../lib/microcms";
+import { getAllPortfolios, normalizePortfolioGrade } from "../../lib/microcms";
+import { getContent } from "../../lib/siteContent";
 import { optimizeMicrocmsImage } from "../../utils/microcmsImage";
+import { isListedPortfolio } from "../../data/portfolioVisibility";
 
-const response = await getPortfolios({
-  limit: 100,
-});
+const allMembers = await getAllPortfolios().catch(() => null);
 
 const GRADE_TABS = [
   "All",
@@ -21,10 +22,18 @@ const GRADE_TABS = [
   "OB/OG",
 ] as const;
 
-const allPortfolios = response.contents.map((portfolio) => ({
-  ...portfolio,
-  gradeText: normalizePortfolioGrade(portfolio.grade),
-}));
+const allPortfolios = (allMembers ?? [])
+  .filter(isListedPortfolio)
+  .map((portfolio) => ({
+    ...portfolio,
+    gradeText: normalizePortfolioGrade(portfolio.grade),
+  }))
+  .sort(
+    (a, b) =>
+      (a.displayOrder ?? Number.MAX_SAFE_INTEGER) -
+        (b.displayOrder ?? Number.MAX_SAFE_INTEGER) ||
+      a.name.localeCompare(b.name, "ja"),
+  );
 
 const executives = allPortfolios
   .filter((portfolio) => portfolio.isExecutive || Boolean(portfolio.role))
@@ -36,7 +45,7 @@ const executives = allPortfolios
   );
 ---
 
-<Layout title="Sharade | Portfolio">
+<Layout title="Portfolio">
   <Fragment slot="main-slot">
     <div class="section-title">
       <h1>Portfolio</h1>
@@ -46,27 +55,22 @@ const executives = allPortfolios
 
   <Fragment slot="menu-slot">
     <div class="menu-contents-inner">
-      <a href="#" class="page-top-nav">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="32"
-          height="32"
-          viewBox="0 0 24 24"
-        >
-          <path
-            fill="currentColor"
-            d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"
-          ></path>
-        </svg>
-      </a>
+      <PageTopNav />
     </div>
   </Fragment>
 
   <Fragment slot="body-slot">
     <div class="explanation-area">
-      <p>サークル員のポートフォリオになります。ぜひご鑑賞ください。</p>
+      <p>{getContent("portfolio", Astro.locals.preview).introduction}</p>
     </div>
 
+    {
+      !allMembers && (
+        <p class="service-notice">
+          Portfolioを読み込めませんでした。時間をおいて再読み込みしてください。
+        </p>
+      )
+    }
     {
       executives.length > 0 && (
         <details class="member-section-details executive-section" open>

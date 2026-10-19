@@ -1,0 +1,240 @@
+{
+  "startedAt": "2026-09-17T13:47:08.429Z",
+  "base": "https://scharade.jp",
+  "environment": {
+    "browser": "153.0.8010.12",
+    "platform": "darwin",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "networkThrottling": "none",
+    "cpuThrottling": "none",
+    "browserCache": "new context per sample; server/CDN caches are not reset",
+    "observation": "DOMContentLoaded, then load (up to 15 seconds), then 3 seconds"
+  },
+  "notes": [
+    "Lab observations on this computer, not measurements from an iPhone/Android device.",
+    "Resource transfer totals include only sizes exposed by Resource Timing.",
+    "INP is not measured: the script does not interact with the page.",
+    "DOMContentLoaded deadline: 45 seconds. Timeout samples remain in the report."
+  ],
+  "samples": [
+    {
+      "route": "/",
+      "run": 1,
+      "measuredAt": "2026-09-17T13:47:08.570Z",
+      "status": 200,
+      "loadComplete": true,
+      "error": null,
+      "metrics": {
+        "ttfbMs": 1693.800000011921,
+        "documentTransferBytes": 50609,
+        "domContentLoadedMs": 1983,
+        "loadMs": 2230.300000011921,
+        "lcpMs": 1980,
+        "layoutShiftTotal": 0.0011766844740943342,
+        "resourcesObserved": 44,
+        "resourceTransferBytesObserved": 1405039
+      }
+    },
+    {
+      "route": "/",
+      "run": 2,
+      "measuredAt": "2026-09-17T13:47:13.868Z",
+      "status": 200,
+      "loadComplete": true,
+      "error": null,
+      "metrics": {
+        "ttfbMs": 62.20000001788139,
+        "documentTransferBytes": 50610,
+        "domContentLoadedMs": 354.60000002384186,
+        "loadMs": 669.8000000119209,
+        "lcpMs": 356,
+        "layoutShiftTotal": 0.001027548932180665,
+        "resourcesObserved": 44,
+        "resourceTransferBytesObserved": 1405039
+      }
+    },
+    {
+      "route": "/",
+      "run": 3,
+      "measuredAt": "2026-09-17T13:47:17.623Z",
+      "status": 200,
+      "loadComplete": true,
+      "error": null,
+      "metrics": {
+        "ttfbMs": 47.400000005960464,
+        "documentTransferBytes": 50618,
+        "domContentLoadedMs": 414.2000000178814,
+        "loadMs": 672.2000000178814,
+        "lcpMs": 416,
+        "layoutShiftTotal": 0.001190074870674686,
+        "resourcesObserved": 44,
+        "resourceTransferBytesObserved": 1405039
+      }
+    },
+    {
+      "route": "/About_us",
+      "run": 1,
+      "measuredAt": "2026-09-17T13:47:21.365Z",
+      "status": 200,
+      "loadComplete": true,
+      "error": null,
+      "metrics": {
+        "ttfbMs": 49.900000005960464,
+        "documentTransferBytes": 49973,
+        "domContentLoadedMs": 631.1999999880791,
+        "loadMs": 1012.5,
+        "lcpMs": 440,
+        "layoutShiftTotal": 0.022361447494581205,
+        "resourcesObserved": 76,
+        "resourceTransferBytesObserved": 2663075
+      }
+    },
+    {
+      "route": "/About_us",
+      "run": 2,
+      "measuredAt": "2026-09-17T13:47:25.461Z",
+      "status": 200,
+      "loadComplete": true,
+      "error": null,
+      "metrics": {
+        "ttfbMs": 48.599999994039536,
+        "documentTransferBytes": 49973,
+        "domContentLoadedMs": 1004.3000000119209,
+        "loadMs": 1215.9000000059605,
+        "lcpMs": 344,
+        "layoutShiftTotal": 0.022410557313974993,
+        "resourcesObserved": 76,
+        "resourceTransferBytesObserved": 2663075
+      }
+    },
+    {
+      "route": "/About_us",
+      "run": 3,
+      "measuredAt": "2026-09-17T13:47:29.752Z",
+      "status": 200,
+      "loadComplete": true,
+      "error": null,
+      "metrics": {
+        "ttfbMs": 49.39999997615814,
+        "documentTransferBytes": 49973,
+        "domContentLoadedMs": 577.2999999821186,
+        "loadMs": 1230,
+        "lcpMs": 480,
+        "layoutShiftTotal": 0.022361447494581205,
+        "resourcesObserved": 76,
+        "resourceTransferBytesObserved": 2663068
+      }
+    },
+    {
+      "route": "/Gallery",
+      "run": 1,
+      "measuredAt": "2026-09-17T13:47:34.071Z",
+      "status": 200,
+      "loadComplete": true,
+      "error": null,
+      "metrics": {
+        "ttfbMs": 1588.6000000238419,
+        "documentTransferBytes": 45111,
+        "domContentLoadedMs": 1954.4000000059605,
+        "loadMs": 2059.2000000178814,
+        "lcpMs": 1988,
+        "layoutShiftTotal": 0.015245323201518557,
+        "resourcesObserved": 19,
+        "resourceTransferBytesObserved": 625867
+      }
+    },
+    {
+      "route": "/Gallery",
+      "run": 2,
+      "measuredAt": "2026-09-17T13:47:39.201Z",
+      "status": 200,
+      "loadComplete": true,
+      "error": null,
+      "metrics": {
+        "ttfbMs": 41.5,
+        "documentTransferBytes": 45113,
+        "domContentLoadedMs": 262.80000001192093,
+        "loadMs": 440.7000000178814,
+        "lcpMs": 412,
+        "layoutShiftTotal": 0.017822276676801613,
+        "resourcesObserved": 19,
+        "resourceTransferBytesObserved": 625867
+      }
+    },
+    {
+      "route": "/Gallery",
+      "run": 3,
+      "measuredAt": "2026-09-17T13:47:42.726Z",
+      "status": 200,
+      "loadComplete": true,
+      "error": null,
+      "metrics": {
+        "ttfbMs": 44.599999994039536,
+        "documentTransferBytes": 45116,
+        "domContentLoadedMs": 576.3000000119209,
+        "loadMs": 749.8000000119209,
+        "lcpMs": 600,
+        "layoutShiftTotal": 0.025201965515841272,
+        "resourcesObserved": 19,
+        "resourceTransferBytesObserved": 625867
+      }
+    },
+    {
+      "route": "/Portfolio",
+      "run": 1,
+      "measuredAt": "2026-09-17T13:47:46.527Z",
+      "status": 200,
+      "loadComplete": true,
+      "error": null,
+      "metrics": {
+        "ttfbMs": 245.5,
+        "documentTransferBytes": 45932,
+        "domContentLoadedMs": 815.8999999761581,
+        "loadMs": 1699.7999999821186,
+        "lcpMs": 1272,
+        "layoutShiftTotal": 0.02370122928250079,
+        "resourcesObserved": 23,
+        "resourceTransferBytesObserved": 1182532
+      }
+    },
+    {
+      "route": "/Portfolio",
+      "run": 2,
+      "measuredAt": "2026-09-17T13:47:51.299Z",
+      "status": 200,
+      "loadComplete": true,
+      "error": null,
+      "metrics": {
+        "ttfbMs": 46.69999998807907,
+        "documentTransferBytes": 45932,
+        "domContentLoadedMs": 398.7999999821186,
+        "loadMs": 665.1999999880791,
+        "lcpMs": 620,
+        "layoutShiftTotal": 0.027619306566254526,
+        "resourcesObserved": 23,
+        "resourceTransferBytesObserved": 1182532
+      }
+    },
+    {
+      "route": "/Portfolio",
+      "run": 3,
+      "measuredAt": "2026-09-17T13:47:55.011Z",
+      "status": 200,
+      "loadComplete": true,
+      "error": null,
+      "metrics": {
+        "ttfbMs": 116.09999999403954,
+        "documentTransferBytes": 45932,
+        "domContentLoadedMs": 556.5999999940395,
+        "loadMs": 2034.199999988079,
+        "lcpMs": 808,
+        "layoutShiftTotal": 0.02591438826999099,
+        "resourcesObserved": 23,
+        "resourceTransferBytesObserved": 1182532
+      }
+    }
+  ]
+}

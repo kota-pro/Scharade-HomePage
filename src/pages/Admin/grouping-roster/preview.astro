@@ -1,0 +1,134 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import "../../../styles/Member.css";
+import "../../../styles/Activities.css";
+import { isAdmin } from "../../../lib/auth";
+import { readActivities } from "../../../lib/activities";
+import {
+  readRosterPreview,
+  rosterPreviewSummary,
+} from "../../../lib/rosterChanges";
+import { rosterSourceUrl } from "../../../lib/activityRoster";
+import { displayName } from "../../../lib/groupPresentation";
+if (!isAdmin(Astro.locals.user))
+  return new Response("管理者権限が必要です。", { status: 403 });
+const preview = readRosterPreview(
+  Astro.locals.user!.id,
+  Astro.url.searchParams.get("id") || "",
+);
+const summary = preview ? rosterPreviewSummary(preview) : null;
+const stale =
+  preview && preview.revision !== (readActivities().roster?.revision ?? 0);
+if (!preview) Astro.response.status = 404;
+---
+
+<AdminLayout pageClass="admin-roster-page" title="名簿の変更内容を確認">
+  <h2>名簿の変更内容を確認</h2>
+  {
+    preview && summary ? (
+      <>
+        <section class="admin-section">
+          <h3>新しい参照先</h3>
+          <p>
+            <a
+              href={rosterSourceUrl(preview.source)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {preview.incoming.title} / {preview.incoming.sheetTitle}
+            </a>
+          </p>
+          <p>
+            取得した回答：{summary.records.length}人 · 継続対象：
+            {summary.records.filter((r) => r.active).length}人 · 退会対象：
+            {summary.departed.length}人
+          </p>
+          <p>
+            この画面ではまだ変更していません。適用すると、下記の退会対象を班分けから除外し、連携済みPortfolioの学年をOB/OGに更新します。
+          </p>
+        </section>
+        <section class="admin-section">
+          <h3>退会扱いになるメンバー</h3>
+          <p>
+            Portfolioがあるのにアカウント未連携と表示される人は、適用前に名簿ページで連携してから確認し直してください。
+          </p>
+          {summary.departures.length ? (
+            <ul class="activity-list">
+              {summary.departures.map((row) => (
+                <li>
+                  <strong>{displayName(row)}</strong>
+                  <small>{row.university || "大学未記入"}</small>
+                  <span>
+                    {row.accounts.length
+                      ? row.accounts
+                          .map(
+                            (a) =>
+                              `${a.name}：${a.portfolioId ? "Portfolioの学年をOB/OGに変更" : "Portfolioなし"}`,
+                          )
+                          .join(" / ")
+                      : "アカウント未連携：班分けから除外（Portfolioは特定できないため更新対象外）"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>退会扱いになる人はいません。</p>
+          )}
+        </section>
+        {summary.unresolved.length > 0 && (
+          <section class="admin-section">
+            <h3>切り替え後に連携の確認が必要なメンバー</h3>
+            <p>
+              同姓同名などで対応を確定できません。名前は新しい名簿にあるため退会扱いにはせず、切り替え後に管理者が連携を確認してください。
+            </p>
+            <ul class="activity-list">
+              {summary.unresolved.map((row) => (
+                <li>
+                  {displayName(row)} · {row.university}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        <section class="admin-section">
+          <h3>変更を適用</h3>
+          <p>
+            旧名簿と連携情報は保存します。過去に公開した班分けは履歴として残し、作成中の班案から退会対象を除外します。Portfolioの更新に失敗した場合は、名簿ページから再試行できます。
+          </p>
+          {stale ? (
+            <p role="alert">
+              名簿が更新されています。変更内容を取得し直してください。
+            </p>
+          ) : (
+            <form
+              class="activity-form"
+              data-activity-action="roster.apply"
+              data-redirect="/Admin/grouping-roster"
+            >
+              <input type="hidden" name="previewId" value={preview.id} />
+              <label class="activity-check">
+                <input type="checkbox" name="confirm" required />
+                参照先と退会対象を確認しました
+              </label>
+              <button type="submit" class="member-submit">
+                名簿の参照先と退会処理を適用
+              </button>
+              <p data-status role="status" aria-live="polite" />
+            </form>
+          )}
+        </section>
+      </>
+    ) : (
+      <p role="alert">
+        確認内容が見つからないか、有効期限が切れました。名簿ページから取得し直してください。
+      </p>
+    )
+  }
+  <a class="member-back" href="/Admin/grouping-roster"
+    >変更せず名簿ページへ戻る</a
+  >
+</AdminLayout>
+
+<script>
+  import "../../../scripts/activities";
+</script>

@@ -1,0 +1,173 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { readUsers } from "../../../lib/auth";
+import {
+  toAdminAccount,
+  accountDate,
+  type AdminAccount,
+} from "../../../lib/adminAccounts";
+
+const q = (Astro.url.searchParams.get("q") ?? "").trim().slice(0, 100);
+let accounts: AdminAccount[] | null = null;
+try {
+  accounts = readUsers()
+    .map(toAdminAccount)
+    .sort(
+      (a, b) =>
+        (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0) ||
+        a.id.localeCompare(b.id),
+    );
+} catch {
+  Astro.response.status = 503;
+}
+const query = q.toLocaleLowerCase("ja");
+const matches = (accounts ?? []).filter((account) =>
+  [
+    account.name,
+    account.email,
+    account.portfolioName,
+    account.id,
+    account.portfolioId ?? "",
+  ].some((value) => value.toLocaleLowerCase("ja").includes(query)),
+);
+const totalPages = Math.max(1, Math.ceil(matches.length / 30));
+const page = Math.min(
+  totalPages,
+  Math.max(1, Number.parseInt(Astro.url.searchParams.get("page") ?? "1") || 1),
+);
+const visibleAccounts = matches.slice((page - 1) * 30, page * 30);
+const href = (p: number) =>
+  `/Admin/accounts?${new URLSearchParams({ q, page: String(p) })}`;
+const pageNumbers = [...new Set([1, 2, totalPages - 1, totalPages, page - 1, page, page + 1])]
+  .filter((p) => p >= 1 && p <= totalPages)
+  .sort((a, b) => a - b);
+const pageArrows = [
+  { label: "最初のページへ", icon: "doubleleftarrow", page: 1, disabled: page === 1 },
+  { label: "前へ", icon: "leftarrow", page: page - 1, disabled: page === 1 },
+  { label: "次へ", icon: "rightarrow", page: page + 1, disabled: page === totalPages },
+  { label: "最後のページへ", icon: "doublerightarrow", page: totalPages, disabled: page === totalPages },
+];
+---
+
+<AdminLayout
+  title="アカウント一覧"
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "管理画面", href: "/Admin" },
+    { label: "アカウント一覧" },
+  ]}
+>
+  <div class="admin-intro">
+    <h2>アカウント一覧</h2>
+    {
+      Astro.url.searchParams.get("deleted") === "1" && (
+        <p role="status">アカウントと紐づくPortfolioの削除が完了しました。</p>
+      )
+    }
+    <p>
+      登録内容の確認やPortfolioの編集ができます。登録日時の新しい順に表示します。
+    </p>
+  </div>
+  <section class="admin-section" aria-label="アカウントの検索と一覧">
+    <form method="get" class="admin-search">
+      <label for="account-query"
+        >名前・メールアドレス・登録時のPortfolio名・IDで検索</label
+      >
+      <input
+        type="search"
+        id="account-query"
+        name="q"
+        value={q}
+        maxlength="100"
+      />
+      <button type="submit">検索する</button>
+    </form>
+    {
+      !accounts ? (
+        <p role="alert">
+          一覧を取得できませんでした。時間をおいて再読み込みしてください。
+        </p>
+      ) : (
+        <>
+          <p>
+            {matches.length}件{q && `（全${accounts.length}件）`}
+          </p>
+          {matches.length === 0 && <p>該当するアカウントはありません。</p>}
+          <ul class="admin-account-list">
+            {visibleAccounts.map((account) => (
+              <li class="admin-account-row">
+                <div class="admin-account-identity">
+                  <h3>
+                    <a
+                      href={`/Admin/accounts/${encodeURIComponent(account.id)}`}
+                    >
+                      {account.name}
+                    </a>
+                  </h3>
+                  <p>{account.email}</p>
+                  <div class="admin-account-meta">
+                    <span class="admin-account-status">{account.role}</span>
+                    <span class="admin-account-status">{account.status}</span>
+                    <span>
+                      登録：{accountDate(account.createdAt)}（日本時間）
+                    </span>
+                  </div>
+                </div>
+                <div class="admin-account-links">
+                  <a
+                    class="admin-button"
+                    href={`/Admin/accounts/${encodeURIComponent(account.id)}`}
+                    aria-label={`${account.name}の登録内容を確認`}
+                  >
+                    登録内容を見る
+                  </a>
+                  {account.portfolioId && (
+                    <a
+                      class="admin-button"
+                      href={`/Portfolio/edit?id=${encodeURIComponent(account.portfolioId)}`}
+                      aria-label={`${account.name}のPortfolioを編集`}
+                    >
+                      Portfolioを編集
+                    </a>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+          {totalPages > 1 && (
+            <nav class="admin-account-pagination" aria-label="ページ送り">
+              {pageArrows.map((arrow, index) => (
+                <>
+                  {index === 2 && (
+                    <div class="admin-account-page-numbers">
+                      {pageNumbers.map((p, i) => (
+                        <>
+                          {i > 0 && p - pageNumbers[i - 1] > 1 && (
+                            <span aria-hidden="true">...</span>
+                          )}
+                          <a href={href(p)} aria-label={`${p}ページ目`} aria-current={p === page ? "page" : undefined}>
+                            {p}
+                          </a>
+                        </>
+                      ))}
+                    </div>
+                  )}
+                  <a
+                    class:list={["admin-account-page-arrow", { "is-double": arrow.icon.startsWith("double") }]}
+                    href={arrow.disabled ? undefined : href(arrow.page)}
+                    aria-label={arrow.label}
+                    aria-disabled={arrow.disabled ? "true" : undefined}
+                    role={arrow.disabled ? "link" : undefined}
+                  >
+                    <img src={`/icons/${arrow.icon}.svg`} alt="" width={arrow.icon.startsWith("double") ? 26 : 20} height="20" />
+                  </a>
+                </>
+              ))}
+            </nav>
+          )}
+        </>
+      )
+    }
+    <div class="admin-actions"><a href="/Admin">管理画面へ戻る</a></div>
+  </section>
+</AdminLayout>

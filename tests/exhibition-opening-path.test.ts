@@ -1,0 +1,7 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import type {RoomLayout} from '../src/lib/exhibitionTypes.ts';
+import {openingPath,openingPathWorld,resizeOpeningPath} from '../src/lib/exhibitionOpeningPath.ts';
+import {openingFloorSvg} from '../src/lib/exhibitionRoomSymbols.ts';
+import {parseRooms} from '../src/lib/exhibitionValidation.ts';
+import {reusableRoom} from '../src/lib/exhibitionRoomReuse.ts';
+test('editable door anchors use wall-local coordinates, preserve opening dimensions and clone safely',()=>{const room:RoomLayout={id:crypto.randomUUID(),name:'扉',vertices:[{x:0,y:0},{x:6000,y:0},{x:6000,y:4000},{x:0,y:4000}],wallHeights:[3000,3000,3000,3000],openings:[{id:crypto.randomUUID(),kind:'door',wall:1,offset:100,width:900,height:2100,bottom:0}],placements:[],books:[],tables:[]},o=room.openings[0];o.visualPath=openingPath(room,o);assert.equal(o.visualPath.nodes.length,3);const world=openingPathWorld(room,o,{x:300,y:200}),local=openingPathWorld(room,o,world,true);assert.ok(Math.hypot(local.x-300,local.y-200)<.001);o.visualPath.nodes[0].radius=40;assert.match(openingFloorSvg(room,o),/<path d="M/);assert.equal(parseRooms([room])[0].openings[0].visualPath!.nodes[0].radius,40);const reused=reusableRoom(room);reused.openings[0].visualPath!.nodes[0].radius=80;assert.equal(o.visualPath.nodes[0].radius,40);resizeOpeningPath(o,1800);assert.equal(o.visualPath.nodes[1].x,1800);assert.equal(o.width,900);});

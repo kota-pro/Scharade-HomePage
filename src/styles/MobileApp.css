@@ -1,0 +1,24 @@
+body[data-app-shell] {
+  padding-top: 0;
+}
+body[data-app-shell] .user-welcome {
+  display: none;
+}
+body[data-app-shell] > .breadcrumbs {
+  margin-top: 16px;
+}
+body[data-app-shell] .menu-contents {
+  display: none;
+}
+body[data-app-shell] main {
+  padding-bottom: 24px;
+}
+body[data-app-shell] .admin-title,
+body[data-app-shell] .section-title {
+  margin-top: 24px;
+}
+body[data-app-shell] input,
+body[data-app-shell] select,
+body[data-app-shell] textarea {
+  font-size: max(16px, 1em);
+}

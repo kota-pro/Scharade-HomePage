@@ -312,3 +312,74 @@ footer a:focus::after {
         margin-top: 12px;
     }
 }
+footer.footer--signed-in {
+    height: auto;
+    min-height: 441px;
+}
+.footer--signed-in .member-links {
+    flex-wrap: wrap;
+    gap: 12px 28px;
+}
+.footer--signed-in .member-links a {
+    margin-right: 0;
+}
+.footer-logout {
+    margin-top: 16px;
+}
+.footer-logout button {
+    min-height: 44px;
+    padding: 10px 18px;
+    border: 1px solid #fff;
+    border-radius: 0;
+    color: #fff;
+    background: transparent;
+    font: 16px/1.5 "Zen Old Mincho", serif;
+    letter-spacing: 3px;
+    cursor: pointer;
+}
+.footer-logout button:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+.footer-logout button:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 4px;
+}
+.footer-logout button:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
+#footer-logout-status {
+    margin-top: 10px;
+    max-width: 480px;
+    color: #fff;
+    font: 14px/1.7 "Zen Kurenaido", sans-serif;
+    overflow-wrap: anywhere;
+}
+#footer-logout-status:empty {
+    display: none;
+}
+@media (max-width: 1024px) {
+    footer.footer--signed-in {
+        padding-bottom: 160px;
+    }
+}
+@media (max-width: 800px) {
+    footer.footer--signed-in {
+        min-height: 626px;
+    }
+    .footer--signed-in .member-links {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0;
+        text-align: center;
+    }
+    .footer--signed-in .member-links::after {
+        display: none;
+    }
+    .footer-logout {
+        text-align: center;
+    }
+    .footer-logout button {
+        font-size: 13px;
+    }
+}

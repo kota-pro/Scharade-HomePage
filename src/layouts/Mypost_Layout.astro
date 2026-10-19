@@ -1,127 +1,86 @@
 ---
-import Layout from './Layout.astro';
-import '../styles/UA+reset.css';
+import PageTopNav from "../components/PageTopNav.astro";
+import Layout from "./Layout.astro";
+import "../styles/UA+reset.css";
 export interface Props {
-    title: string;
-    from: string | null;
+  title: string;
+  from: string | null;
 }
-const { from } = Astro.props as Props;
+const { from, title } = Astro.props as Props;
 ---
-<Layout>
-<Fragment slot="main-slot">
-    <div class = "section-title"> 
-        <h1>{ from }</h1> <!-- クエリパラメータをここで表示したい -->
-        <div class = "section-title-line"></div>
+
+<Layout title={title}>
+  <Fragment slot="main-slot">
+    <div class="section-title">
+      <h1>{from}</h1>
+      <!-- クエリパラメータをここで表示したい -->
+      <div class="section-title-line"></div>
     </div>
-</Fragment>
-<Fragment slot="menu-slot">
+  </Fragment>
+  <Fragment slot="menu-slot">
     <div class="menu-contents-inner">
-        <a href="#" class="page-top-nav">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"/></svg>
-        </a>
+      <PageTopNav />
     </div>
-</Fragment>
-<Fragment slot="body-slot">
-    <slot /> <!-- コンテンツがここに入る -->
-</Fragment>
+  </Fragment>
+  <Fragment slot="body-slot">
+    <slot />
+    <!-- コンテンツがここに入る -->
+  </Fragment>
 </Layout>
 
 <style>
-    .menu-contents-inner {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-		justify-content: flex-end;
-	}
-    
-    .page-top-nav {
-        width: 50px;
-        height: 50px;
-        background-color: #fff;
-        border: 1px solid #000;
-        border-radius: 10px;
-        cursor: pointer;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        position: sticky;
-        bottom: 50px;
-        z-index: 5;
-        transition: all 0.3s;
-    }
+  .menu-contents-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+  }
 
-    .page-top-nav svg {
-        width: 32px;
-        height: 32px;
-        rotate: 90deg;
-        transform: all 0.3s;
-    }
+  .section-title {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    margin-bottom: 55px;
+  }
 
-    .page-top-nav:hover {
-        background-color: #707070;
-        box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
-    }
+  .section-title h1 {
+    color: #000;
+    font-family: "linotype-didot", serif;
+    font-size: 96px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 14.4px;
+    padding-right: 78px;
+  }
 
-    .page-top-nav:hover svg {
-        filter: invert(100%) sepia(0%) saturate(1152%) hue-rotate(311deg) brightness(99%) contrast(105%);
-    }
+  .section-title-line {
+    width: 100%;
+    position: relative;
+  }
 
+  .section-title-line::after {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: #000;
+    position: absolute;
+    top: 50%;
+    right: 0;
+  }
+
+  @media screen and (max-width: 780px) {
     .section-title {
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
-        margin-bottom: 55px;
+      margin-bottom: 35px;
     }
 
     .section-title h1 {
-        color: #000;
-        font-family: "linotype-didot", serif;
-        font-size: 96px;
-        font-style: normal;
-        font-weight: 400;
-        line-height: normal;
-        letter-spacing: 14.4px;
-        padding-right: 78px;
+      font-size: 48px;
+      letter-spacing: 7.2px;
+      padding-right: 39px;
     }
-
-    .section-title-line {
-        width: 100%;
-        position: relative;
-    }
-
-    .section-title-line::after {
-        content: "";
-        display: block;
-        width: 100%;
-        height: 1px;
-        background: #000;
-        position: absolute;
-        top: 50%;
-        right: 0;
-    }
-
-    @media screen and (max-width: 780px) {
-        .section-title {
-            margin-bottom: 35px;
-        }
-
-        .section-title h1 {
-            font-size: 48px;
-            letter-spacing: 7.2px;
-            padding-right: 39px;
-        }
-
-        .page-top-nav {
-            width: 35px;
-            height: 35px;
-        }
-
-        .page-top-nav svg {
-            width: 22px;
-            height: 22px;
-        }
-    }
+  }
 </style>

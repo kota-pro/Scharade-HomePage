@@ -150,6 +150,11 @@ details[open] .arrow-icon {
 }
 
 
+/* Closed sections must not retain image/blend layers over the other tabs. */
+.member-section-details:not([open]) > .member-grid {
+    display: none;
+}
+
 .member-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr); 
@@ -175,6 +180,9 @@ details[open] .arrow-icon {
 }
 
 .member-image-placeholder {
+    /* Let the square card determine row height, not the image's percentage height. */
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     display: flex;

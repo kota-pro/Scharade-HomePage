@@ -1,6 +1,6 @@
 export const prerender = false;
 
-const SITE_URL = "https://scharade.jp";
+import { SITE_URL } from "../lib/config.ts";
 
 export async function GET() {
   const content = [
@@ -11,6 +11,17 @@ export async function GET() {
     "Disallow: /Signup",
     "Disallow: /Portfolio/edit",
     "Disallow: /404",
+    "Disallow: /503",
+    "Disallow: /Admin",
+    "Disallow: /Member",
+    // Public share pages must remain crawlable so their noindex is visible.
+    "Allow: /Member/events/",
+    "Disallow: /Exhibition",
+    "Disallow: /Mfa",
+    "Disallow: /SearchResult",
+    "Disallow: /ReviewAccount",
+    "Disallow: /ForgotPassword",
+    "Disallow: /ResetPassword",
     `Sitemap: ${SITE_URL}/sitemap.xml`,
     "",
   ].join("\n");

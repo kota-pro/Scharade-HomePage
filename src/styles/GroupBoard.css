@@ -1,0 +1,238 @@
+.group-board {
+  min-width: 0;
+}
+.group-board-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: min(320px, 88%);
+  grid-template-columns: none;
+  gap: 24px;
+  align-items: start;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: auto;
+  padding: 4px 4px 16px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.group-board-grid:focus-visible {
+  outline: 2px solid #555;
+  outline-offset: 2px;
+}
+.group-board-card {
+  border: 1px solid #bbb;
+  padding: 18px;
+  min-width: 0;
+  background: #fff;
+  scroll-snap-align: start;
+  position: relative;
+}
+.group-board-card[hidden],
+.group-move[hidden],
+.group-preference-warnings[hidden] {
+  display: none;
+}
+.group-scroll-help, .group-export-help {
+  font-size: 14px;
+  line-height: 1.8;
+}
+.group-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 16px 0;
+}
+.group-export-actions button, [data-group-download] {
+  min-height: 44px;
+  cursor: pointer;
+}
+.group-board-card[data-copy-group] { cursor: copy; }
+.group-copy-image {
+  border: 1px solid #aaa;
+  background: white;
+  color: #333;
+  font: inherit;
+  font-size: 13px;
+  min-height: 44px;
+  padding: 8px 12px;
+  margin: 0 0 14px;
+  cursor: copy;
+}
+.group-copy-image:focus-visible { outline: 2px solid #555; outline-offset: 2px; }
+.group-export-text { display: grid; gap: 8px; margin: 16px 0; }
+.group-export-text textarea {
+  width: 100%; box-sizing: border-box; resize: vertical;
+  font: inherit; line-height: 1.8; padding: 12px;
+}
+[data-group-download][hidden], .group-export-text[hidden] { display: none; }
+.group-board-card header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #222;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+.group-board-card h4 {
+  font:
+    400 22px/1.5 "Zen Old Mincho",
+    serif;
+  letter-spacing: 2px;
+  margin: 0;
+}
+.group-board-card header > span {
+  font-size: 14px;
+  white-space: nowrap;
+}
+.group-board-card ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.group-person,
+.activity-form .group-person {
+  width: 100%;
+  min-height: 58px;
+  padding: 10px 12px;
+  margin: 0;
+  border: 1px solid transparent;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  text-align: left;
+  background: #fafafa;
+  color: #111;
+  font:
+    18px/1.6 "Zen Kurenaido",
+    sans-serif;
+  letter-spacing: 1.4px;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+button.group-person:not(:disabled):hover,
+.admin-page button.group-person:not(:disabled):hover {
+  border-color: #999;
+  background: #fafafa;
+  color: #111;
+}
+button.group-person[data-warning="true"]:not(:disabled):hover,
+.admin-page button.group-person[data-warning="true"]:not(:disabled):hover {
+  background: #fdeff2;
+}
+.group-person[data-warning="true"],
+.activity-form .group-person[data-warning="true"] {
+  background: #fdeff2;
+}
+.group-person[aria-pressed="true"],
+.activity-form .group-person[aria-pressed="true"] {
+  outline: 2px solid #333;
+  outline-offset: 2px;
+  border-color: #333;
+}
+.group-person-name {
+  text-decoration: underline;
+  text-decoration-color: var(--grade-color);
+  text-decoration-thickness: 3px;
+  text-underline-offset: 6px;
+}
+.group-name-initial {
+  color: var(--gender-color);
+}
+.group-person-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: #444;
+}
+.group-leader {
+  border: 1px solid #aaa;
+  padding: 0 6px;
+  color: #111;
+}
+.activity-form .group-move {
+  font-size: 13px;
+  padding: 8px;
+  width: 100%;
+  margin-top: 14px;
+  background: #fff;
+  border: 1px solid #999;
+}
+.group-color-legend {
+  width: fit-content;
+  max-width: 100%;
+  margin: 20px 0 20px auto;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.group-color-legend p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 6px 0;
+}
+.group-color-legend p > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.group-gender-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.group-grade-key {
+  border-bottom: 3px solid var(--grade-color);
+  padding-bottom: 2px;
+}
+.group-preference-warnings {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 18px;
+  background: #4b454b;
+  color: #fdeff2;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+}
+.group-preference-warnings .group-warning-icon {
+  flex: 0 0 32px;
+}
+.group-preference-warnings p {
+  margin: 0 0 10px;
+}
+.group-preference-warnings ul {
+  margin: 0;
+  padding-left: 20px;
+}
+.group-preference-warnings li {
+  margin-block: 5px;
+}
+[data-swap-status] {
+  min-height: 1.8em;
+}
+@media (max-width: 600px) {
+  .group-board-grid {
+    gap: 18px;
+  }
+  .group-board-card {
+    padding: 14px;
+  }
+  .group-preference-warnings {
+    padding: 14px;
+  }
+}

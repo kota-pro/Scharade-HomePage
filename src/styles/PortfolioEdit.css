@@ -16,7 +16,7 @@
   gap: 1.5rem;
 }
 
-.portfolio-form .form-field input,
+.portfolio-form .form-field input:not([type="checkbox"]),
 .portfolio-form .form-field select,
 .portfolio-form textarea {
   width: 100%;
@@ -26,6 +26,51 @@
   border: 1px solid #000;
   border-radius: 6px;
   padding: 0.85rem 1rem;
+}
+
+.admin-portfolio-fields {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid #909090;
+  border-radius: 6px;
+  background: #fafafa;
+  color: #000;
+  font-family: "Zen Kurenaido";
+}
+
+.admin-portfolio-fields legend {
+  padding: 0 8px;
+  font-size: 16px;
+  letter-spacing: 2px;
+}
+
+.admin-portfolio-fields input:not([type="checkbox"]) {
+  box-sizing: border-box;
+  min-width: 0;
+  background: #fff;
+  color: #000;
+}
+
+.admin-portfolio-fields .admin-executive-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  width: fit-content;
+  cursor: pointer;
+}
+
+.admin-portfolio-fields #field-executive {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  accent-color: #000;
+  color-scheme: light;
 }
 
 .portfolio-form textarea {

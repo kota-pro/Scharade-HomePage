@@ -1,37 +1,38 @@
 ---
+import PageTopNav from "../../components/PageTopNav.astro";
+import "../../styles/PhotoGallery.css";
 export const prerender = false;
 
+
 import Layout from "../../layouts/Layout.astro";
-import { getUserFromRequest } from "../../lib/auth";
+import PortfolioShareButton from "../../components/PortfolioShareButton.astro";
+import PortfolioShareDialog from "../../components/PortfolioShareDialog.astro";
+import { getUserFromRequest, canEditPortfolio } from "../../lib/auth";
 import {
-  getPortfolios,
   getPortfolioDetail,
   normalizePortfolioGrade,
   type Portfolio,
 } from "../../lib/microcms";
 import { optimizeMicrocmsImage } from "../../utils/microcmsImage";
+import { safeExternalUrl } from "../../lib/contentSecurity.ts";
 import "../../styles/UA+reset.css";
 
-export async function getStaticPaths() {
-  const response = await getPortfolios({ fields: ["id"] });
-  return response.contents.map((content) => ({
-    params: { id: content.id },
-  }));
-}
-
 const { id } = Astro.params;
-const portfolio = await getPortfolioDetail<Portfolio>(id as string);
+let portfolio: Portfolio;
+try {
+  portfolio = await getPortfolioDetail<Portfolio>(id as string);
+} catch (error) {
+  if (String(error).includes("404")) return Astro.rewrite("/404");
+  return Astro.rewrite("/503");
+}
 const gradeText = normalizePortfolioGrade(portfolio.grade);
-const genText = portfolio.generation ? `${portfolio.generation}期生` : "";
+const generation = Number.isInteger(portfolio.generation) && Number(portfolio.generation) > 0 && Number(portfolio.generation) <= 100000 ? portfolio.generation : null;
+const externalX = safeExternalUrl(portfolio.x_url);
 const hasPictures = portfolio.pictures && portfolio.pictures.length > 0;
-const ITEMS_PER_PAGE = 100;
-const totalPages = Math.max(
-  1,
-  Math.ceil((portfolio.pictures?.length ?? 0) / ITEMS_PER_PAGE),
-);
 const pageTitle = `${portfolio.name} | Portfolio`;
 const { user } = getUserFromRequest(Astro.request);
-const canEditLink = Boolean(user && user.approved && user.portfolioId === id);
+const canEditLink = canEditPortfolio(user, id ?? "");
+const isOwnPortfolio = Boolean(user && user.portfolioId === id);
 
 const backLinkMap = {
   portfolio: {
@@ -47,6 +48,9 @@ const isFromParam = (value: string | null): value is FromParam => {
 const fromParam = Astro.url.searchParams.get("from");
 const backLink = isFromParam(fromParam) ? backLinkMap[fromParam] : null;
 const backLinkMapJSON = JSON.stringify(backLink);
+
+const ITEMS_PER_PAGE = 100;
+const totalPages = Math.max(1, Math.ceil((portfolio.pictures?.length ?? 0) / ITEMS_PER_PAGE));
 ---
 
 <Layout title={pageTitle}>
@@ -59,18 +63,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
 
   <Fragment slot="menu-slot">
     <div class="menu-contents-inner">
-      <a href="#" class="page-top-nav">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="32"
-          height="32"
-          viewBox="0 0 24 24"
-          ><path
-            fill="currentColor"
-            d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"
-          ></path></svg
-        >
-      </a>
+      <PageTopNav />
     </div>
   </Fragment>
 
@@ -83,10 +76,11 @@ const backLinkMapJSON = JSON.stringify(backLink);
               <h2 class="user-name">{portfolio.name}</h2>
               <div class="sns">
                 {
-                  portfolio.x_url && (
+                  externalX && (
                     <a
-                      href={portfolio.x_url}
+                      href={externalX}
                       target="_blank"
+                      rel="noopener noreferrer"
                       class="social-link"
                     >
                       <img src="/icons/X.svg" alt="X" />
@@ -98,12 +92,14 @@ const backLinkMapJSON = JSON.stringify(backLink);
                     <a
                       href={`https://instagram.com/${portfolio.instagram}`}
                       target="_blank"
+                      rel="noopener noreferrer"
                       class="social-link"
                     >
                       <img src="/icons/Instagram.svg" alt="Instagram" />
                     </a>
                   )
                 }
+                <PortfolioShareButton name={portfolio.name} />
               </div>
             </div>
             <div class="tags">
@@ -132,33 +128,32 @@ const backLinkMapJSON = JSON.stringify(backLink);
                 alt={portfolio.name}
                 class="profile-icon"
               />
-              <span
-                class="suffix"
-                set:html={genText.replace("期", "<br/>期")}
-              />
+              <span class="suffix">{generation && <>{generation}<br/>期生</>}</span>
             </div>
             {gradeText && <p class="profile-grade">{gradeText}</p>}
           </div>
         </div>
       </section>
     </div>
+    <PortfolioShareDialog name={portfolio.name} id={id!} />
 
     <div
       class="back-link"
       id="post-back-link"
       data-map={backLinkMapJSON}
-      hidden={!backLink}
+      hidden={!backLink && !canEditLink}
     >
       {
         canEditLink && (
-          <div class="edit-link-wrapper">
-            <a class="edit-link" href="/Portfolio/edit">
-              Edit my portfolio{" "}
+          <div class="edit-link-wrapper profile-actions">
+            <a class="edit-link profile-action" href={`/Portfolio/edit?id=${encodeURIComponent(id!)}`}>
+              <span>{isOwnPortfolio ? "Edit my portfolio" : "Edit portfolio"}</span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="20"
                 height="20"
                 viewBox="0 -2 24 24"
+                aria-hidden="true"
               >
                 <path
                   fill="currentColor"
@@ -226,21 +221,26 @@ const backLinkMapJSON = JSON.stringify(backLink);
       }
       {
         hasPictures ? (
-          <div class="justified-grid">
+          <div class="justified-grid" data-page-size={ITEMS_PER_PAGE}>
             {portfolio.pictures.map((pic, i) => (
               <a
                 class="photo-wrapper"
-                href={pic.url}
-                data-lightbox={`${portfolio.name}s-works`}
+                hidden={i >= ITEMS_PER_PAGE}
+                data-aspect-ratio={pic.width && pic.height ? pic.width / pic.height : undefined}
+                href={optimizeMicrocmsImage(pic.url,{width:2048,quality:85})}
+                data-lightbox="portfolio"
               >
                 <img
                   src={optimizeMicrocmsImage(pic.url, {
-                    width: 1600,
+                    width: 960,
                     quality: 75,
                   })}
                   alt={`${portfolio.name}の作品 ${i + 1}`}
                   decoding="async"
                   class="gallery-image"
+                  loading="lazy" width={pic.width ?? 960} height={pic.height ?? 640}
+                  srcset={[240,480,720,960,1440,1920].map(w => `${optimizeMicrocmsImage(pic.url,{width:w,quality:78})} ${w}w`).join(", ")}
+                  sizes="(max-width:768px) 80vw, 30vw"
                 />
               </a>
             ))}
@@ -332,40 +332,6 @@ const backLinkMapJSON = JSON.stringify(backLink);
     justify-content: flex-end;
   }
 
-  .page-top-nav {
-    width: 50px;
-    height: 50px;
-    background-color: #fff;
-    border: 1px solid #000;
-    border-radius: 10px;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: sticky;
-    bottom: 50px;
-    z-index: 5;
-    transition: all 0.3s;
-  }
-
-  .page-top-nav svg {
-    width: 32px;
-    height: 32px;
-    rotate: 90deg;
-    transform: all 0.3s;
-  }
-
-  .page-top-nav:hover {
-    background-color: #707070;
-    box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
-  }
-
-  .page-top-nav:hover svg {
-    filter: invert(100%) sepia(0%) saturate(1152%) hue-rotate(311deg)
-      brightness(99%) contrast(105%);
-  }
-
   .portfolio-detail-wrapper {
     width: 100%;
     padding: 0 20px;
@@ -410,20 +376,24 @@ const backLinkMapJSON = JSON.stringify(backLink);
     gap: 15px;
   }
 
-  .sns a {
+  .sns a,
+  .sns :global(.portfolio-share-social) {
     padding: 10px 10px 4px;
   }
 
-  .sns a:hover {
+  .sns a:hover,
+  .sns :global(.portfolio-share-social:hover) {
     background-color: #e0dede;
   }
 
-  .sns a:hover img {
+  .sns a:hover img,
+  .sns :global(.portfolio-share-social:hover svg) {
     filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(335deg)
       brightness(106%) contrast(102%);
   }
 
-  .sns img {
+  .sns img,
+  .sns :global(.portfolio-share-social svg) {
     width: 25px;
     height: 25px;
     cursor: pointer;
@@ -453,6 +423,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
   }
 
   .circle {
+    position: relative;
     width: calc(5 / 24 * 100vw);
     height: calc(5 / 24 * 100vw);
     max-width: 300px;
@@ -688,39 +659,6 @@ const backLinkMapJSON = JSON.stringify(backLink);
     letter-spacing: 3px;
   }
 
-  .justified-grid {
-    display: flex;
-    flex-wrap: wrap;
-    align-content: flex-start;
-    width: 100%;
-  }
-
-  .photo-wrapper {
-    padding: 0;
-    border: none;
-    background-color: #f0f0f0;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    display: block;
-    float: left;
-    margin-right: 12px;
-    margin-bottom: 12px;
-    opacity: 0;
-    transition: opacity 0.5s ease-in-out;
-  }
-
-  .photo-wrapper.is-loaded {
-    opacity: 1;
-  }
-
-  .photo-wrapper img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
   .modal-overlay {
     position: fixed;
     top: 0;
@@ -782,6 +720,28 @@ const backLinkMapJSON = JSON.stringify(backLink);
     margin-left: auto;
   }
 
+  .back-link:has(.profile-actions) {
+    flex-wrap: wrap;
+  }
+
+  .profile-actions {
+    display: flex;
+    align-items: center;
+    max-width: 100%;
+    flex: none;
+  }
+
+  .profile-actions .edit-link {
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  .profile-action svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+  }
+
   @media (max-width: 1200px) {
     .gallery-container-inner,
     .justified-grid {
@@ -800,16 +760,6 @@ const backLinkMapJSON = JSON.stringify(backLink);
       padding-right: 39px;
     }
 
-    .page-top-nav {
-      width: 35px;
-      height: 35px;
-    }
-
-    .page-top-nav svg {
-      width: 22px;
-      height: 22px;
-    }
-
     .profile-grid {
       flex-direction: column;
       align-items: center;
@@ -825,12 +775,17 @@ const backLinkMapJSON = JSON.stringify(backLink);
 
     .tag {
       font-size: 16px;
-      margin-left: 15px;
-      margin-right: 0;
+      margin: 0;
+      max-width: 100%;
+      overflow-wrap: anywhere;
     }
 
     .tags {
-      text-align: right;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px 15px;
+      text-align: center;
     }
 
     .profile-grade {
@@ -858,6 +813,8 @@ const backLinkMapJSON = JSON.stringify(backLink);
       font-size: 40px;
       letter-spacing: 4px;
       text-align: center;
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
 
     .sns {
@@ -865,11 +822,13 @@ const backLinkMapJSON = JSON.stringify(backLink);
       align-items: center;
     }
 
-    .sns a {
+    .sns a,
+    .sns :global(.portfolio-share-social) {
       padding: 8px 8px 2px;
     }
 
-    .sns img {
+    .sns img,
+    .sns :global(.portfolio-share-social svg) {
       width: 20px;
       height: 20px;
     }
@@ -901,6 +860,26 @@ const backLinkMapJSON = JSON.stringify(backLink);
       height: 16px;
     }
 
+    .profile-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      width: 100%;
+      gap: 12px;
+    }
+
+    .profile-actions .edit-link {
+      grid-column: 1;
+      grid-row: 1;
+      justify-self: end;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .back-link:has(.profile-actions) > a {
+      flex-basis: 100%;
+      justify-content: flex-end;
+    }
+
     .section-divider {
       margin: 24px 0 12px;
     }
@@ -927,274 +906,7 @@ const backLinkMapJSON = JSON.stringify(backLink);
   }
 </style>
 
-<script is:inline define:vars={{ ITEMS_PER_PAGE, totalPages }}>
-  const TARGET_HEIGHT = 250;
-  const GAP = 12;
-  const MIN_LAST_ROW_WIDTH = 800;
-
-  function layoutImages() {
-    const container = document.querySelector(".justified-grid");
-    if (!(container instanceof HTMLElement)) return;
-
-    const containerWidth = container.clientWidth;
-    const items = Array.from(
-      container.querySelectorAll(".photo-wrapper"),
-    ).filter(
-      (item) => item instanceof HTMLElement && item.style.display !== "none",
-    );
-
-    const validItems = items.filter((item) => {
-      const img = item.querySelector("img");
-      return img instanceof HTMLImageElement && img.naturalWidth > 0;
-    });
-
-    if (!validItems.length) return;
-
-    let rows = [];
-    let currentRow = [];
-    let currentRowWidth = 0;
-
-    validItems.forEach((item) => {
-      const img = item.querySelector("img");
-      if (!(img instanceof HTMLImageElement)) return;
-
-      const aspectRatio = img.naturalWidth / img.naturalHeight;
-      const itemWidthAtTarget = TARGET_HEIGHT * aspectRatio;
-
-      if (
-        currentRowWidth + itemWidthAtTarget + currentRow.length * GAP >
-        containerWidth
-      ) {
-        rows.push(currentRow);
-        currentRow = [item];
-        currentRowWidth = itemWidthAtTarget;
-      } else {
-        currentRow.push(item);
-        currentRowWidth += itemWidthAtTarget;
-      }
-    });
-
-    if (currentRow.length > 0) rows.push(currentRow);
-
-    if (rows.length > 0) {
-      const lastRow = rows[rows.length - 1];
-      let lastRowWidthAtTarget = 0;
-
-      lastRow.forEach((item) => {
-        const img = item.querySelector("img");
-        if (!(img instanceof HTMLImageElement)) return;
-        lastRowWidthAtTarget +=
-          (img.naturalWidth / img.naturalHeight) * TARGET_HEIGHT;
-      });
-
-      if (lastRowWidthAtTarget < MIN_LAST_ROW_WIDTH && rows.length > 1) {
-        const lastRowItems = rows.pop();
-        if (lastRowItems) {
-          rows[rows.length - 1] = rows[rows.length - 1].concat(lastRowItems);
-        }
-      }
-    }
-
-    rows.forEach((row, rowIndex) => {
-      let totalAR = 0;
-
-      row.forEach((item) => {
-        const img = item.querySelector("img");
-        if (!(img instanceof HTMLImageElement)) return;
-        totalAR += img.naturalWidth / img.naturalHeight;
-      });
-
-      const isLastRow = rowIndex === rows.length - 1;
-      const availableWidth = containerWidth - (row.length - 1) * GAP;
-      const rowHeight = isLastRow ? TARGET_HEIGHT : availableWidth / totalAR;
-
-      row.forEach((item, itemIndex) => {
-        const img = item.querySelector("img");
-        if (!(img instanceof HTMLImageElement)) return;
-        const aspectRatio = img.naturalWidth / img.naturalHeight;
-
-        item.style.width = `${rowHeight * aspectRatio}px`;
-        item.style.height = `${rowHeight}px`;
-        item.style.marginRight =
-          itemIndex === row.length - 1 ? "0" : `${GAP}px`;
-        item.style.marginBottom = `${GAP}px`;
-        item.classList.add("is-loaded");
-      });
-    });
-  }
-
-  function layoutVisibleImagesWhenReady() {
-    const visibleItems = Array.from(
-      document.querySelectorAll(".photo-wrapper"),
-    ).filter(
-      (item) => item instanceof HTMLElement && item.style.display !== "none",
-    );
-
-    if (visibleItems.length === 0) return;
-
-    const pendingImages = [];
-
-    visibleItems.forEach((item) => {
-      const img = item.querySelector("img");
-      if (
-        img instanceof HTMLImageElement &&
-        !(img.complete && img.naturalWidth > 0)
-      ) {
-        pendingImages.push(img);
-      }
-    });
-
-    if (pendingImages.length === 0) {
-      layoutImages();
-      return;
-    }
-
-    let remaining = pendingImages.length;
-    pendingImages.forEach((img) => {
-      const onDone = () => {
-        img.removeEventListener("load", onDone);
-        img.removeEventListener("error", onDone);
-        remaining -= 1;
-        if (remaining === 0) layoutImages();
-      };
-
-      img.addEventListener("load", onDone, { once: true });
-      img.addEventListener("error", onDone, { once: true });
-    });
-  }
-
-  let resizeTimer;
-  window.addEventListener("resize", () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = window.setTimeout(layoutVisibleImagesWhenReady, 100);
-  });
-
-  const items = Array.from(document.querySelectorAll(".photo-wrapper")).filter(
-    (item) => item instanceof HTMLElement,
-  );
-  const inputTop = document.querySelector(".page-input-top");
-  const numbersContainer = document.querySelector(".tab-posts-numbers");
-  const btnFirst = document.querySelector(".first-btn");
-  const btnPrev = document.querySelector(".prev-btn");
-  const btnNext = document.querySelector(".next-btn");
-  const btnLast = document.querySelector(".last-btn");
-  const btnPrevTop = document.querySelector(".prev-btn-top");
-  const btnNextTop = document.querySelector(".next-btn-top");
-
-  let currentPage = 1;
-
-  const renderPage = (page) => {
-    if (page < 1) page = 1;
-    if (page > totalPages) page = totalPages;
-    currentPage = page;
-
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-
-    items.forEach((item, index) => {
-      if (index >= startIndex && index < endIndex) {
-        item.style.display = "block";
-        item.style.width = "320px";
-        item.style.height = `${TARGET_HEIGHT}px`;
-        item.style.marginRight = `${GAP}px`;
-        item.style.marginBottom = `${GAP}px`;
-        item.classList.add("is-loaded");
-      } else {
-        item.style.display = "none";
-      }
-    });
-
-    if (inputTop) inputTop.value = currentPage.toString();
-    updatePaginationNumbers();
-    requestAnimationFrame(layoutVisibleImagesWhenReady);
-  };
-
-  const updatePaginationNumbers = () => {
-    if (!numbersContainer) return;
-    numbersContainer.innerHTML = "";
-
-    const pagesSet = new Set([
-      1,
-      2,
-      totalPages - 1,
-      totalPages,
-      currentPage - 1,
-      currentPage,
-      currentPage + 1,
-    ]);
-
-    const sortedPages = Array.from(pagesSet)
-      .filter((page) => page >= 1 && page <= totalPages)
-      .sort((a, b) => a - b);
-
-    let prevPage = 0;
-    sortedPages.forEach((page) => {
-      if (prevPage > 0 && page - prevPage > 1) {
-        const dots = document.createElement("span");
-        dots.className = "separate-slash";
-        dots.textContent = "...";
-        numbersContainer.appendChild(dots);
-      }
-
-      const link = document.createElement("a");
-      link.className = "tab-posts-number";
-      link.textContent = page.toString();
-      link.href = "#";
-
-      if (page === currentPage) {
-        link.style.textDecoration = "underline";
-        link.style.textDecorationThickness = "0.5px";
-        link.style.textUnderlineOffset = "4px";
-      }
-
-      link.addEventListener("click", (event) => {
-        event.preventDefault();
-        renderPage(page);
-      });
-
-      numbersContainer.appendChild(link);
-      prevPage = page;
-    });
-  };
-
-  inputTop?.addEventListener("change", (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement)) return;
-    const value = parseInt(target.value, 10);
-    if (!Number.isNaN(value)) renderPage(value);
-  });
-
-  btnPrevTop?.addEventListener("click", (event) => {
-    event.preventDefault();
-    renderPage(currentPage - 1);
-  });
-
-  btnNextTop?.addEventListener("click", (event) => {
-    event.preventDefault();
-    renderPage(currentPage + 1);
-  });
-
-  btnFirst?.addEventListener("click", (event) => {
-    event.preventDefault();
-    renderPage(1);
-  });
-
-  btnPrev?.addEventListener("click", (event) => {
-    event.preventDefault();
-    renderPage(currentPage - 1);
-  });
-
-  btnNext?.addEventListener("click", (event) => {
-    event.preventDefault();
-    renderPage(currentPage + 1);
-  });
-
-  btnLast?.addEventListener("click", (event) => {
-    event.preventDefault();
-    renderPage(totalPages);
-  });
-
-  if (items.length > 0) {
-    renderPage(1);
-  }
+<script>
+  import "../../scripts/portfolioGallery";
+  import "../../scripts/portfolioLightbox";
 </script>

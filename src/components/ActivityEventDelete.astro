@@ -1,0 +1,102 @@
+---
+import type { ActivityEvent } from "../lib/activityTypes";
+interface Props {
+  event: ActivityEvent;
+}
+const { event } = Astro.props;
+---
+
+<section class="activity-section">
+  <button class="admin-button" type="button" data-open-event-delete
+    >企画を削除</button
+  >
+  <dialog
+    class="admin-dialog activity-delete-dialog"
+    aria-labelledby="event-delete-title"
+    data-event-delete
+  >
+    <h2 id="event-delete-title">企画を削除</h2>
+    <p>
+      「{
+        event.title
+      }」を削除します。企画内容・投票・関連する通知がメンバー画面から削除されます。この操作は画面から取り消せません。
+    </p>
+    <p>
+      開催済みの確定した班は、次回の同班重複を減らすための履歴として保持します。
+    </p>
+    <form
+      class="activity-form"
+      data-activity-action="event.delete"
+      data-event-id={event.id}
+      data-revision={event.revision}
+      data-redirect="/Member/manage?deleted=1"
+    >
+      <label class="activity-check"
+        ><input
+          type="checkbox"
+          name="confirmation"
+          value="delete"
+          required
+        />この企画を削除します</label
+      >
+      <div class="activity-actions">
+        <button type="button" data-close-event-delete autofocus>戻る</button
+        ><button class="member-submit" type="submit">削除を確定</button>
+      </div>
+      <p data-status role="status" aria-live="polite"></p>
+    </form>
+  </dialog>
+</section>
+<script>
+  const dialog = document.querySelector<HTMLDialogElement>(
+    "[data-event-delete]",
+  );
+  const trigger = document.querySelector<HTMLButtonElement>(
+    "[data-open-event-delete]",
+  );
+  if (dialog && trigger) {
+    let overflow = "";
+    const close = () => {
+      if (dialog.dataset.busy !== "true") dialog.close();
+    };
+    trigger.addEventListener("click", () => {
+      overflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      dialog.querySelector<HTMLFormElement>("form")!.reset();
+      dialog.querySelector<HTMLElement>("[data-status]")!.textContent = "";
+      dialog.showModal();
+    });
+    dialog
+      .querySelector("[data-close-event-delete]")!
+      .addEventListener("click", close);
+    dialog.addEventListener("cancel", (e) => {
+      e.preventDefault();
+      close();
+    });
+    dialog.addEventListener("click", (e) => {
+      const r = dialog.getBoundingClientRect();
+      if (
+        e.target === dialog &&
+        (e.clientX < r.left ||
+          e.clientX > r.right ||
+          e.clientY < r.top ||
+          e.clientY > r.bottom)
+      )
+        close();
+    });
+    dialog.addEventListener("close", () => {
+      document.body.style.overflow = overflow;
+      trigger.focus();
+    });
+  }
+</script>
+<style>
+  .activity-delete-dialog {
+    box-sizing: border-box;
+    max-height: 90dvh;
+    overflow: auto;
+  }
+  .activity-delete-dialog h2 {
+    font-size: 24px;
+  }
+</style>

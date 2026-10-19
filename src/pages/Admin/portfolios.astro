@@ -1,0 +1,99 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { getPortfolios } from "../../lib/microcms";
+import { optimizeMicrocmsImage } from "../../utils/microcmsImage";
+const q = (Astro.url.searchParams.get("q") ?? "").trim().slice(0, 100);
+const page = Math.max(
+  1,
+  Number.parseInt(Astro.url.searchParams.get("page") ?? "1") || 1,
+);
+let result: Awaited<ReturnType<typeof getPortfolios>> | null = null;
+try {
+  result = await getPortfolios({
+    limit: 30,
+    offset: (page - 1) * 30,
+    ...(q ? { q } : {}),
+    orders: "name",
+  });
+} catch {
+  Astro.response.status = 503;
+}
+const href = (p: number) =>
+  `/Admin/portfolios?${new URLSearchParams({ page: String(p), q })}`;
+---
+
+<AdminLayout
+  title="Portfolio管理"
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "管理画面", href: "/Admin" },
+    { label: "Portfolio管理" },
+  ]}
+>
+  <div class="admin-intro">
+    <h2>Portfolio管理</h2><p>編集する会員を選択してください。</p>
+  </div>
+  <section class="admin-section" aria-label="会員の検索と一覧">
+    <form method="get" class="admin-search">
+      <label for="portfolio-query">名前・プロフィールで検索</label><input
+        type="search"
+        name="q"
+        id="portfolio-query"
+        value={q}
+      /><button type="submit">検索する</button>
+    </form>
+    {
+      !result && (
+        <p role="alert">
+          一覧を取得できませんでした。時間をおいて再読み込みしてください。
+        </p>
+      )
+    }
+    {
+      result && (
+        <>
+          <>
+            <p>{result.totalCount}件</p>
+            <div class="admin-portfolio-list">
+              {result.contents.map((p) => (
+                <div class="admin-portfolio-row">
+                  <img
+                    src={
+                      p.icon
+                        ? optimizeMicrocmsImage(p.icon.url, { width: 120 })
+                        : "/images/placeholder_icon.jpeg"
+                    }
+                    alt=""
+                    loading="lazy"
+                  />
+                  <div class="admin-portfolio-identity">
+                    <p>{p.name}</p>
+                    <small>{p.id}</small>
+                  </div>
+                  <div class="admin-portfolio-links">
+                    <a
+                      class="admin-button"
+                      href={`/Portfolio/edit?id=${encodeURIComponent(p.id)}`}
+                    >
+                      編集する
+                    </a>
+                    <a href={`/Portfolio/${p.id}`}>公開ページ</a>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <nav class="admin-pagination" aria-label="ページ送り">
+              {page > 1 && <a href={href(page - 1)}>前へ</a>}
+              <span>
+                {page} / {Math.max(1, Math.ceil(result.totalCount / 30))}
+              </span>
+              {page * 30 < result.totalCount && (
+                <a href={href(page + 1)}>次へ</a>
+              )}
+            </nav>
+          </>
+        </>
+      )
+    }
+  </section>
+</AdminLayout>

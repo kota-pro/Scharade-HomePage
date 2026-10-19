@@ -1,0 +1,34 @@
+---
+import { siteImage, siteImageSet } from "../utils/siteImage";
+interface Props {
+  src: string;
+  alt: string;
+  sizes?: string;
+  eager?: boolean;
+  class?: string;
+  width?: number;
+  height?: number;
+}
+const {
+  src,
+  alt,
+  sizes = "(max-width: 767px) 90vw, 480px",
+  eager = false,
+  class: className,
+  width = 960,
+  height = 640,
+} = Astro.props;
+---
+
+<img
+  src={siteImage(src)}
+  srcset={siteImageSet(src)}
+  sizes={sizes}
+  alt={alt}
+  class={className}
+  width={width}
+  height={height}
+  loading={eager ? "eager" : "lazy"}
+  decoding="async"
+  fetchpriority={eager ? "high" : "auto"}
+/>

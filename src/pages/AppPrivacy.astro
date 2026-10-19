@@ -1,0 +1,53 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Scharadeアプリのプライバシーポリシー">
+  <div slot="main-slot" class="section-title">
+    <h1>Privacy</h1><div class="section-title-line"></div>
+  </div>
+  <article slot="body-slot" class="app-privacy">
+    <h2>Scharadeアプリのプライバシーポリシー</h2>
+    <p>
+      写団シャレードは、Scharadeアプリと公式サイトで、会員の登録・活動への参加・運営に必要な情報を取り扱います。
+    </p>
+    <h3>取り扱う情報と利用目的</h3><p>
+      アカウント名・メールアドレス・権限・認証情報はログインと会員管理に、参加回答・班分け情報・写真展の提出内容・写真・立替申請は各機能の提供に利用します。パスワードの平文を保存しません。
+    </p>
+    <h3>通知と端末の情報</h3><p>
+      通知を許可した端末の通知トークン、アプリ内で生成した端末識別子、OSの種類、通知設定を保存します。端末の広告識別子や連絡先は取得しません。ロック画面へ送信する内容は件名とアプリ内の通知識別子です。通知設定はアプリとOSの設定から変更できます。
+    </p>
+    <h3>利用する外部サービス</h3><p>
+      通知の配信にExpo Push Service、Apple Push Notification service、Firebase
+      Cloud Messagingを利用します。既存の機能ではmicroCMS、Adobe
+      Lightroom、Googleのフォーム・スプレッドシート・Driveを利用します。認証キーはサーバーまたは署名設定で管理し、アプリへ埋め込みません。
+    </p>
+    <h3>写真とファイルのアクセス</h3><p>
+      写真の添付や撮影、保存・共有を選んだときにOSの機能を利用します。選択していない写真や端末内のファイルを一括取得しません。アプリ内の一時共有ファイルは共有操作の完了後に削除します。
+    </p>
+    <h3>公開範囲</h3><p>
+      会員向け・運営向け・管理者向けの情報は権限に応じて制限します。Portfolioや公開設定を選んだ写真・企画は、公式サイトの公開範囲に従って表示されます。
+    </p>
+    <h3>アカウントの削除</h3><p>
+      <a href="/AccountDeletion">アカウント削除の申請ページ</a
+      >で、ログインせず登録メールアドレスの所有確認から申請できます。運営が7日以内にアカウント・Portfolio・提出写真などの関連する個人データを確認して削除し、完了をメールでお知らせします。共有する活動履歴の本人情報は匿名化します。運営は外部サービスとバックアップの削除も確認してから処理を完了します。
+    </p>
+    <h3>お問い合わせ</h3><p>
+      取扱団体：写団シャレード／<a href="mailto:contact@scharade.jp"
+        >contact@scharade.jp</a>
+    </p>
+  </article>
+</Layout>
+<style>
+  .app-privacy {
+    max-width: 800px;
+    margin: 32px auto;
+    line-height: 1.9;
+  }
+  .app-privacy h3 {
+    margin-top: 32px;
+  }
+  .app-privacy p {
+    overflow-wrap: anywhere;
+  }
+</style>

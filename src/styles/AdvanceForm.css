@@ -1,0 +1,85 @@
+/* Contact's white fields, fine rules and serif confirmation dialog. */
+.advance-page { max-width: 920px; margin: 0 auto; }
+.advance-intro { margin-bottom: 40px; }
+.advance-page .advance-hint { margin: 8px 0 0; color: #555; font-size: 14px; line-height: 1.8; letter-spacing: .06em; }
+.advance-form { display: grid; gap: 40px; }
+.advance-row { display: grid; grid-template-columns: minmax(190px, 1fr) minmax(0, 2fr); align-items: start; gap: 20px 36px; }
+.advance-row > * { min-width: 0; }
+.advance-page .advance-label { margin: 10px 0 0; font-size: 18px; letter-spacing: .1em; }
+.advance-field-badge { display: inline-block; margin-left: 6px; color: #666; font-size: 13px; letter-spacing: .04em; }
+.advance-field-badge.is-required { color: #b84545; }
+.advance-account-row { padding: 0 0 24px; border-bottom: 1px solid #ddd; }
+.advance-account-row .advance-label { margin-top: 0; }
+.advance-page #advance-account { margin: 0; overflow-wrap: anywhere; }
+.advance-group { min-width: 0; padding: 0; margin: 0; border: 0; }
+.advance-group legend { width: 100%; margin-bottom: 28px; padding: 0 0 12px; border-bottom: 1px solid #000; font: 20px/1.6 "Zen Old Mincho", serif; letter-spacing: .15em; }
+.advance-group .advance-row + .advance-row { margin-top: 28px; }
+.advance-page .advance-group-hint { margin: -10px 0 24px; }
+.advance-page .advance-input :is(input, textarea, select) { min-height: 50px; border-radius: 5px; font-size: 16px; }
+.advance-page .advance-input select { width: 100%; padding: 10px 12px; border: 1px solid #909090; background: #fff; color: #000; font-family: inherit; }
+.advance-row[hidden], .advance-preview-item[hidden] { display: none; }
+.advance-page .advance-input textarea { min-height: 150px; }
+.advance-input :is(input, textarea)::placeholder { color: #777; opacity: 1; }
+.advance-page #receipt-file { padding: 10px; cursor: pointer; }
+.advance-page #receipt-file::file-selector-button { margin: 0 12px 6px 0; padding: 8px 12px; border: 1px solid #909090; background: #f6f6f6; color: #000; font: inherit; cursor: pointer; }
+.advance-page .advance-receipt-remove { min-height: 44px; margin-top: 6px; padding: 6px 0; border: 0; background: transparent; font-size: 14px; text-decoration: underline; text-underline-offset: 4px; }
+.advance-receipt-image img { display: block; max-width: 100%; max-height: 240px; margin-top: 12px; object-fit: contain; object-position: left center; border: 1px solid #ddd; }
+.advance-confirm-action { display: flex; align-items: center; gap: clamp(20px, 5vw, 70px); margin-top: 8px; }
+.advance-confirm-action::before, .advance-confirm-action::after { content: ""; flex: 1; height: 1px; background: #000; }
+:is(.advance-page, .advance-dialog) .advance-button { flex: none; min-width: 210px; min-height: 70px; display: block; padding: 12px 24px; border: 1px solid #000; background: #fff; color: #000; cursor: pointer; }
+.advance-button > span { display: block; font: 22px/1.5 "Zen Old Mincho", serif; letter-spacing: .15em; }
+.advance-button > small { display: block; font: 13px/1.6 "Zen Kurenaido", sans-serif; letter-spacing: .08em; }
+:is(.advance-page, .advance-dialog) .advance-button:hover:not(:disabled) { background: #707070; color: #fff; }
+.advance-page button:disabled, .advance-dialog button:disabled { opacity: .5; cursor: wait; }
+.advance-page .advance-status { margin: 0; padding: 20px; border-block: 1px solid #909090; }
+.advance-dialog { inset: 0; width: min(1040px, calc(100% - 64px)); max-width: none; max-height: calc(100dvh - 64px); margin: auto; padding: 0; border: 1px solid #000; color: #000; background: #fff; overflow: hidden; font: 16px/1.8 "Zen Kurenaido", sans-serif; letter-spacing: .08em; }
+.advance-dialog[open] { display: flex; flex-direction: column; }
+.advance-dialog::backdrop { background: #0006; }
+.advance-preview-header { display: flex; flex: none; justify-content: space-between; align-items: center; gap: 20px; padding: 24px 32px 18px; }
+.advance-dialog .advance-preview-header h2 { margin: 0; padding-bottom: 8px; border-bottom: 1px solid #000; min-width: 45%; font: 40px/1.3 "linotype-didot", serif; letter-spacing: .15em; }
+.advance-dialog .advance-close { position: relative; flex: none; width: 44px; height: 44px; padding: 0; border: 0; color: #000; background: transparent; cursor: pointer; }
+.advance-close span { position: absolute; top: 50%; left: 5px; width: 34px; height: 1px; background: currentColor; transform: rotate(45deg); }
+.advance-close span:last-child { transform: rotate(-45deg); }
+.advance-preview-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 32px 24px; }
+.advance-dialog p { margin: 0; }
+.advance-dialog #advance-preview-description { margin-bottom: 20px; font-size: 14px; color: #555; }
+.advance-preview-account { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 16px; padding: 16px 0; border-block: 1px solid #ddd; overflow-wrap: anywhere; }
+.advance-preview-account > span { font-family: "Zen Old Mincho", serif; }
+.advance-preview-columns { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 40px; margin-top: 28px; }
+.advance-dialog h3 { margin: 0 0 12px; font: 20px/1.6 "Zen Old Mincho", serif; letter-spacing: .15em; }
+.advance-dialog dl { margin: 0; }
+.advance-preview-item { padding: 12px 0; border-bottom: 1px solid #eee; }
+.advance-preview-item dt { display: flex; align-items: center; justify-content: space-between; gap: 12px; font: 16px/1.6 "Zen Old Mincho", serif; }
+.advance-preview-item dd { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.advance-preview-item dd[data-empty="true"] { color: #666; }
+.advance-preview-item dd[data-preview-field="amount"] { font-size: 26px; letter-spacing: .04em; }
+.advance-dialog .advance-edit { flex: none; min-height: 44px; margin: -6px 0; padding: 6px 8px; border: 0; background: transparent; color: #555; font: 13px/1.6 "Zen Kurenaido", sans-serif; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.advance-preview-footer { flex: none; padding: 20px 32px; border-top: 1px solid #000; }
+.advance-preview-footer .member-status { margin: 0 0 12px; font-size: 14px; max-height: 18dvh; overflow-y: auto; }
+.advance-preview-actions { display: flex; align-items: center; justify-content: flex-end; gap: 32px; }
+.advance-dialog .advance-back-button { min-height: 44px; padding: 8px 0; border: 0; background: transparent; color: #000; font: inherit; text-decoration: underline; text-underline-offset: 6px; cursor: pointer; }
+.advance-dialog :is(button, [tabindex]):focus-visible { outline: 2px solid #000; outline-offset: 3px; }
+@media (max-width: 768px) {
+  .advance-intro { margin-bottom: 28px; }
+  .advance-form { gap: 32px; }
+  .advance-row { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .advance-page .advance-label { margin: 0; font-size: 16px; }
+  .advance-group .advance-row + .advance-row { margin-top: 22px; }
+  .advance-group legend { margin-bottom: 22px; font-size: 18px; }
+  .advance-dialog { width: 100%; max-height: 100dvh; height: 100dvh; border: 0; }
+  .advance-preview-header { padding: calc(16px + env(safe-area-inset-top)) 20px 16px; }
+  .advance-dialog .advance-preview-header h2 { font-size: 32px; min-width: 65%; }
+  .advance-preview-body { flex: 1; padding: 0 20px 20px; }
+  .advance-preview-account { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .advance-preview-columns { grid-template-columns: minmax(0, 1fr); gap: 28px; margin-top: 24px; }
+  .advance-preview-footer { padding: 16px 20px calc(16px + env(safe-area-inset-bottom)); }
+  .advance-preview-actions { justify-content: space-between; gap: 16px; }
+  .advance-dialog .advance-preview-actions .advance-button { min-width: 170px; }
+  .advance-dialog .advance-back-button { font-size: 14px; letter-spacing: .03em; }
+}
+@media (max-width: 360px) {
+  .advance-preview-header, .advance-preview-body { padding-inline: 14px; }
+  .advance-preview-footer { padding-inline: 14px; }
+  .advance-preview-actions { gap: 10px; }
+  .advance-dialog .advance-preview-actions .advance-button { min-width: 158px; padding-inline: 16px; }
+}

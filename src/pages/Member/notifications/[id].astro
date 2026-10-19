@@ -1,0 +1,39 @@
+---
+import ActivityShareButton from "../../../components/ActivityShareButton.astro";
+import MemberLayout from "../../../layouts/MemberLayout.astro";
+import { readActivities } from "../../../lib/activities";
+import { activityDate } from "../../../lib/activityTypes";
+const user = Astro.locals.user!;
+const notice = readActivities().notifications.find(
+  (n) => n.id === Astro.params.id && n.recipientIds.includes(user.id),
+);
+if (!notice) Astro.response.status = 404;
+---
+
+<MemberLayout title={notice?.title || "通知が見つかりません"}>
+  {
+    notice ? (
+      <article data-notification-id={notice.id}>
+        <>
+          <div class="activity-title-row"><h2>{notice.title}</h2><ActivityShareButton kind="notifications" eventId={notice.eventId} id={notice.id} title={notice.title} /></div>
+          <p>
+            {activityDate(notice.createdAt)} · {notice.senderName}
+          </p>
+        </>
+        <div class="activity-prose">{notice.body}</div>
+        {notice.eventId && (
+          <p>
+            <a class="admin-button" href={`/Member/events/${notice.eventId}`}>
+              企画の詳細を見る
+            </a>
+          </p>
+        )}
+        {notice.exhibitionId && <p><a class="admin-button" href={`/Member/exhibitions/${notice.exhibitionId}`}>写真展の参加投票・入力期間を見る</a></p>}
+        <p data-read-status role="status" aria-live="polite" />
+      </article>
+    ) : (
+      <h2>通知が見つかりません。</h2>
+    )
+  }
+  <a class="member-back" href="/Member">メンバーページへ戻る</a>
+</MemberLayout>

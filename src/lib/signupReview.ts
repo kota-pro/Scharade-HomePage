@@ -1,8 +1,5 @@
 import crypto from "node:crypto";
-
-const REVIEW_SECRET =
-  (import.meta as any).env?.SIGNUP_REVIEW_SECRET ??
-  process.env.SIGNUP_REVIEW_SECRET;
+import { env } from "./config.ts";
 
 export type ReviewAction = "approve" | "reject";
 
@@ -13,10 +10,11 @@ type ReviewTokenInput = {
 };
 
 function getSecret() {
-  if (!REVIEW_SECRET) {
-    throw new Error("SIGNUP_REVIEW_SECRET is not configured.");
+  const secret = env("SIGNUP_REVIEW_SECRET");
+  if (secret.length < 32) {
+    throw new Error("SIGNUP_REVIEW_SECRET is not securely configured.");
   }
-  return REVIEW_SECRET;
+  return secret;
 }
 
 function buildPayload({ action, expires, userId }: ReviewTokenInput) {
@@ -45,4 +43,26 @@ export function verifyReviewSignature(
 
 export function assertReviewConfig() {
   getSecret();
+}
+
+export function validateReviewParameters(params: URLSearchParams) {
+  const action = params.get("action") as ReviewAction,
+    userId = params.get("userId") ?? "",
+    expires = params.get("expires") ?? "",
+    signature = params.get("sig") ?? "";
+  if (
+    !["approve", "reject"].includes(action) ||
+    !userId ||
+    !signature ||
+    !Number.isFinite(Date.parse(expires)) ||
+    Date.parse(expires) < Date.now()
+  )
+    return null;
+  try {
+    if (!verifyReviewSignature({ action, userId, expires, signature }))
+      return null;
+  } catch {
+    return null;
+  }
+  return { action, userId };
 }

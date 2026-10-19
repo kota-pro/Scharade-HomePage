@@ -1,0 +1,344 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import AdminAccountRoster from "../../../components/AdminAccountRoster.astro";
+import { readUsers } from "../../../lib/auth";
+import { accountDeletionRevision } from "../../../lib/accountDeletion";
+import {
+  accountRegistration,
+  accountRevision,
+} from "../../../lib/accountManagement";
+import {
+  toAdminAccount,
+  accountDate,
+  type AdminAccount,
+} from "../../../lib/adminAccounts";
+
+let account: AdminAccount | null = null;
+let unavailable = false;
+let registration: ReturnType<typeof accountRegistration> | null = null;
+let revision = "";
+let deletionRevision = "";
+try {
+  const user = readUsers().find((user) => user.id === Astro.params.id);
+  if (user) {
+    account = toAdminAccount(user);
+    registration = accountRegistration(user);
+    revision = accountRevision(user);
+    deletionRevision = accountDeletionRevision(user);
+  } else Astro.response.status = 404;
+} catch {
+  unavailable = true;
+  Astro.response.status = 503;
+}
+---
+
+<AdminLayout
+  title="アカウントの登録内容"
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "管理画面", href: "/Admin" },
+    { label: "アカウント一覧", href: "/Admin/accounts" },
+    { label: "登録内容" },
+  ]}
+>
+  <div class="admin-intro"><h2>アカウントの登録内容</h2></div>
+  <section class="admin-section" aria-label="登録内容">
+    {
+      !account ? (
+        <p role="alert">
+          {unavailable
+            ? "登録内容を取得できませんでした。時間をおいて再読み込みしてください。"
+            : "該当するアカウントが見つかりませんでした。"}
+        </p>
+      ) : (
+        <>
+          <h3>{account.name}</h3>
+          {Astro.url.searchParams.get("saved") === "1" && (
+            <p role="status">登録内容を保存しました。</p>
+          )}
+          <details class="admin-account-editor">
+            <summary>登録内容を編集</summary>
+            <form
+              id="account-editor"
+              data-account-id={account.id}
+              data-revision={revision}
+            >
+              <fieldset>
+                <legend class="visually-hidden">登録内容の編集</legend>
+                <div class="admin-field">
+                  <label for="account-name">アカウント名</label>
+                  <input
+                    id="account-name"
+                    name="name"
+                    type="text"
+                    required
+                    maxlength="80"
+                    value={registration!.name}
+                    aria-describedby="account-name-help"
+                  />
+                  <small id="account-name-help">
+                    ログイン時の挨拶に表示される名前です。
+                  </small>
+                </div>
+                <div class="admin-field">
+                  <label for="account-email">メールアドレス</label>
+                  <input
+                    id="account-email"
+                    name="email"
+                    type="email"
+                    required
+                    maxlength="254"
+                    value={registration!.email}
+                    aria-describedby="account-email-help"
+                  />
+                  <small id="account-email-help">
+                    変更後は新しいメールアドレスでログインします。変更すると本人のログイン状態と発行済みのパスワード再設定リンクが無効になります。
+                  </small>
+                </div>
+                <div class="admin-field">
+                  <label for="account-role">権限</label>
+                  <select
+                    id="account-role"
+                    name="role"
+                    required
+                    aria-describedby="account-role-help"
+                  >
+                    <option
+                      value="member"
+                      selected={registration!.role === "member"}
+                    >
+                      一般会員
+                    </option>
+                    <option
+                      value="staff"
+                      selected={registration!.role === "staff"}
+                    >
+                      運営
+                    </option>
+                    <option
+                      value="admin"
+                      selected={registration!.role === "admin"}
+                    >
+                      管理者
+                    </option>
+                  </select>
+                  <small id="account-role-help">
+                    運営は通知・企画・参加者・班分けを管理できます。管理者は加えてサイト情報・全Portfolio・アカウントを管理できます。権限変更後は本人の再ログインが必要です。最後の承認済み管理者は降格できません。
+                  </small>
+                </div>
+                <div class="admin-field">
+                  <label for="account-portfolio-name">
+                    登録時のPortfolio名
+                  </label>
+                  <input
+                    id="account-portfolio-name"
+                    name="portfolioName"
+                    type="text"
+                    maxlength="50"
+                    value={registration!.portfolioName}
+                    aria-describedby="account-portfolio-help"
+                  />
+                  <small id="account-portfolio-help">
+                    登録情報の記録を修正します。公開ページの名前は、アカウント一覧の「Portfolioを編集」から変更してください。記録がない場合は空欄にできます。
+                  </small>
+                </div>
+              </fieldset>
+              <button class="admin-button" type="submit" disabled>
+                登録内容を保存
+              </button>
+              <p id="account-editor-status" role="status" aria-live="polite" />
+              <noscript>
+                <p>編集にはJavaScriptを有効にしてください。</p>
+              </noscript>
+            </form>
+          </details>
+          <dl class="admin-account-details">
+            <div>
+              <>
+                <dt>アカウント名</dt>
+                <dd>{account.name}</dd>
+              </>
+            </div>
+            <div>
+              <>
+                <dt>メールアドレス</dt>
+                <dd>{account.email}</dd>
+              </>
+            </div>
+            <div>
+              <>
+                <dt>権限</dt>
+                <dd>{account.role}</dd>
+              </>
+            </div>
+            <div>
+              <>
+                <dt>承認状態</dt>
+                <dd>
+                  {account.status}
+                  {!account.approved && (
+                    <small>未承認には承認待ち・承認の取消を含みます。</small>
+                  )}
+                </dd>
+              </>
+            </div>
+            <div>
+              <>
+                <dt>登録日時（日本時間）</dt>
+                <dd>{accountDate(account.createdAt)}</dd>
+              </>
+            </div>
+            <div>
+              <>
+                <dt>承認通知日時（日本時間）</dt>
+                <dd>{accountDate(account.approvalNotifiedAt)}</dd>
+              </>
+            </div>
+            <div>
+              <>
+                <dt>登録時のPortfolio名</dt>
+                <dd>
+                  {account.portfolioName}
+                  <small>
+                    登録時の記録です。現在の表示名はPortfolioで確認できます。
+                  </small>
+                </dd>
+              </>
+            </div>
+            <div>
+              <>
+                <dt>Portfolio ID</dt>
+                <dd>{account.portfolioId ?? "未連携"}</dd>
+              </>
+            </div>
+            <div>
+              <>
+                <dt>メール・パスワードでのログイン</dt>
+                <dd>{account.credentials ? "登録あり" : "登録なし"}</dd>
+              </>
+            </div>
+            <div>
+              <>
+                <dt>Instagram連携</dt>
+                <dd>
+                  {account.instagramLinked ? "連携あり" : "未連携"}
+                  {account.instagramUsername && (
+                    <small>@{account.instagramUsername}</small>
+                  )}
+                </dd>
+              </>
+            </div>
+            <div>
+              <>
+                <dt>アカウントID</dt>
+                <dd>{account.id}</dd>
+              </>
+            </div>
+            <AdminAccountRoster accountId={account.id} />
+          </dl>
+          <div class="admin-account-delete">
+            <h3>アカウントの削除</h3>
+            {account.id === Astro.locals.user?.id ? (
+              <p>ログイン中の管理者自身は削除できません。</p>
+            ) : (
+              <>
+                <p>
+                  アカウントと紐づくPortfolioページ（プロフィール・掲載写真）を削除します。この画面から元に戻すことはできません。
+                </p>
+                <button
+                  id="account-delete-open"
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-controls="account-delete-dialog"
+                  disabled
+                >
+                  アカウントを削除
+                </button>
+                <noscript>
+                  <p>削除操作にはJavaScriptを有効にしてください。</p>
+                </noscript>
+                <dialog
+                  class="admin-dialog"
+                  id="account-delete-dialog"
+                  aria-labelledby="account-delete-title"
+                  aria-describedby="account-delete-description"
+                >
+                  <h2 id="account-delete-title">アカウントの削除確認</h2>
+                  <p id="account-delete-description">
+                    次のアカウントとPortfolioを削除します。対象を確認してください。
+                  </p>
+                  <dl class="admin-delete-target">
+                    <dt>アカウント名</dt>
+                    <dd>{account.name}</dd>
+                    <dt>メールアドレス</dt>
+                    <dd>{account.email}</dd>
+                    <dt>Portfolio ID</dt>
+                    <dd>
+                      {account.portfolioId ?? "未連携（アカウントのみ削除）"}
+                    </dd>
+                  </dl>
+                  <p class="admin-help">
+                    ログイン状態とパスワード再設定リンクも無効になります。画像ファイル自体は他のページで使われる可能性があるため、microCMSのメディアに残ります。
+                  </p>
+                  <form
+                    id="account-delete-form"
+                    class="admin-delete-form"
+                    data-account-id={account.id}
+                    data-revision={deletionRevision}
+                    data-email={account.email}
+                  >
+                    <div class="admin-field">
+                      <label for="account-delete-email">
+                        確認用のメールアドレス
+                      </label>
+                      <input
+                        id="account-delete-email"
+                        name="confirmationEmail"
+                        type="email"
+                        required
+                        maxlength="254"
+                        autocomplete="off"
+                        autocapitalize="none"
+                        spellcheck="false"
+                      />
+                    </div>
+                    <p
+                      id="account-delete-status"
+                      role="status"
+                      aria-live="polite"
+                    />
+                    <div class="admin-actions">
+                      <button
+                        id="account-delete-cancel"
+                        type="button"
+                        autofocus
+                      >
+                        キャンセル
+                      </button>
+                      <button
+                        id="account-delete-submit"
+                        class="admin-button"
+                        type="submit"
+                        disabled
+                      >
+                        削除を確定する
+                      </button>
+                    </div>
+                  </form>
+                </dialog>
+              </>
+            )}
+          </div>
+        </>
+      )
+    }
+    <div class="admin-actions">
+      <a href="/Admin/accounts">アカウント一覧へ戻る</a>
+    </div>
+  </section>
+</AdminLayout>
+
+<script>
+  import "../../../scripts/accountEditor";
+  import "../../../scripts/accountDeletion";
+</script>

@@ -1,0 +1,5 @@
+---
+import StaffLayout from "../../../../../layouts/StaffLayout.astro";
+import ExhibitionAdmin from "../../../../../components/ExhibitionAdmin.astro";
+---
+<StaffLayout title="写真展の参加者一覧"><ExhibitionAdmin id={Astro.params.id!} view="participants" /></StaffLayout>

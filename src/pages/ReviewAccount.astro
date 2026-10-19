@@ -1,0 +1,132 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { readUsers } from "../lib/auth";
+import { validateReviewParameters } from "../lib/signupReview";
+Astro.response.headers.set("Cache-Control", "private, no-store");
+Astro.response.headers.set("Referrer-Policy", "no-referrer");
+Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
+const result = Astro.url.searchParams.get("result");
+const token =
+  result && result !== "email-failed"
+    ? null
+    : validateReviewParameters(Astro.url.searchParams);
+const user = token ? readUsers().find((u) => u.id === token.userId) : null;
+if (!result && !user) Astro.response.status = 410;
+---
+
+<Layout
+  title="アカウント承認"
+  breadcrumbs={[{ label: "Home", href: "/" }, { label: "アカウント承認" }]}
+>
+  <section slot="body-slot" class="review">
+    <h1>アカウント承認</h1>
+    {
+      result === "updated" ? (
+        <p data-review-result="success">アカウントの承認状態を更新しました。</p>
+      ) : user && token ? (
+        <>
+          <>
+            {result === "email-failed" && (
+              <p role="alert" data-review-result="error">
+                承認は完了しましたが、開設完了メールを送信できませんでした。「確定する」で通知を再試行できます。
+              </p>
+            )}
+            <p>
+              {user.name}（{user.email}）を
+              {token.action === "approve" ? "承認" : "非承認"}にします。
+            </p>
+            <form action="/api/auth/review" method="post">
+              {["action", "userId", "expires", "sig"].map((key) => (
+                <input
+                  type="hidden"
+                  name={key}
+                  value={Astro.url.searchParams.get(key) ?? ""}
+                />
+              ))}
+              <button type="submit">確定する</button>
+              <p id="review-status" role="status" aria-live="polite"></p>
+            </form>
+          </>
+        </>
+      ) : (
+        <p>
+          このリンクは無効、期限切れ、または対象のアカウントがありません。管理担当者にご確認ください。
+        </p>
+      )
+    }
+    <a href="/">Homeへ戻る</a>
+  </section>
+</Layout>
+<style>
+  .review {
+    max-width: 700px;
+    line-height: 2;
+    padding: 32px 0;
+    overflow-wrap: anywhere;
+  }
+  .review h1 {
+    font-size: 28px;
+    font-weight: 400;
+    margin-bottom: 24px;
+  }
+  .review button {
+    margin: 20px 0;
+    padding: 10px 24px;
+    min-height: 44px;
+    cursor: pointer;
+    background: white;
+    border: 1px solid #888;
+  }
+  .review > a {
+    display: block;
+    margin-top: 24px;
+  }
+</style>
+
+<script>
+  import { operationNotice } from "../scripts/siteNotice";
+  const result = document.querySelector<HTMLElement>("[data-review-result]");
+  if (result) operationNotice(result.textContent?.trim() ?? "", result.dataset.reviewResult === "error", "account-review");
+  const form = document.querySelector<HTMLFormElement>('form[action="/api/auth/review"]');
+  const status = document.querySelector<HTMLElement>("#review-status");
+  let submitting = false;
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (submitting) return;
+    submitting = true;
+    const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    if (button) button.disabled = true;
+    if (status) status.textContent = "更新しています…";
+    operationNotice("更新しています…", false, "account-review");
+    try {
+      const body = new URLSearchParams();
+      for (const [key, value] of new FormData(form)) {
+        if (typeof value === "string") body.set(key, value);
+      }
+      // Fetch sends the same-site Origin while keeping the signed URL out of Referer.
+      const response = await fetch("/api/auth/review", {
+        method: "POST",
+        body,
+        credentials: "same-origin",
+        referrerPolicy: "no-referrer",
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => null);
+        throw new Error(typeof detail?.message === "string" ? detail.message : "操作を完了できませんでした。もう一度お試しください。");
+      }
+      const destination = new URL(response.url);
+      if (!response.redirected || destination.origin !== location.origin || destination.pathname !== "/ReviewAccount") {
+        throw new Error("結果を確認できませんでした。もう一度お試しください。");
+      }
+      location.assign(destination.href);
+    } catch (error) {
+      const message = error instanceof Error && error.message !== "Failed to fetch"
+        ? error.message
+        : "通信に失敗しました。接続を確認して、もう一度お試しください。";
+      if (status) status.textContent = message;
+      operationNotice(message, true, "account-review");
+      submitting = false;
+      if (button) button.disabled = false;
+    }
+  });
+</script>

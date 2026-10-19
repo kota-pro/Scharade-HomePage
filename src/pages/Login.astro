@@ -1,8 +1,10 @@
 ---
+import PageTopNav from "../components/PageTopNav.astro";
 import "../styles/Auth.css";
 import Layout from "../layouts/Layout.astro";
 
-const next = Astro.url.searchParams.get("next") ?? "/";
+import { safeReturnPath } from "../lib/http";
+const next = safeReturnPath(Astro.url.searchParams.get("next"), "/");
 ---
 
 <Layout>
@@ -15,18 +17,7 @@ const next = Astro.url.searchParams.get("next") ?? "/";
 
   <Fragment slot="menu-slot">
     <div class="menu-contents-inner">
-      <a href="#" class="page-top-nav">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="32"
-          height="32"
-          viewBox="0 0 24 24"
-          ><path
-            fill="currentColor"
-            d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"
-          ></path></svg
-        >
-      </a>
+      <PageTopNav />
     </div>
   </Fragment>
 
@@ -45,6 +36,20 @@ const next = Astro.url.searchParams.get("next") ?? "/";
         <div class="auth-card">
           <h2>Login</h2>
           <small>メールアドレスとパスワードでログイン</small>
+          {
+            Astro.url.searchParams.get("reason") === "email-updated" && (
+              <p class="auth-note" role="status">
+                メールアドレスを変更しました。新しいメールアドレスでログインしてください。
+              </p>
+            )
+          }
+          {
+            Astro.url.searchParams.get("reason") === "role-updated" && (
+              <p class="auth-note" role="status">
+                権限を変更しました。現在のメールアドレスとパスワードで再度ログインしてください。
+              </p>
+            )
+          }
 
           <form class="auth-form" id="login-form" data-next={next}>
             <div class="form-field">
@@ -85,6 +90,7 @@ const next = Astro.url.searchParams.get("next") ?? "/";
           <a class="auth-link" href="/ForgotPassword"
             >パスワードをお忘れですか？</a
           >
+          <a class="auth-link" href="/AccountDeletion">アカウント削除の申請</a>
         </div>
 
         <div class="auth-card">
@@ -101,12 +107,14 @@ const next = Astro.url.searchParams.get("next") ?? "/";
       </div>
 
       <script>
+        import { operationNotice, flashNotice } from "../scripts/siteNotice";
         const form = document.getElementById("login-form") as HTMLFormElement;
         const messageEl = document.getElementById("login-message");
 
         function setMessage(text: string, kind: string = "") {
           if (!messageEl) return;
           messageEl.textContent = text;
+          operationNotice(text,kind === "error","auth-login");
           if (kind) messageEl.dataset.kind = kind;
           else messageEl.removeAttribute("data-kind");
         }
@@ -118,7 +126,7 @@ const next = Astro.url.searchParams.get("next") ?? "/";
 
         form?.addEventListener("submit", async (e) => {
           e.preventDefault();
-          setMessage("");
+          setMessage("ログインしています…");
 
           try {
             const fd = new FormData(form);
@@ -126,6 +134,7 @@ const next = Astro.url.searchParams.get("next") ?? "/";
               email: String(fd.get("email") ?? ""),
               password: String(fd.get("password") ?? ""),
               remember: fd.get("remember") != null,
+              next: getNext(),
             };
             const res = await fetch("/api/auth/login", {
               method: "POST",
@@ -144,7 +153,8 @@ const next = Astro.url.searchParams.get("next") ?? "/";
             }
 
             setMessage("ログインしました。移動します…", "success");
-            window.location.href = getNext();
+            flashNotice("ログインしました。");
+            window.location.href = data?.next === "/Mfa" ? "/Mfa" : getNext();
           } catch {
             setMessage(
               "通信エラーが発生しました。時間をおいて再度お試しください。",

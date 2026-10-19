@@ -522,7 +522,7 @@
   left: 0;
 }
 
-.activity-card:hover::before {
+.activity-card:is(:hover, :focus-within)::before {
   background-color: rgba(71, 71, 71, 0.5);
   transition: background-color 0.3s ease-in-out;
 }
@@ -564,7 +564,7 @@
   margin-left: 10px;
 }
 
-.activity-card:hover h1 {
+.activity-card:is(:hover, :focus-within) h1 {
   margin-top: 50px;
   margin-bottom: 64px;
   transition: 0.3s ease-in-out;
@@ -583,7 +583,7 @@
   transition: position 0.1s ease-in-out 0.3s;
 }
 
-.activity-card:hover p {
+.activity-card:is(:hover, :focus-within) p {
   opacity: 1;
   position: static;
   transition:
@@ -616,7 +616,7 @@
   transition: 0.3s ease-in-out;
 }
 
-#card-1:hover h1 {
+#card-1:is(:hover, :focus-within) h1 {
   margin-top: 20px;
   margin-bottom: 0px;
   transition: 0.3s ease-in-out;
@@ -1187,7 +1187,7 @@
     text-align: center;
   }
 
-  .activity-card:hover h1 {
+  .activity-card:is(:hover, :focus-within) h1 {
     margin-top: 0;
     margin-bottom: 0;
   }
@@ -1258,7 +1258,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: url("/icons/advertising-background.svg");
+    background-image: url("/media/decorations/advertising-background.webp");
     background-repeat: no-repeat;
     background-size: cover;
     object-fit: contain;
@@ -1350,3 +1350,6 @@
     min-height: 200px;
   }
 }
+
+/* Keep the original heading within very narrow phone screens. */
+@media (max-width:360px) { .how-to-join-title h1 {font-size:clamp(34px,11.5vw,40px);} }

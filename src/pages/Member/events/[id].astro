@@ -1,0 +1,156 @@
+---
+import ActivityShareButton from "../../../components/ActivityShareButton.astro";
+import MemberLayout from "../../../layouts/MemberLayout.astro";
+import ActivityHeaderImage from "../../../components/ActivityHeaderImage.astro";
+import ActivityText from "../../../components/ActivityText.astro";
+import {
+  readActivities,
+  memberEvent,
+  publicEvent,
+  ActivityError,
+} from "../../../lib/activities";
+import { readUsers, isStaff } from "../../../lib/auth";
+import { activityDate, voteLabels, eventCategoryLabels } from "../../../lib/activityTypes";
+const user = Astro.locals.user,
+  data = readActivities(),
+  event = data.events.find((e) => e.id === Astro.params.id);
+let detail: (Omit<ReturnType<typeof memberEvent>, "attendees"> & { attendees: { name: string }[] }) | undefined;
+try {
+  if (event) {
+    const users = readUsers();
+    detail = user?.approved && (isStaff(user) || event.recipientIds.includes(user.id))
+      ? memberEvent(data, event, user, users)
+      : { ...publicEvent(event, users), vote: "unanswered", canVote: false, groups: null, groupsNeedReview: false };
+  }
+} catch (error) {
+  if (!(error instanceof ActivityError)) throw error;
+}
+if (!detail) Astro.response.status = 404;
+---
+
+<MemberLayout title={detail?.title || "企画が見つかりません"}>
+  {
+    detail ? (
+      <>
+        <div class="activity-title-row"><h2>
+          {detail.status === "cancelled" && "【中止】"}
+          {detail.title}
+        </h2><ActivityShareButton kind="events" id={detail.id} title={detail.title} /></div>
+        {detail.headerImage && (
+          <ActivityHeaderImage src={detail.headerImage} alt={detail.title} />
+        )}
+        {isStaff(user) && (
+          <p>
+            <a href={`/Member/manage/events/${detail.id}`}>この企画を管理</a>
+          </p>
+        )}
+        <dl class="activity-details">
+          {[
+            ["種類", eventCategoryLabels[detail.category]],
+            ["企画内容", detail.description],
+            [
+              "日時",
+              `${activityDate(detail.startsAt)}〜${activityDate(detail.endsAt)}`,
+            ],
+            ["集合場所", detail.meeting],
+            ["行程", detail.itinerary],
+            ["徴収費", detail.fee],
+            ["参加投票期日", activityDate(detail.deadline)],
+            ["テーマ", detail.theme],
+            ["担当者", detail.ownerName],
+          ].map(([label, value]) => (
+            <>
+              <dt>{label}</dt>
+              <dd class="activity-prose">
+                <ActivityText text={value || "未定"} />
+              </dd>
+            </>
+          ))}
+        </dl>
+        <section class="admin-section">
+          <h3>参加投票</h3>
+          {user?.approved && event?.recipientIds.includes(user.id) && <p>
+            あなたの回答：<strong>{voteLabels[detail.vote]}</strong>
+          </p>}
+          {!user?.approved && <><p>参加投票にはログインが必要です。</p><a class="member-submit" href={`/Login?next=${encodeURIComponent(Astro.url.pathname)}`}>ログインして投票</a></>}
+          {detail.canVote ? (
+            <form
+              class="activity-form"
+              data-activity-action="vote"
+              data-event-id={detail.id}
+            >
+              <label>
+                回答
+                <select name="vote" aria-label="回答" required>
+                  {Object.entries(voteLabels)
+                    .filter(([v]) => v !== "unanswered")
+                    .map(([v, label]) => (
+                      <option value={v} selected={detail!.vote === v}>
+                        {label}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <button class="member-submit" type="submit">
+                投票する
+              </button>
+              <p data-status role="status" aria-live="polite" />
+            </form>
+          ) : (
+            <p>
+              {detail.status === "cancelled"
+                ? "中止された企画です。"
+                : user?.approved && !event?.recipientIds.includes(user.id)
+                  ? "通知先のメンバーのみ投票できます。"
+                  : Date.now() >= Date.parse(detail.deadline)
+                    ? "投票を締め切りました。参加の変更は運営へご連絡ください。" : ""}
+            </p>
+          )}
+          <ul class="activity-counts">
+            {Object.entries(detail.counts).map(([v, n]) => (
+              <li>
+                {voteLabels[v as keyof typeof voteLabels]}：{n}人
+              </li>
+            ))}
+          </ul>
+          <>
+            <h3>参加予定者（{detail.attendees.length}人）</h3>
+            <p>
+              {detail.attendees.map((p) => p.name).join("、") ||
+                "参加回答はまだありません。"}
+            </p>
+          </>
+        </section>
+        {detail.groups && (
+          <section class="admin-section">
+            <h3>公開された班分け</h3>
+            {detail.groupsNeedReview && (
+              <p class="activity-warning">
+                参加者または条件の変更があり、運営が班分けを再確認しています。以下は前回公開した内容です。
+              </p>
+            )}
+            <div class="activity-group-grid">
+              {detail.groups.map((g, i) => (
+                <article class="activity-group">
+                  <h3>{i + 1}班</h3>
+                  <ul>
+                    {g.members.map((p) => (
+                      <li>
+                        {p.name}
+                        {p.id === g.leaderId && "（リーダー）"}
+                        {p.id === user?.id && " ← あなた"}
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+      </>
+    ) : (
+      <h2>企画が見つかりません。</h2>
+    )
+  }
+  <a class="member-back" href="/Member">メンバーページへ戻る</a>
+</MemberLayout>

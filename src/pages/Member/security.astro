@@ -1,0 +1,19 @@
+---
+import MemberLayout from "../../layouts/MemberLayout.astro";
+import { isStaff } from "../../lib/auth.ts";
+const user = Astro.locals.user!, privileged = isStaff(user);
+---
+<MemberLayout title="ログインの安全設定">
+  <h2>ログインの安全設定</h2>
+  <p><a href="/ForgotPassword">パスワードを再設定する</a></p>
+  <p><a href="/Member/account-deletion">アカウントの削除を申請する</a></p>
+  {privileged && <section>
+    <h3>二段階認証</h3>
+    <p>運営・管理者は、ログインごとに登録済みメールへの確認が必要です。</p>
+    <p>確認コードの送信先：<strong>{user.email}</strong></p>
+    <p>メールに届いた6桁のコードを入力してログインします。有効期限は10分です。</p>
+    <p>登録メールを変更する場合やメールを受け取れない場合は、サイト管理者にご連絡ください。</p>
+  </section>}
+  <a class="member-back" href="/Member">メンバーページへ戻る</a>
+</MemberLayout>
+<style>section{margin:24px 0;}strong{overflow-wrap:anywhere;}</style>

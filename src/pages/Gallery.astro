@@ -1,7 +1,10 @@
 ---
+import PageTopNav from "../components/PageTopNav.astro";
+import { getContent } from "../lib/siteContent";
 import Layout from "../layouts/Layout.astro";
 import "../styles/UA+reset.css";
 import "../styles/Gallery.css";
+import { photoLinks } from "../lib/galleryTokens";
 import { getAlbums, getAlbumCoverId } from "../lib/lightroom";
 import {
   GALLERY_CATEGORY_LABELS,
@@ -17,17 +20,19 @@ let apiError = "";
 try {
   const rawAlbums = await getAlbums();
   albums = await Promise.all(
-    rawAlbums.map(async (album) => {
-      const coverId = await getAlbumCoverId(album.id);
-      return { ...album, coverId };
-    }),
+    rawAlbums
+      .filter((album) => !album.hidden || Astro.locals.user?.approved)
+      .map(async (album) => {
+        const coverId = await getAlbumCoverId(album.id);
+        return { ...album, coverId };
+      }),
   );
 } catch (error: any) {
-  console.error("[Gallery] Failed to load albums:", error?.message ?? error);
+  console.error("[Gallery] Failed to load albums");
   apiError = error?.message || "アルバムの読み込みに失敗しました";
 }
 
-const visibleAlbums = albums.filter((album) => !album.hidden);
+const visibleAlbums = albums;
 const years = Array.from(
   new Set(
     visibleAlbums.map((item) =>
@@ -65,41 +70,31 @@ const getAlbumsForYearAndCategory = (
   </Fragment>
   <Fragment slot="menu-slot">
     <div class="menu-contents-inner">
-      <a href="#" class="page-top-nav">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="32"
-          height="32"
-          viewBox="0 0 24 24"
-          ><path
-            fill="currentColor"
-            d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"
-          ></path></svg
-        >
-      </a>
+      <PageTopNav />
     </div>
   </Fragment>
   <Fragment slot="body-slot">
     <div class="explanation-area">
-      <p>サークルの普段の活動を各イベントごとにアルバムで分類しています。</p>
+      <p>{getContent("gallery", Astro.locals.preview).introduction}</p>
     </div>
-    {apiError ? (
-      <div
-        class="api-error"
-        style="text-align:center; padding:3rem 1rem; color:#c0392b;"
-      >
-        <p style="font-size:1.2rem; font-weight:bold;">
-          ⚠ アルバムを読み込めませんでした
-        </p>
-        <p style="font-size:0.9rem; margin-top:0.5rem; color:#666;">
-          Adobe Lightroom APIへの接続に失敗しました。管理者にお問い合わせください。
-        </p>
-      </div>
-    ) : (
-      <div class="tab">
-        {/* 通常表示するタブ (All + 最新3年) */}
-        {
-          displayYears.map((year, index) => {
+    {
+      apiError ? (
+        <div
+          class="api-error"
+          style="text-align:center; padding:3rem 1rem; color:#c0392b;"
+        >
+          <p style="font-size:1.2rem; font-weight:bold;">
+            ⚠ アルバムを読み込めませんでした
+          </p>
+          <p style="font-size:0.9rem; margin-top:0.5rem; color:#666;">
+            Adobe Lightroom
+            APIへの接続に失敗しました。管理者にお問い合わせください。
+          </p>
+        </div>
+      ) : (
+        <div class="tab">
+          {/* 通常表示するタブ (All + 最新3年) */}
+          {displayYears.map((year, index) => {
             const inputId = `year-${year}`;
             return [
               <input
@@ -133,11 +128,19 @@ const getAlbumsForYearAndCategory = (
                               : new Date().getFullYear();
                             return (
                               <div class="gallery-item" data-year={itemYear}>
-                                <a href={`/Gallery/${item.id}`} class="gallery-link">
+                                <a
+                                  href={`/Gallery/${item.id}`}
+                                  class="gallery-link"
+                                >
                                   <div class="image-wrapper">
                                     {item.coverId ? (
                                       <img
-                                        src={`/api/images/${item.coverId}`}
+                                        src={
+                                          photoLinks(item.id, {
+                                            id: item.coverId,
+                                            name: item.payload.name,
+                                          }).src
+                                        }
                                         alt={item.payload.name}
                                         loading="lazy"
                                       />
@@ -150,7 +153,10 @@ const getAlbumsForYearAndCategory = (
                                         />
                                       </div>
                                     )}
-                                    <p class="image-title">{item.payload.name}</p>
+                                    <p class="image-title">
+                                      {item.payload.name}
+                                      {item.hidden ? "（会員限定）" : ""}
+                                    </p>
                                   </div>
                                 </a>
                               </div>
@@ -163,20 +169,16 @@ const getAlbumsForYearAndCategory = (
                 </div>
               </div>,
             ];
-          })
-        }
+          })}
 
-        {/* 非表示で出力しておく古い年度のパネル */}
-        {
-          olderYears.map((year) => {
+          {/* 非表示で出力しておく古い年度のパネル */}
+          {olderYears.map((year) => {
             const inputId = `year-${year}`;
             return [
-              <input
-                type="radio"
-                id={inputId}
-                name="year"
-              />,
-              <label for={inputId} class="older-year-label">{year}</label>,
+              <input type="radio" id={inputId} name="year" />,
+              <label for={inputId} class="older-year-label">
+                {year}
+              </label>,
               <div class="tab-panel">
                 <div class="gallery-content">
                   {GALLERY_CATEGORY_ORDER.map((category) => {
@@ -201,11 +203,19 @@ const getAlbumsForYearAndCategory = (
                               : new Date().getFullYear();
                             return (
                               <div class="gallery-item" data-year={itemYear}>
-                                <a href={`/Gallery/${item.id}`} class="gallery-link">
+                                <a
+                                  href={`/Gallery/${item.id}`}
+                                  class="gallery-link"
+                                >
                                   <div class="image-wrapper">
                                     {item.coverId ? (
                                       <img
-                                        src={`/api/images/${item.coverId}`}
+                                        src={
+                                          photoLinks(item.id, {
+                                            id: item.coverId,
+                                            name: item.payload.name,
+                                          }).src
+                                        }
                                         alt={item.payload.name}
                                         loading="lazy"
                                       />
@@ -218,7 +228,10 @@ const getAlbumsForYearAndCategory = (
                                         />
                                       </div>
                                     )}
-                                    <p class="image-title">{item.payload.name}</p>
+                                    <p class="image-title">
+                                      {item.payload.name}
+                                      {item.hidden ? "（会員限定）" : ""}
+                                    </p>
                                   </div>
                                 </a>
                               </div>
@@ -231,22 +244,24 @@ const getAlbumsForYearAndCategory = (
                 </div>
               </div>,
             ];
-          })
-        }
+          })}
 
-        {/* 古い年度を選択するためのセレクトボックス */}
-        {olderYears.length > 0 && (
-          <div class="tab-select-wrapper">
-            <select id="older-years-select" aria-label="過去の年度を選択">
-              <option value="" disabled selected>...</option>
-              {olderYears.map((year) => (
-                <option value={year}>{year}</option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-    )}
+          {/* 古い年度を選択するためのセレクトボックス */}
+          {olderYears.length > 0 && (
+            <div class="tab-select-wrapper">
+              <select id="older-years-select" aria-label="過去の年度を選択">
+                <option value="" disabled selected>
+                  ...
+                </option>
+                {olderYears.map((year) => (
+                  <option value={year}>{year}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+      )
+    }
   </Fragment>
 </Layout>
 
@@ -265,8 +280,11 @@ const getAlbumsForYearAndCategory = (
   });
 
   // タブとセレクトボックスの連携制御
-  const selectEl = document.getElementById("older-years-select") as HTMLSelectElement | null;
-  const tabInputs = document.querySelectorAll<HTMLInputElement>('input[name="year"]');
+  const selectEl = document.getElementById(
+    "older-years-select",
+  ) as HTMLSelectElement | null;
+  const tabInputs =
+    document.querySelectorAll<HTMLInputElement>('input[name="year"]');
   const selectWrapper = document.querySelector(".tab-select-wrapper");
 
   if (selectEl) {
@@ -274,7 +292,9 @@ const getAlbumsForYearAndCategory = (
       const target = e.target as HTMLSelectElement;
       const selectedYear = target.value;
       if (selectedYear) {
-        const targetInput = document.getElementById(`year-${selectedYear}`) as HTMLInputElement | null;
+        const targetInput = document.getElementById(
+          `year-${selectedYear}`,
+        ) as HTMLInputElement | null;
         if (targetInput) {
           targetInput.checked = true;
           selectWrapper?.classList.add("active");
@@ -287,8 +307,11 @@ const getAlbumsForYearAndCategory = (
     input.addEventListener("change", () => {
       const inputId = input.id;
       const year = inputId.replace("year-", "");
-      
-      if (selectEl && !Array.from(selectEl.options).some(opt => opt.value === year)) {
+
+      if (
+        selectEl &&
+        !Array.from(selectEl.options).some((opt) => opt.value === year)
+      ) {
         selectEl.value = "";
         selectWrapper?.classList.remove("active");
       }

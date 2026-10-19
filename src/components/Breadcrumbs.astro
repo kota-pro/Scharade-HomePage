@@ -1,0 +1,173 @@
+---
+import type { BreadcrumbItem } from "../lib/breadcrumbs";
+interface Props {
+  items: BreadcrumbItem[];
+}
+const { items } = Astro.props;
+const user = Astro.locals.user;
+const greeting = user ? `${user.name}さん、ようこそ。` : "";
+---
+
+<div class="breadcrumb-bar">
+<nav class="breadcrumbs" aria-label="パンくずリスト">
+  <ol>
+    {
+      items.map((item, index) => (
+        <li>
+          {index > 0 && (
+            <span class="separator" aria-hidden="true">
+              /
+            </span>
+          )}
+          {item.href && index < items.length - 1 ? (
+            <a href={item.href}>{item.label}</a>
+          ) : (
+            <span
+              aria-current={index === items.length - 1 ? "page" : undefined}
+            >
+              {item.label}
+            </span>
+          )}
+        </li>
+      ))
+    }
+  </ol>
+</nav>
+{
+  user && (
+    <a
+      class="user-welcome"
+      href="/Member"
+      title={greeting}
+      aria-label={`${greeting} My pageへ`}
+      data-compact
+    >
+      <span class="welcome-full">{greeting}</span>
+      <span class="welcome-short">My pageへ</span>
+    </a>
+  )
+}
+</div>
+
+<script>
+  const bar = document.querySelector<HTMLElement>(".breadcrumb-bar");
+  const list = bar?.querySelector<HTMLOListElement>(".breadcrumbs ol");
+  const welcome = bar?.querySelector<HTMLAnchorElement>(".user-welcome");
+  const full = welcome?.querySelector<HTMLElement>(".welcome-full");
+  if (bar && list && welcome && full) {
+    const update = () => {
+      // Measure the unwrapped labels independently of the current compact state.
+      // Restore these temporary styles before the next paint.
+      list.style.width = "max-content";
+      list.style.maxWidth = "none";
+      list.style.flexWrap = "nowrap";
+      const required = list.getBoundingClientRect().width + full.getBoundingClientRect().width;
+      list.style.removeProperty("width");
+      list.style.removeProperty("max-width");
+      list.style.removeProperty("flex-wrap");
+      const style = getComputedStyle(bar);
+      const available = bar.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      welcome.toggleAttribute("data-compact", required + parseFloat(style.columnGap) > available);
+    };
+    let frame = 0;
+    const schedule = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        update();
+      });
+    };
+    new ResizeObserver(schedule).observe(bar);
+    window.addEventListener("resize", schedule);
+    document.fonts.ready.then(schedule);
+    document.fonts.addEventListener("loadingdone", schedule);
+    update();
+  }
+</script>
+
+<style>
+  .breadcrumb-bar {
+    box-sizing: border-box;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    width: 100%;
+    padding: 16px var(--site-inline-gutter);
+    font-family: "Zen Kurenaido", sans-serif;
+    font-size: 0.75rem;
+    font-weight: 400;
+    font-style: normal;
+    line-height: 1.8;
+    color: #909090;
+  }
+  .breadcrumbs {
+    flex: 1;
+    min-width: 0;
+  }
+  ol {
+    list-style: none;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 0;
+    margin: 0;
+    padding: 0;
+  }
+  li {
+    display: flex;
+    align-items: baseline;
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .separator {
+    padding: 0 10px;
+    flex: none;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+    min-height: 24px;
+    display: inline-flex;
+    align-items: center;
+  }
+  a:hover,
+  a:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  span[aria-current] {
+    min-width: 0;
+  }
+  .user-welcome {
+    position: relative;
+    flex: none;
+    white-space: nowrap;
+    color: #000;
+  }
+  .welcome-full {
+    display: inline-block;
+    width: max-content;
+  }
+  .welcome-short {
+    display: none;
+  }
+  .user-welcome[data-compact] .welcome-full {
+    position: absolute;
+    right: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .user-welcome[data-compact] .welcome-short {
+    display: inline;
+  }
+  @media (max-width: 767px) {
+    .breadcrumb-bar {
+      font-size: clamp(0.75rem, 3.2vw, 0.875rem);
+      padding-block: 12px;
+    }
+    .separator {
+      padding-inline: 8px;
+    }
+  }
+</style>

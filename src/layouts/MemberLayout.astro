@@ -1,0 +1,35 @@
+---
+import PageTopNav from "../components/PageTopNav.astro";
+import Layout from "./Layout.astro";
+import ActivityShareDialog from "../components/ActivityShareDialog.astro";
+import "../styles/Admin.css";
+import "../styles/Member.css";
+import "../styles/Activities.css";
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+---
+
+<Layout title={title}>
+  <div slot="main-slot" class="admin-title member-title">
+    <h1>Member</h1><div
+      class="admin-title-line"
+      aria-hidden="true"
+    >
+    </div>
+  </div>
+  <Fragment slot="body-slot"><div class="admin-page member-page">
+    <noscript
+      ><p class="member-notice">
+        通知の既読・投票・保存操作にはJavaScriptを有効にしてください。
+      </p></noscript
+    ><slot />
+  </div><ActivityShareDialog /></Fragment>
+  <div slot="menu-slot" class="admin-menu">
+    <PageTopNav />
+  </div>
+</Layout>
+<script>
+  import "../scripts/activities";
+</script>

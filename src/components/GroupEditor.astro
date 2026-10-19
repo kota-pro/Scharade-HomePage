@@ -1,0 +1,313 @@
+---
+import {
+  type ActivityEvent,
+  type Participant,
+  type PublishedGroups,
+} from "../lib/activityTypes";
+import GroupPersonPicker from "./GroupPersonPicker.astro";
+import { isAdmin } from "../lib/auth";
+import { displayName } from "../lib/groupPresentation";
+import GroupBoard from "./GroupBoard.astro";
+import GroupWarningIcon from "./GroupWarningIcon.astro";
+interface Props {
+  plan: Pick<
+    ActivityEvent,
+    "id" | "title" | "revision" | "rules" | "draftGroups" | "publishedGroups"
+  >;
+  summary: {
+    people: Participant[];
+    publishedPeople: Participant[];
+    source: string;
+    previous?: { title: string; publishedGroups?: PublishedGroups };
+    problems: string[];
+    stale: boolean;
+    score: number[] | null;
+  };
+  destination: string;
+  standalone?: boolean;
+}
+const { plan, summary, destination, standalone = false } = Astro.props;
+const { people, source, previous, problems, stale, score } = summary;
+const choices = people.map((p) => ({ id: p.id, name: displayName(p) }));
+const missing = people.filter((p) => !p.gender || !p.grade);
+const rules = plan.rules;
+const groups = plan.draftGroups?.groups || [];
+---
+
+<section class="admin-section" id="grouping">
+  <h2>班分け（参加 {people.length}人）</h2>
+  <p>
+    参照履歴：{
+      previous ? previous.title : "前回の班分けなし"
+    }。女性・1年生は各班0人または2人以上にします。
+  </p>
+  <p>
+    優先順位は「別の班にする → 同じ班にする →
+    前回との重複を避ける」です。満たせない指定や前回の重複は、名前の背景と下の警告で確認できます。
+  </p>
+  {
+    missing.length > 0 && (
+      <p class="activity-warning">
+        班分け情報が未登録：{missing.map(displayName).join("、")}。
+        管理者にGoogle名簿の確認・更新を依頼してから生成してください。
+        {isAdmin(Astro.locals.user) && <a href="/Admin/grouping-roster">Google名簿を確認</a>}
+      </p>
+    )
+  }
+  <form
+    class="activity-form"
+    data-activity-action="groups.rules"
+    data-event-id={standalone ? undefined : plan.id}
+    data-run-id={standalone ? plan.id : undefined}
+    data-endpoint={standalone ? "/api/member/grouping" : undefined}
+    data-revision={plan.revision}
+    data-people={JSON.stringify(choices)}
+    data-redirect={destination}
+  >
+    <h3>班分け条件</h3>
+    <div class="activity-fields">
+      <label
+        >班の数<input
+          name="count"
+          type="number"
+          min="1"
+          max="200"
+          value={rules.count}
+          required
+        /></label
+      ><label
+        >1班の最低人数<input
+          name="min"
+          type="number"
+          min="1"
+          max="200"
+          value={rules.min}
+          required
+        /></label
+      ><label
+        >1班の最大人数<input
+          name="max"
+          type="number"
+          min="1"
+          max="200"
+          value={rules.max}
+          required
+        /></label
+      >
+    </div>
+    <div data-leaders class="activity-fields">
+      {
+        Array.from({ length: rules.count }, (_, i) => (
+          <label>
+            {i + 1}班のリーダー
+            <select name="leader" aria-label={`${i + 1}班のリーダー`} required>
+              <option value="">選択してください</option>
+              {people.map((p) => (
+                <option value={p.id} selected={rules.leaders[i] === p.id}>
+                  {displayName(p)}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))
+      }
+    </div>
+    {
+      [
+        ["together", "同じ班にする"],
+        ["apart", "別の班にする"],
+      ].map(([key, label]) => (
+        <fieldset data-pairs={key}>
+          <>
+            <legend>{label}</legend>
+            <div data-pair-list>
+              {rules[key as "together" | "apart"].map((pair, pairIndex) => (
+                <fieldset class="activity-pair" data-pair>
+                  <legend data-pair-title>ペア{pairIndex + 1}</legend>
+                  <div class="activity-pair-people">
+                    {pair.map((id, index) => (
+                      <GroupPersonPicker
+                        people={choices}
+                        current={id}
+                        label={`${label}のペア${pairIndex + 1}の${index + 1}人目`}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    data-remove-pair
+                    aria-label={`${label}のペア${pairIndex + 1}を削除`}
+                  >
+                    ペアを削除
+                  </button>
+                </fieldset>
+              ))}
+            </div>
+            <button type="button" data-add-pair>
+              ペアを追加
+            </button>
+          </>
+        </fieldset>
+      ))
+    }
+    <button class="member-submit" type="submit">条件を保存</button><p
+      data-status
+      role="status"
+      aria-live="polite"
+    >
+    </p>
+  </form>
+  <form
+    class="activity-form"
+    data-activity-action="groups.generate"
+    data-event-id={standalone ? undefined : plan.id}
+    data-run-id={standalone ? plan.id : undefined}
+    data-endpoint={standalone ? "/api/member/grouping" : undefined}
+    data-revision={plan.revision}
+    data-redirect={destination}
+  >
+    <p>保存した条件で生成します。再生成すると編集中の班案が置き換わります。</p>
+    <button class="member-submit" type="submit" disabled={missing.length > 0}
+      >班を自動生成</button
+    ><p data-status role="status" aria-live="polite"></p>
+  </form>
+  {
+    plan.draftGroups && (
+      <>
+        <h3>編集中の班案</h3>
+        {stale && (
+          <p class="activity-warning">
+            参加者・属性・条件・履歴が変わっています。全員の配置とリーダーを確認して保存するか、再生成してください。
+          </p>
+        )}
+        {score && (
+          <p>
+            前回と同班のペア：{score[1]}
+            組。指定の優先順位に従って生成した案です。必要に応じて手動で調整してください。
+          </p>
+        )}
+        <form
+          class="activity-form"
+          data-activity-action="groups.save"
+          data-event-id={standalone ? undefined : plan.id}
+          data-run-id={standalone ? plan.id : undefined}
+          data-endpoint={standalone ? "/api/member/grouping" : undefined}
+          data-revision={plan.revision}
+          data-source={source}
+          data-people={JSON.stringify(people)}
+          data-rules={JSON.stringify(rules)}
+          data-history={JSON.stringify(previous?.publishedGroups?.groups || [])}
+          data-redirect={destination}
+        >
+          <p>
+            入れ替える1人目と2人目の名前を順にクリックしてください。リーダーの変更は上の班分け条件で保存してください。
+          </p>
+          <p data-swap-status role="status" aria-live="polite">
+            入れ替える1人目を選択してください。
+          </p>
+          <button type="button" data-cancel-swap hidden>
+            選択を解除
+          </button>
+          {people.map((p) => (
+            <input
+              type="hidden"
+              data-assignment={p.id}
+              value={
+                groups.findIndex((g) => g.memberIds.includes(p.id)) < 0
+                  ? ""
+                  : String(groups.findIndex((g) => g.memberIds.includes(p.id)))
+              }
+            />
+          ))}
+          <GroupBoard
+            people={people}
+            groups={Array.from({ length: rules.count }, (_, i) => ({
+              leaderId: rules.leaders[i] || "",
+              memberIds: groups[i]?.memberIds || [],
+            }))}
+            rules={rules}
+            history={previous?.publishedGroups?.groups || []}
+            editable
+          />
+          <div data-group-summary aria-live="polite">
+            <div data-group-composition />
+            <div
+              class="group-preference-warnings"
+              data-group-errors
+              hidden={!problems.length}
+            >
+              <GroupWarningIcon />
+              <div>
+                <p>要修正：</p>
+                <ul data-group-error-list>
+                  {problems.map((problem) => (
+                    <li>{problem}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <p data-group-valid hidden={problems.length > 0}>
+              必須条件を満たしています。保存後に確定できます。
+            </p>
+          </div>
+          <>
+            <button class="member-submit" type="submit">
+              班案を保存・再確認
+            </button>
+            <p data-status role="status" aria-live="polite" />
+          </>
+        </form>
+        <form
+          class="activity-form"
+          data-activity-action="groups.publish"
+          data-event-id={standalone ? undefined : plan.id}
+          data-run-id={standalone ? plan.id : undefined}
+          data-endpoint={standalone ? "/api/member/grouping" : undefined}
+          data-revision={plan.revision}
+          data-source={source}
+          data-redirect={destination}
+        >
+          <p>
+            {standalone
+              ? "班案を確定して保存します。次回の班分けの参照履歴に選べます。メンバーへの通知は送信されません。"
+              : "保存済みの班案を公開し、参加者全員のMemberページに通知します。"}
+          </p>
+          <>
+            <button
+              class="member-submit"
+              type="submit"
+              disabled={stale || problems.length > 0 || missing.length > 0}
+            >
+              {standalone ? "班を確定して保存" : "班を確定・公開"}
+            </button>
+            <p data-status role="status" aria-live="polite" />
+          </>
+        </form>
+      </>
+    )
+  }
+  {
+    plan.publishedGroups && (
+      <section class="activity-subsection">
+        <>
+          <h3>
+            {standalone ? "確定済みの班" : "公開中の班"}（第
+            {plan.publishedGroups.version}版）
+          </h3>
+          <GroupBoard
+            people={summary.publishedPeople}
+            exportable
+            exportTitle={`${plan.title}（第${plan.publishedGroups.version}版）`}
+            groups={plan.publishedGroups.groups}
+            rules={plan.publishedGroups.rules || rules}
+            history={
+              plan.publishedGroups.previousGroups ||
+              previous?.publishedGroups?.groups ||
+              []
+            }
+          />
+        </>
+      </section>
+    )
+  }
+</section>

@@ -1,57 +1,35 @@
 import type { APIRoute } from "astro";
-import { getAlbumPhotos, getAlbumPhotosPage } from "../../../lib/lightroom";
-
-export const GET: APIRoute = async ({ params, url }) => {
-  const albumId = params.id;
-
-  if (!albumId) {
-    return new Response(JSON.stringify({ error: "Album id is required." }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  const cursor = url.searchParams.get("cursor");
-  const fetchRemaining = url.searchParams.get("remaining") === "1";
-  const offset = Number(url.searchParams.get("offset") ?? "0");
-
+import { getAlbumPhotosPage } from "../../../lib/lightroom.ts";
+import { accessibleAlbum } from "../../../lib/galleryAccess.ts";
+import { photoLinks } from "../../../lib/galleryTokens.ts";
+import { json } from "../../../lib/http.ts";
+export const GET: APIRoute = async ({ params, url, locals }) => {
   try {
-    if (fetchRemaining) {
-      const photos = await getAlbumPhotos(albumId);
-      const safeOffset = Number.isFinite(offset) ? Math.max(0, offset) : 0;
-
-      return new Response(
-        JSON.stringify({
-          photos: photos.slice(safeOffset),
-          nextCursor: null,
-        }),
-        {
-          status: 200,
-          headers: {
-            "Content-Type": "application/json",
-            "Cache-Control": "no-store",
+    const album = await accessibleAlbum(params.id ?? "", locals.user);
+    if (!album) return json({ error: "アルバムが見つかりません。" }, 404);
+    const cursor = url.searchParams.get("cursor");
+    let page;
+    try {
+      page = await getAlbumPhotosPage(album.id, { cursor });
+    } catch (error) {
+      if (cursor)
+        return json(
+          {
+            error:
+              "読み込み位置が無効か期限切れです。ページを再読み込みしてください。",
           },
-        },
-      );
+          400,
+        );
+      throw error;
     }
-
-    const page = await getAlbumPhotosPage(albumId, { cursor });
-
-    return new Response(JSON.stringify(page), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-store",
-      },
+    return json({
+      photos: page.photos.map((photo) => photoLinks(album.id, photo)),
+      nextCursor: page.nextCursor,
     });
-  } catch (error) {
-    console.error("[Gallery API] Failed to load album photos:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to load album photos." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
+  } catch {
+    return json(
+      { error: "写真を取得できません。時間をおいて再度お試しください。" },
+      503,
     );
   }
 };

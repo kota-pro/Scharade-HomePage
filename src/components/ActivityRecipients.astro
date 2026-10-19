@@ -1,0 +1,55 @@
+---
+import { readActivities } from "../lib/activities.ts";
+import { notificationRecipient } from "../lib/notificationRecipients.ts";
+import { gradeLabels, type Grade } from "../lib/activityTypes.ts";
+interface Props {
+  users: { id: string; name: string; grade?: Grade }[];
+  selected?: string[];
+  disabled?: boolean;
+  legend?: string;
+  fieldName?: string;
+}
+const {
+  users,
+  selected = users.map((u) => u.id),
+  disabled = false,
+  legend = "通知先",
+  fieldName = "recipientIds",
+} = Astro.props;
+const activities = readActivities();
+const recipients = users.map(user => user.grade && Object.hasOwn(gradeLabels, user.grade) ? { ...user, gradeLabel: gradeLabels[user.grade] } : notificationRecipient(user, activities));
+---
+
+<fieldset class="activity-recipients" disabled={disabled}>
+  <legend>{legend}</legend>
+  <div class="activity-actions">
+    <button type="button" data-select-recipients="all">全選択</button
+    ><button type="button" data-select-recipients="none">全解除</button>
+  </div>
+  <label>学年別選択<select data-recipient-grade><option value="">すべての学年</option>{Object.entries(gradeLabels).map(([value,label]) => <option value={value}>{label}</option>)}<option value="unknown">学年未設定</option></select></label>
+  <div class="activity-actions"><button type="button" data-select-recipients="grade-all">この学年を選択</button><button type="button" data-select-recipients="grade-none">この学年を解除</button></div>
+  <label
+    >メンバーを検索<input
+      type="search"
+      data-recipient-search
+      placeholder="名前を入力"
+    /></label
+  >
+  <p data-recipient-count role="status" aria-live="polite"></p>
+  <div class="activity-recipient-options">
+    {
+      recipients.map((u) => (
+        <label class="activity-check" data-recipient-name={u.name} data-recipient-grade={u.grade}>
+          <input
+            type="checkbox"
+            name={fieldName}
+            value={u.id}
+            data-recipient-id={u.id}
+            checked={selected.includes(u.id)}
+          />
+          {u.name}（{u.gradeLabel}）
+        </label>
+      ))
+    }
+  </div>
+</fieldset>

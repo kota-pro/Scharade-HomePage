@@ -1,0 +1,46 @@
+---
+import StaffLayout from "../../../../layouts/StaffLayout.astro";
+import GroupingRunDelete from "../../../../components/GroupingRunDelete.astro";
+import GroupingRunForm from "../../../../components/GroupingRunForm.astro";
+import GroupEditor from "../../../../components/GroupEditor.astro";
+import {
+  readGroupingTools,
+  groupingToolSummary,
+} from "../../../../lib/groupingTools";
+import { readActivities } from "../../../../lib/activities";
+const data = readGroupingTools(),
+  activities = readActivities();
+const run = data.runs.find((r) => r.id === Astro.params.id);
+if (!run) Astro.response.status = 404;
+---
+
+<StaffLayout title={run?.title || "班分けが見つかりません"}>
+  {
+    run ? (
+      <>
+        <h2>{run.title}</h2>
+        {Astro.url.searchParams.has("saved") && (
+          <p role="status">保存しました。</p>
+        )}
+        <details>
+          <>
+            <summary>参加者・参照する履歴を変更</summary>
+            <GroupingRunForm activities={activities} data={data} run={run} />
+          </>
+        </details>
+        <GroupEditor
+          plan={run}
+          summary={groupingToolSummary(activities, data, run)}
+          destination={`/Member/manage/grouping/${run.id}#grouping`}
+          standalone
+        />
+        <GroupingRunDelete run={run} />
+      </>
+    ) : (
+      <h2>班分けが見つかりません。</h2>
+    )
+  }
+  <a class="member-back" href="/Member/manage/grouping"
+    >班分け自動生成ツールへ戻る</a
+  >
+</StaffLayout>

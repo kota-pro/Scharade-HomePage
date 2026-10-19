@@ -1,6 +1,11 @@
 ---
+import PageTopNav from "../components/PageTopNav.astro";
 import '../styles/UA+reset.css';
 import Layout from "../layouts/Layout.astro";
+import {getContent} from "../lib/siteContent";
+const sections=getContent("disclaimer",Astro.locals.preview).sections;
+const subheadings=["個人情報の利用","アクセス解析ツールについて","コメントについて"];
+const paragraphs=(text:string) => { const result:{heading?:string;text:string}[]=[]; for(const part of text.split("\n\n")){if(subheadings.includes(part))result.push({heading:part,text:""});else if(result.length)result[result.length-1].text+=(result[result.length-1].text ? "\n" : "")+part;else result.push({text:part});}return result;};
 ---
 
 <Layout>
@@ -12,56 +17,11 @@ import Layout from "../layouts/Layout.astro";
 </Fragment>
 <Fragment slot="menu-slot">
     <div class="menu-contents-inner">
-        <a href="#" class="page-top-nav">
-            <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="32"
-            height="32"
-            viewBox="0 0 24 24"
-            ><path
-                fill="currentColor"
-                d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"
-            ></path></svg
-            >
-        </a>
+        <PageTopNav />
     </div>
 </Fragment>
 <Fragment slot="body-slot">
-    <div class="disclaim_container">
-        <h1>プライバシーポリシー</h1>
-        <h2>個人情報の利用</h2>
-        <p>当ブログでは、お問い合わせや記事へのコメントの際、名前やメールアドレス等の個人情報を入力していただく場合がございます。<br>
-        取得した個人情報は、お問い合わせに対する回答や必要な情報を電子メールでご連絡する場合に利用させていただくものであり、これらの目的以外では利用しません。</p>
-        <h2>アクセス解析ツールについて</h2>
-        <p>
-        当ブログでは、Googleによるアクセス解析ツール「Googleアナリティクス」を利用しています。このGoogleアナリティクスはトラフィックデータの収集のためにクッキー（Cookie）を使用しております。トラフィックデータは匿名で収集されており、個人を特定するものではありません。
-        </p>
-        <h2>コメントについて</h2>
-        <p>
-        当ブログへのコメントを残す際に、IP アドレスを収集しています。<br>
-        これはブログの標準機能としてサポートされている機能で、スパムや荒らしへの対応以外にこのIPアドレスを使用することはありません。なお、全てのコメントは管理人が事前にその内容を確認し、承認した上での掲載となります。あらかじめご了承ください。
-        </p>
-    </div>
-    <div class="disclaim_container">
-        <h1>免責事項</h1>
-        <p>
-            当ブログからのリンクやバナーなどで移動したサイトで提供される情報、サービス等について一切の責任を負いません。<br>
-            また当ブログのコンテンツ・情報について、できる限り正確な情報を提供するように努めておりますが、正確性や安全性を保証するものではありません。情報が古くなっていることもございます。<br>
-            当サイトに掲載された内容によって生じた損害等の一切の責任を負いかねますのでご了承ください。
-        </p>
-    </div>
-    <div class="disclaim_container">
-        <h1>著作権について</h1>
-        <p>
-            当ブログで掲載している文章や画像などにつきましては、無断転載することを禁止します。<br>
-            当ブログは著作権や肖像権の侵害を目的としたものではありません。著作権や肖像権に関して問題がございましたら、<a href="Contact">Contact</a>よりご連絡ください。迅速に対応いたします。
-        </p>
-    </div>
-    <div class="disclaim_container">
-        <h1>リンクについて</h1>
-        <p>当ブログは基本的にリンクフリーです。リンクを行う場合の許可や連絡は不要です。<br>
-        ただし、インラインフレームの使用や画像の直リンクはご遠慮ください。</p>
-    </div>
+    {sections.map(section => <div class="disclaim_container"><h1>{section.title}</h1>{paragraphs(section.text).map(block => <>{block.heading && <h2>{block.heading}</h2>}<p>{block.text.split("\n").map((line,i) => <>{i>0 && <br/>}{line}</>)}</p></>)}</div>)}
 </Fragment>
 </Layout>
 
@@ -109,39 +69,6 @@ import Layout from "../layouts/Layout.astro";
         flex-direction: column;
         align-items: center;
         justify-content: flex-end;
-    }
-
-    .page-top-nav {
-        width: 50px;
-        height: 50px;
-        background-color: #fff;
-        border: 1px solid #000;
-        border-radius: 10px;
-        cursor: pointer;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        position: sticky;
-        bottom: 50px;
-        z-index: 5;
-        transition: all 0.3s;
-    }
-
-    .page-top-nav svg {
-        width: 32px;
-        height: 32px;
-        rotate: 90deg;
-        transition: all 0.3s;
-    }
-
-    .page-top-nav:hover {
-        background-color: #707070;
-        box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
-    }
-
-    .page-top-nav:hover svg {
-        filter: invert(100%) sepia(2%) saturate(1%) hue-rotate(267deg) brightness(101%) contrast(101%);
     }
 
     .disclaim_container {
@@ -246,16 +173,6 @@ import Layout from "../layouts/Layout.astro";
             padding-right: 16px;
         }
 
-        .page-top-nav {
-            width: 35px;
-            height: 35px;
-        }
-
-        .page-top-nav svg {
-            width: 22px;
-            height: 22px;
-        }
-
         .disclaim_container {
             padding-left: 15px;
             margin-top: 12px;
@@ -290,3 +207,5 @@ import Layout from "../layouts/Layout.astro";
         }
     }
 </style>
+
+<style>@media (max-width:360px) {.section-title h1 {font-size:clamp(42px,14vw,48px);}}</style>

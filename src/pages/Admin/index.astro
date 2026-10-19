@@ -1,0 +1,49 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { pageDefinitions } from "../../lib/siteContent";
+---
+
+<AdminLayout title="管理画面">
+  <div class="admin-intro">
+    <p>
+      文章や写真を編集したら、下書きを保存してプレビューを確認し、公開してください。
+    </p>
+  </div>
+  <section class="admin-section" aria-labelledby="content-heading">
+    <h2 id="content-heading">サイト情報・ページ編集</h2>
+    <ul class="admin-link-list">
+      {
+        Object.entries(pageDefinitions).map(([key, page]) => (
+          <li>
+            <a href={`/Admin/content/${key}`}>
+              <span class="admin-item-label">{page.title}</span>
+              <span class="admin-item-description">編集する →</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+  <section class="admin-section">
+    <h2>アカウント管理</h2>
+    <p>
+      登録内容の確認・編集と、各アカウントのPortfolioの編集ができます。
+    </p>
+    <ul class="admin-link-list">
+      <li>
+        <a href="/Admin/accounts">
+          <span class="admin-item-label">アカウント一覧へ</span>
+          <span class="admin-item-description">登録内容・Portfolioを管理 →</span>
+        </a>
+      </li>
+      <li><a href="/Admin/account-deletion-requests"><span class="admin-item-label">アカウント削除申請</span><span class="admin-item-description">本人確認済みの削除申請を7日以内に処理 →</span></a></li>
+    </ul>
+  </section>
+  <section class="admin-section">
+    <h2>班分け名簿</h2>
+    <ul class="admin-link-list">
+      <li><a href="/Admin/grouping-roster" aria-label="班分け用名簿"><span class="admin-item-label">班分け用名簿</span><span class="admin-item-description">Google名簿の更新・参照先・アカウント連携を管理 →</span></a></li>
+    </ul>
+  </section>
+  <section class="admin-section"><h2>アプリ・通知</h2><ul class="admin-link-list"><li><a href="/Admin/notifications"><span class="admin-item-label">プッシュ通知の配信状況</span><span class="admin-item-description">送信待ち・配信結果・失敗を確認 →</span></a></li></ul></section>
+</AdminLayout>

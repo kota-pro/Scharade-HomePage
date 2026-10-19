@@ -1,0 +1,57 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { readActivities } from "../../lib/activities";
+import { pushDiagnostics } from "../../lib/pushDelivery";
+import { env } from "../../lib/config";
+const jobs = readActivities().push?.jobs ?? [],
+  summary = pushDiagnostics(jobs);
+const errors = Object.entries(
+  jobs
+    .filter((j) => j.status === "failed")
+    .reduce(
+      (counts, j) => {
+        const error = j.error ?? "unknown";
+        counts[error] = (counts[error] ?? 0) + 1;
+        return counts;
+      },
+      {} as Record<string, number>,
+    ),
+);
+---
+
+<AdminLayout title="アプリ通知の配信状況">
+  <h2>アプリ通知の配信状況</h2>
+  <p>
+    配信設定：{
+      env("PUSH_DELIVERY_ENABLED") === "1" ? "有効" : "停止中"
+    }／Expoの認証設定：{env("EXPO_ACCESS_TOKEN") ? "設定済み" : "未設定"}
+  </p>
+  <p>
+    送信待ち {summary.pending}件／配信結果の確認待ち {
+      summary.awaitingReceipts
+    }件／失敗 {summary.failed}件
+  </p>
+  <p>
+    配信結果はApple・Googleへの引き渡し状況です。端末での受信・閲覧を保証するものではありません。通知本文・端末トークンはこの画面に表示しません。
+  </p>
+  {
+    errors.length > 0 && (
+      <section>
+        <>
+          <h3>失敗の内訳</h3>
+          <ul>
+            {errors.map(([code, count]) => (
+              <li>
+                {code}：{count}件
+              </li>
+            ))}
+          </ul>
+          <p>
+            VPS担当者は通知ワーカーの稼働、Expoの配信設定、APNs・FCMの資格情報を確認してください。無効な端末登録は解除され、本人がアプリを開くと再登録されます。
+          </p>
+        </>
+      </section>
+    )
+  }
+  <p><a href="/Member/manage/notifications">お知らせの作成・送信へ</a></p>
+</AdminLayout>

@@ -1,0 +1,18 @@
+---
+import { activityTextParts } from "../lib/activityPresentation";
+interface Props {
+  text: string;
+}
+---
+
+{
+  activityTextParts(Astro.props.text).map((part) =>
+    part.href ? (
+      <a href={part.href} target="_blank" rel="noopener noreferrer">
+        {part.text}
+      </a>
+    ) : (
+      part.text
+    ),
+  )
+}

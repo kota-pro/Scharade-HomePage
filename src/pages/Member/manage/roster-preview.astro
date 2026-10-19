@@ -1,0 +1,5 @@
+---
+import { isAdmin } from "../../../lib/auth";
+if (!isAdmin(Astro.locals.user)) return new Response("管理者のみ閲覧できます。", { status: 403 });
+return Astro.redirect(`/Admin/grouping-roster/preview${Astro.url.search}`, 302);
+---

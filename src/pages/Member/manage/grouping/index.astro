@@ -1,0 +1,46 @@
+---
+import StaffLayout from "../../../../layouts/StaffLayout.astro";
+import GroupingRunDelete from "../../../../components/GroupingRunDelete.astro";
+import GroupingRunForm from "../../../../components/GroupingRunForm.astro";
+import { readGroupingTools } from "../../../../lib/groupingTools";
+import { readActivities } from "../../../../lib/activities";
+import { activityDate } from "../../../../lib/activityTypes";
+const data = readGroupingTools(),
+  activities = readActivities();
+---
+
+<StaffLayout title="班分け自動生成ツール">
+  <h2>班分け自動生成ツール</h2>
+  {
+    Astro.url.searchParams.has("deleted") && (
+      <p role="status">班分けを削除しました。</p>
+    )
+  }
+  <section class="activity-section">
+    <h3>新しい班分け</h3><GroupingRunForm activities={activities} data={data} />
+  </section>
+  <section class="activity-section">
+    <h3>保存した班分け</h3>
+    {!data.runs.length && <p>保存した班分けはまだありません。</p>}
+    <ul class="activity-list">
+      {
+        [...data.runs]
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+          .map((run) => (
+            <li>
+              <>
+                <a href={`/Member/manage/grouping/${run.id}`}>{run.title}</a>
+                <small>
+                  {run.participantIds.length}人 ·{" "}
+                  {run.publishedGroups ? "確定済み" : "編集中"} ·{" "}
+                  {activityDate(run.updatedAt)}
+                </small>
+                <GroupingRunDelete run={run} />
+              </>
+            </li>
+          ))
+      }
+    </ul>
+  </section>
+  <a class="member-back" href="/Member/manage">管理・運営へ戻る</a>
+</StaffLayout>

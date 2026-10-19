@@ -1,0 +1,21 @@
+import type {RoomAnnotation,RichTextRun} from '../lib/exhibitionTypes.ts';
+import {replaceRichText,styleTextRange} from '../lib/exhibitionRichText.ts';
+type Options={host:HTMLElement;annotation:RoomAnnotation;change:(a:RoomAnnotation)=>void;finish:(a:RoomAnnotation|undefined)=>void};
+export function openLayoutTextEditor(options:Options) {
+  const draft=structuredClone(options.annotation),panel=document.createElement('section');panel.className='layout-text-editor';panel.setAttribute('aria-label','文字の編集');
+  panel.innerHTML='<div class="layout-text-format"><button type="button" data-text-bold aria-label="選択文字を太字">B</button><button type="button" data-text-italic aria-label="選択文字を斜体">I</button><button type="button" data-text-underline aria-label="選択文字に下線">U</button><label>色<input type="color" data-text-color value="#343434"/></label></div><textarea data-layout-text-edit aria-label="文字の内容" maxlength="2000"></textarea><p data-text-issues></p><div class="layout-text-format"><button type="button" data-text-done>文字を確定</button><button type="button" data-text-cancel>取消</button></div>';
+  options.host.append(panel);const textarea=panel.querySelector<HTMLTextAreaElement>('textarea')!,issues=panel.querySelector<HTMLElement>('[data-text-issues]')!;textarea.value=draft.text;
+  let range={start:0,end:0},typing:Partial<Omit<RichTextRun,'text'>>={},closed=false,timer=0,requestNumber=0,controller:AbortController|undefined;
+  const remember=()=>range={start:textarea.selectionStart,end:textarea.selectionEnd};
+  const preview=()=>{options.change(structuredClone(draft));clearTimeout(timer);timer=window.setTimeout(async()=>{controller?.abort();controller=new AbortController();const number=++requestNumber;try{const response=await fetch('/api/member/exhibition-text-preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(draft),signal:controller.signal}),value=await response.json();if(closed||number!==requestNumber)return;issues.textContent=response.ok?value.issues.join('\n'):value.message;}catch(error){if(!closed&&!(error instanceof DOMException&&error.name==='AbortError'))issues.textContent='文字の確認ができません。入力内容は保持しています。';}},300);};
+  const close=(save:boolean)=>{if(closed)return;closed=true;clearTimeout(timer);controller?.abort();panel.remove();options.finish(save&&draft.text.trim()?structuredClone(draft):undefined);};
+  textarea.addEventListener('select',remember);textarea.addEventListener('keyup',remember);textarea.addEventListener('pointerup',remember);
+  textarea.addEventListener('input',event=>{replaceRichText(draft,textarea.value,typing);remember();if(!(event as InputEvent).isComposing)preview();});textarea.addEventListener('compositionend',()=>preview());
+  panel.querySelectorAll<HTMLButtonElement>('[data-text-bold],[data-text-italic],[data-text-underline]').forEach(button=>{
+    button.addEventListener('pointerdown',event=>event.preventDefault());button.addEventListener('click',()=>{const key=button.hasAttribute('data-text-bold')?'bold':button.hasAttribute('data-text-italic')?'italic':'underline',on=button.getAttribute('aria-pressed')!=='true';button.setAttribute('aria-pressed',String(on));if(range.start===range.end)typing={...typing,[key]:on};else styleTextRange(draft,range.start,range.end,{[key]:on});preview();textarea.focus({preventScroll:true});textarea.setSelectionRange(range.start,range.end);});
+  });
+  panel.querySelector<HTMLInputElement>('[data-text-color]')!.value=draft.color??'#343434';panel.querySelector<HTMLInputElement>('[data-text-color]')!.addEventListener('input',event=>{const color=(event.target as HTMLInputElement).value;if(range.start===range.end)typing={...typing,color};else styleTextRange(draft,range.start,range.end,{color});preview();});
+  panel.querySelector('[data-text-done]')!.addEventListener('click',()=>close(true));panel.querySelector('[data-text-cancel]')!.addEventListener('click',()=>close(false));
+  panel.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();close(false);}else if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();close(true);}});
+  textarea.focus({preventScroll:true});preview();return{finish:()=>close(true),cancel:()=>close(false),panel};
+}

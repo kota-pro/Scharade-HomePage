@@ -1,0 +1,93 @@
+---
+import MemberLayout from "../../layouts/MemberLayout.astro";
+import ActivityDashboard from "../../components/ActivityDashboard.astro";
+import { isStaff } from "../../lib/auth";
+const user = Astro.locals.user!;
+const profileUrl = user.portfolioId
+  ? `/Portfolio/${encodeURIComponent(user.portfolioId)}`
+  : "/Portfolio/edit";
+---
+
+<MemberLayout title="メンバー専用ページ">
+  <p class="admin-intro">{user.name}さんのメンバーページです。</p>
+  {
+    isStaff(user) && (
+      <p>
+        <a class="admin-button" href="/Member/manage">
+          管理・運営
+        </a>
+      </p>
+    )
+  }
+  <div class="member-dashboard">
+    <ActivityDashboard />
+    <section class="admin-section">
+      <h2>My page</h2>
+      <ul class="admin-link-list member-action-list">
+        <li><a href="/Member/security"><span class="admin-item-label">アカウントの保護</span><span class="admin-item-description">パスワードと二段階認証を管理する</span></a></li>
+        <li>
+          <a href="/Member/profile"
+            ><span class="admin-item-label">班分け用プロフィール</span><span
+              class="admin-item-description"
+              >名簿から取得した性別・学年を確認する</span
+            ></a
+          >
+        </li>
+        {
+          !user.siteManagement && (
+            <li>
+              <a href={profileUrl}>
+                <span class="admin-item-label">My Portfolio</span>
+                <span class="admin-item-description">
+                  自分のPortfolioを見る
+                </span>
+              </a>
+            </li>
+          )
+        }
+        <li>
+          <a href="/Member/advance"
+            ><span class="admin-item-label">立替申請</span><span
+              class="admin-item-description"
+              >サークルのために立て替えた費用を申請する</span
+            ></a
+          >
+        </li>
+        <li>
+          <button id="member-logout" type="button"
+            ><span class="admin-item-label">Log out</span><span
+              class="admin-item-description">ログアウトする</span
+            ></button
+          >
+        </li>
+      </ul>
+      <p id="member-logout-status" role="alert" class="member-status" hidden>
+      </p>
+    </section>
+  </div>
+</MemberLayout>
+<script>
+  import { operationNotice, flashNotice } from "../../scripts/siteNotice";
+  const button = document.querySelector<HTMLButtonElement>("#member-logout");
+  const status = document.querySelector<HTMLElement>("#member-logout-status");
+  button?.addEventListener("click", async () => {
+    if (button.disabled) return;
+    button.disabled = true;
+    if (status) status.hidden = true;
+    operationNotice("ログアウトしています…",false,"logout");
+    try {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      if (!response.ok) throw new Error();
+      flashNotice("ログアウトしました。");
+      location.assign("/");
+    } catch {
+      if (status) {
+        status.hidden = false;
+        status.textContent =
+          "ログアウトできませんでした。時間をおいて再度お試しください。";
+      }
+      operationNotice("ログアウトできませんでした。時間をおいて再度お試しください。",true,"logout");
+      button.disabled = false;
+    }
+  });
+</script>

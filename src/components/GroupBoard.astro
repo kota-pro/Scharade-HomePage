@@ -1,0 +1,162 @@
+---
+import type { Participant, Group, GroupRules } from "../lib/activityTypes";
+import { groupGradeLabel } from "../lib/groupingGrade";
+import { groupPairs, groupPreferenceWarnings } from "../lib/grouping";
+import {
+  displayName,
+  sortGroupPeople,
+  nameParts,
+  personStyle,
+  personLabel,
+  warningText,
+  gradeColors,
+} from "../lib/groupPresentation";
+import GroupWarningIcon from "./GroupWarningIcon.astro";
+import { groupExportData } from "../lib/groupExport";
+import "../styles/GroupBoard.css";
+interface Props {
+  people: Participant[];
+  groups: Group[];
+  rules: GroupRules;
+  history: Group[];
+  editable?: boolean;
+  exportable?: boolean;
+  exportTitle?: string;
+}
+const { people, groups, rules, history, editable = false, exportable = false, exportTitle = "班分け" } = Astro.props;
+const warnings = groupPreferenceWarnings(groups, rules, groupPairs(history));
+const flagged = new Set(warnings.flatMap((w) => w.ids));
+const unplaced = people.filter(
+  (p) => !groups.some((g) => g.memberIds.includes(p.id)),
+);
+const sections = [
+  ...groups.map((g, i) => ({
+    index: String(i),
+    title: `${i + 1}班`,
+    leaderId: g.leaderId,
+    members: sortGroupPeople(
+      people.filter((p) => g.memberIds.includes(p.id)),
+      g.leaderId,
+    ),
+  })),
+  {
+    index: "",
+    title: "未配置",
+    leaderId: "",
+    members: sortGroupPeople(unplaced, ""),
+  },
+];
+---
+
+<div class="group-board" data-group-board data-group-export={exportable ? JSON.stringify(groupExportData(people, groups, [...flagged], exportTitle)) : undefined}>
+  {exportable && <>
+    <div class="group-export-actions">
+      <button class="member-submit" type="button" data-group-png>PNGで出力</button>
+      <button class="member-submit" type="button" data-group-txt>TXTでコピー</button>
+    </div>
+    <p class="group-export-help">班をクリックすると、その班の画像をコピーできます。TXTはLINE名（未登録の場合は氏名）でコピーします。</p>
+    <p data-group-export-status role="status" aria-live="polite"></p>
+    <button class="member-submit" type="button" data-group-download hidden>この班をPNGで保存</button>
+    <label class="group-export-text" data-group-text-fallback hidden>コピー用テキスト<textarea readonly rows="10" aria-label="コピー用テキスト"></textarea></label>
+  </>}
+  <p class="group-scroll-help">班の一覧は左右にスクロールできます。</p>
+  <div class="group-board-grid" tabindex="0" role="region" aria-label="班の一覧（横スクロール）">
+    {
+      sections.map((section) => (
+        <section
+          class="group-board-card"
+          data-group-index={section.index}
+          data-copy-group={exportable && section.index !== "" ? section.index : undefined}
+          hidden={section.index === "" && !section.members.length}
+        >
+          <header>
+            <>
+              <h4>{section.title}</h4>
+              <span data-member-count>{section.members.length}人</span>
+            </>
+          </header>
+          {exportable && section.index !== "" && <button class="group-copy-image" type="button" aria-label={`${section.title}の画像をコピー`}>画像をコピー</button>}
+          <ul data-group-members>
+            {section.members.map((p) => {
+              const parts = nameParts(displayName(p)),
+                leader = section.leaderId === p.id;
+              const Tag = editable ? "button" : "div";
+              return (
+                <li>
+                  <Tag
+                    class="group-person"
+                    type={editable ? "button" : undefined}
+                    data-person-id={p.id}
+                    data-warning={flagged.has(p.id) ? "true" : undefined}
+                    aria-pressed={editable ? "false" : undefined}
+                    aria-label={personLabel(p, leader)}
+                    style={personStyle(p)}
+                  >
+                    <span class="group-person-name">
+                      <span class="group-name-initial">{parts[0]}</span>
+                      {parts[1]}
+                    </span>
+                    <span class="group-person-meta">
+                      {groupGradeLabel(p.grade)}
+                      {leader && <span class="group-leader">リーダー</span>}
+                    </span>
+                  </Tag>
+                </li>
+              );
+            })}
+          </ul>
+          {editable && section.index !== "" && (
+            <button
+              class="group-move"
+              type="button"
+              data-move-to={section.index}
+              hidden
+            >
+              選択中の人をこの班へ移動
+            </button>
+          )}
+        </section>
+      ))
+    }
+  </div>
+  <aside class="group-color-legend" aria-label="名前の色と学年の凡例">
+    <p>
+      先頭の文字：<span
+        ><i class="group-gender-swatch" style="background:#99ccff"
+        ></i>男性</span
+      ><span
+        ><i class="group-gender-swatch" style="background:#ff99ff"
+        ></i>女性</span
+      >
+    </p>
+    <p>
+      学年の下線：{
+        ["4", "3", "2", "1"].map((grade) => (
+          <span
+            class="group-grade-key"
+            style={`--grade-color:${gradeColors[grade as keyof typeof gradeColors]}`}
+          >
+            {grade === "4" ? "4年以上" : `${grade}年生`}
+          </span>
+        ))
+      }
+    </p>
+  </aside>
+  <div
+    class="group-preference-warnings"
+    data-preference-warnings
+    hidden={!warnings.length}
+    aria-live="polite"
+  >
+    <GroupWarningIcon /><div>
+      <p>
+        色のついた名前は、指定を満たせていないか、前回と同じ班の組合せが残っています。
+      </p><ul data-warning-list>
+        {warnings.map((w) => <li>{warningText(w, people)}</li>)}
+      </ul>
+    </div>
+  </div>
+</div>
+<script>
+  import "../scripts/groupExport";
+</script>

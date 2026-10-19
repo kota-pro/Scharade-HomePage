@@ -1,4 +1,4 @@
-import type { Blog } from "../types/microcms";
+import type { Blog } from "../types/microcms.ts";
 
 export const getPublishedDate = (blog: Blog) =>
   blog.publishedAt ?? blog.createdAt ?? blog.updatedAt ?? blog.revisedAt;
@@ -34,6 +34,7 @@ export const buildTabs = (posts: Blog[]) => {
   const allTags = Array.from(
     new Set(posts.flatMap((post) => normalizeTags(post.tags))),
   ).sort();
+  const usedSlugs = new Set(["all"]);
 
   return [
     {
@@ -42,7 +43,14 @@ export const buildTabs = (posts: Blog[]) => {
       posts,
     },
     ...allTags.map((tagString) => {
-      const slug = toTabSlug(tagString) ?? "tag";
+      const baseSlug = toTabSlug(tagString) ?? "tag";
+      let slug = baseSlug;
+      // Different Japanese names and normalized Latin names may share a base.
+      // Reserve each ID so every label selects its own radio input.
+      for (let suffix = 2; usedSlugs.has(slug); suffix++) {
+        slug = `${baseSlug}-${suffix}`;
+      }
+      usedSlugs.add(slug);
 
       return {
         label: tagString,

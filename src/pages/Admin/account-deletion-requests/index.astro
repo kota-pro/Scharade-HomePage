@@ -1,0 +1,43 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { readDeletionRequests } from "../../../lib/accountDeletionRequests";
+const requests = [...readDeletionRequests().requests].sort(
+  (a, b) => b.createdAt - a.createdAt,
+);
+const date = (time: number) =>
+  new Date(time).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+const labels = {
+  pending: "確認待ち",
+  processing: "削除処理中",
+  complete: "削除済み",
+};
+const overdue = (r: { status: string; dueAt: number }) =>
+  r.status !== "complete" && r.dueAt < Date.now();
+---
+
+<AdminLayout title="アカウント削除申請">
+  <h2>アカウント削除申請</h2><p>
+    本人確認済みの申請です。申請から7日以内に、外部保存先・バックアップを含めて確認し、処理してください。
+  </p>
+  {!requests.length && <p>申請はありません。</p>}
+  <ul class="admin-link-list">
+    {
+      requests.map((r) => (
+        <li>
+          <a href={`/Admin/account-deletion-requests/${r.id}`}>
+            <>
+              <span class="admin-item-label">
+                {r.name || "削除済みアカウント"}
+              </span>
+              <span class="admin-item-description">
+                {labels[r.status]}／受付 {date(r.createdAt)}／期限{" "}
+                {date(r.dueAt)}
+                {overdue(r) ? "（期限超過）" : ""}
+              </span>
+            </>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</AdminLayout>

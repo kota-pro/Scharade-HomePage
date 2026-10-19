@@ -1,7 +1,7 @@
 ---
 import MypostLayout from "../../layouts/Mypost_Layout.astro";
 import "../../styles/UA+reset.css";
-import { microcmsClient } from "../../lib/microcms";
+import { getBlogBySlug } from "../../lib/blog";
 import type { Blog } from "../../types/microcms";
 import { formatDate, getPublishedDate } from "../../utils/blog";
 
@@ -9,27 +9,26 @@ import {
   optimizeMicrocmsHtml,
   optimizeMicrocmsImage,
 } from "../../utils/microcmsImage";
-const { slug } = Astro.params;
+// Decode the original request path once. Astro.url/params already decode some
+// characters, so decoding those again would change literal percent sequences.
+let slug: string;
+try {
+  slug = decodeURIComponent(new URL(Astro.request.url).pathname.slice("/posts/".length).replace(/\/$/, ""));
+} catch {
+  return Astro.rewrite("/404");
+}
+if (!slug) return Astro.rewrite("/404");
 
-if (!slug) {
-  return Astro.redirect("/404");
+let post: Blog | undefined;
+try {
+  post = await getBlogBySlug(slug);
+} catch {
+  return Astro.rewrite("/503");
 }
 
-// slugで投稿を検索
-const { contents } = await microcmsClient.getList<Blog>({
-  endpoint: "blog",
-  queries: {
-    filters: `slug[equals]${slug}`,
-    limit: 1,
-    depth: 2,
-  },
-});
-
-if (contents.length === 0) {
-  return Astro.redirect("/404");
+if (!post) {
+  return Astro.rewrite("/404");
 }
-
-const post = contents[0];
 
 const optimizedBody = optimizeMicrocmsHtml(post.body ?? "");
 const formattedDate = formatDate(getPublishedDate(post));
@@ -436,49 +435,4 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
   }
 </style>
 
-<script is:inline type="module">
-  const container = document.getElementById("post-back-link");
-  if (container) {
-    try {
-      const map = JSON.parse(container.dataset.map ?? "{}");
-      const params = new URLSearchParams(window.location.search);
-      const from = params.get("from");
-      const link = from && map[from];
-      if (link) {
-        if (!container.querySelector("a")) {
-          const anchor = document.createElement("a");
-          anchor.href = link.href;
-          anchor.textContent = link.label;
-          container.appendChild(anchor);
-        }
-        container.hidden = false;
-      } else {
-        container.hidden = true;
-      }
-    } catch (error) {
-      console.error("Failed to render back link", error);
-    }
-  }
-
-  const postBody = document.querySelector(".post-body");
-  if (postBody instanceof HTMLElement) {
-    const images = Array.from(postBody.querySelectorAll("img"));
-
-    images.forEach((img) => {
-      const wrapper = img.closest("figure") || img.parentElement;
-
-      if (!(wrapper instanceof HTMLElement)) return;
-      if (wrapper.classList.contains("taped-image")) return;
-
-      const tapeNum = Math.floor(Math.random() * 70) + 1;
-      const rotateDeg = Math.floor(Math.random() * 41) * 0.5 - 10;
-
-      wrapper.classList.add("taped-image");
-      wrapper.style.setProperty(
-        "--tape-url",
-        `url(/images/tapes/asset${tapeNum}.svg)`,
-      );
-      wrapper.style.setProperty("--tape-rotate", `${rotateDeg}deg`);
-    });
-  }
-</script>
+<script>import "../../scripts/postBody.js";</script>

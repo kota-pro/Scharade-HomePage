@@ -1,0 +1,5 @@
+---
+import StaffLayout from "../../../../../layouts/StaffLayout.astro";
+import ExhibitionAdmin from "../../../../../components/ExhibitionAdmin.astro";
+---
+<StaffLayout title="提出内容とQRコード確認"><ExhibitionAdmin id={Astro.params.id!} view="submissions" /></StaffLayout>

@@ -1,0 +1,242 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import "../../../styles/Member.css";
+import "../../../styles/Activities.css";
+import { readUsers, isAdmin } from "../../../lib/auth";
+import GroupPersonPicker from "../../../components/GroupPersonPicker.astro";
+import { displayName } from "../../../lib/groupPresentation";
+import { readActivities } from "../../../lib/activities";
+import {
+  genderLabels,
+  gradeLabels,
+  activityDate,
+} from "../../../lib/activityTypes";
+import {
+  activityRosterSource,
+  rosterSourceUrl,
+  rosterSuggestions,
+} from "../../../lib/activityRoster";
+if (!isAdmin(Astro.locals.user)) return new Response("管理者のみ閲覧できます。", { status: 403 });
+const data = readActivities(),
+  roster = data.roster;
+const admin = isAdmin(Astro.locals.user);
+const users = readUsers().filter((u) => u.approved);
+const suggestions = admin ? rosterSuggestions(data, users) : {};
+const records = roster?.records.filter((r) => r.active) ?? [];
+const jobs = data.rosterPortfolioUpdates || [];
+const label = (r: (typeof records)[number]) =>
+  `${displayName(r)} · ${r.university || "大学未記入"} · ${r.gender ? genderLabels[r.gender] : "性別要確認"} · ${r.grade ? gradeLabels[r.grade] : "学年要確認"}`;
+---
+
+<AdminLayout pageClass="admin-roster-page" title="班分け用名簿">
+  <h2>班分け用名簿</h2>
+  <p>
+    性別・学年はGoogleスプレッドシートの名簿から取得します。名簿の更新とアカウントの連携は管理者のみ行えます。閲覧も管理者に限定しています。
+  </p>
+  {
+    admin && (
+      <section class="admin-section">
+        <h3>Google名簿</h3>
+        <p>
+          <a
+            href={rosterSourceUrl(roster)}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {roster?.title || activityRosterSource.title}
+          </a>
+        </p>
+        <p>
+          「継続しますか？」が「はい」の回答を班分けに使用します。性別・学年の訂正は元のシートで行い、その後に更新してください。
+        </p>
+        <form
+          class="activity-form"
+          data-activity-action="roster.sync"
+          data-revision={roster?.revision ?? 0}
+        >
+          <button class="member-submit" type="submit">
+            Google名簿から更新
+          </button>
+          <p data-status role="status" aria-live="polite" />
+        </form>
+        <details>
+          <summary>名簿の参照先を変更・退会対象を確認</summary>
+          <p>
+            新しい名簿に氏名がない人は退会扱いとし、旧名簿を残して班分けから除外します。連携済みのPortfolioの学年はOB/OGに更新します。確定前に対象者を確認できます。
+          </p>
+          <p>
+            連携用Googleアカウントから閲覧できるスプレッドシートを指定してください。氏名・性別・学年・継続しますか・タイムスタンプ（または回答日時）の列が必要です。
+          </p>
+          <form
+            class="activity-form"
+            data-activity-action="roster.preview"
+            data-revision={roster?.revision ?? 0}
+            data-redirect="/Admin/grouping-roster/preview?id={previewId}"
+          >
+            <label>
+              参照するGoogleスプレッドシートのURL
+              <input
+                type="url"
+                name="url"
+                required
+                maxlength="1000"
+                value={rosterSourceUrl(roster)}
+              />
+            </label>
+            <small>
+              対象のシートを開き、gidを含むURLを貼り付けてください。
+            </small>
+            <button type="submit" class="member-submit">
+              変更内容を確認
+            </button>
+            <p data-status role="status" aria-live="polite" />
+          </form>
+        </details>
+      </section>
+    )
+  }
+  {
+    admin && (roster?.retiredRecords?.length || jobs.length) ? (
+      <section class="admin-section">
+        <h3>退会・Portfolioの更新状況</h3>
+        <p>
+          退会扱いのメンバーは班分けの候補から除外しています。Portfolioは順次更新されます。過去に公開した班分けは履歴として残ります。
+        </p>
+        <ul class="activity-list">
+          {(roster?.retiredRecords || []).map((r) => {
+            const updates = jobs.filter(
+              (j) =>
+                j.rosterKey === r.key &&
+                j.createdAt === r.withdrawnAt &&
+                j.status !== "cancelled",
+            );
+            return (
+              <li>
+                <strong>
+                  {r.name}
+                  {r.lineName ? `（${r.lineName}）` : ""}
+                </strong>
+                <span>
+                  退会 ·{" "}
+                  {updates.length
+                    ? updates
+                        .map((j) =>
+                          j.status === "done"
+                            ? "Portfolio：OB/OGに更新済み"
+                            : j.status === "pending"
+                              ? "Portfolio：更新待ち"
+                              : `Portfolio：${j.message || "再試行が必要です"}`,
+                        )
+                        .join(" / ")
+                    : "連携済みのPortfolioなし"}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        {jobs.some((j) => j.status === "error") && (
+          <form class="activity-form" data-activity-action="roster.retry">
+            <button type="submit" class="member-submit">
+              Portfolioの更新を再試行
+            </button>
+            <p data-status role="status" aria-live="polite" />
+          </form>
+        )}
+      </section>
+    ) : null
+  }
+  <p>
+    {
+      roster
+        ? `最終取得：${activityDate(roster.fetchedAt)} · 継続回答 ${records.length}人 · 連携済み ${users.filter((u) => data.profiles[u.id]?.rosterKey).length}人`
+        : "Google名簿はまだ取得されていません。管理者が名簿を更新してください。"
+    }
+  </p>
+  {
+    Astro.url.searchParams.has("saved") && (
+      <p role="status">名簿を更新しました。</p>
+    )
+  }
+  {
+    admin && roster ? (
+      <section class="admin-section">
+        <h3>サイトのアカウントと名簿の連携</h3>
+        <p>
+          氏名が一致する人物は候補として選択されています。本人であることを確認してから保存してください。同姓同名・未回答・表示名が異なる場合は自動で連携しません。
+        </p>
+        <p>
+          性別・学年は選んだ名簿の回答を使います。連携後は「Google名簿から更新」で変更を一括反映できます。
+        </p>
+        <label>連携するアカウントを名前で検索<input type="search" data-roster-account-search placeholder="サイトのアカウント名で検索" autocomplete="off" /></label>
+        <p data-roster-account-count aria-live="polite">{users.length}人のアカウントを表示</p>
+        <form
+          class="activity-form"
+          data-activity-action="roster.link"
+          data-revision={roster.revision}
+        >
+          <div class="activity-profile-list">
+            {users.map((u) => {
+              const key = roster.bindings[u.id] || suggestions[u.id] || "";
+              const valid = records.some((r) => r.key === key);
+              return (
+                <div class="activity-roster-row" data-roster-account-name={u.name}>
+                  <span>{u.name}</span>
+                  <small>
+                    {roster.bindings[u.id]
+                      ? valid
+                        ? "連携済み"
+                        : roster.retiredRecords?.some(
+                              (r) => r.key === roster.bindings[u.id],
+                            )
+                          ? "退会扱い（旧名簿の情報を保存済み）"
+                          : "以前の回答が継続対象外・削除済みです。再確認してください。"
+                      : suggestions[u.id]
+                        ? "氏名一致の候補（未確定）"
+                        : "未連携"}
+                  </small>
+                  <GroupPersonPicker
+                    people={[...(!valid && roster.bindings[u.id] ? [{ id: key, name: "以前の連携を保持" }] : []), ...records.map(r => ({ id: r.key, name: label(r) }))]}
+                    label={`${u.name}の名簿上の人物`}
+                    current={key}
+                    required={false}
+                    emptyLabel="連携しない・未回答"
+                    selectAttributes={{ "data-roster-user": u.id }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+          <button type="submit" class="member-submit">
+            対応を確認して連携を保存
+          </button>
+          <p data-status role="status" aria-live="polite" />
+        </form>
+      </section>
+    ) : (
+      <section class="admin-section">
+        <h3>連携状況</h3>
+        <ul class="activity-list">
+          {users.map((u) => {
+            const p = data.profiles[u.id];
+            return (
+              <li>
+                <strong>{u.name}</strong>
+                <span>
+                  {p?.rosterKey
+                    ? `${genderLabels[p.gender]} · ${gradeLabels[p.grade]}`
+                    : "未連携・名簿の回答要確認"}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        <p>更新が必要な場合は管理者へ連絡してください。</p>
+      </section>
+    )
+  }
+  <a class="member-back" href="/Admin">運営画面へ戻る</a>
+</AdminLayout>
+
+<script>
+  import "../../../scripts/activities";
+</script>

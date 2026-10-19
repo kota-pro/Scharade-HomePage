@@ -1,39 +1,24 @@
 import type { APIRoute } from "astro";
-import { getUserFromRequest } from "../../../lib/auth";
+import { getUserFromRequest } from "../../../lib/auth.ts";
 import sharp from "sharp";
+import { fetchWithTimeout, boundedFormData, HttpInputError } from "../../../lib/http.ts";
+import { imageSignature, withImageSlot, ImageBusyError } from "../../../lib/imageSecurity.ts";
+import { safeMediaUrl } from "../../../lib/contentSecurity.ts";
+import { env } from "../../../lib/config.ts";
 
-const SERVICE_DOMAIN =
-  (import.meta as any).env?.MICROCMS_SERVICE_DOMAIN ??
-  process.env.MICROCMS_SERVICE_DOMAIN;
-const MANAGEMENT_API_KEY =
-  (import.meta as any).env?.MICROCMS_MANAGEMENT_API_KEY ??
-  process.env.MICROCMS_MANAGEMENT_API_KEY ??
-  (import.meta as any).env?.MICROCMS_API_KEY ??
-  process.env.MICROCMS_API_KEY;
-
-const CONTENT_API_KEY =
-  (import.meta as any).env?.MICROCMS_API_KEY ?? process.env.MICROCMS_API_KEY;
 
 const buildUploadUrl = (serviceId: string) =>
   `https://${serviceId}.microcms-management.io/api/v1/media`;
 
 export const POST: APIRoute = async ({ request }) => {
+  const SERVICE_DOMAIN = env("MICROCMS_SERVICE_DOMAIN"), MANAGEMENT_API_KEY = env("MICROCMS_SERVER_API_KEY");
   if (!SERVICE_DOMAIN || !MANAGEMENT_API_KEY) {
-    const missing = [
-      !SERVICE_DOMAIN ? "MICROCMS_SERVICE_DOMAIN" : null,
-      !MANAGEMENT_API_KEY
-        ? "MICROCMS_MANAGEMENT_API_KEY (or MICROCMS_API_KEY fallback)"
-        : null,
-    ]
-      .filter(Boolean)
-      .join(", ");
-
     return jsonResponse(
       {
         ok: false,
-        message: `Server misconfigured. Missing microCMS credentials: ${missing}.`,
+        message: "画像の保存先を利用できません。管理者にお問い合わせください。",
       },
-      500,
+      503,
     );
   }
 
@@ -52,7 +37,10 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
-  const formData = await request.formData();
+  let formData: FormData;
+  try { formData = await boundedFormData(request, 20 * 1024 * 1024 + 65536); }
+  catch (error) { return jsonResponse({ ok: false, message: "画像の送信内容を確認してください。" }, error instanceof HttpInputError ? error.status : 400); }
+  if ([...formData.keys()].some(key => key !== "file") || formData.getAll("file").length !== 1) return jsonResponse({ ok: false, message: "画像を1枚選んでください。" }, 400);
   const fileEntry = formData.get("file");
 
   if (!fileEntry) {
@@ -81,9 +69,24 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
+  if (fileLike.size > 20 * 1024 * 1024)
+    return jsonResponse(
+      { ok: false, message: "画像は20MB以下でアップロードしてください。" },
+      413,
+    );
+
   let optimizedBuffer: Buffer;
   try {
-    optimizedBuffer = await sharp(Buffer.from(await fileLike.arrayBuffer()))
+    const bytes = Buffer.from(await fileLike.arrayBuffer());
+    if (!imageSignature(bytes)) throw new Error("format");
+    optimizedBuffer = await withImageSlot(async () => {
+      const image = sharp(bytes, {
+      limitInputPixels: 60_000_000,
+      failOn: "error",
+    }).timeout({ seconds: 20 });
+      const metadata = await image.metadata();
+      if (!["jpeg", "png", "webp"].includes(metadata.format ?? "") || (metadata.pages ?? 1) !== 1) throw new Error("format");
+      return image
       .rotate()
       .resize({
         width: 2400,
@@ -93,11 +96,13 @@ export const POST: APIRoute = async ({ request }) => {
       })
       .webp({ quality: 78, effort: 4 })
       .toBuffer();
-  } catch {
+    });
+  } catch (error) {
+    if (error instanceof ImageBusyError) return jsonResponse({ ok: false, message: error.message }, error.status);
     return jsonResponse(
       {
         ok: false,
-        message: "画像を圧縮できませんでした。別の画像をお試しください。",
+        message: "空でないJPEG・PNG・WebP画像を選んでください。破損・複数フレーム・6000万画素を超える画像は添付できません。",
       },
       400,
     );
@@ -108,7 +113,7 @@ export const POST: APIRoute = async ({ request }) => {
     typeof File !== "undefined" && fileLike instanceof File
       ? fileLike.name
       : "upload";
-  const fileName = `${originalName.replace(/\.[^.]+$/, "") || "upload"}.webp`;
+  const fileName = `${originalName.replace(/\.[^.]+$/, "").replace(/[\x00-\x1f\x7f/\\<>]/g, "_").slice(0, 120) || "upload"}.webp`;
   uploadData.append(
     "file",
     new Blob([new Uint8Array(optimizedBuffer).buffer], { type: "image/webp" }),
@@ -119,7 +124,7 @@ export const POST: APIRoute = async ({ request }) => {
   const targetUrl = buildUploadUrl(SERVICE_DOMAIN);
 
   try {
-    response = await fetch(targetUrl, {
+    response = await fetchWithTimeout(targetUrl, {
       method: "POST",
       headers: {
         "X-MICROCMS-API-KEY": MANAGEMENT_API_KEY,
@@ -130,33 +135,20 @@ export const POST: APIRoute = async ({ request }) => {
     return jsonResponse(
       {
         ok: false,
-        message: `microCMS upload request failed: ${(error as Error).message}`,
+        message: "画像の保存先に接続できませんでした。再度お試しください。",
       },
       502,
     );
   }
 
   if (!response.ok) {
-    const text = await response.text().catch(() => "Upload failed.");
-    const usingFallbackKey = !(
-      (import.meta as any).env?.MICROCMS_MANAGEMENT_API_KEY ??
-      process.env.MICROCMS_MANAGEMENT_API_KEY
-    );
-    const credentialHint =
-      response.status === 401 || response.status === 403
-        ? usingFallbackKey
-          ? " The media upload endpoint usually requires a management API key with media write permission."
-          : " Check whether the management API key has media write permission."
-        : "";
-
+    console.error(`[upload] microCMS status: ${response.status}`);
     return jsonResponse(
       {
         ok: false,
-        message: `microCMS upload error (${response.status}): ${text}${credentialHint}`,
-        usingFallbackContentApiKey: usingFallbackKey,
-        contentApiKeyConfigured: Boolean(CONTENT_API_KEY),
+        message: "画像を保存できませんでした。管理者にお問い合わせください。",
       },
-      response.status,
+      502,
     );
   }
 
@@ -173,7 +165,7 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
-  if (!uploadUrl.startsWith("https://")) {
+  if (!safeMediaUrl(uploadUrl)) {
     return jsonResponse(
       { ok: false, message: "microCMS returned a non-HTTPS upload URL." },
       500,

@@ -1,45 +1,130 @@
 ---
-import '../styles/UA+reset.css';
-import '../styles/footer.css';
+import "../styles/UA+reset.css";
+import "../styles/footer.css";
 const pathname = Astro.url.pathname;
-import { getImage } from 'astro:assets';
-import background from '../assets/footer/background.jpg';
-const optimizedBackground = await getImage({src: background, format: 'webp'});
+import { getContent } from "../lib/siteContent";
+import { isAdmin } from "../lib/auth";
+const user = Astro.locals.user;
+const common = getContent("common", Astro.locals.preview);
+const optimizedBackground = { src: "/media/site/footer/background.webp" };
 ---
 
-<footer style={{ background: `linear-gradient(rgba(70, 70, 70, 0.75), rgba(70, 70, 70, 0.75)), url(${optimizedBackground.src})` }}>
-
-    <a href="/" class="footer-title">
-        <h2>早稲田大学公認サークル</h2>
-        <h1>写団シャレード</h1>
-    </a>
-    <div class="footer-links">
-        <div class="links-upper-tier">
-            <a class:list={['link', {active: /^\/About_us\/?$/.test(pathname)}]} href="/About_us"><span class="text">About us</span></a>
-            <a class:list={['link', {active: /^\/Activity(?:\/.*)?$/.test(pathname)}]} href="/Activity"><span class="text">Activity</span></a>
-            <a class:list={['link', {active: /^\/Gallery(?:\/.*)?$/.test(pathname)}]} href="/Gallery"><span class="text">Gallery</span></a>
-            <a class:list={['link', {active: /^\/Portfolio(?:\/.*)?$/.test(pathname)}]} href="/Portfolio"><span class="text">Portfolio</span></a>
-        </div>
-        <div class="links-lower-tier">
-            <a class:list={['link', {active: /^\/Contact\/?$/.test(pathname)}]} href="Contact"><span class="text">Contact</span></a>
-            <a class:list={['link', {active: /^\/Disclaimer\/?$/.test(pathname)}]} href="/Disclaimer"><span class="text">Disclaimer</span></a>
-        </div>
+<footer
+  class:list={{ "footer--signed-in": Boolean(user) }}
+  style={{
+    background: `linear-gradient(rgba(70, 70, 70, 0.75), rgba(70, 70, 70, 0.75)), url(${optimizedBackground.src})`,
+  }}
+>
+  <a href="/" class="footer-title">
+    <h2>{common.affiliation}</h2>
+    <h1>{common.name}</h1>
+  </a>
+  <div class="footer-links">
+    <div class="links-upper-tier">
+      <a
+        class:list={["link", { active: /^\/About_us\/?$/.test(pathname) }]}
+        href="/About_us"><span class="text">About us</span></a
+      >
+      <a
+        class:list={[
+          "link",
+          { active: /^\/Activity(?:\/.*)?$/.test(pathname) },
+        ]}
+        href="/Activity"><span class="text">Activity</span></a
+      >
+      <a
+        class:list={["link", { active: /^\/Gallery(?:\/.*)?$/.test(pathname) }]}
+        href="/Gallery"><span class="text">Gallery</span></a
+      >
+      <a
+        class:list={[
+          "link",
+          { active: /^\/Portfolio(?:\/.*)?$/.test(pathname) },
+        ]}
+        href="/Portfolio"><span class="text">Portfolio</span></a
+      >
     </div>
-    <h3>Members only</h3>
-    <div class="member-links">
-        <a class:list={['link', {active: /^\/Login\/?$/.test(pathname)}]} href="Login"><span class="text">Log in</span></a>
-        <a class:list={['link', {active: /^\/Signup\/?$/.test(pathname)}]} href="Signup"><span class="text">Sign in</span></a>
+    <div class="links-lower-tier">
+      <a
+        class:list={["link", { active: /^\/Contact\/?$/.test(pathname) }]}
+        href="/Contact"><span class="text">Contact</span></a
+      >
+      <a
+        class:list={["link", { active: /^\/Disclaimer\/?$/.test(pathname) }]}
+        href="/Disclaimer"><span class="text">Disclaimer</span></a
+      >
     </div>
-    <div class="footer-logo">
-        <label for="show-credit-checkbox">
-            <img src="/icons/logo-footer.svg" alt="Scharade Logo">
-            <input type="checkbox" id="show-credit-checkbox" style="display: none;">
-            <div class="made-with-love">
-                <p>デザイン・フロントエンド：Kota OKAMOTO</p>
-                <p>バックエンド：Sae YOSHIZAKI</p>
-            </div>
-        </label>
-        <h3>©Scharade. All Rights Reserved.</h3>
-    </div>
+  </div>
+  <h3>Members only</h3>
+  <div class="member-links">
+    {
+      user ? (
+        <>
+          {isAdmin(user) && <a href="/Admin">Admin</a>}
+          <a href="/Member">Member</a>
+          {!user.siteManagement && (
+            <a
+              href={
+                user.portfolioId
+                  ? `/Portfolio/${encodeURIComponent(user.portfolioId)}`
+                  : "/Portfolio/edit"
+              }
+            >
+              My Portfolio
+            </a>
+          )}
+        </>
+      ) : (
+        <>
+          <>
+            <a href="/Login">Log in</a>
+            <a href="/Signup">Sign up</a>
+          </>
+        </>
+      )
+    }
+  </div>
+  {
+    user && (
+      <div class="footer-logout">
+        <button type="button" id="footer-logout">
+          Log out
+        </button>
+        <p id="footer-logout-status" role="status" aria-live="polite" />
+      </div>
+    )
+  }
+  <div class="footer-logo">
+    <label for="show-credit-checkbox">
+      <img src="/icons/logo-footer.svg" alt="Scharade Logo" />
+      <input type="checkbox" id="show-credit-checkbox" style="display: none;" />
+      <div class="made-with-love">
+        <p>デザイン・フロントエンド：Kota OKAMOTO</p>
+        <p>バックエンド：Sae YOSHIZAKI</p>
+      </div>
+    </label>
+    <h3>©Scharade. All Rights Reserved.</h3>
+  </div>
 </footer>
-</html>
+<script>
+  import { operationNotice, flashNotice } from "../scripts/siteNotice";
+  const button = document.querySelector<HTMLButtonElement>("#footer-logout");
+  const status = document.querySelector<HTMLElement>("#footer-logout-status");
+  button?.addEventListener("click", async () => {
+    if (button.disabled) return;
+    button.disabled = true;
+    if (status) status.textContent = "";
+    operationNotice("ログアウトしています…",false,"logout");
+    try {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      if (!response.ok) throw new Error();
+      flashNotice("ログアウトしました。");
+      location.assign("/");
+    } catch {
+      if (status)
+        status.textContent = "ログアウトできませんでした。再度お試しください。";
+      operationNotice("ログアウトできませんでした。再度お試しください。",true,"logout");
+      button.disabled = false;
+    }
+  });
+</script>

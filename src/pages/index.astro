@@ -11,22 +11,15 @@ import {
   normalizeTags,
 } from "../utils/blog";
 import { linkToPost } from "../utils/linkToPost";
-import type { ImageMetadata } from "astro";
 import type { MicroCMSImage } from "microcms-js-sdk";
 
 import { optimizeMicrocmsImage } from "../utils/microcmsImage";
-import { Image } from "astro:assets";
-import logo from "/public/header/logo.svg";
+import SiteImage from "../components/SiteImage.astro";
+import { getContent, contentText } from "../lib/siteContent";
+import { siteImage } from "../utils/siteImage";
+const content = getContent("home", Astro.locals.preview);
+const common = getContent("common", Astro.locals.preview);
 
-const ActivityCardImageModules = import.meta.glob<{ default: ImageMetadata }>(
-  "../assets/activity/*.{jpg,jpeg,png,webp,avif}",
-  {
-    eager: true,
-  },
-);
-const activityCardPhotos = Object.values(ActivityCardImageModules).sort(
-  (a, b) => a.default.src.localeCompare(b.default.src),
-);
 const shuffleArray = <T,>(items: T[]) => {
   for (let i = items.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -36,90 +29,31 @@ const shuffleArray = <T,>(items: T[]) => {
   return items;
 };
 
-const { contents: posts } = await microcmsClient.getList<Blog>({
-  endpoint: "blog",
-  queries: {
-    limit: 20,
-    orders: "-publishedAt",
-    depth: 2,
-  },
-});
-
-const tabs = buildTabs(posts);
-const tabPostLimit = 3;
-type CarouselImageEntry = {
-  image?: MicroCMSImage;
-};
-
-const { contents: carouselImageContents } =
-  await microcmsClient.getList<CarouselImageEntry>({
+type CarouselImageEntry = { image?: MicroCMSImage };
+const [postsResult, carouselResult] = await Promise.allSettled([
+  microcmsClient.getList<Blog>({
+    endpoint: "blog",
+    queries: { limit: 20, orders: "-publishedAt", depth: 2 },
+  }),
+  microcmsClient.getList<CarouselImageEntry>({
     endpoint: "card_image",
     queries: { limit: 20 },
-  });
-
-const fixedTexts = [
-  {
-    title: "Scharade",
-    text: "〜活動内容紹介〜",
-    slug: "",
-    image: `<svg xmlns="http://www.w3.org/2000/svg" width="78" height="59" viewBox="0 0 78 59" fill="none">
-              <path d="M38.875 52.5666C47.0972 52.5666 53.7626 45.8782 53.7626 37.6278C53.7626 29.3773 47.0972 22.689 38.875 22.689C30.6528 22.689 23.9875 29.3773 23.9875 37.6278C23.9875 45.8782 30.6528 52.5666 38.875 52.5666Z" stroke="white" />
-              <path d="M38.875 57.6369C48.1795 57.6369 64.2629 57.6634 73.578 57.6104C76.1106 57.5821 76.6637 57.0237 76.6337 54.4063C76.6478 44.9709 76.6672 23.4295 76.6249 13.9021C76.5826 12.8329 76.5474 11.8185 75.658 11.2671C74.8831 10.7299 72.4649 10.6927 71.063 10.6821C68.8632 10.6627 65.9414 10.6786 63.4316 10.6715C61.2618 10.6645 59.4478 10.6185 58.2378 10.0866C54.1659 8.44123 57.4682 1.3138 52.262 1.1141C44.5849 0.925004 33.1616 1.01337 25.8526 1.07876C23.1931 1.13884 22.3478 2.57741 22.0501 4.87487C21.6961 7.91635 21.0814 10.2633 17.5749 10.5372C14.299 10.8076 10.4701 10.615 7.2013 10.6768C5.56865 10.7281 3.77397 10.5973 2.26637 11.1293C1.01767 11.6312 1.0617 12.9831 1.01239 14.2185C1.00358 25.4336 0.996536 46.8954 1.00182 57.6369" stroke="white" />
-              <path d="M38.912 57.5644C28.6195 57.681 19.6918 49.2352 19.1617 38.9708C18.024 24.0762 34.051 13.2251 47.3658 19.7482C54.2205 23.0194 58.6975 29.9188 58.701 37.7072" stroke="white" />
-            </svg>`,
-  },
-  {
-    title: "定例会",
-    text: "月に2回、E212の部室にて定例会を行なっています！定例会ではカメラ講習、ボドゲ大会などを行なっています。",
-    slug: "",
-  },
-  {
-    title: "撮影会",
-    text: "月に２回、東京近辺で撮影会を行なっています！神楽坂撮影会、星空ドライブ撮影会、ディズニー撮影会など。",
-    slug: "",
-  },
-  {
-    title: "展示",
-    text: "年に5回、学生会館や外部のスペースを借りて展示を行なっています！自分の作品を多くの方に見てもらえるので技術の向上になります。",
-    slug: "",
-  },
-  {
-    title: "夏合宿",
-    text: "8月~9月頃に1泊2日か2泊3日の合宿を行います！2025年には石川・富山、2024年には熱海・伊東に行きました。",
-    slug: "",
-  },
-  {
-    title: "春合宿",
-    text: "2月~3月頃に1泊2日か2泊3日の合宿を行います！2025年には宮城・福島、2024年には長野に行きました。",
-    slug: "",
-  },
-  {
-    title: "新歓",
-    text: "4月~5月は新入生歓迎企画を行います！ビラを配ったり食事会をしたりなど、色々な人と話せるいい機会になります。",
-    slug: "",
-  },
-  {
-    title: "部室",
-    text: "学生会館のE224に部室があります！2階にあるためとてもアクセスがよく、過ごしやすい空間になっています。詳しくはAbout usの方へ。",
-    slug: "",
-  },
-];
-
-const activityCards = fixedTexts.map((textData, index) => ({
-  ...textData,
-  backgroundImage: activityCardPhotos[index % activityCardPhotos.length],
-}));
-
-// カルーセル画像のランダムシャッフル
-const CarouselImageModules = import.meta.glob<{ default: ImageMetadata }>(
-  "../assets/ads-images/*.{jpg,jpeg,png,webp,avif}",
-  {
-    eager: true,
-  },
-);
-const fallbackCarouselImages = shuffleArray(
-  Object.values(CarouselImageModules),
-);
+  }),
+]);
+const posts =
+  postsResult.status === "fulfilled" ? postsResult.value.contents : [];
+const carouselImageContents =
+  carouselResult.status === "fulfilled" ? carouselResult.value.contents : [];
+const tabs = buildTabs(posts);
+const tabPostLimit = 3;
+const activityCards = content.activities;
+const fallbackCarouselImages = shuffleArray([
+  { src: "/media/site/ads-images/Photo1.webp", alt: "写団シャレードの作品" },
+  { src: "/media/site/ads-images/Photo2.webp", alt: "写団シャレードの作品" },
+  { src: "/media/site/ads-images/Photo3.webp", alt: "写団シャレードの作品" },
+  { src: "/media/site/ads-images/Photo4.webp", alt: "写団シャレードの作品" },
+  { src: "/media/site/ads-images/Photo5.webp", alt: "写団シャレードの作品" },
+]);
 const carouselImages = shuffleArray(
   carouselImageContents
     .map((item) => item.image)
@@ -130,14 +64,12 @@ const carouselImages = shuffleArray(
     })),
 );
 const displayCarouselImages =
-  carouselImages.length > 0
-    ? carouselImages
-    : fallbackCarouselImages.map((image) => ({
-        src: image.default.src,
-        alt: "広告イメージ",
-      }));
+  carouselImages.length > 0 ? carouselImages : fallbackCarouselImages;
 
 const mainVisualImages = displayCarouselImages.slice(0, 3);
+
+import { Image } from "astro:assets";
+import logo from "/public/header/logo.svg";
 ---
 
 <Layout>
@@ -154,7 +86,9 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
               class={`main-visual-photo${index + 1}`}
               data-lightbox="main-photo"
             >
-              <Image
+              <SiteImage
+                eager={true}
+                sizes="(max-width:767px) 60vw, 400px"
                 src={photo.src}
                 alt={photo.alt || `写団シャレードの活動写真${index + 1}`}
                 height={160}
@@ -201,14 +135,8 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
         <source media="(min-width: 769px)" srcset="/icons/Line-1.svg" />
         <img src="/icons/Line-2.svg" alt="SVGの代替テキスト" />
       </picture>
-      <h1 class="slogan-text">
-        <span>私たちと一緒に</span><span>一生に残る素敵な思い出を</span><span
-          >写真に残しませんか？</span
-        >
-      </h1>
-      <p class="slogan-subtext">
-        Shall we create and capture beautiful memories together?
-      </p>
+      <h1 class="slogan-text">{content.slogan.split("\n").map(line => <span>{line}</span>)}</h1>
+      <p class="slogan-subtext">{content.sloganEnglish}</p>
       <picture class="slogan-line line-2">
         <source media="(min-width: 769px)" srcset="/icons/Line-1.svg" />
         <img src="/icons/Line-2.svg" alt="SVGの代替テキスト" />
@@ -290,21 +218,23 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
                 <div
                   class="activity-card"
                   id={`card-${slotIndex + 1}`}
-                  style={`background-image: url(${card.backgroundImage.default.src});`}
+                  tabindex="0" style={`background-image: url(${siteImage(card.image, 480)});`}
                 >
                   <div class="activity-card-contents">
-                    {card.image ? (
-                      <div set:html={card.image} style="display: contents;" />
-                    ) : null}
+                    {slotIndex === 0 && (<svg xmlns="http://www.w3.org/2000/svg" width="78" height="59" viewBox="0 0 78 59" fill="none">
+              <path d="M38.875 52.5666C47.0972 52.5666 53.7626 45.8782 53.7626 37.6278C53.7626 29.3773 47.0972 22.689 38.875 22.689C30.6528 22.689 23.9875 29.3773 23.9875 37.6278C23.9875 45.8782 30.6528 52.5666 38.875 52.5666Z" stroke="white" />
+              <path d="M38.875 57.6369C48.1795 57.6369 64.2629 57.6634 73.578 57.6104C76.1106 57.5821 76.6637 57.0237 76.6337 54.4063C76.6478 44.9709 76.6672 23.4295 76.6249 13.9021C76.5826 12.8329 76.5474 11.8185 75.658 11.2671C74.8831 10.7299 72.4649 10.6927 71.063 10.6821C68.8632 10.6627 65.9414 10.6786 63.4316 10.6715C61.2618 10.6645 59.4478 10.6185 58.2378 10.0866C54.1659 8.44123 57.4682 1.3138 52.262 1.1141C44.5849 0.925004 33.1616 1.01337 25.8526 1.07876C23.1931 1.13884 22.3478 2.57741 22.0501 4.87487C21.6961 7.91635 21.0814 10.2633 17.5749 10.5372C14.299 10.8076 10.4701 10.615 7.2013 10.6768C5.56865 10.7281 3.77397 10.5973 2.26637 11.1293C1.01767 11.6312 1.0617 12.9831 1.01239 14.2185C1.00358 25.4336 0.996536 46.8954 1.00182 57.6369" stroke="white" />
+              <path d="M38.912 57.5644C28.6195 57.681 19.6918 49.2352 19.1617 38.9708C18.024 24.0762 34.051 13.2251 47.3658 19.7482C54.2205 23.0194 58.6975 29.9188 58.701 37.7072" stroke="white" />
+            </svg>)}
 
                     {card.title && <h1>{card.title}</h1>}
                     {card.text && <p class="activity-card-meta">{card.text}</p>}
                   </div>
 
-                  {card.slug ? (
+                  {card.url ? (
                     <a
                       class="activity-card-link"
-                      href={card.slug}
+                      href={card.url}
                       aria-label={`${card.title || "詳細"} ページ`}
                     />
                   ) : null}
@@ -348,11 +278,7 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
       </div>
       <div class="activity-table-text">
         <a href="Contact">
-          <p>
-            <span>撮影依頼も承っております。</span><span
-              >御依頼はこちらから。</span
-            >
-          </p>
+          <p>{content.commission.split("\n").map(line => <span>{line}</span>)}</p>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="25"
@@ -371,9 +297,7 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
         <h1>How&nbsp;to&nbsp;join</h1>
         <div class="section-title-line"></div>
       </div>
-      <h1 class="advertising-title">
-        あなたの大学生活を、<br />あなたの目線で「写真」に残してみませんか？
-      </h1>
+      <h1 class="advertising-title">{content.joinTitle.split("\n").map((line,i) => <>{i > 0 && <br/>}{line}</>)}</h1>
       <div class="photo-carousel">
         <div class="click-popup-3">
           <div class="arrow-line-3">
@@ -407,7 +331,7 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
           <p>click!!</p>
         </div>
         <div class="upper-film-hole">
-          <img src="/advertising/film-hole.svg" alt="フィルム穴のイラスト" />
+          <img src="/media/decorations/film-hole.webp" alt="フィルム穴のイラスト" />
         </div>
         <div class="photo-carousel-contents">
           <ul>
@@ -415,7 +339,8 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
               displayCarouselImages.map((image) => (
                 <li class="photo-carousel-list">
                   <a href={image.src} data-lightbox="carousel-contents-group">
-                    <Image
+                    <SiteImage
+                      sizes="240px"
                       src={image.src}
                       alt={image.alt}
                       height={160}
@@ -428,39 +353,14 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
           </ul>
         </div>
         <div class="lower-film-hole">
-          <img src="/advertising/film-hole.svg" alt="フィルム穴のイラスト" />
+          <img src="/media/decorations/film-hole.webp" alt="フィルム穴のイラスト" />
         </div>
       </div>
       <div class="how-to-join">
-        <div class="step-1">
-          <h1>01</h1>
-          <div class="how-to-text">
-            <h2>活動に参加する</h2>
-            <p>
-              Instagramなどから新歓企画を確認！<br
-              />Contact、またはInstagramのDMなどで参加したい旨を教えてください！
-            </p>
-          </div>
-        </div>
-        <div class="step-2">
-          <h1>02</h1>
-          <div class="how-to-text">
-            <h2>会費を払う</h2>
-            <p>
-              企画参加後に三役に手渡し、または振込で会費をお支払いいただきます。入会費はなく半期4000円です。
-            </p>
-          </div>
-        </div>
-        <div class="step-3">
-          <h1>03</h1>
-          <div class="how-to-text">
-            <h2>入会完了</h2>
-            <p>
-              これだけで入会できます！<br
-              />部室のプリンターやL判写真用紙、暗室など、お好きにご利用いただけます！
-            </p>
-          </div>
-        </div>
+        {content.steps.map((step,i) => <div class={`step-${i+1}`}>
+          <h1>{String(i+1).padStart(2,"0")}</h1><div class="how-to-text"><h2>{step.title}</h2>
+          <p>{contentText(step.text,common).split("\n").map((line,j) => <>{j > 0 && <br/>}{line}</>)}</p></div>
+        </div>)}
       </div>
       <div class="button-div">
         <a class="join-button" href="Contact">Contact</a>
@@ -469,133 +369,4 @@ const mainVisualImages = displayCarouselImages.slice(0, 3);
   </Fragment>
 </Layout>
 
-<script is:inline type="text/javascript">
-  (() => {
-    const carousels = Array.from(
-      document.querySelectorAll(".photo-carousel-contents"),
-    );
-
-    if (carousels.length === 0) return;
-
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    );
-
-    const minWidth = 140;
-    const maxWidth = 240;
-    const aspectRatio = 2 / 3;
-    const speedPxPerSec = 30;
-
-    const attachCarousel = (carousel) => {
-      const originalList = carousel.querySelector("ul");
-
-      if (!originalList) return;
-
-      // clone作成
-      const clonedList = originalList.cloneNode(true);
-      carousel.appendChild(clonedList);
-
-      const lists = [originalList, clonedList];
-
-      let listWidth = 0;
-      let offset = 0;
-      let lastTime = 0;
-      let rafId = 0;
-      let gap = 0;
-
-      const updateItemSize = () => {
-        const containerWidth = carousel.clientWidth || window.innerWidth;
-
-        const itemWidth = Math.round(
-          Math.max(minWidth, Math.min(maxWidth, containerWidth * 0.28)),
-        );
-
-        const itemHeight = Math.round(itemWidth * aspectRatio);
-
-        carousel.querySelectorAll(".photo-carousel-list").forEach((node) => {
-          if (!(node instanceof HTMLElement)) return;
-
-          node.style.width = `${itemWidth}px`;
-          node.style.height = `${itemHeight}px`;
-        });
-
-        carousel.querySelectorAll("ul li").forEach((node) => {
-          if (!(node instanceof HTMLElement)) return;
-
-          node.style.width = `${itemWidth}px`;
-          node.style.minWidth = `${itemWidth}px`;
-        });
-      };
-
-      const measure = () => {
-        const styles = getComputedStyle(carousel);
-
-        gap = parseFloat(styles.columnGap || styles.gap || "0");
-
-        listWidth = originalList.scrollWidth;
-      };
-
-      const render = () => {
-        lists[0].style.transform = `translateX(${offset}px)`;
-
-        lists[1].style.transform = `translateX(${offset + listWidth + gap}px)`;
-      };
-
-      const step = (timestamp) => {
-        if (prefersReducedMotion.matches) return;
-
-        if (!lastTime) lastTime = timestamp;
-
-        const delta = (timestamp - lastTime) / 1000;
-
-        lastTime = timestamp;
-
-        offset -= speedPxPerSec * delta;
-
-        if (listWidth > 0 && Math.abs(offset) >= listWidth + gap) {
-          offset = 0;
-        }
-
-        render();
-
-        rafId = requestAnimationFrame(step);
-      };
-
-      const refresh = () => {
-        updateItemSize();
-        measure();
-
-        offset = 0;
-        lastTime = 0;
-
-        render();
-      };
-
-      refresh();
-
-      if (!prefersReducedMotion.matches) {
-        rafId = requestAnimationFrame(step);
-      }
-
-      window.addEventListener("resize", refresh);
-
-      if (typeof prefersReducedMotion.addEventListener === "function") {
-        prefersReducedMotion.addEventListener("change", () => {
-          cancelAnimationFrame(rafId);
-
-          lastTime = 0;
-
-          if (!prefersReducedMotion.matches) {
-            rafId = requestAnimationFrame(step);
-          }
-        });
-      }
-    };
-
-    carousels.forEach((carousel) => {
-      if (carousel instanceof HTMLElement) {
-        attachCarousel(carousel);
-      }
-    });
-  })();
-</script>
+<script>import "../scripts/homeCarousel.js";</script>

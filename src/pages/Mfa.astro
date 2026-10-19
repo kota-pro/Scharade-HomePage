@@ -1,0 +1,66 @@
+---
+import Layout from "../layouts/Layout.astro";
+import "../styles/Auth.css";
+import { mfaChallengeView } from "../lib/mfa.ts";
+import { mfaCookieName } from "../lib/sessionCookies.ts";
+let view: ReturnType<typeof mfaChallengeView>;
+try { view = mfaChallengeView(Astro.cookies.get(mfaCookieName(Astro.request))?.value ?? ""); }
+catch { return Astro.redirect("/Login", 302); }
+---
+<Layout title="二段階認証">
+  <section slot="body-slot" class="auth-section">
+    <div class="auth-heading"><p class="auth-pill">Member Only</p><h1>二段階認証</h1></div>
+    <div class="auth-grid auth-grid-single"><div class="auth-card">
+      <h2>登録メールを確認</h2>
+      <p><strong>{view.email}</strong> へ確認コードを送信しました。</p>
+      <p>メールに届いた6桁のコードを入力してください。ログイン開始から10分間有効です。</p>
+      <form id="mfa-form" class="auth-form" data-resend-wait={Math.max(0, view.resendAt - Date.now())}>
+        <div class="form-field"><label for="mfa-code">確認コード</label><input id="mfa-code" name="code" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" required autofocus /></div>
+        <button class="primary-button" type="submit">確認してログイン</button>
+      </form>
+      <p id="mfa-message" class="auth-message" role="status" aria-live="polite"></p>
+      <p>メールが届かない場合は、迷惑メールフォルダもご確認ください。</p>
+      <button id="mfa-resend" type="button" class="auth-link" disabled>確認コードを再送する</button>
+      <p id="mfa-resend-wait" class="resend-wait"></p>
+      <p>再送した場合は、最後に届いたメールのコードを使ってください。</p>
+      <a href="/Login" class="auth-link">ログインからやり直す</a>
+    </div></div>
+  </section>
+</Layout>
+<style>
+  #mfa-resend { background:none; border:0; padding:0; font:inherit; cursor:pointer; }
+  #mfa-resend:disabled { opacity:.65; cursor:default; }
+  .resend-wait { font-size:14px; min-height:1.5em; }
+</style>
+<script>
+  import { readApiResponse, apiErrorMessage } from "../scripts/apiResponse";
+  const unknownResult = "認証結果を確認できませんでした。ページを再読み込みしてログイン状態を確認してください。";
+  const form = document.querySelector<HTMLFormElement>("#mfa-form")!;
+  const message = document.querySelector<HTMLElement>("#mfa-message")!;
+  const code = document.querySelector<HTMLInputElement>("#mfa-code")!;
+  const button = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+  const resend = document.querySelector<HTMLButtonElement>("#mfa-resend")!;
+  const wait = document.querySelector<HTMLElement>("#mfa-resend-wait")!;
+  let resendAt = Date.now() + Number(form.dataset.resendWait), busy = false;
+  function countdown() {
+    const seconds = Math.max(0, Math.ceil((resendAt - Date.now()) / 1000));
+    resend.disabled = busy || seconds > 0;
+    wait.textContent = seconds > 0 ? `あと${seconds}秒で再送できます。` : "";
+  }
+  countdown(); const timer = window.setInterval(countdown, 1000);
+  window.addEventListener("pagehide", () => window.clearInterval(timer), { once:true });
+  async function submit(action: "verify" | "resend") {
+    busy = true; button.disabled = true; countdown();
+    message.textContent = action === "resend" ? "確認メールを再送しています…" : "確認しています…";
+    try {
+      const response = await fetch("/api/auth/mfa", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({action, ...(action === "verify" ? {code:code.value.trim()} : {})}) });
+      const data = await readApiResponse(response, unknownResult); if (!response.ok) throw new Error(data.message);
+      if (action === "verify") { location.assign(data.next || "/"); return; }
+      resendAt = Date.now() + Math.max(0, data.resendAt - data.serverNow); code.value = ""; code.focus();
+      message.textContent = "確認メールを再送しました。最後に届いたコードを入力してください。";
+    } catch(error) { message.textContent = apiErrorMessage(error, unknownResult); }
+    finally { busy = false; button.disabled = false; countdown(); }
+  }
+  form.addEventListener("submit", event => { event.preventDefault(); if (!busy) void submit("verify"); });
+  resend.addEventListener("click", () => { if (!busy) void submit("resend"); });
+</script>

@@ -1,0 +1,99 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import {
+  contentDocument,
+  isPageKey,
+  pageDefinitions,
+} from "../../../lib/siteContent";
+import { siteDefaults } from "../../../data/siteDefaults";
+const key = Astro.params.key ?? "";
+if (!isPageKey(key)) return Astro.redirect("/404");
+const page = pageDefinitions[key];
+const document = contentDocument(key);
+const initial = JSON.stringify({
+  key,
+  document,
+  defaults: siteDefaults[key],
+  preview: `${page.path}?preview=draft`,
+}).replace(/</g, "\\u003c");
+---
+
+<AdminLayout
+  title={`${page.title}の編集`}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "管理画面", href: "/Admin" },
+    { label: "ページ編集" },
+    { label: page.title },
+  ]}
+>
+  <div class="admin-intro">
+    <h2>{page.title}の編集</h2>
+    <nav id="editor-toc" class="admin-toc" aria-labelledby="editor-toc-heading" hidden>
+      <h3 id="editor-toc-heading">目次</h3>
+      <ul id="editor-toc-list" class="admin-toc-list"></ul>
+    </nav>
+    <p>
+      公開中のページは「公開する」を押すまで変わりません。項目内の写真や文章を編集できます。
+    </p>
+    {
+      key === "common" && (
+        <p>
+          ここで変更した会費・所在地・SNS等は、複数のページにまとめて反映されます。連絡先の表示を変更しても、送信先メールのサーバー設定は変わりません。
+        </p>
+      )
+    }
+    {
+      key === "home" && (
+        <p>
+          メイン写真・フィルム写真のコレクションはmicroCMSの「card_image」で管理します。活動紹介カードの写真はこの画面で変更できます。
+        </p>
+      )
+    }
+    <p class="admin-help">
+      文章中の「{"{{feeHalfYear}}"}」「{"{{feeAnnual}}"}」「{
+        "{{entranceFee}}"
+      }」は共通情報の会費を表示します。
+    </p>
+  </div>
+  <noscript>編集にはJavaScriptを有効にしてください。</noscript>
+  <form id="content-editor">
+    <div id="editor-fields"></div>
+    <div class="admin-actions admin-editor-target" id="editor-actions" tabindex="-1">
+      <button type="submit" class="admin-button">下書きを保存</button><button
+        type="button"
+        id="preview-content">プレビュー</button
+      ><button type="button" id="publish-content" class="admin-button"
+        >公開する</button
+      ><button type="button" id="restore-content">直前の公開版へ復元</button>
+    </div>
+    <p id="editor-status" role="status" aria-live="polite"></p>
+  </form>
+  <dialog id="publish-confirm" class="admin-dialog">
+    <h2>この内容を公開しますか？</h2><p>
+      下書きを確認してから公開してください。
+    </p><form method="dialog">
+      <button value="cancel">戻る</button><button
+        value="publish"
+        class="admin-button">公開する</button
+      >
+    </form>
+  </dialog>
+  <dialog id="restore-confirm" class="admin-dialog">
+    <h2>直前の公開版へ戻しますか？</h2><p>
+      現在の下書きも復元した内容に置き換わります。
+    </p><form method="dialog">
+      <button value="cancel">戻る</button><button
+        value="restore"
+        class="admin-button">復元する</button
+      >
+    </form>
+  </dialog>
+  <script
+    is:inline
+    type="application/json"
+    id="editor-initial"
+    set:html={initial}
+  />
+</AdminLayout>
+<script src="../../../scripts/contentEditor.ts"></script>

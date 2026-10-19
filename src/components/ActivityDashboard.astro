@@ -1,0 +1,185 @@
+---
+import ActivityShareButton from "../components/ActivityShareButton.astro";
+import { readActivities } from "../lib/activities";
+import { calendarWeeks, calendarCategory, calendarCategoryLabel } from "../lib/activityCalendar.ts";
+import { eventCategoryLabels, activityDate } from "../lib/activityTypes";
+import { readExhibitions } from "../lib/exhibitions.ts";
+import { exhibitionCalendarEntries } from "../lib/exhibitionCalendar.ts";
+const user = Astro.locals.user!;
+const data = readActivities();
+const notifications = data.notifications
+  .filter((n) => n.recipientIds.includes(user.id))
+  .reverse();
+const unread = notifications.filter((n) => !n.readBy[user.id]).length;
+const page = Math.max(1, Number(Astro.url.searchParams.get("notices")) || 1);
+const events = data.events
+  .filter((e) => e.status !== "draft" && e.recipientIds.includes(user.id))
+  .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+const exhibitionEntries = exhibitionCalendarEntries(readExhibitions().exhibitions, user.id);
+const calendarEntries = [...events.map(e => ({ ...e, href: `/Member/events/${e.id}`, kind: "event" as const })), ...exhibitionEntries];
+const requestedMonth = Astro.url.searchParams.get("month") || "";
+const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth)
+  ? requestedMonth
+  : new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 7);
+const first = new Date(`${month}-01T00:00:00+09:00`);
+const year = Number(month.slice(0, 4)),
+  m = Number(month.slice(5));
+const days = new Date(Date.UTC(year, m, 0)).getUTCDate();
+const weeks = calendarWeeks(month, calendarEntries);
+const previous = new Date(Date.UTC(year, m - 2, 1)).toISOString().slice(0, 7);
+const next = new Date(Date.UTC(year, m, 1)).toISOString().slice(0, 7);
+const monthHref = (value: string) => {
+  const params = new URLSearchParams(Astro.url.search);
+  params.set('view', 'calendar'); params.set('month', value);
+  return `?${params}`;
+};
+const view =
+  Astro.url.searchParams.get("view") === "calendar" ? "calendar" : "list";
+---
+
+<section
+  class="admin-section activity-section"
+  aria-labelledby="notification-heading"
+>
+  <h2 id="notification-heading">
+    通知 <span class="activity-badge">未読 {unread}</span>
+  </h2>
+  {
+    notifications.length === 0 ? (
+      <p>通知はまだありません。</p>
+    ) : (
+      <ul class="activity-list">
+        {notifications.slice((page - 1) * 10, page * 10).map((n) => (
+          <li>
+            <div class="activity-title-row"><a href={`/Member/notifications/${n.id}`}>
+              {!n.readBy[user.id] && <span class="activity-badge">未読</span>}{" "}
+              {n.title}
+            </a><ActivityShareButton kind="notifications" eventId={n.eventId} id={n.id} title={n.title} /></div>
+            <small>
+              {activityDate(n.createdAt)} · {n.senderName}
+            </small>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  <nav class="activity-actions" aria-label="通知のページ送り">
+    {
+      page > 1 && (
+        <a href={`?notices=${page - 1}&view=${view}&month=${month}`}>
+          新しい通知
+        </a>
+      )
+    }
+    {
+      notifications.length > page * 10 && (
+        <a href={`?notices=${page + 1}&view=${view}&month=${month}`}>
+          以前の通知
+        </a>
+      )
+    }
+  </nav>
+</section>
+<section
+  class="admin-section activity-section"
+  aria-labelledby="events-heading"
+>
+  <h2 id="events-heading">企画</h2>
+  <nav class="activity-actions" aria-label="企画の表示形式">
+    <a
+      href={`?view=list&month=${month}`}
+      aria-current={view === "list" ? "page" : undefined}>リスト</a
+    >
+    <a
+      href={`?view=calendar&month=${month}`}
+      aria-current={view === "calendar" ? "page" : undefined}>カレンダー</a
+    >
+  </nav>
+  {
+    view === "list" ? (
+      <>
+        {exhibitionEntries.length > 0 && <div class="activity-subsection"><h3>写真展の参加投票・フォーム入力</h3><ul class="activity-list">{exhibitionEntries.map(entry => <li><a href={entry.href}>{entry.title}</a><small>{activityDate(entry.startsAt)}〜{activityDate(entry.endsAt)}</small></li>)}</ul></div>}
+        {events.length === 0 && <p>企画はまだありません。</p>}
+        {[
+          [
+            "これからの企画",
+            events.filter((e) => Date.parse(e.endsAt) >= Date.now()),
+          ],
+          [
+            "過去の企画",
+            events.filter((e) => Date.parse(e.endsAt) < Date.now()).reverse(),
+          ],
+        ].map(([label, items]) => (
+          <div class="activity-subsection">
+            <h3>{label as string}</h3>
+            <ul class="activity-list">
+              {(items as typeof events).map((e) => (
+                <li>
+                  <div class="activity-title-row"><a href={`/Member/events/${e.id}`}>
+                    {e.status === "cancelled" ? "【中止】" : ""}
+                    {e.title}
+                  </a><ActivityShareButton kind="events" id={e.id} title={e.title} /></div>
+                  <small>{eventCategoryLabels[e.category ?? "other"]}</small>
+                  <small>
+                    {activityDate(e.startsAt)}〜{activityDate(e.endsAt)}
+                  </small>
+                  <small>
+                    回答：
+                    {{ attending: "参加", absent: "不参加", undecided: "未定" }[
+                      e.votes[user.id]?.value
+                    ] || "未回答"}{" "}
+                    · 投票期日 {activityDate(e.deadline)}
+                  </small>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </>
+    ) : (
+      <>
+        <h3 class="activity-calendar-month">{year}年{m}月</h3>
+        <ul class="activity-calendar-legend" aria-label="予定の種類">{[...Object.entries(eventCategoryLabels),["exhibition","展示"]].map(([category,label]) => <li data-calendar-category={category}>{label}</li>)}</ul>
+        <div class="activity-calendar-shell" data-calendar-navigation>
+        <a class="activity-calendar-arrow" data-calendar-previous href={monthHref(previous)} aria-label="前月を表示" title="前月"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></a>
+        <div class="activity-calendar" data-calendar-swipe tabindex="0" role="table" aria-label={`${year}年${m}月の企画`}>
+          <div class="activity-calendar-week activity-calendar-head" role="row">{["月","火","水","木","金","土","日"].map(d => <div role="columnheader">{d}</div>)}</div>
+          {weeks.map(week => <div class="activity-calendar-week activity-calendar-spans" role="row" style={`grid-template-rows:30px repeat(${week.lanes}, 44px);`}>
+            {week.days.map((day,i) => <div role="cell" class="activity-calendar-day" style={`grid-column:${i+1};grid-row:1 / span ${week.lanes+1};`}>{day && <span>{day}</span>}</div>)}
+            {week.segments.map(segment => <a href={segment.entry.href} data-calendar-kind={segment.entry.kind} data-calendar-category={calendarCategory(segment.entry)} data-calendar-start={segment.firstDay} data-calendar-end={segment.lastDay} class="activity-calendar-bar" style={`grid-column:${segment.column+1} / span ${segment.span};grid-row:${segment.lane+2};`} aria-label={`${m}月${segment.firstDay}日〜${segment.lastDay}日 ${calendarCategoryLabel(segment.entry)}：${segment.entry.title}`} title={`${calendarCategoryLabel(segment.entry)}：${segment.entry.title}`}>
+              {segment.continuesBefore && <span aria-hidden="true">‹ </span>}{segment.entry.status === "cancelled" && "中止："}{segment.entry.title}{segment.continuesAfter && <span aria-hidden="true"> ›</span>}
+            </a>)}
+          </div>)}
+        </div>
+        <a class="activity-calendar-arrow" data-calendar-next href={monthHref(next)} aria-label="翌月を表示" title="翌月"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></a>
+        </div>
+        <div class="activity-subsection activity-month-events">
+          <h3>この月の企画</h3>
+          <ul class="activity-list">
+            {calendarEntries
+              .filter(
+                (e) =>
+                  Date.parse(e.startsAt) < first.getTime() + days * 86400000 &&
+                  Date.parse(e.endsAt) > first.getTime(),
+              )
+              .map((e) => (
+                <li>
+                  <div class="activity-title-row"><a href={e.href}>
+                    {e.status === "cancelled" && "【中止】"}
+                    {e.title}
+                  </a>{e.kind === "event" && <ActivityShareButton kind="events" id={e.id} title={e.title} />}</div>
+                  <small>{calendarCategoryLabel(e)}</small>
+                  <small>
+                    {activityDate(e.startsAt)}〜{activityDate(e.endsAt)}
+                  </small>
+                </li>
+              ))}
+          </ul>
+        </div>
+      </>
+    )
+  }
+</section>
+<script>
+  import '../scripts/activityCalendarNavigation.ts';
+</script>

@@ -1,0 +1,162 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { readDeletionRequests } from "../../../lib/accountDeletionRequests";
+import { deletionChecks } from "../../../lib/deletionPrivacy";
+const request = readDeletionRequests().requests.find(
+  (r) => r.id === Astro.params.id,
+);
+if (!request) Astro.response.status = 404;
+const date = (time: number) =>
+  new Date(time).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+const ready =
+  request?.status === "processing" &&
+  (request.notBefore ?? Infinity) <= Date.now();
+---
+
+<AdminLayout title="アカウント削除申請の処理">
+  {
+    request ? (
+      <section data-deletion-admin={request.id}>
+        <h2>アカウント削除申請の処理</h2>
+        <>
+          <p>
+            対象：{request.name || "削除済みアカウント"}／
+            {request.email || "連絡先消去済み"}
+          </p>
+          <p>
+            受付：{date(request.createdAt)}／対応期限：{date(request.dueAt)}
+            （日本時間）
+          </p>
+        </>
+        {request.status === "complete" ? (
+          <p role="status">
+            削除済みです。完了メール：
+            {request.mailSentAt ? "送信済み" : "送信待ち・再試行中"}
+          </p>
+        ) : (
+          <>
+            <h3>1. ログイン・通知を停止し、ローカルの個人データを削除</h3>
+            <p>
+              処理を開始すると、このアカウントは利用できなくなります。写真展の提出内容・写真と、立替申請・領収書のローカルコピーを削除し、共有する班の履歴を匿名化します。共有する出力ファイルは削除後、必要に応じて再生成してください。
+            </p>
+            <p>
+              進行中の外部送信が終了するまで、開始後15分は完了にできません。15分経過後に外部サービスとバックアップを確認してください。
+            </p>
+            <button
+              class="admin-button"
+              data-deletion-start
+              disabled={request.userId === Astro.locals.user?.id}
+            >
+              {request.status === "pending"
+                ? "削除処理を開始する"
+                : "ローカル削除を再試行する"}
+            </button>
+            {request.userId === Astro.locals.user?.id && (
+              <p>
+                自分の申請は別の管理者が処理してください。最後の管理者は先に管理者権限を引き継いでください。
+              </p>
+            )}
+            {request.status === "processing" && (
+              <>
+                <h3>2. 外部サービス・原本・バックアップを確認</h3>
+                <p>
+                  外部送信の終了待ち：{date(request.notBefore ?? 0)}
+                  以降に確認し、この画面を再読み込みしてください。
+                </p>
+                <details open>
+                  <summary>確認対象の保存先と識別子</summary>
+                  <pre>{JSON.stringify(request.inventory, null, 2)}</pre>
+                </details>
+                {request.portfolioId && (
+                  <p>
+                    <a
+                      href={`/Portfolio/${encodeURIComponent(request.portfolioId)}`}
+                    >
+                      対象のPortfolioを確認する
+                    </a>
+                  </p>
+                )}
+                <p>
+                  画像原本が他のメンバーの投稿や共有ファイルから参照されている場合は、本人の情報・投稿を取り除いた状態に整理してから確認してください。Googleフォームの回答・集計、Lightroom、Drive、会計の保存先、参照元の名簿、バックアップを含めて確認します。
+                </p>
+                <h3>3. アカウント・Portfolioを削除し、完了を通知</h3>
+                <form data-deletion-complete>
+                  {Object.entries(deletionChecks).map(([key, label]) => (
+                    <label class="deletion-admin-check">
+                      <input
+                        type="checkbox"
+                        name="checks"
+                        value={key}
+                        required
+                        disabled={!ready}
+                      />
+                      {label}
+                    </label>
+                  ))}
+                  <label>
+                    確認のため対象のメールアドレスを入力
+                    <input
+                      type="email"
+                      name="confirmationEmail"
+                      autocomplete="off"
+                      required
+                      disabled={!ready}
+                    />
+                  </label>
+                  <button type="submit" class="admin-button" disabled={!ready}>
+                    アカウント・Portfolioの削除を確定する
+                  </button>
+                </form>
+              </>
+            )}
+          </>
+        )}
+        <p data-deletion-admin-status role="status" aria-live="polite" />
+      </section>
+    ) : (
+      <p>申請が見つかりません。</p>
+    )
+  }
+  <p><a href="/Admin/account-deletion-requests">削除申請の一覧へ戻る</a></p>
+</AdminLayout>
+<script>
+  import "../../../scripts/accountDeletionAdmin";
+</script>
+<style>
+  pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-height: 50vh;
+    overflow: auto;
+    font-size: 13px;
+    padding: 16px;
+    background: #f3f3f3;
+  }
+  .deletion-admin-check {
+    display: flex;
+    gap: 12px;
+    align-items: start;
+    margin: 18px 0;
+  }
+  .deletion-admin-check input {
+    margin-top: 7px;
+    flex-shrink: 0;
+  }
+  input[type="email"] {
+    display: block;
+    font-size: 16px;
+    padding: 12px;
+    width: min(100%, 500px);
+    box-sizing: border-box;
+  }
+  h3 {
+    margin-top: 32px;
+  }
+  button {
+    min-height: 44px;
+  }
+  p,
+  label {
+    line-height: 1.9;
+  }
+</style>

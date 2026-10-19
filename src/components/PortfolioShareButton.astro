@@ -1,0 +1,6 @@
+---
+import Icon from "./PortfolioShareIcon.astro";
+interface Props { name: string; }
+const { name } = Astro.props;
+---
+<button type="button" class="portfolio-share-trigger portfolio-share-social" data-portfolio-share-open aria-label={`${name}のPortfolioを共有`} aria-haspopup="dialog" aria-controls="portfolio-share-dialog" title="Portfolioを共有" hidden><Icon kind="share" /></button>

@@ -1,0 +1,309 @@
+/* Match Contact's white confirmation panel, ruled heading and edit feedback. */
+.activity-confirm,
+.activity-confirm::backdrop {
+  transition: none;
+}
+.activity-confirm {
+  box-sizing: border-box;
+  width: 83vw;
+  height: 80vh;
+  max-width: none;
+  max-height: 90dvh;
+  margin: auto;
+  padding: 24px 40px;
+  border: 1px solid #000;
+  background: #fff;
+  color: #000;
+  box-shadow: 0 4px 8px #0000001a;
+  overflow: auto;
+  font:
+    18px/1.6 "Zen Kurenaido",
+    sans-serif;
+  letter-spacing: 2.7px;
+  overscroll-behavior: contain;
+}
+.activity-confirm[open] {
+  display: flex;
+  flex-direction: column;
+}
+.activity-confirm::backdrop {
+  background: #000c;
+}
+.activity-confirm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  flex-shrink: 0;
+  margin-bottom: 32px;
+}
+.activity-confirm-header::after {
+  content: "";
+  position: absolute;
+  width: 43%;
+  height: 1px;
+  background: #000;
+  left: -15px;
+  bottom: 0;
+}
+.activity-confirm .activity-confirm-header h2 {
+  font:
+    400 40px/1.5 "linotype-didot",
+    serif;
+  letter-spacing: 6px;
+  margin: 0 0 12px;
+}
+.activity-confirm-close {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  position: relative;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.activity-confirm-close span {
+  position: absolute;
+  height: 1px;
+  width: 36px;
+  left: 4px;
+  top: 50%;
+  background: #000;
+  transition: transform 0.3s;
+}
+.activity-confirm-close span:first-child {
+  transform: rotate(45deg);
+}
+.activity-confirm-close span:last-child {
+  transform: rotate(-45deg);
+}
+.activity-confirm-close:hover span:first-child {
+  transform: rotate(-135deg);
+}
+.activity-confirm-close:hover span:last-child {
+  transform: rotate(135deg);
+}
+.activity-confirm .activity-confirm-note {
+  font-size: 14px;
+  letter-spacing: 1px;
+  margin: 0 0 24px;
+}
+.activity-confirm-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 32px;
+  flex: 1;
+}
+.activity-confirm-fields {
+  margin: 0;
+  min-width: 0;
+}
+.activity-confirm-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.activity-confirm-row dt,
+.activity-confirm .activity-confirm-content h3 {
+  font:
+    500 20px/1.6 "Zen Old Mincho",
+    serif;
+  letter-spacing: 3px;
+  margin: 0;
+}
+.activity-confirm [data-preview-value] {
+  position: relative;
+  min-width: 0;
+  margin: 0;
+  padding: 0 28px 6px 4px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+}
+.activity-confirm [data-preview-value][data-edit-field]::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  bottom: 10px;
+  width: 16px;
+  height: 16px;
+  background: url("/icons/editable.svg") center / contain no-repeat;
+  opacity: 0.4;
+}
+.activity-confirm
+  [data-preview-value][data-edit-field]:is(:hover, :focus-visible) {
+  border-color: #0db49b;
+  color: #0db49b;
+}
+.activity-confirm-content {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 28px;
+}
+.activity-confirm .activity-confirm-content h3 {
+  margin-bottom: 14px;
+}
+.activity-confirm .activity-confirm-message {
+  min-height: 120px;
+  padding: 10px 28px 10px 10px;
+  border: 1px solid #f0f0f0;
+}
+.activity-confirm-image-edit {
+  display: block;
+  width: 100%;
+  border: 1px solid #f0f0f0;
+  padding: 12px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.activity-confirm-image-edit:hover {
+  border-color: #0db49b;
+}
+.activity-confirm-image-edit .activity-eyecatch {
+  margin: 10px 0 0;
+}
+.activity-confirm-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  margin: 38px 0 0;
+  flex-shrink: 0;
+}
+.activity-confirm-footer p {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 16px;
+}
+.activity-confirm [data-error="true"],
+.activity-header-field [data-error="true"] {
+  color: #8e2424;
+}
+.activity-confirm-button,
+.activity-form .activity-confirm-button {
+  display: inline-block;
+  padding: 14px 32px 16px;
+  border: 1px solid #000;
+  background: #fff;
+  color: #000;
+  font:
+    20px/1.5 "Zen Old Mincho",
+    serif;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition:
+    background 0.3s,
+    color 0.3s;
+}
+.activity-confirm-button:hover,
+.activity-form .activity-confirm-button:hover {
+  background: #707070;
+  color: #fff;
+}
+.activity-confirm button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.activity-confirm :is(button, [tabindex], a):focus-visible {
+  outline: 2px solid #0b8978;
+  outline-offset: 3px;
+}
+.activity-confirm-trigger {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  margin-top: 10px;
+}
+.activity-confirm-trigger::before,
+.activity-confirm-trigger::after {
+  content: "";
+  height: 1px;
+  background: #000;
+  flex: 1;
+}
+.activity-header-field .activity-eyecatch {
+  max-width: 620px;
+  margin: 24px auto;
+}
+.activity-header-field [hidden] {
+  display: none;
+}
+.activity-form .activity-field-hint,
+.activity-header-field p {
+  font-size: 14px;
+  letter-spacing: 1px;
+  margin: 0;
+}
+@media (max-width: 768px) {
+  .activity-confirm {
+    width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border: 0;
+    padding: calc(18px + env(safe-area-inset-top)) 16px
+      calc(18px + env(safe-area-inset-bottom));
+    font-size: 14px;
+    letter-spacing: 1.4px;
+  }
+  .activity-confirm-header {
+    position: sticky;
+    top: -1px;
+    background: #fff;
+    z-index: 2;
+    margin-bottom: 24px;
+    padding-bottom: 14px;
+  }
+  .activity-confirm-header::after {
+    width: 100%;
+    left: 0;
+  }
+  .activity-confirm .activity-confirm-header h2 {
+    font-size: 30px;
+    letter-spacing: 4px;
+    margin: 0;
+  }
+  .activity-confirm-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+  .activity-confirm-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    margin-bottom: 18px;
+  }
+  .activity-confirm-row dt,
+  .activity-confirm .activity-confirm-content h3 {
+    font-size: 16px;
+    letter-spacing: 2px;
+  }
+  .activity-confirm-button,
+  .activity-form .activity-confirm-button {
+    font-size: 16px;
+    letter-spacing: 2px;
+    padding: 12px 20px 14px;
+  }
+  .activity-confirm-trigger {
+    gap: 18px;
+  }
+}
+@media (max-width: 480px) {
+  .activity-confirm {
+    padding-inline: 14px;
+  }
+  .activity-confirm .activity-confirm-header h2 {
+    font-size: 24px;
+    letter-spacing: 3px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .activity-confirm-close span {
+    transition: none;
+  }
+}

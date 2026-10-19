@@ -14,10 +14,43 @@ out/
 .env
 .env.*
 
-next-app/.next/
-next-app/node_modules/
-next-app/out/
-next-app/.env
-next-app/.env.*
+# This repository distributes the Astro website. Keep other projects locally.
+/next-app/
+/mobile/
+/moblie/
+/video-guide/
+/.easignore
+/scripts/prepare-mobile-assets.mjs
+/tests/mobile-routing.test.ts
 
 .data/
+
+!.env.example
+.image-manifest.json
+playwright-report/
+test-results/
+
+# Credentials, signing materials, local backups, and editor merge artifacts.
+credentials.json
+google-services.json
+GoogleService-Info.plist
+*.pem
+*.key
+*.p8
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.mobileprovision
+*.ipa
+*.aab
+*.apk
+/backups/
+*.bak
+*.orig
+*.orig.*
+*.rej
+*.swp
+*.swo
+*~
+*.tsbuildinfo

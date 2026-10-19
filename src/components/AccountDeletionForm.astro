@@ -1,0 +1,124 @@
+---
+import { readDeletionRequests } from "../lib/accountDeletionRequests";
+const user = Astro.locals.user;
+const request = user
+  ? readDeletionRequests().requests.find(
+      (r) => r.userId === user.id && r.status !== "complete",
+    )
+  : null;
+---
+
+<section class="deletion-form" data-deletion-form>
+  <h2>アカウント削除の申請</h2>
+  <p>
+    Scharadeのアカウント、Portfolio、提出した写真などの関連する個人データの削除を申請できます。登録の承認待ち・ログインできない方も、登録したメールアドレスで申請できます。
+  </p>
+  <p>
+    メールによる本人確認後に申請を受け付け、運営が<strong>7日以内</strong
+    >に処理します。削除が完了したらメールでお知らせします。削除後は元に戻せません。
+  </p>
+  <p>
+    運営の処理開始時にログインと通知の配信を停止します。他のメンバーと共有する企画・班の履歴は本人を特定できない表示に変更します。
+  </p>
+  {
+    request ? (
+      <p role="status">
+        申請を受け付けています。状態：
+        {request.status === "processing" ? "削除処理中" : "運営の確認待ち"}
+        ／対応期限：
+        {new Date(request.dueAt).toLocaleString("ja-JP", {
+          timeZone: "Asia/Tokyo",
+        })}
+        （日本時間）
+      </p>
+    ) : (
+      <>
+        <form data-deletion-email>
+          <label>
+            登録メールアドレス
+            <input
+              type="email"
+              name="email"
+              autocomplete="email"
+              value={user?.email ?? ""}
+              maxlength="254"
+              required
+            />
+          </label>
+          <button type="submit" class="admin-button">
+            確認コードをメールで受け取る
+          </button>
+        </form>
+        <form data-deletion-confirm hidden>
+          <label>
+            メールに届いた6桁の確認コード
+            <input
+              type="text"
+              name="code"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              pattern="[0-9]{6}"
+              maxlength="6"
+              required
+            />
+          </label>
+          <label class="deletion-check">
+            <input type="checkbox" name="confirm" required />
+            アカウント・Portfolio・提出写真などの削除を希望し、削除後は復元できないことを確認しました。
+          </label>
+          <button type="submit" class="admin-button">
+            削除を申請する
+          </button>
+          <button type="button" class="admin-button" data-deletion-restart>
+            メールアドレスの変更・再送
+          </button>
+        </form>
+      </>
+    )
+  }
+  <p data-deletion-status role="status" aria-live="polite"></p>
+  <p>
+    <a href="/AppPrivacy">アプリのプライバシーポリシー</a>／<a href="/Login"
+      >ログインへ</a>
+  </p>
+</section>
+<script>
+  import "../scripts/accountDeletionForm";
+</script>
+<style>
+  .deletion-form {
+    max-width: 720px;
+    margin: 32px auto;
+    line-height: 1.9;
+  }
+  .deletion-form label {
+    display: block;
+    margin: 20px 0;
+  }
+  .deletion-form input[type="email"],
+  .deletion-form input[type="text"] {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    font-size: 16px;
+    padding: 12px;
+    border: 1px solid #999;
+    background: transparent;
+  }
+  .deletion-check {
+    display: flex !important;
+    gap: 12px;
+    align-items: start;
+  }
+  .deletion-check input {
+    margin-top: 8px;
+  }
+  button {
+    min-height: 44px;
+    padding: 12px 16px;
+    margin: 8px 12px 8px 0;
+  }
+  p {
+    overflow-wrap: anywhere;
+  }
+</style>

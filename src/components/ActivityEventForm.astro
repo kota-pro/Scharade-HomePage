@@ -1,0 +1,281 @@
+---
+import ActivityRecipients from "./ActivityRecipients.astro";
+import ActivityHeaderImage from "./ActivityHeaderImage.astro";
+import "../styles/ActivityEventEditor.css";
+import { localDateTime, eventCategoryLabels, type ActivityEvent } from "../lib/activityTypes";
+interface Props {
+  event?: ActivityEvent;
+  users: { id: string; name: string }[];
+  staffUsers: { id: string; name: string }[];
+}
+const { event, users, staffUsers } = Astro.props;
+const published = event?.status === "published";
+const previewFields = [
+  ["category", "種類"],
+  ["title", "企画名"],
+  ["startsAt", "開始日時"],
+  ["endsAt", "終了日時"],
+  ["deadline", "参加投票期日"],
+  ["meeting", "集合場所"],
+  ["fee", "徴収費"],
+  ["theme", "テーマ"],
+  ["ownerId", "担当者"],
+  ["recipientIds", "通知先"],
+];
+---
+
+<form
+  id="activity-event-form"
+  class="activity-form"
+  data-activity-action="event.save"
+  data-event-id={event?.id}
+  data-revision={event?.revision}
+  data-redirect="/Member/manage/events/{eventId}"
+  data-published={String(published)}
+  data-recipient-names={published
+    ? users
+        .filter((u) => event!.recipientIds.includes(u.id))
+        .map((u) => u.name)
+        .join("、")
+    : undefined}
+>
+  <fieldset class="activity-header-field">
+    <legend>ヘッダー画像（任意）</legend>
+    <label
+      >画像を選択<input
+        type="file"
+        name="headerFile"
+        accept="image/*"
+        aria-describedby="activity-image-hint"
+      /></label
+    >
+    <p id="activity-image-hint">20MB以下の画像を選択してください。</p>
+    <input type="hidden" name="headerImage" value={event?.headerImage || ""} />
+    <ActivityHeaderImage src={event?.headerImage} preview />
+    <button type="button" data-remove-header hidden={!event?.headerImage}
+      >画像を外す</button
+    >
+    <p data-image-status role="status" aria-live="polite"></p>
+  </fieldset>
+  <label>種類<select name="category" required>{Object.entries(eventCategoryLabels).map(([value,label]) => <option value={value} selected={(event?.category ?? (event ? "other" : "photo")) === value}>{label}</option>)}</select></label>
+  <label
+    >企画名<input
+      name="title"
+      value={event?.title}
+      required
+      maxlength="200"
+    /></label
+  >
+  <p class="activity-field-hint">
+    企画内容・集合場所・行程などに入力したURL（https://…）は、詳細画面でリンクとして開けます。
+  </p>
+  <label
+    >企画内容<textarea name="description" required maxlength="10000" rows="5"
+      >{event?.description}</textarea
+    ></label
+  >
+  <div class="activity-fields">
+    <label
+      >開始日時（日本時間）<input
+        name="startsAt"
+        type="datetime-local"
+        value={localDateTime(event?.startsAt)}
+        required
+      /></label
+    >
+    <label
+      >終了日時（日本時間）<input
+        name="endsAt"
+        type="datetime-local"
+        value={localDateTime(event?.endsAt)}
+        required
+      /></label
+    >
+    <label
+      >参加投票期日（日本時間）<input
+        name="deadline"
+        type="datetime-local"
+        value={localDateTime(event?.deadline)}
+        required
+      /></label
+    >
+    <label
+      >担当者<select name="ownerId" aria-label="担当者" required
+        >{
+          staffUsers.map((u) => (
+            <option
+              value={u.id}
+              selected={(event?.ownerId || Astro.locals.user!.id) === u.id}
+            >
+              {u.name}
+            </option>
+          ))
+        }</select
+      ></label
+    >
+  </div>
+  <label
+    >集合場所<input
+      name="meeting"
+      value={event?.meeting}
+      maxlength="1000"
+    /></label
+  >
+  <label
+    >行程<textarea name="itinerary" maxlength="10000" rows="5"
+      >{event?.itinerary}</textarea
+    ></label
+  >
+  <label
+    >徴収費<input
+      name="fee"
+      value={event?.fee}
+      maxlength="300"
+      placeholder="例：1,000円／実費／無料"
+    /></label
+  >
+  <label
+    >企画のテーマ<input
+      name="theme"
+      value={event?.theme}
+      maxlength="1000"
+    /></label
+  >
+  {
+    event?.status === "published" ? (
+      <p>
+        通知先：{event.recipientIds.length}
+        人（公開後の参加追加は参加者一覧で操作します）
+      </p>
+    ) : (
+      <ActivityRecipients users={users} selected={event?.recipientIds} />
+    )
+  }
+  <div class="activity-confirm-trigger">
+    <button class="activity-confirm-button" type="submit"
+      >{published ? "変更内容を確認" : "下書きを保存して確認"}</button
+    >
+  </div>
+  <p data-status role="status" aria-live="polite"></p>
+</form>
+
+<dialog
+  class="activity-confirm"
+  aria-labelledby="activity-confirm-title"
+  data-event-confirm
+  data-auto-preview={!published && Astro.url.searchParams.get("preview") === "1"
+    ? "true"
+    : undefined}
+>
+  <header class="activity-confirm-header">
+    <h2 id="activity-confirm-title">Confirm</h2>
+    <button
+      type="button"
+      class="activity-confirm-close"
+      data-close-confirm
+      aria-label="戻って編集"
+      autofocus><span></span><span></span></button
+    >
+  </header>
+  <p class="activity-confirm-note">
+    {
+      published
+        ? "変更内容をご確認ください。公開するとメンバーに変更を通知します。"
+        : "下書きを保存しました。内容をご確認のうえ、公開してください。"
+    } 内容を押すと編集に戻れます。
+  </p>
+  <div class="activity-confirm-body">
+    <dl class="activity-confirm-fields">
+      {
+        previewFields.map(([key, label]) => (
+          <div class="activity-confirm-row">
+            <>
+              <dt>{label}</dt>
+              <dd
+                data-preview-value={key}
+                data-edit-field={
+                  published && key === "recipientIds" ? undefined : key
+                }
+                role={
+                  published && key === "recipientIds" ? undefined : "button"
+                }
+                tabindex={published && key === "recipientIds" ? undefined : "0"}
+                aria-label={
+                  published && key === "recipientIds"
+                    ? undefined
+                    : `${label}を編集`
+                }
+              />
+            </>
+          </div>
+        ))
+      }
+    </dl>
+    <div class="activity-confirm-content">
+      <section>
+        <h3>ヘッダー画像</h3>
+        <button
+          class="activity-confirm-image-edit"
+          type="button"
+          data-edit-field="headerFile"
+          aria-label="ヘッダー画像を編集"
+          ><ActivityHeaderImage preview /><span data-no-header>画像なし</span
+          ></button
+        >
+      </section>
+      {
+        [
+          ["description", "企画内容"],
+          ["itinerary", "行程"],
+        ].map(([key, label]) => (
+          <section>
+            <>
+              <h3>{label}</h3>
+              <div
+                class="activity-confirm-message"
+                data-preview-value={key}
+                data-edit-field={key}
+                role="button"
+                tabindex="0"
+                aria-label={`${label}を編集`}
+              />
+            </>
+          </section>
+        ))
+      }
+    </div>
+  </div>
+  {
+    published ? (
+      <div class="activity-confirm-footer">
+        <>
+          <button
+            class="activity-confirm-button"
+            type="button"
+            data-confirm-update
+          >
+            変更を公開して通知
+          </button>
+          <p data-confirm-status role="status" aria-live="polite" />
+        </>
+      </div>
+    ) : (
+      event && (
+        <form
+          class="activity-confirm-footer"
+          data-activity-action="event.publish"
+          data-event-id={event.id}
+          data-revision={event.revision}
+          data-redirect={`/Member/manage/events/${event.id}`}
+        >
+          <>
+            <button class="activity-confirm-button" type="submit">
+              企画を公開して通知
+            </button>
+            <p data-status role="status" aria-live="polite" />
+          </>
+        </form>
+      )
+    )
+  }
+</dialog>

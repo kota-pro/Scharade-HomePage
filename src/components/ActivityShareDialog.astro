@@ -1,0 +1,16 @@
+---
+import Icon from "./PortfolioShareIcon.astro";
+import "../styles/PortfolioShare.css";
+import "../styles/ActivityShare.css";
+---
+<dialog id="activity-share-dialog" class="portfolio-share-dialog" aria-labelledby="activity-share-title">
+  <button type="button" class="portfolio-share-close" aria-label="共有画面を閉じる" autofocus><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" d="m5 5 14 14M19 5 5 19" /></svg></button>
+  <h2 id="activity-share-title">Share</h2>
+  <p class="portfolio-share-name"></p>
+  <label for="activity-share-url">Link</label>
+  <input id="activity-share-url" type="text" readonly aria-describedby="activity-share-help" />
+  <p id="activity-share-help" class="portfolio-share-help">リンクをタップしてコピー。通知先のメンバーがログインして閲覧できます。</p>
+  <div class="portfolio-share-actions"><button type="button" data-copy-link><Icon kind="link" /><span>リンクをコピー</span></button></div>
+  <p class="portfolio-share-status" role="status" aria-live="polite"></p>
+</dialog>
+<script src="../scripts/activityShare.ts"></script>

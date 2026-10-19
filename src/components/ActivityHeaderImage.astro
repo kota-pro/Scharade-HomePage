@@ -1,0 +1,16 @@
+---
+interface Props {
+  src?: string;
+  alt?: string;
+  preview?: boolean;
+}
+const { src, alt = "企画のヘッダー画像", preview = false } = Astro.props;
+---
+
+<figure
+  class="activity-eyecatch"
+  hidden={!src}
+  data-header-preview={preview || undefined}
+>
+  <img src={src || undefined} alt={alt} decoding="async" />
+</figure>

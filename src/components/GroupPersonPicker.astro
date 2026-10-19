@@ -1,0 +1,32 @@
+---
+interface Props {
+  people: { id: string; name: string }[];
+  label: string;
+  current?: string;
+  required?: boolean;
+  emptyLabel?: string;
+  selectAttributes?: Record<string, string>;
+}
+const { people, label, current = "", required = true, emptyLabel = "選択してください", selectAttributes = {} } = Astro.props;
+---
+
+<div class="activity-person-picker" data-person-picker>
+  <input
+    type="search"
+    data-person-search
+    aria-label={`${label}を検索`}
+    placeholder="氏名・LINE名で検索"
+    autocomplete="off"
+  />
+  <select {...selectAttributes} data-person-select aria-label={label} required={required}>
+    <option value="" selected={!current}>{emptyLabel}</option>
+    {
+      people.map((p) => (
+        <option value={p.id} selected={p.id === current}>
+          {p.name}
+        </option>
+      ))
+    }
+  </select>
+  <small data-person-matches aria-live="polite"></small>
+</div>

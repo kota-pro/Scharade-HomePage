@@ -1,0 +1,51 @@
+---
+import MemberLayout from "../../layouts/MemberLayout.astro";
+import { readActivities } from "../../lib/activities";
+import {
+  genderLabels,
+  gradeLabels,
+  activityDate,
+} from "../../lib/activityTypes";
+import { isAdmin } from "../../lib/auth";
+const data = readActivities(),
+  profile = data.profiles[Astro.locals.user!.id];
+const retired = data.roster?.retiredRecords?.find(
+  (r) => r.key === data.roster?.bindings[Astro.locals.user!.id],
+);
+---
+
+<MemberLayout title="班分け用プロフィール">
+  <h2>班分け用プロフィール</h2>
+  <p>
+    性別・学年はGoogleスプレッドシートの名簿を参照し、管理者が更新します。変更が必要な場合は管理者へ連絡してください。
+  </p>
+  {
+    retired ? (
+      <p class="member-notice">
+        新しい名簿に氏名がないため退会扱いとなり、班分けの対象外です。内容の確認が必要な場合は管理者へ連絡してください。
+      </p>
+    ) : profile?.rosterKey ? (
+      <dl class="activity-details">
+        <>
+          <dt>性別</dt>
+          <dd>{genderLabels[profile.gender]}</dd>
+          <dt>学年</dt>
+          <dd>{gradeLabels[profile.grade]}</dd>
+        </>
+      </dl>
+    ) : (
+      <p class="activity-warning">
+        名簿との連携が未完了、または名簿の回答を確認する必要があります。
+      </p>
+    )
+  }
+  {data.roster && <p>名簿の最終取得：{activityDate(data.roster.fetchedAt)}</p>}
+  {
+    isAdmin(Astro.locals.user) && (
+      <p>
+        <a href="/Admin/grouping-roster">Google名簿の更新・連携へ</a>
+      </p>
+    )
+  }
+  <a class="member-back" href="/Member">メンバーページへ戻る</a>
+</MemberLayout>

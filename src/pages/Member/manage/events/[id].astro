@@ -1,0 +1,174 @@
+---
+import ActivityShareButton from "../../../../components/ActivityShareButton.astro";
+import StaffLayout from "../../../../layouts/StaffLayout.astro";
+import ActivityEventForm from "../../../../components/ActivityEventForm.astro";
+import ActivityGrouping from "../../../../components/ActivityGrouping.astro";
+import ActivityEventDelete from "../../../../components/ActivityEventDelete.astro";
+import { readActivities } from "../../../../lib/activities";
+import { readUsers, isStaff } from "../../../../lib/auth";
+import { voteLabels } from "../../../../lib/activityTypes";
+const data = readActivities(),
+  event = data.events.find((e) => e.id === Astro.params.id);
+const accounts = readUsers().filter((u) => u.approved);
+const users = accounts.map((u) => ({ id: u.id, name: u.name }));
+const staffUsers = accounts
+  .filter(isStaff)
+  .map((u) => ({ id: u.id, name: u.name }));
+if (!event) Astro.response.status = 404;
+const closed = !!event && Date.parse(event.deadline) <= Date.now();
+---
+
+<StaffLayout
+  title={event ? `企画管理：${event.title}` : "企画が見つかりません"}
+>
+  {
+    event ? (
+      <>
+        <>
+          <div class="activity-title-row"><h2>{event.title}</h2>{event.status !== "draft" && <ActivityShareButton kind="events" id={event.id} title={event.title} />}</div>
+          <p>
+            {
+              { draft: "下書き", published: "公開中", cancelled: "中止" }[
+                event.status
+              ]
+            }
+          </p>
+        </>
+        {Astro.url.searchParams.has("saved") && (
+          <p role="status">保存しました。</p>
+        )}
+        {event.status !== "draft" && (
+          <p>
+            <a href={`/Member/events/${event.id}`}>メンバー向け詳細を確認</a>
+          </p>
+        )}
+        {event.status !== "cancelled" && (
+          <>
+            <details open={event.status === "draft"}>
+              <summary>企画の詳細を編集</summary>
+              <ActivityEventForm
+                event={event}
+                users={users}
+                staffUsers={staffUsers}
+              />
+            </details>
+            {event.status === "published" && (
+              <details>
+                <summary>企画を中止する</summary>
+                <form
+                  class="activity-form"
+                  data-activity-action="event.cancel"
+                  data-event-id={event.id}
+                  data-revision={event.revision}
+                >
+                  <p>投票を停止し、全宛先へ中止を通知します。</p>
+                  <label class="activity-check">
+                    <input type="checkbox" required />
+                    この企画を中止します
+                  </label>
+                  <button class="member-submit" type="submit">
+                    中止を確定して通知
+                  </button>
+                  <p data-status role="status" aria-live="polite" />
+                </form>
+              </details>
+            )}
+          </>
+        )}
+        <ActivityEventDelete event={event} />
+        {event.status !== "draft" && (
+          <section class="admin-section" id="attendance">
+            <h2>参加者・回答一覧</h2>
+            <p>
+              {closed
+                ? "投票締切後です。変更がある場合は運営が回答を修正してください。"
+                : "投票受付中です。締切後に班分けできます。"}
+            </p>
+            <div class="activity-roster">
+              {users
+                .filter((u) => event.recipientIds.includes(u.id))
+                .map((u) => (
+                  <form
+                    class="activity-form activity-roster-row"
+                    data-activity-action="attendance.set"
+                    data-event-id={event.id}
+                    data-revision={event.revision}
+                    data-user-id={u.id}
+                    data-redirect={`/Member/manage/events/${event.id}#attendance`}
+                  >
+                    <label>
+                      {u.name}
+                      <select
+                        name="vote"
+                        aria-label={u.name}
+                        required
+                        disabled={event.status === "cancelled"}
+                      >
+                        <option value="" selected={!event.votes[u.id]} disabled>
+                          未回答
+                        </option>
+                        {Object.entries(voteLabels)
+                          .filter(([v]) => v !== "unanswered")
+                          .map(([v, label]) => (
+                            <option
+                              value={v}
+                              selected={event.votes[u.id]?.value === v}
+                            >
+                              {label}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                    <button
+                      type="submit"
+                      class="admin-button"
+                      disabled={event.status === "cancelled"}
+                    >
+                      回答を修正
+                    </button>
+                    <p data-status role="status" aria-live="polite" />
+                  </form>
+                ))}
+            </div>
+            {event.status === "published" &&
+              users.some((u) => !event.recipientIds.includes(u.id)) && (
+                <form
+                  class="activity-form"
+                  data-activity-action="attendance.add"
+                  data-event-id={event.id}
+                  data-revision={event.revision}
+                  data-redirect={`/Member/manage/events/${event.id}#attendance`}
+                >
+                  <label>
+                    通知先にいなかった参加者を追加
+                    <select
+                      name="userId"
+                      aria-label="通知先にいなかった参加者を追加"
+                      required
+                    >
+                      <option value="">選択してください</option>
+                      {users
+                        .filter((u) => !event.recipientIds.includes(u.id))
+                        .map((u) => (
+                          <option value={u.id}>{u.name}</option>
+                        ))}
+                    </select>
+                  </label>
+                  <button class="member-submit" type="submit">
+                    参加者を追加して通知
+                  </button>
+                  <p data-status role="status" aria-live="polite" />
+                </form>
+              )}
+          </section>
+        )}
+        {event.status === "published" && closed && (
+          <ActivityGrouping data={data} event={event} users={accounts} />
+        )}
+      </>
+    ) : (
+      <h2>企画が見つかりません。</h2>
+    )
+  }
+  <a class="member-back" href="/Member/manage">運営画面へ戻る</a>
+</StaffLayout>

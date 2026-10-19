@@ -1,0 +1,25 @@
+---
+import PageTopNav from "../components/PageTopNav.astro";
+import Layout from "./Layout.astro";
+import type { BreadcrumbItem } from "../lib/breadcrumbs";
+import "../styles/Admin.css";
+
+interface Props {
+  title: string;
+  breadcrumbs?: BreadcrumbItem[];
+  heading?: string;
+  pageClass?: string;
+}
+const { title, breadcrumbs, heading = "Admin", pageClass = "" } = Astro.props;
+---
+
+<Layout title={title} breadcrumbs={breadcrumbs}>
+  <div slot="main-slot" class="admin-title">
+    <h1>{heading}</h1>
+    <div class="admin-title-line" aria-hidden="true"></div>
+  </div>
+  <Fragment slot="body-slot"><div class:list={["admin-page", pageClass]}><slot /></div><slot name="body-after" /></Fragment>
+  <div slot="menu-slot" class="admin-menu">
+    <PageTopNav />
+  </div>
+</Layout>

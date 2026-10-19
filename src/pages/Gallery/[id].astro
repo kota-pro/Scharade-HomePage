@@ -1,23 +1,40 @@
 ---
-export const prerender = false;
-
+import "../../styles/PhotoGallery.css";
 import GalleryLayout from "../../layouts/Gallery_Layout.astro";
-import { getAlbumPhotosPage, getAlbumTitle } from "../../lib/lightroom";
+import { getAlbumPhotosPage } from "../../lib/lightroom";
+import { accessibleAlbum } from "../../lib/galleryAccess";
+import { photoLinks } from "../../lib/galleryTokens";
 
 const { id } = Astro.params;
-const ITEMS_PER_PAGE = 100;
-const initialPhotoPage = await getAlbumPhotosPage(id as string, {
-  limit: ITEMS_PER_PAGE,
-});
-const initialPhotos = initialPhotoPage.photos;
-const albumTitle = (await getAlbumTitle(id as string)) || "Unknown Album";
-const initialTotalPages = Math.max(
-  1,
-  Math.ceil(initialPhotos.length / ITEMS_PER_PAGE),
+let album,
+  page,
+  failed = false;
+try {
+  album = await accessibleAlbum(id ?? "", Astro.locals.user);
+  if (album) page = await getAlbumPhotosPage(album.id, {limit:100});
+} catch {
+  failed = true;
+  Astro.response.status = 503;
+}
+if (!failed && !album) return Astro.rewrite("/404");
+if (album?.hidden) {
+  Astro.response.headers.set("Cache-Control", "private, no-store");
+  Astro.response.headers.set("X-Robots-Tag", "noindex");
+}
+const photos = (page?.photos ?? []).map((photo) =>
+  photoLinks(album!.id, photo),
 );
+
+const initialPhotos=photos;
+const ITEMS_PER_PAGE=100;
+const initialTotalPages=Math.max(1,Math.ceil(initialPhotos.length/ITEMS_PER_PAGE));
+const albumTitle=album?.payload.name ?? "Gallery";
+const initialCursor=page?.nextCursor ?? "";
 ---
 
 <GalleryLayout title={albumTitle}>
+  {failed && <p class="service-notice">写真を取得できません。時間をおいて再読み込みしてください。</p>}
+  <p class="gallery-load-status" role="status"></p>
   {initialPhotos.length === 0 && <div class="no-photos">No photos found.</div>}
   {
     initialPhotos.length > 0 && (
@@ -58,24 +75,23 @@ const initialTotalPages = Math.max(
     )
   }
   <div class="gallery-container-inner">
-    <div class="justified-grid">
+    <div class="justified-grid" data-page-size={ITEMS_PER_PAGE} data-album-id={id} data-next-cursor={initialCursor}>
       {
         initialPhotos.map((photo, photoIndex) => (
           <a
             class="photo-wrapper photo-trigger"
-            href={`/api/images/full/${photo.id}`}
-            data-lightbox={albumTitle}
+            href={photo.full}
+            data-lightbox="album"
             data-index={photoIndex}
           >
             <img
-              src={`/api/images/${photo.id}`}
+              src={photo.src}
               alt={photo.name}
               decoding="async"
-              data-full-src={`/api/images/full/${photo.id}`}
+              loading={photoIndex < 6 ? "eager" : "lazy"}
+              class="gallery-image"
+              data-full-src={photo.full}
             />
-            <div class="photo-meta">
-              <span class="photo-name">{photo.name}</span>
-            </div>
           </a>
         ))
       }
@@ -112,7 +128,7 @@ const initialTotalPages = Math.max(
   }
 </GalleryLayout>
 
-<style>
+<style is:global>
   .gallery-container-inner {
     width: 100%;
     max-width: 1600px;
@@ -254,52 +270,6 @@ const initialTotalPages = Math.max(
     height: 20px;
   }
 
-  .justified-grid {
-    display: flex;
-    flex-wrap: wrap;
-    align-content: flex-start;
-    width: 100%;
-  }
-
-  .photo-wrapper {
-    padding: 0;
-    border: none;
-    background-color: #f0f0f0;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    display: block;
-    float: left;
-    margin-right: 12px;
-    margin-bottom: 12px;
-    opacity: 1;
-    transition: opacity 0.5s ease-in-out;
-    width: 320px;
-    height: 250px;
-  }
-  .photo-wrapper img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .photo-meta {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    padding: 8px;
-    background: rgba(255, 255, 255, 0.7);
-    font-size: 0.8rem;
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-
-  .photo-wrapper:hover .photo-meta {
-    opacity: 1;
-  }
-
   @media screen and (max-width: 780px) {
     .tab-panel-number {
       gap: 10px;
@@ -360,360 +330,7 @@ const initialTotalPages = Math.max(
   }
 </style>
 
-<script
-  is:inline
-  define:vars={{
-    ITEMS_PER_PAGE,
-    initialTotalPages,
-    id,
-    albumTitle,
-  }}
->
-  const TARGET_HEIGHT = 250;
-  const GAP = 12;
-  const MIN_LAST_ROW_WIDTH = 800;
-
-  function layoutImages() {
-    const container = document.querySelector(".justified-grid");
-    if (!(container instanceof HTMLElement)) return;
-
-    const containerWidth = container.clientWidth;
-    const items = Array.from(
-      document.querySelectorAll(".photo-wrapper"),
-    ).filter(
-      (item) => item instanceof HTMLElement && item.style.display !== "none",
-    );
-
-    const validItems = items.filter((item) => {
-      const img = item.querySelector("img");
-      return img instanceof HTMLImageElement && img.naturalWidth > 0;
-    });
-
-    if (validItems.length === 0) return;
-
-    const rows = [];
-    let currentRow = [];
-    let currentRowWidth = 0;
-
-    validItems.forEach((item) => {
-      const img = item.querySelector("img");
-      if (!(img instanceof HTMLImageElement)) return;
-      const aspectRatio = img.naturalWidth / img.naturalHeight;
-      const itemWidthAtTarget = TARGET_HEIGHT * aspectRatio;
-
-      if (
-        currentRowWidth + itemWidthAtTarget + currentRow.length * GAP >
-        containerWidth
-      ) {
-        rows.push(currentRow);
-        currentRow = [item];
-        currentRowWidth = itemWidthAtTarget;
-      } else {
-        currentRow.push(item);
-        currentRowWidth += itemWidthAtTarget;
-      }
-    });
-
-    if (currentRow.length > 0) rows.push(currentRow);
-
-    if (rows.length > 0) {
-      const lastRow = rows[rows.length - 1];
-      let lastRowWidthAtTarget = 0;
-      lastRow.forEach((item) => {
-        const img = item.querySelector("img");
-        if (!(img instanceof HTMLImageElement)) return;
-        lastRowWidthAtTarget +=
-          (img.naturalWidth / img.naturalHeight) * TARGET_HEIGHT;
-      });
-
-      if (lastRowWidthAtTarget < MIN_LAST_ROW_WIDTH && rows.length > 1) {
-        const lastRowItems = rows.pop();
-        if (lastRowItems) {
-          rows[rows.length - 1] = rows[rows.length - 1].concat(lastRowItems);
-        }
-      }
-    }
-
-    rows.forEach((row) => {
-      let totalAR = 0;
-      row.forEach((item) => {
-        const img = item.querySelector("img");
-        if (!(img instanceof HTMLImageElement)) return;
-        totalAR += img.naturalWidth / img.naturalHeight;
-      });
-
-      const availableWidth = containerWidth - (row.length - 1) * GAP;
-      const rowHeight = availableWidth / totalAR;
-
-      row.forEach((item, itemIndex) => {
-        const img = item.querySelector("img");
-        if (!(img instanceof HTMLImageElement)) return;
-        const ar = img.naturalWidth / img.naturalHeight;
-
-        item.style.width = `${rowHeight * ar}px`;
-        item.style.height = `${rowHeight}px`;
-        item.style.marginRight =
-          itemIndex === row.length - 1 ? "0" : `${GAP}px`;
-        item.style.marginBottom = `${GAP}px`;
-      });
-    });
-  }
-
-  function layoutVisibleImagesWhenReady() {
-    const visibleItems = Array.from(
-      document.querySelectorAll(".photo-wrapper"),
-    ).filter(
-      (item) => item instanceof HTMLElement && item.style.display !== "none",
-    );
-
-    if (visibleItems.length === 0) return;
-
-    const pendingImages = [];
-
-    visibleItems.forEach((item) => {
-      const img = item.querySelector("img");
-      if (
-        img instanceof HTMLImageElement &&
-        !(img.complete && img.naturalWidth > 0)
-      ) {
-        pendingImages.push(img);
-      }
-    });
-
-    if (pendingImages.length === 0) {
-      layoutImages();
-      return;
-    }
-
-    let remaining = pendingImages.length;
-    pendingImages.forEach((img) => {
-      const onDone = () => {
-        img.removeEventListener("load", onDone);
-        img.removeEventListener("error", onDone);
-        remaining -= 1;
-        if (remaining === 0) layoutImages();
-      };
-
-      img.addEventListener("load", onDone, { once: true });
-      img.addEventListener("error", onDone, { once: true });
-    });
-  }
-
-  let resizeTimer = 0;
-  window.addEventListener("resize", () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = window.setTimeout(layoutVisibleImagesWhenReady, 100);
-  });
-  const grid = document.querySelector(".justified-grid");
-  const inputTop = document.querySelector(".page-input-top");
-  const numbersContainer = document.querySelector(".tab-posts-numbers");
-  const totalPagesValue = document.querySelector(".total-pages-value");
-  const pictureCountValue = document.querySelector(".picture-count-value");
-  const bottomPanel = document.querySelector(".panel-bottom");
-  const topPaginationControls = document.querySelector(".pagination-controls");
-  const btnFirst = document.querySelector(".first-btn");
-  const btnPrev = document.querySelector(".prev-btn");
-  const btnNext = document.querySelector(".next-btn");
-  const btnLast = document.querySelector(".last-btn");
-  const btnPrevTop = document.querySelector(".prev-btn-top");
-  const btnNextTop = document.querySelector(".next-btn-top");
-
-  let totalPages = initialTotalPages;
-  let currentPage = 1;
-
-  const getItems = () =>
-    Array.from(document.querySelectorAll(".photo-wrapper")).filter(
-      (item) => item instanceof HTMLElement,
-    );
-
-  const createPhotoElement = (photo, photoIndex) => {
-    const link = document.createElement("a");
-    link.className = "photo-wrapper photo-trigger";
-    link.href = `/api/images/full/${photo.id}`;
-    link.dataset.lightbox = albumTitle;
-    link.dataset.index = photoIndex.toString();
-    link.style.display = "none";
-
-    const img = document.createElement("img");
-    img.src = `/api/images/${photo.id}`;
-    img.alt = photo.name;
-    img.decoding = "async";
-    img.setAttribute("data-full-src", `/api/images/full/${photo.id}`);
-
-    const meta = document.createElement("div");
-    meta.className = "photo-meta";
-
-    const name = document.createElement("span");
-    name.className = "photo-name";
-    name.textContent = photo.name;
-
-    meta.appendChild(name);
-    link.appendChild(img);
-    link.appendChild(meta);
-
-    return link;
-  };
-
-  const updatePaginationMeta = () => {
-    totalPages = Math.max(1, Math.ceil(getItems().length / ITEMS_PER_PAGE));
-
-    if (inputTop instanceof HTMLInputElement) {
-      inputTop.max = totalPages.toString();
-      inputTop.value = currentPage.toString();
-    }
-
-    if (pictureCountValue) {
-      pictureCountValue.textContent = getItems().length.toString();
-    }
-    if (totalPagesValue) totalPagesValue.textContent = totalPages.toString();
-    if (bottomPanel instanceof HTMLElement) {
-      bottomPanel.classList.toggle("panel-hidden", totalPages <= 1);
-    }
-    if (topPaginationControls instanceof HTMLElement) {
-      topPaginationControls.classList.toggle(
-        "pagination-controls-hidden",
-        totalPages <= 1,
-      );
-    }
-  };
-
-  const renderPage = (page) => {
-    if (page < 1) page = 1;
-    if (page > totalPages) page = totalPages;
-    currentPage = page;
-
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    const items = getItems();
-
-    items.forEach((item, index) => {
-      if (index >= startIndex && index < endIndex) {
-        item.style.display = "block";
-        item.style.width = "320px";
-        item.style.height = `${TARGET_HEIGHT}px`;
-        item.style.marginRight = `${GAP}px`;
-        item.style.marginBottom = `${GAP}px`;
-      } else {
-        item.style.display = "none";
-      }
-    });
-
-    if (inputTop instanceof HTMLInputElement) {
-      inputTop.value = currentPage.toString();
-    }
-    updatePaginationNumbers();
-    requestAnimationFrame(layoutVisibleImagesWhenReady);
-  };
-
-  const updatePaginationNumbers = () => {
-    if (!numbersContainer) return;
-    numbersContainer.innerHTML = "";
-
-    const pagesSet = new Set([
-      1,
-      2,
-      totalPages - 1,
-      totalPages,
-      currentPage - 1,
-      currentPage,
-      currentPage + 1,
-    ]);
-
-    const sortedPages = Array.from(pagesSet)
-      .filter((page) => page >= 1 && page <= totalPages)
-      .sort((a, b) => a - b);
-
-    let prevPage = 0;
-    sortedPages.forEach((page) => {
-      if (prevPage > 0 && page - prevPage > 1) {
-        const dots = document.createElement("span");
-        dots.className = "separate-slash";
-        dots.textContent = "...";
-        numbersContainer.appendChild(dots);
-      }
-
-      const link = document.createElement("a");
-      link.className = "tab-posts-number";
-      link.textContent = page.toString();
-      link.href = "#";
-
-      if (page === currentPage) {
-        link.style.textDecoration = "underline";
-        link.style.textDecorationThickness = "0.5px";
-        link.style.textUnderlineOffset = "4px";
-      }
-
-      link.addEventListener("click", (event) => {
-        event.preventDefault();
-        renderPage(page);
-      });
-
-      numbersContainer.appendChild(link);
-      prevPage = page;
-    });
-  };
-
-  const fetchRemainingPhotos = async () => {
-    try {
-      const response = await fetch(
-        `/api/gallery/${id}?remaining=1&offset=${getItems().length}`,
-      );
-      if (!response.ok) return;
-
-      const data = await response.json();
-      const photos = Array.isArray(data.photos) ? data.photos : [];
-      const currentItemCount = getItems().length;
-
-      photos.forEach((photo, index) => {
-        if (!(grid instanceof HTMLElement)) return;
-        grid.appendChild(createPhotoElement(photo, currentItemCount + index));
-      });
-
-      updatePaginationMeta();
-      renderPage(currentPage);
-    } catch (error) {
-      console.error("[Gallery] Failed to load more photos:", error);
-    }
-  };
-
-  inputTop?.addEventListener("change", (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement)) return;
-    const value = parseInt(target.value, 10);
-    if (!Number.isNaN(value)) renderPage(value);
-  });
-
-  btnPrevTop?.addEventListener("click", (event) => {
-    event.preventDefault();
-    renderPage(currentPage - 1);
-  });
-
-  btnNextTop?.addEventListener("click", (event) => {
-    event.preventDefault();
-    renderPage(currentPage + 1);
-  });
-
-  btnFirst?.addEventListener("click", (event) => {
-    event.preventDefault();
-    renderPage(1);
-  });
-
-  btnPrev?.addEventListener("click", (event) => {
-    event.preventDefault();
-    renderPage(currentPage - 1);
-  });
-
-  btnNext?.addEventListener("click", (event) => {
-    event.preventDefault();
-    renderPage(currentPage + 1);
-  });
-
-  btnLast?.addEventListener("click", (event) => {
-    event.preventDefault();
-    renderPage(totalPages);
-  });
-
-  updatePaginationMeta();
-  renderPage(1);
-  void fetchRemainingPhotos();
+<script>
+  import "../../scripts/portfolioGallery";
+  import "../../scripts/portfolioLightbox";
 </script>

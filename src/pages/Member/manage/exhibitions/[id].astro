@@ -1,0 +1,10 @@
+---
+import StaffLayout from "../../../../layouts/StaffLayout.astro";
+import "../../../../styles/Exhibitions.css";
+import ExhibitionAdmin from "../../../../components/ExhibitionAdmin.astro";
+const { id } = Astro.params;
+---
+
+<StaffLayout title="写真展設定">
+  <ExhibitionAdmin id={id!} view="overview" />
+</StaffLayout>

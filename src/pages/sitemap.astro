@@ -1,23 +1,12 @@
 ---
+import PageTopNav from "../components/PageTopNav.astro";
 import Layout from "../layouts/Layout.astro";
 import "../styles/UA+reset.css";
-
-const SITE_URL = "https://scharade.jp";
+import { publicPageSections } from "../data/publicPages.ts";
+import { SITE_URL } from "../lib/config.ts";
 
 const sections = [
-  {
-    title: "Main Pages",
-    note: "サイト内の基本ページです。",
-    items: [
-      { label: "Home", href: "/", description: "トップページ" },
-      { label: "About us", href: "/About_us", description: "活動紹介" },
-      { label: "Activity", href: "/Activity", description: "活動記事一覧" },
-      { label: "Gallery", href: "/Gallery", description: "アルバム一覧" },
-      { label: "Portfolio", href: "/Portfolio", description: "メンバー一覧" },
-      { label: "Contact", href: "/Contact", description: "お問い合わせ" },
-      { label: "Disclaimer", href: "/Disclaimer", description: "免責事項・ポリシー" },
-    ],
-  },
+  ...publicPageSections,
   {
     title: "Search Engine Sitemap",
     note: "検索エンジン向けの XML sitemap は別途自動生成しています。",
@@ -47,19 +36,7 @@ const sections = [
 
   <Fragment slot="menu-slot">
     <div class="menu-contents-inner">
-      <a href="#" class="page-top-nav" aria-label="Top">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="32"
-          height="32"
-          viewBox="0 0 24 24"
-        >
-          <path
-            fill="currentColor"
-            d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"
-          ></path>
-        </svg>
-      </a>
+      <PageTopNav />
     </div>
   </Fragment>
 
@@ -133,39 +110,6 @@ const sections = [
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
-  }
-
-  .page-top-nav {
-    width: 50px;
-    height: 50px;
-    background-color: #fff;
-    border: 1px solid #000;
-    border-radius: 10px;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: sticky;
-    bottom: 50px;
-    z-index: 5;
-    transition: all 0.3s;
-  }
-
-  .page-top-nav svg {
-    width: 32px;
-    height: 32px;
-    rotate: 90deg;
-    transition: all 0.3s;
-  }
-
-  .page-top-nav:hover {
-    background-color: #707070;
-    box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
-  }
-
-  .page-top-nav:hover svg {
-    filter: invert(100%) sepia(2%) saturate(1%) hue-rotate(267deg) brightness(101%) contrast(101%);
   }
 
   .intro-block,
@@ -301,16 +245,6 @@ const sections = [
       font-size: 48px;
       letter-spacing: 7.2px;
       padding-right: 16px;
-    }
-
-    .page-top-nav {
-      width: 35px;
-      height: 35px;
-    }
-
-    .page-top-nav svg {
-      width: 22px;
-      height: 22px;
     }
 
     .intro-block,

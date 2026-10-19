@@ -1,0 +1,106 @@
+---
+import type { GroupingRun } from "../lib/groupingTools";
+interface Props {
+  run: GroupingRun;
+}
+const { run } = Astro.props;
+const titleId = `delete-grouping-${run.id}`;
+---
+
+<div data-run-delete-container>
+  <button
+    class="admin-button"
+    type="button"
+    data-open-run-delete
+    aria-label={`${run.title}を削除`}>削除</button
+  >
+  <dialog
+    class="admin-dialog grouping-delete-dialog"
+    aria-labelledby={titleId}
+    data-run-delete
+  >
+    <h2 id={titleId}>保存した班分けを削除</h2>
+    <p>
+      「{
+        run.title
+      }」を一覧と詳細ページから削除します。この操作は画面から取り消せません。
+    </p>
+    <p>ほかの班分けが参照している確定済みの履歴は、重複判定用に保持します。</p>
+    <form
+      class="activity-form"
+      data-activity-action="run.delete"
+      data-endpoint="/api/member/grouping"
+      data-run-id={run.id}
+      data-revision={run.revision}
+      data-redirect="/Member/manage/grouping?deleted=1"
+    >
+      <label class="activity-check"
+        ><input
+          type="checkbox"
+          name="confirmation"
+          value="delete"
+          required
+        />この班分けを削除します</label
+      >
+      <div class="activity-actions">
+        <button type="button" data-close-run-delete autofocus>戻る</button
+        ><button class="member-submit" type="submit">削除を確定</button>
+      </div>
+      <p data-status role="status" aria-live="polite"></p>
+    </form>
+  </dialog>
+</div>
+<script>
+  document
+    .querySelectorAll<HTMLElement>("[data-run-delete-container]")
+    .forEach((container) => {
+      const trigger = container.querySelector<HTMLButtonElement>(
+          "[data-open-run-delete]",
+        )!,
+        dialog =
+          container.querySelector<HTMLDialogElement>("[data-run-delete]")!;
+      let overflow = "";
+      const close = () => {
+        if (dialog.dataset.busy !== "true") dialog.close();
+      };
+      trigger.addEventListener("click", () => {
+        overflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        dialog.querySelector<HTMLFormElement>("form")!.reset();
+        dialog.querySelector<HTMLElement>("[data-status]")!.textContent = "";
+        dialog.showModal();
+      });
+      dialog
+        .querySelector("[data-close-run-delete]")!
+        .addEventListener("click", close);
+      dialog.addEventListener("cancel", (event) => {
+        event.preventDefault();
+        close();
+      });
+      dialog.addEventListener("click", (event) => {
+        const r = dialog.getBoundingClientRect();
+        if (
+          event.target === dialog &&
+          (event.clientX < r.left ||
+            event.clientX > r.right ||
+            event.clientY < r.top ||
+            event.clientY > r.bottom)
+        )
+          close();
+      });
+      dialog.addEventListener("close", () => {
+        document.body.style.overflow = overflow;
+        trigger.focus();
+      });
+    });
+</script>
+<style>
+  .grouping-delete-dialog {
+    box-sizing: border-box;
+    max-height: 90dvh;
+    overflow: auto;
+  }
+  .grouping-delete-dialog h2 {
+    font-size: 24px;
+  }
+</style>

@@ -1,52 +1,8 @@
 import type { APIRoute } from "astro";
-import crypto from "node:crypto";
-import fs from "node:fs";
-import path from "node:path";
-
-const DATA_DIR = path.join(process.cwd(), ".data");
-const USERS_PATH = path.join(DATA_DIR, "users.json");
-const SESSIONS_PATH = path.join(DATA_DIR, "sessions.json");
-
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  passwordHash?: string;
-  approved: boolean;
-  createdAt: string;
-  providers: {
-    credentials?: true;
-    instagram?: { id: string; username?: string };
-  };
-};
-
-type Session = {
-  id: string;
-  userId: string;
-  expiresAt: string;
-  createdAt: string;
-};
-
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-function readJson<T>(p: string, fallback: T): T {
-  ensureDataDir();
-  if (!fs.existsSync(p)) return fallback;
-  const raw = fs.readFileSync(p, "utf8");
-  if (!raw.trim()) return fallback;
-  return JSON.parse(raw) as T;
-}
-
-function writeJson<T>(p: string, data: T) {
-  ensureDataDir();
-  fs.writeFileSync(p, JSON.stringify(data, null, 2), "utf8");
-}
-
-function isProd() {
-  return process.env.NODE_ENV === "production";
-}
+import { readUsers, updateUsers, createSession, isStaff } from "../../../../lib/auth.ts";
+import { safeReturnPath, fetchWithTimeout } from "../../../../lib/http.ts";
+import { startMfaChallenge } from "../../../../lib/mfa.ts";
+import { cookieOptions, mfaCookieName, setSessionCookie } from "../../../../lib/sessionCookies.ts";
 
 function json(status: number, body: any) {
   return new Response(JSON.stringify(body), {
@@ -55,7 +11,7 @@ function json(status: number, body: any) {
   });
 }
 
-export const GET: APIRoute = async ({ url, cookies, redirect }) => {
+export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
   const clientId = process.env.INSTAGRAM_CLIENT_ID;
   const clientSecret = process.env.INSTAGRAM_CLIENT_SECRET;
   const redirectUri = process.env.INSTAGRAM_REDIRECT_URI;
@@ -67,7 +23,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const expectedState = cookies.get("ig_state")?.value;
-  const next = cookies.get("ig_next")?.value || "/";
+  const next = safeReturnPath(cookies.get("ig_next")?.value ?? null, "/");
 
   cookies.delete("ig_state", { path: "/" });
   cookies.delete("ig_next", { path: "/" });
@@ -84,14 +40,19 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
   form.set("redirect_uri", redirectUri);
   form.set("code", code);
 
-  const tokenRes = await fetch("https://api.instagram.com/oauth/access_token", {
-    method: "POST",
-    body: form,
-  });
+  const tokenRes = await fetchWithTimeout(
+    "https://api.instagram.com/oauth/access_token",
+    {
+      method: "POST",
+      body: form,
+    },
+  );
 
   if (!tokenRes.ok) {
-    const text = await tokenRes.text().catch(() => "");
-    return json(502, { ok: false, message: "Token exchange failed.", detail: text });
+    return json(502, {
+      ok: false,
+      message: "Token exchange failed.",
+    });
   }
 
   const tokenJson = (await tokenRes.json()) as any;
@@ -108,50 +69,34 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
     meUrl.searchParams.set("fields", "id,username");
     meUrl.searchParams.set("access_token", accessToken);
 
-    const meRes = await fetch(meUrl);
+    const meRes = await fetchWithTimeout(meUrl);
     if (meRes.ok) {
       const me = (await meRes.json()) as any;
       username = me?.username ? String(me.username) : undefined;
     }
-  } catch {
-  }
+  } catch {}
 
-  const users = readJson<User[]>(USERS_PATH, []);
-  let user = users.find((u) => u.providers?.instagram?.id === igUserId);
-
-  if (!user) {
-    user = {
-      id: crypto.randomUUID(),
-      name: username ? username : "Instagram User",
-      email: "",
-      approved: true,
-      createdAt: new Date().toISOString(),
-      providers: { instagram: { id: igUserId, username } },
-    };
-    users.push(user);
-  } else {
-    user.providers.instagram = { id: igUserId, username };
-  }
-
-  writeJson(USERS_PATH, users);
-
-  const sessions = readJson<Session[]>(SESSIONS_PATH, []);
-  const sessionId = crypto.randomUUID();
-  const now = Date.now();
-  const maxAgeSeconds = 60 * 60 * 8;
-  const expiresAt = new Date(now + maxAgeSeconds * 1000).toISOString();
-
-  const pruned = sessions.filter((s) => new Date(s.expiresAt).getTime() > now);
-  pruned.push({ id: sessionId, userId: user.id, createdAt: new Date(now).toISOString(), expiresAt });
-  writeJson(SESSIONS_PATH, pruned);
-
-  cookies.set("session", sessionId, {
-    httpOnly: true,
-    secure: isProd(),
-    sameSite: "lax",
-    path: "/",
-    maxAge: maxAgeSeconds,
+  // OAuth may authenticate an existing approved member; it must not approve strangers.
+  const user = readUsers().find((u) => u.providers?.instagram?.id === igUserId);
+  if (!user?.approved)
+    return json(403, {
+      ok: false,
+      message:
+        "承認済みアカウントとの連携が必要です。メールアドレスでログインしてください。",
+    });
+  if (user.mustResetPassword) return redirect("/ForgotPassword");
+  await updateUsers((users) => {
+    const current = users.find((u) => u.id === user.id);
+    if (current) current.providers.instagram = { id: igUserId, username };
   });
+  const maxAgeSeconds = 60 * 60 * 8;
+  if (isStaff(user)) {
+    const challenge = await startMfaChallenge(user, next, maxAgeSeconds);
+    cookies.set(mfaCookieName(request), challenge.token, cookieOptions(request, 600));
+    return redirect("/Mfa");
+  }
+  const session = await createSession(user.id, maxAgeSeconds, user.passwordHash, user.email);
+  setSessionCookie(cookies, request, session);
 
   return redirect(next);
 };

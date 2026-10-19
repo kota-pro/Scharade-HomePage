@@ -1,0 +1,24 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {resizeLayoutFromCorner,framePoint,layoutFrame,cornerFactors,resizeLayoutSelectionFromCorner} from '../src/lib/exhibitionTransforms.ts';
+import {layoutObjects} from '../src/lib/exhibitionLayoutModel.ts';
+import type {RoomLayout} from '../src/lib/exhibitionTypes.ts';
+const room=():RoomLayout=>({id:crypto.randomUUID(),name:'四隅',vertices:[{x:0,y:0},{x:6000,y:0},{x:6000,y:4000},{x:0,y:4000}],wallHeights:[3000,3000,3000,3000],openings:[],placements:[],tables:[],books:[],annotations:[{id:crypto.randomUUID(),kind:'rect',x:1200,y:1000,width:500,height:300,rotation:30,text:'',fontSize:100}]});
+test('every resize corner keeps the rotated diagonal corner fixed',()=>{
+ for(const corner of ['nw','ne','se','sw'] as const){const r=room(),id=`annotation:${r.annotations![0].id}`,o=layoutObjects(r,[])[0],before=layoutFrame(r,'floor',o),k=cornerFactors[corner],fixed=framePoint(before,(1-k.x)*before.width,(1-k.y)*before.height);resizeLayoutFromCorner(r,[],'floor',id,corner,100,60);const after=layoutFrame(r,'floor',layoutObjects(r,[])[0]),now=framePoint(after,(1-k.x)*after.width,(1-k.y)*after.height);assert.ok(Math.hypot(now.x-fixed.x,now.y-fixed.y)<.001);assert.notEqual(after.width,before.width);}
+});
+test('proportional resizing preserves aspect ratio and a fixed physical work cannot be scaled',()=>{
+ const r=room();resizeLayoutFromCorner(r,[],'floor',`annotation:${r.annotations![0].id}`,'nw',-100,-300,true);assert.ok(Math.abs(r.annotations![0].width/r.annotations![0].height-5/3)<.0001);
+ assert.throws(()=>resizeLayoutFromCorner(r,[],'floor','work:missing','se',100,100),/実寸/);
+});
+test('a stroked path with negative local coordinates keeps its diagonal corner fixed',()=>{for(const corner of ['nw','ne','se','sw'] as const){const r=room(),a=r.annotations![0];a.kind='path';a.strokeWidth=10;a.path={closed:true,nodes:[{x:-50,y:-30},{x:450,y:-30},{x:450,y:270},{x:-50,y:270}]};const id=`annotation:${a.id}`,before=layoutFrame(r,'floor',layoutObjects(r,[])[0]),k=cornerFactors[corner],fixed=framePoint(before,(1-k.x)*before.width,(1-k.y)*before.height);resizeLayoutFromCorner(r,[],'floor',id,corner,100,60);const after=layoutFrame(r,'floor',layoutObjects(r,[])[0]),now=framePoint(after,(1-k.x)*after.width,(1-k.y)*after.height);assert.ok(Math.hypot(now.x-fixed.x,now.y-fixed.y)<.01);}});
+
+test('mixed rotated annotations scale together around the fixed diagonal without changing their relative geometry',()=>{
+ for(const corner of ['nw','ne','se','sw'] as const){const r=room(),first=r.annotations![0];r.annotations!.push({...structuredClone(first),id:crypto.randomUUID(),x:2500,y:1800,rotation:-15});const ids=r.annotations!.map(a=>`annotation:${a.id}`),before=layoutObjects(r,[]),bounds={x:Math.min(...before.map(o=>o.box.x)),y:Math.min(...before.map(o=>o.box.y)),right:Math.max(...before.map(o=>o.box.x+o.box.width)),bottom:Math.max(...before.map(o=>o.box.y+o.box.height))},k=cornerFactors[corner],fixed={x:k.x?bounds.x:bounds.right,y:k.y?bounds.y:bounds.bottom},centers=before.map(o=>({x:o.box.x+o.box.width/2,y:o.box.y+o.box.height/2}));resizeLayoutSelectionFromCorner(r,[],'floor',ids,corner,120,80);const after=layoutObjects(r,[]),factor=r.annotations![0].width/500;for(let i=0;i<after.length;i++){const center={x:after[i].box.x+after[i].box.width/2,y:after[i].box.y+after[i].box.height/2};assert.ok(Math.hypot(center.x-fixed.x-(centers[i].x-fixed.x)*factor,center.y-fixed.y-(centers[i].y-fixed.y)*factor)<.01);assert.ok(Math.abs(after[i].source.height/300-factor)<.0001);}}
+});
+test('legacy symbol captions remain inside the resize frame and preserve the fixed corner',()=>{
+ const r=room(),a=r.annotations![0];a.kind='power';a.text='コンセント';const id=`annotation:${a.id}`,before=layoutFrame(r,'floor',layoutObjects(r,[])[0]),fixed=framePoint(before,before.width,before.height);resizeLayoutFromCorner(r,[],'floor',id,'nw',-200,-150);const after=layoutFrame(r,'floor',layoutObjects(r,[])[0]),endpoint=framePoint(after,after.width,after.height);assert.ok(Math.hypot(endpoint.x-fixed.x,endpoint.y-fixed.y)<.01);assert.ok(after.width>before.width&&after.height>before.height);
+});
+
+test('a vertical stroke can resize its thickness and length without moving the fixed diagonal',()=>{
+ const r=room(),a=r.annotations![0];a.kind='freehand';a.rotation=0;a.strokeWidth=8;a.path={closed:false,nodes:[{x:0,y:0},{x:0,y:500}]};const id=`annotation:${a.id}`,before=layoutFrame(r,'floor',layoutObjects(r,[])[0]),fixed=framePoint(before,0,0);resizeLayoutFromCorner(r,[],'floor',id,'se',12,100);const after=layoutFrame(r,'floor',layoutObjects(r,[])[0]);assert.ok(Math.hypot(after.x-fixed.x,after.y-fixed.y)<.01);assert.equal(after.width,20);assert.equal(after.height,608);assert.equal(a.strokeWidth,20);
+});

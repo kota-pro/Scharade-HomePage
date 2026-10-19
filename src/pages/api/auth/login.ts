@@ -1,137 +1,90 @@
 import type { APIRoute } from "astro";
-import crypto from "node:crypto";
-import fs from "node:fs";
-import path from "node:path";
+import { createSession, readUsers, isStaff, updateUsers } from "../../../lib/auth.ts";
+import { verifyPasswordAsync, hashPasswordAsync, needsPasswordRehash } from "../../../lib/passwords.ts";
+import { json, safeReturnPath } from "../../../lib/http.ts";
+import { checkLoginAttempts, recordLoginAttempt } from "../../../lib/rateLimit.ts";
+import { startMfaChallenge, MfaError } from "../../../lib/mfa.ts";
+import { mfaCookieName, cookieOptions, setSessionCookie } from "../../../lib/sessionCookies.ts";
+import { audit } from "../../../lib/audit.ts";
 
-const DATA_DIR = path.join(process.cwd(), ".data");
-const USERS_PATH = path.join(DATA_DIR, "users.json");
-const SESSIONS_PATH = path.join(DATA_DIR, "sessions.json");
-
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  passwordHash?: string;
-  approved: boolean;
-  createdAt: string;
-  providers: {
-    credentials?: true;
-    instagram?: { id: string; username?: string };
-  };
-  portfolioId?: string;
-};
-
-type Session = {
-  id: string;
-  userId: string;
-  expiresAt: string;
-  createdAt: string;
-};
-
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-function readJson<T>(p: string, fallback: T): T {
-  ensureDataDir();
-  if (!fs.existsSync(p)) return fallback;
-  const raw = fs.readFileSync(p, "utf8");
-  if (!raw.trim()) return fallback;
-  return JSON.parse(raw) as T;
-}
-
-function writeJson<T>(p: string, data: T) {
-  ensureDataDir();
-  fs.writeFileSync(p, JSON.stringify(data, null, 2), "utf8");
-}
-
-function normalizeEmail(email: string) {
-  return email.trim().toLowerCase();
-}
-
-function verifyPassword(password: string, stored: string): boolean {
-  const parts = stored.split("$");
-  if (parts.length !== 3) return false;
-  const [algo, saltB64, hashB64] = parts;
-  if (algo !== "scrypt") return false;
-  const salt = Buffer.from(saltB64, "base64");
-  const expected = Buffer.from(hashB64, "base64");
-  const actual = crypto.scryptSync(password, salt, expected.length);
-  return crypto.timingSafeEqual(actual, expected);
-}
-
-function badRequest(message: string) {
-  return new Response(JSON.stringify({ ok: false, message }), {
-    status: 400,
-    headers: { "content-type": "application/json; charset=utf-8" },
-  });
-}
-
-export const POST: APIRoute = async ({ request, cookies }) => {
-  let email = "";
-  let password = "";
-  let remember = false;
-
-  const contentType = request.headers.get("content-type") || "";
-  if (contentType.includes("application/json")) {
-    const body = (await request.json().catch(() => null)) as any;
-    email = String(body?.email ?? "");
-    password = String(body?.password ?? "");
-    remember = Boolean(body?.remember ?? false);
-  } else {
-    const form = await request.formData();
-    email = String(form.get("email") ?? "");
-    password = String(form.get("password") ?? "");
-    remember = form.get("remember") != null;
+export const POST: APIRoute = async (context) => {
+  const { request, cookies } = context;
+  let data: Record<string, unknown>;
+  try {
+    data = request.headers.get("content-type")?.includes("application/json")
+      ? await request.json()
+      : Object.fromEntries(await request.formData());
+  } catch {
+    return json({ ok: false, message: "入力を読み取れません。" }, 400);
   }
-
-  email = normalizeEmail(email);
-
-  if (!email) return badRequest("Email is required.");
-  if (!password) return badRequest("Password is required.");
-
-  const users = readJson<User[]>(USERS_PATH, []);
-  const user = users.find((u) => u.email === email);
-  if (!user || !user.passwordHash) return badRequest("Invalid email or password.");
-
-  if (!verifyPassword(password, user.passwordHash)) {
-    return badRequest("Invalid email or password.");
+  const email = String(data?.email ?? "")
+    .trim()
+    .toLowerCase();
+  const password = String(data?.password ?? "");
+  if (!email || !password || email.length > 254 || password.length > 1024)
+    return json(
+      { ok: false, message: "メールアドレスとパスワードを確認してください。" },
+      400,
+    );
+  const user = readUsers().find((u) => u.email.toLowerCase() === email);
+  if (!(await checkLoginAttempts(context, email))) return json({ ok: false, message: "ログイン試行が集中しています。15分後に再度お試しください。" }, 429);
+  const correct = await verifyPasswordAsync(password, user?.passwordHash);
+  if (!user?.passwordHash || !correct) {
+    await recordLoginAttempt(context, email, false);
+    await audit("anonymous", "auth.login.failed", "login");
+    return json(
+      {
+        ok: false,
+        message: "メールアドレスまたはパスワードが正しくありません。",
+      },
+      400,
+    );
   }
-
-  if (!user.approved) {
-    return new Response(JSON.stringify({ ok: false, message: "Your account is pending approval." }), {
-      status: 403,
-      headers: { "content-type": "application/json; charset=utf-8" },
+  if (user.mustResetPassword) return json({ ok: false, message: "安全のためパスワードの再設定が必要です。「パスワードを忘れた方」から、以前と異なるパスワードを設定してください。", resetRequired: true }, 403);
+  if (!user.approved)
+    return json(
+      { ok: false, message: "アカウントの承認をお待ちください。" },
+      403,
+    );
+  const maxAge = data.remember ? 60 * 60 * 24 * 30 : 60 * 60 * 8;
+  if (needsPasswordRehash(user.passwordHash)) {
+    const old = user.passwordHash, upgraded = await hashPasswordAsync(password);
+    await updateUsers(users => {
+      const current = users.find(u => u.id === user.id);
+      if (!current || current.passwordHash !== old || current.mustResetPassword || current.email !== user.email) throw new Error("Account changed");
+      current.passwordHash = upgraded;
     });
+    user.passwordHash = upgraded;
   }
-
-  const sessions = readJson<Session[]>(SESSIONS_PATH, []);
-  const sessionId = crypto.randomUUID();
-
-  const now = Date.now();
-  const maxAgeSeconds = remember ? 60 * 60 * 24 * 30 : 60 * 60 * 8;
-  const expiresAt = new Date(now + maxAgeSeconds * 1000).toISOString();
-
-  sessions.push({
-    id: sessionId,
-    userId: user.id,
-    createdAt: new Date(now).toISOString(),
-    expiresAt,
-  });
-
-  const pruned = sessions.filter((s) => new Date(s.expiresAt).getTime() > now);
-  writeJson(SESSIONS_PATH, pruned);
-
-  cookies.set("session", sessionId, {
-    path: "/",
-    httpOnly: true,
-    sameSite: "lax",
-    secure: import.meta.env.PROD,
-    maxAge: maxAgeSeconds,
-    expires: new Date(now + maxAgeSeconds * 1000),
-  });
-
-  return new Response(JSON.stringify({ ok: true }), {
-    headers: { "content-type": "application/json; charset=utf-8" },
-  });
+  if (isStaff(user)) {
+    try {
+      const challenge = await startMfaChallenge(user, safeReturnPath(typeof data.next === "string" ? data.next : null, "/"), maxAge);
+      cookies.set(mfaCookieName(request), challenge.token, cookieOptions(request, 600));
+      return json({ ok: true, next: "/Mfa", mfaRequired: true });
+    } catch (error) {
+      return json({ ok: false, message: error instanceof MfaError ? error.message : "追加認証を開始できません。再度お試しください。" }, error instanceof MfaError ? error.status : 503);
+    }
+  }
+  await recordLoginAttempt(context, email, true);
+  let session;
+  try {
+    session = await createSession(
+      user.id,
+      maxAge,
+      user.passwordHash,
+      user.email,
+    );
+  } catch {
+    return json(
+      {
+        ok: false,
+        message:
+          "ログイン情報が更新されたか、現在ログインできません。メールアドレスを確認して再度お試しください。",
+      },
+      409,
+    );
+  }
+  setSessionCookie(cookies, request, session);
+  await audit(user.id, "auth.login.success", user.id);
+  return json({ ok: true });
 };

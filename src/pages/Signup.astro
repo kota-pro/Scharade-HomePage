@@ -1,8 +1,11 @@
 ---
+import PageTopNav from "../components/PageTopNav.astro";
 import "../styles/Auth.css";
 import Layout from "../layouts/Layout.astro";
+import { safeReturnPath } from "../lib/http";
+import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH, PASSWORD_PATTERN, PASSWORD_REQUIREMENTS } from "../lib/passwordPolicy";
 
-const next = Astro.url.searchParams.get("next") ?? "/";
+const next = safeReturnPath(Astro.url.searchParams.get("next"), "/");
 ---
 
 <Layout>
@@ -15,9 +18,7 @@ const next = Astro.url.searchParams.get("next") ?? "/";
 
   <Fragment slot="menu-slot">
     <div class="menu-contents-inner">
-        <a href="#" class="page-top-nav">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M16 21.308L6.692 12L16 2.692l1.064 1.064L8.819 12l8.244 8.244z"/></svg>
-        </a>
+        <PageTopNav />
     </div>
   </Fragment>
   <Fragment slot="body-slot">
@@ -26,7 +27,7 @@ const next = Astro.url.searchParams.get("next") ?? "/";
         <p class="auth-pill">Member Only</p>
         <h1>Account</h1>
         <p>
-          写団シャレードで活動するためのアカウントを作成します。<br>メールアドレスとパスワードを設定してアカウントを作成します。
+          写団シャレードで活動するためのアカウントを作成します。<br>メールで所有確認を行い、登録を申請します。
         </p>
       </div>
 
@@ -38,7 +39,7 @@ const next = Astro.url.searchParams.get("next") ?? "/";
           <form class="auth-form" id="signup-form" data-next={next}>
             <div class="form-field">
               <label for="signup-name">Name</label>
-              <input id="signup-name" type="text" name="name" autocomplete="name" required />
+              <input id="signup-name" type="text" name="name" autocomplete="name" maxlength="80" required />
               <small class="helper">ログイン後の表示や管理用に使われます。</small>
             </div>
 
@@ -60,7 +61,7 @@ const next = Astro.url.searchParams.get("next") ?? "/";
 
             <div class="form-field">
               <label for="signup-email">Email</label>
-              <input id="signup-email" type="email" name="email" autocomplete="email" required />
+              <input id="signup-email" type="email" name="email" autocomplete="email" maxlength="254" required />
             </div>
 
             <div class="form-field">
@@ -71,8 +72,13 @@ const next = Astro.url.searchParams.get("next") ?? "/";
                 name="password"
                 autocomplete="new-password"
                 required
-                minlength="8"
+                minlength={MIN_PASSWORD_LENGTH}
+                maxlength={MAX_PASSWORD_LENGTH}
+                pattern={PASSWORD_PATTERN}
+                title={PASSWORD_REQUIREMENTS}
+                aria-describedby="signup-password-requirements"
               />
+              <small class="helper" id="signup-password-requirements">{PASSWORD_REQUIREMENTS}</small>
             </div>
 
             <div class="form-field">
@@ -83,11 +89,23 @@ const next = Astro.url.searchParams.get("next") ?? "/";
                 name="passwordConfirm"
                 autocomplete="new-password"
                 required
+                minlength={MIN_PASSWORD_LENGTH}
+                maxlength={MAX_PASSWORD_LENGTH}
+                pattern={PASSWORD_PATTERN}
+                title={PASSWORD_REQUIREMENTS}
+                aria-describedby="signup-password-requirements"
               />
             </div>
 
+            <div class="form-field" id="signup-verification" hidden>
+              <label for="signup-code">メール確認コード</label>
+              <input id="signup-code" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" disabled />
+              <small class="helper">メールに届いた6桁のコードを入力してください。有効期限は10分です。</small>
+              <button type="button" class="auth-link" id="signup-edit">入力を変更・コードを再取得する</button>
+            </div>
+
             <div class="auth-actions">
-              <button type="submit" class="primary-button">Create account</button>
+              <button type="submit" class="primary-button">確認コードを送信</button>
               <p class="auth-message" id="signup-message" aria-live="polite"></p>
             </div>
           </form>
@@ -100,8 +118,9 @@ const next = Astro.url.searchParams.get("next") ?? "/";
           <small>次のステップを参考にしてください</small>
           <ul class="auth-help-list">
             <li>1. メールアドレスは実際に受信可能なものを使ってください</li>
-            <li>2. パスワードは8文字以上で設定してください</li>
-            <li>3. 登録後は担当者の承認が必要です</li>
+            <li>2. {PASSWORD_REQUIREMENTS}</li>
+            <li>3. メールの確認コードを入力して登録を申請してください</li>
+            <li>4. 登録後は担当者の承認が必要です</li>
           </ul>
           <p class="auth-note">ご不明点はいつでもお問い合わせください。</p>
           <a class="auth-link" href="/Contact">お問い合わせ</a>
@@ -109,12 +128,37 @@ const next = Astro.url.searchParams.get("next") ?? "/";
       </div>
 
       <script>
+        import { operationNotice, flashNotice } from "../scripts/siteNotice";
         const form = document.getElementById("signup-form") as HTMLFormElement;
         const messageEl = document.getElementById("signup-message");
+        const submitButton = form?.querySelector('button[type="submit"]') as HTMLButtonElement;
+        const codeInput = document.getElementById("signup-code") as HTMLInputElement;
+        const verification = document.getElementById("signup-verification") as HTMLElement;
+        const editButton = document.getElementById("signup-edit") as HTMLButtonElement;
+        const details = Array.from(form.querySelectorAll<HTMLInputElement>('input:not([name="code"])'));
+        let verificationToken = "", busy = false, completed = false;
+
+        function setVerification(token = "") {
+          verificationToken = token;
+          verification.hidden = !token;
+          codeInput.disabled = !token;
+          codeInput.required = !!token;
+          codeInput.value = "";
+          details.forEach(input => { input.readOnly = !!token; });
+          submitButton.textContent = token ? "確認して登録を申請" : "確認コードを送信";
+        }
+        editButton.addEventListener("click", () => {
+          if (busy || completed) return;
+          setVerification();
+          setMessage("入力を確認して、確認コードを再取得してください。");
+          const emailInput = document.getElementById("signup-email");
+          emailInput?.focus(); emailInput?.scrollIntoView({ block: "center" });
+        });
 
         function setMessage(text: string, kind: string = "") {
           if (!messageEl) return;
           messageEl.textContent = text;
+          operationNotice(text,kind === "error","auth-signup");
           if (kind) messageEl.dataset.kind = kind;
           else messageEl.removeAttribute("data-kind");
         }
@@ -126,26 +170,33 @@ const next = Astro.url.searchParams.get("next") ?? "/";
 
         form?.addEventListener("submit", async (e) => {
           e.preventDefault();
+          if (busy || completed) return;
           setMessage("");
 
-          const submitButton = form?.querySelector('button[type="submit"]') as HTMLButtonElement | null;
           const portfolioNameInput = document.getElementById("signup-portfolio-name") as HTMLInputElement | null;
           if (portfolioNameInput && !portfolioNameInput.value.trim()) {
             setMessage("ポートフォリオ表示名を入力してください。", "error");
             portfolioNameInput.focus();
             return;
           }
+          const passwordInput = document.getElementById("signup-password") as HTMLInputElement;
+          const confirmInput = document.getElementById("signup-password-confirm") as HTMLInputElement;
+          if (passwordInput.value !== confirmInput.value) {
+            setMessage("パスワードが一致しません。", "error"); confirmInput.focus(); return;
+          }
 
           try {
-            if (submitButton) submitButton.disabled = true;
+            busy = true; submitButton.disabled = true; editButton.disabled = true;
+            setMessage(verificationToken ? "登録を申請しています…" : "確認コードを準備しています…");
             const fd = new FormData(form);
-            const payload = {
+            const payload = verificationToken ? {
+              action: "complete", verificationToken, code: codeInput.value,
               name: String(fd.get("name") ?? ""),
               portfolioName: String(fd.get("portfolioName") ?? ""),
               email: String(fd.get("email") ?? ""),
               password: String(fd.get("password") ?? ""),
               passwordConfirm: String(fd.get("passwordConfirm") ?? ""),
-            };
+            } : { action: "request-code", email: String(fd.get("email") ?? "") };
             const res = await fetch("/api/auth/signup", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -162,12 +213,20 @@ const next = Astro.url.searchParams.get("next") ?? "/";
             if (!res.ok) {
               const msg =
                 data?.message ||
-                rawText ||
                 "登録に失敗しました。入力内容をご確認ください。";
+              if (data?.verificationRequired) setVerification();
               setMessage(msg, "error");
               return;
             }
+            if (!verificationToken) {
+              if (!data?.verificationRequired || !/^[A-Za-z0-9_-]{43}$/.test(data?.verificationToken ?? "")) throw new Error("Invalid verification response");
+              setVerification(data.verificationToken);
+              setMessage("メールに届いた確認コードを入力してください。", "success");
+              codeInput.focus(); codeInput.scrollIntoView({ block: "center" }); return;
+            }
 
+            completed = true; verificationToken = "";
+            details.filter(input => input.type === "password").forEach(input => { input.value = ""; });
             const msg =
               data?.message ||
               "登録を受け付けました。入会審査後、担当者から連絡します。";
@@ -175,19 +234,20 @@ const next = Astro.url.searchParams.get("next") ?? "/";
 
             const next = getNext();
             setTimeout(() => {
+              flashNotice(msg);
               window.location.href = `/Login?next=${encodeURIComponent(next)}`;
             }, 1200);
-          } catch (err) {
-            const message =
-              err instanceof Error && err.message
-                ? err.message
-                : "通信エラーが発生しました。時間をおいて再度お試しください。";
-            setMessage(message, "error");
+          } catch {
+            setMessage("通信エラーが発生しました。時間をおいて再度お試しください。", "error");
           } finally {
-            if (submitButton) submitButton.disabled = false;
+            busy = false; submitButton.disabled = completed; editButton.disabled = completed;
           }
         });
       </script>
     </section>
   </Fragment>
 </Layout>
+
+<style>
+  #signup-verification[hidden] { display: none; }
+</style>
