@@ -14,6 +14,7 @@ import {
   publicEvent,
   groupSource,
   previousEvent,
+  appendExhibitionNotice,
 } from "../src/lib/activities.ts";
 import { writeData, readData } from "../src/lib/store.ts";
 import { emptyActivities, defaultRules } from "../src/lib/activityTypes.ts";
@@ -84,6 +85,19 @@ const reject = (promise: Promise<unknown>, status: number) =>
     (e: unknown) => e instanceof ActivityError && e.status === status,
   );
 const latest = () => readActivities().events[0];
+test("formatted notifications validate their visible text and save a safe HTML version alongside plain text", async () => {
+  const request = { action: "notification.send", id: crypto.randomUUID(), title: "書式付き通知", recipientIds: ["u2"] };
+  await reject(act("u1", { ...request, bodyHtml: "<p><br></p>" }), 400);
+  await reject(act("u1", { ...request, bodyHtml: "<p>" + "字".repeat(10001) + "</p>" }), 400);
+  await act("u1", {
+    ...request,
+    bodyHtml: '<p><font size="5" color="#abc">集合</font><br>場所</p><p><a href="javascript:alert(1)">案内</a><span style="font-size:999px;position:fixed">詳細</span></p><script>alert(1)</script>',
+  });
+  const notice = readActivities().notifications[0];
+  assert.equal(notice.body, "集合\n場所\n案内詳細");
+  assert.match(notice.bodyHtml!, /<span style="color:#aabbcc;font-size:24px">集合<\/span>/);
+  assert.doesNotMatch(notice.bodyHtml!, /javascript:|script|999px|position/);
+});
 const edit = (changes = {}) => ({
   ...latest(),
   action: "event.save",
@@ -241,7 +255,7 @@ test("three levels preserve administrator powers and revoke a promoted member's 
       role: "admin",
       revision: accountRevision(users[2]),
     }),
-    /管理者権限/,
+    /幹部以上の権限/,
   );
 });
 test("notifications enforce sender and recipient authorization; read is private and send is retry-safe", async () => {
@@ -267,6 +281,48 @@ test("notifications enforce sender and recipient authorization; read is private 
     400,
   );
 });
+test("staff can edit an existing notification without changing its delivery, linked content or read receipts", async () => {
+  await event();
+  await act("u1", { action: "event.publish", eventId: latest().id, revision: latest().revision });
+  const id = readActivities().notifications[0].id;
+  await act("u2", { action: "notification.read", id });
+  const before = readActivities();
+  const edit = { action: "notification.edit", id, revision: 0, title: "訂正", bodyHtml: "<p><u>変更した本文</u></p>", recipientIds: ["u3"] };
+  await reject(act("u2", edit), 403);
+  await reject(act("u1", { ...edit, bodyHtml: "<p><br></p>" }), 400);
+  await act("u1", edit);
+  await reject(act("u1", { ...edit, title: "古いタブで上書き" }), 409);
+  const after = readActivities();
+  assert.deepEqual(after.notifications, [{
+    ...before.notifications[0],
+    title: "訂正", body: "変更した本文", bodyHtml: "<p><u>変更した本文</u></p>",
+    revision: 1, updatedAt: new Date(now).toISOString(),
+  }]);
+  assert.deepEqual(after.push, before.push);
+  assert.deepEqual(after.events, before.events);
+  await act("u1", { action: "notification.delete", id, confirmation: "delete" });
+  await reject(act("u1", { ...edit, revision: 1 }), 404);
+});
+
+test("event corrections preserve answers and the cancelled state, and can be saved without notifying", async () => {
+  await event();
+  await act("u1", { action: "event.publish", eventId: latest().id, revision: latest().revision });
+  await act("u2", { action: "vote", eventId: latest().id, vote: "attending" });
+  const original = latest();
+  const count = readActivities().notifications.length;
+  await act("u1", edit({ title: "訂正した企画", notifyMembers: false }));
+  assert.equal(readActivities().notifications.length, count);
+  assert.deepEqual(latest().votes, original.votes);
+  await act("u1", { action: "event.cancel", eventId: latest().id, revision: latest().revision });
+  await act("u1", edit({ title: "中止済み企画の訂正", recipientIds: ["u3"] }));
+  assert.equal(latest().id, original.id);
+  assert.equal(latest().title, "中止済み企画の訂正");
+  assert.equal(latest().status, "cancelled");
+  assert.deepEqual(latest().recipientIds, original.recipientIds);
+  assert.deepEqual(latest().votes, original.votes);
+  assert.equal(readActivities().notifications.length, count + 1);
+});
+
 test("publication atomically creates notification; member view excludes private answers and draft groups", async () => {
   await event();
   const e = latest();
@@ -304,7 +360,7 @@ test("publication atomically creates notification; member view excludes private 
   );
   assert.equal(readActivities().notifications[0].eventId, e.id);
 });
-test("server deadline is exact, votes can change, undecided/unanswered excluded, staff can correct", async () => {
+test("scheduled deadline warns, votes can change until the event day, undecided/unanswered excluded, staff can correct", async () => {
   await published();
   const id = latest().id;
   await reject(
@@ -315,7 +371,12 @@ test("server deadline is exact, votes can change, undecided/unanswered excluded,
   await act("u2", { action: "vote", eventId: id, vote: "undecided" });
   await act("u2", { action: "vote", eventId: id, vote: "attending" });
   now++;
-  await reject(act("u2", { action: "vote", eventId: id, vote: "absent" }), 409);
+  await act("u2", { action: "vote", eventId: id, vote: "absent" });
+  assert.equal(memberEvent(readActivities(),latest(),users[2],users,now).voteOverdue,true);
+  now=Date.parse(latest().startsAt.slice(0,10)+'T00:00:00+09:00');
+  await reject(act("u2", { action: "vote", eventId: id, vote: "attending" }),409);
+  assert.equal(memberEvent(readActivities(),latest(),users[2],users,now).voteOverdue,false);
+  now=Date.parse(latest().deadline);
   await reject(
     act("u2", {
       action: "attendance.set",
@@ -578,7 +639,7 @@ test("a participant added after the deadline receives notice and makes the publi
   );
   assert.equal(
     memberEvent(data, latest(), users[8], users, now).canVote,
-    false,
+    true,
   );
 });
 test("a profile change during cooperative generation rejects the stale candidate", async () => {
@@ -882,4 +943,28 @@ test("public event details expose only details, counts and attending names", asy
   for (const field of ["votes", "recipientIds", "rules", "draftGroups", "publishedGroups", "ownerId", "groups", "email"])
     assert.equal(Object.hasOwn(dto, field), false);
   assert.equal(JSON.stringify(dto).includes(users[3].name), false);
+});
+
+
+test("notification deletion is staff-only, confirmed and retry-safe without removing the linked event", async () => {
+  const id = crypto.randomUUID(), keepId = crypto.randomUUID();
+  for (const noticeId of [id, keepId]) await act('u1', { action: 'notification.send', id: noticeId, title: '架空の通知', body: '本文', recipientIds: ['u2'] });
+  const payload = { action: 'notification.delete', id, confirmation: 'delete' };
+  await reject(act('u2', payload), 403);
+  await reject(act('u1', { ...payload, confirmation: '' }), 400);
+  assert.equal(readActivities().notifications.length, 2);
+  const data = readActivities();
+  data.notifications.find(n => n.id === id)!.eventId = 'fixture-event';
+  data.push = { reminders: [], jobs: [{ id: 'fixture-job', noticeId: id, deviceId: 'fixture', generation: "fixture-generation", status: 'pending', attempts: 0, nextAttemptAt: now, expiresAt: now + 10000 }] };
+  writeData('member-activities.json', data);
+  await act('u1', payload);
+  await act('u1', payload);
+  assert.deepEqual(readActivities().notifications.map(n => n.id), [keepId]);
+  assert.equal(readActivities().push!.jobs.length, 0);
+  assert.deepEqual(readActivities().events, data.events);
+  await reject(act('u2', { action: 'notification.read', id }), 404);
+  await reject(act('u1', { action: 'notification.send', id, title: '再送', body: '復活不可', recipientIds: ['u2'] }), 410);
+  await reject(act('u1', { ...payload, id: crypto.randomUUID() }), 404);
+  await appendExhibitionNotice({ id, exhibitionId: 'fixture-exhibition', title: '復活不可', body: '本文', senderId: 'u1', senderName: '架空', recipientIds: ['u2'], createdAt: new Date(now).toISOString() });
+  assert.deepEqual(readActivities().notifications.map(n => n.id), [keepId]);
 });

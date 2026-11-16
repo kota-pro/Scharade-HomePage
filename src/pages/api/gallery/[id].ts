@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { getAlbumPhotosPage } from "../../../lib/lightroom.ts";
+import { getGalleryPhotosPage } from "../../../lib/galleryCatalog.ts";
 import { accessibleAlbum } from "../../../lib/galleryAccess.ts";
 import { photoLinks } from "../../../lib/galleryTokens.ts";
 import { json } from "../../../lib/http.ts";
@@ -10,7 +10,7 @@ export const GET: APIRoute = async ({ params, url, locals }) => {
     const cursor = url.searchParams.get("cursor");
     let page;
     try {
-      page = await getAlbumPhotosPage(album.id, { cursor });
+      page = await getGalleryPhotosPage(album.id, { cursor, groupSeries: url.searchParams.get("view") === "works" });
     } catch (error) {
       if (cursor)
         return json(

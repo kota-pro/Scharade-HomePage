@@ -1,37 +1,72 @@
 ---
+import { isMemberAccount } from "../../../lib/accountVisibility.ts";
+import ManagementDelete from "../../../components/ManagementDelete.astro";
 import ActivityShareButton from "../../../components/ActivityShareButton.astro";
 import crypto from "node:crypto";
 import StaffLayout from "../../../layouts/StaffLayout.astro";
 import ActivityRecipients from "../../../components/ActivityRecipients.astro";
+import PortfolioIntroductionEditor from "../../../components/PortfolioIntroductionEditor.astro";
+import ActivityText from "../../../components/ActivityText.astro";
+import { activityEditorHtml } from "../../../lib/activityRichText";
 import { readUsers } from "../../../lib/auth";
 import { readActivities } from "../../../lib/activities";
 import { activityDate } from "../../../lib/activityTypes";
 const users = readUsers()
-  .filter((u) => u.approved)
+  .filter(isMemberAccount)
   .map((u) => ({ id: u.id, name: u.name }));
-const notices = readActivities()
-  .notifications.filter((n) => !n.eventId)
-  .slice(-30)
-  .reverse();
+const allNotices = [...readActivities().notifications].reverse();
+const pageCount = Math.max(1, Math.ceil(allNotices.length / 30));
+const currentPage = Math.min(pageCount, Math.max(1, Math.floor(Number(Astro.url.searchParams.get('page')) || 1)));
+const notices = allNotices.slice((currentPage - 1) * 30, currentPage * 30);
+const editId = Astro.url.searchParams.get("edit");
+const editing = editId ? allNotices.find(notice => notice.id === editId) : undefined;
+const listHref = `/Member/manage/notifications?page=${currentPage}`;
+if (editId && !editing) Astro.response.status = 404;
 ---
 
-<StaffLayout title="お知らせの送信">
+<StaffLayout title={editId ? "通知を編集" : "お知らせの送信"}>
+  {editId ? (
+    <>
+      <h2>通知を編集</h2>
+      {editing ? (
+        <form
+          class="activity-form"
+          data-activity-action="notification.edit"
+          data-id={editing.id}
+          data-revision={editing.revision ?? 0}
+          data-redirect={listHref}
+        >
+          <p>{activityDate(editing.createdAt)}に送信 · 宛先 {editing.recipientIds.length}人</p>
+          <label>件名<input name="title" value={editing.title} required maxlength="200" /></label>
+          <PortfolioIntroductionEditor name="body" label="本文" html={activityEditorHtml(editing.body, editing.bodyHtml)} required />
+          <p>保存すると、メンバーが開く通知の件名と本文が更新されます。</p>
+          <div class="activity-actions">
+            <button class="member-submit" type="submit">変更を保存</button>
+            <a href={listHref}>キャンセル</a>
+          </div>
+          <p data-status role="status" aria-live="polite"></p>
+        </form>
+      ) : <p role="alert">通知が見つかりません。</p>}
+      <a class="member-back" href={listHref}>送信済みのお知らせへ戻る</a>
+    </>
+  ) : (
+  <>
   <h2>通常のお知らせを送信</h2>
+  <p class="admin-intro">回答を集める場合は、<a href="/Member/manage/tools">投票・日程調整・目安箱</a>をご利用ください。</p>
   {
     Astro.url.searchParams.has("saved") && (
       <p role="status">お知らせを送信しました。</p>
     )
   }
+  {Astro.url.searchParams.has("edited") && <p role="status">通知の変更を保存しました。</p>}
+  {Astro.url.searchParams.has("deleted") && <p role="status">通知を削除しました。</p>}
   <form
     class="activity-form"
     data-activity-action="notification.send"
     data-id={crypto.randomUUID()}
   >
     <label>件名<input name="title" required maxlength="200" /></label>
-    <label
-      >本文<textarea name="body" required maxlength="10000" rows="6"
-      ></textarea></label
-    >
+    <PortfolioIntroductionEditor name="body" label="本文" required />
     <ActivityRecipients users={users} />
     <button class="member-submit" type="submit">お知らせを送信</button><p
       data-status
@@ -41,10 +76,10 @@ const notices = readActivities()
     </p>
   </form>
   <section class="admin-section">
-    <h3>最近送信したお知らせ</h3><ul class="activity-list">
+    <h3>送信済みのお知らせ</h3>{!notices.length && <p>送信したお知らせはありません。</p>}<ul class="activity-list">
       {
         notices.map((n) => (
-          <li>
+          <li data-sent-notice={n.id}>
             <div class="activity-title-row"><details>
               <>
                 <summary>{n.title}</summary>
@@ -52,13 +87,23 @@ const notices = readActivities()
                   {activityDate(n.createdAt)} · {n.senderName} · 宛先{" "}
                   {n.recipientIds.length}人
                 </p>
-                <div class="activity-prose">{n.body}</div>
+                <div class="activity-prose"><ActivityText text={n.body} html={n.bodyHtml} /></div>
               </>
-            </details><ActivityShareButton kind="notifications" eventId={n.eventId} id={n.id} title={n.title} /></div>
+            </details><ActivityShareButton kind="notifications" eventId={n.eventId} toolId={n.toolId} id={n.id} title={n.title} /></div>
+            <div class="activity-actions notice-delete-actions">
+              <a class="admin-button admin-button-outline" href={`${listHref}&edit=${encodeURIComponent(n.id)}`}>通知を編集</a>
+              <button class="admin-button admin-button-outline" type="button" disabled data-delete-item={n.id} data-delete-kind="notification" data-delete-label="通知" data-delete-question={n.title}>通知を削除</button>
+            </div>
           </li>
         ))
       }
     </ul>
+    {pageCount > 1 && <nav class="activity-actions" aria-label="送信済みのお知らせのページ"><a href={`?page=${currentPage - 1}`} hidden={currentPage === 1}>前のページ</a><span>{currentPage} / {pageCount}</span><a href={`?page=${currentPage + 1}`} hidden={currentPage === pageCount}>次のページ</a></nav>}
   </section>
-  <a class="member-back" href="/Member/manage">運営画面へ戻る</a>
+  <ManagementDelete/>
+  <a class="member-back" href="/Management">運営画面へ戻る</a>
+  </>
+  )}
 </StaffLayout>
+
+<style>.notice-delete-actions {margin-top:16px;justify-content:flex-end;}</style>

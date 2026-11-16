@@ -1,16 +1,14 @@
 ---
 import "../styles/UA+reset.css";
 import Layout from "../layouts/Layout.astro";
+import { formatSiteError } from '../lib/siteErrors.ts';
 ---
 
 <Layout>
   <Fragment slot="setting-none">
     <div class="Oh404"></div>
     <div class="errormessage">
-      <p>
-        申し訳ございません。お探しのページは未実装か、削除されているか、URLが変更されている可能性があります。<br
-        />URLをご確認の上もう一度お試しいただくか、以下からお目当てのページをお探しください。
-      </p>
+      <p role="alert">{formatSiteError('お探しのページが見つかりません。URLをご確認の上もう一度お試しいただくか、以下からお目当てのページをお探しください。', 'SITE-006')}</p>
     </div>
     <div class="sbox">
       <div class="sbox-inner">

@@ -1,3 +1,5 @@
+import { cleanupToolAccount, listTools } from "./memberTools.ts";
+import { clearHelpTaskReads } from "./helpTaskReads.ts";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -47,6 +49,7 @@ export function deletionInventory(userId: string, portfolioId: string | null) {
     affected = new Set(submissions.map((s) => s.exhibitionId));
   return {
     portfolioId,
+    notificationTools: listTools().filter(t => t.creatorId === userId || t.responses.some(r => r.userId === userId) || t.assets.some(a => a.ownerId === userId)).map(t => t.id),
     rosterKey: activity.roster?.bindings[userId] ?? null,
     exhibitions: data.exhibitions
       .filter((e) => affected.has(e.id))
@@ -136,6 +139,8 @@ export async function cleanupAccountReferences(
   requestId: string,
   inventory?: DeletionInventory,
 ) {
+  await cleanupToolAccount(userId);
+  await clearHelpTaskReads(userId);
   const ids = new Set([userId, ...(rosterKey ? [rosterKey] : [])]);
   const anonymous = `deleted-${crypto.createHash("sha256").update(requestId).digest("hex").slice(0, 20)}`;
   await withStoreLock("member-activities", () => {

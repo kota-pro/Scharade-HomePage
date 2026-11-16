@@ -27,7 +27,7 @@ export function createSeriesEditor(options: Options) {
     const pair = s.reference !== s.moving ? photoGaps(work.photos[s.reference],work.photos[s.moving]) : null;
     const measurements: string[] = [];
     const boxes = work.photos.map(p => layoutBounds([p]));
-    const line = (x1:number,y1:number,x2:number,y2:number,label:string,axis:"x"|"y",a:number,b:number) => `<g data-series-gap-axis="${axis}" data-series-gap-a="${a}" data-series-gap-b="${b}" role="button" tabindex="0" aria-label="写真${a+1}と写真${b+1}の間隔${escape(label)}を変更"><path d="M${(x1-ox)*scale} ${(y1-oy)*scale}L${(x2-ox)*scale} ${(y2-oy)*scale}"/><rect x="${((x1+x2)/2-ox)*scale-60}" y="${((y1+y2)/2-oy)*scale-21}" width="120" height="22" fill="transparent" stroke="none"/><text x="${((x1+x2)/2-ox)*scale}" y="${((y1+y2)/2-oy)*scale-5}">${escape(label)}</text></g>`;
+    const line = (x1:number,y1:number,x2:number,y2:number,label:string,axis:"x"|"y",a:number,b:number) => Math.abs(Number.parseFloat(label))<.05?'':`<g data-series-gap-axis="${axis}" data-series-gap-a="${a}" data-series-gap-b="${b}" role="button" tabindex="0" aria-label="写真${a+1}と写真${b+1}の間隔${escape(label)}を変更"><path d="M${(x1-ox)*scale} ${(y1-oy)*scale}L${(x2-ox)*scale} ${(y2-oy)*scale}"/><rect data-series-gap-hit x="${((x1+x2)/2-ox)*scale-60}" y="${((y1+y2)/2-oy)*scale-21}" width="120" height="22" fill="transparent" stroke="none"/><text x="${((x1+x2)/2-ox)*scale}" y="${((y1+y2)/2-oy)*scale-5}">${escape(label)}</text></g>`;
     boxes.forEach((a,i) => {
       const candidates = boxes.map((b,j) => ({b,j})).filter(({b,j}) => j!==i && b.x >= a.x+a.width-.05 && Math.min(a.y+a.height,b.y+b.height)>Math.max(a.y,b.y));
       const nearest = candidates.sort((u,v) => u.b.x-v.b.x)[0];
@@ -77,7 +77,10 @@ export function createSeriesEditor(options: Options) {
         editor.querySelectorAll<HTMLInputElement>("[data-series-selection]").forEach(i=>i.checked=s.selected.includes(Number(i.dataset.seriesSelection)));
       };
       const paintPhotos=()=>work.photos.forEach((p,i)=>{const f=canvas.querySelector<HTMLElement>(`[data-series-photo="${i}"]`)!;f.style.left=`${(p.x-ox)*base}px`;f.style.top=`${(p.y-oy)*base}px`;});
-      const viewport=()=>{plane.style.transform=`translate(${s.pan.x}px,${s.pan.y}px) scale(${s.zoom})`;canvas.dataset.scale=String(base*s.zoom);const grid=s.interval*Math.max(1,Math.ceil(8/(s.interval*base*s.zoom)));canvas.style.backgroundSize=`${grid*base*s.zoom}px ${grid*base*s.zoom}px`;canvas.style.backgroundPosition=`${-ox*base*s.zoom+s.pan.x}px ${-oy*base*s.zoom+s.pan.y}px`;const select=editor.querySelector<HTMLSelectElement>('[data-series-setting="zoom"]');if(select){const value=String(s.zoom);if(![...select.options].some(o=>o.value===value))select.add(new Option(`${Math.round(s.zoom*100)}%`,value));select.value=value;}};
+      const refreshGapHits=()=>editor.querySelectorAll<SVGGElement>('[data-series-gap-axis]').forEach(group=>{const text=group.querySelector('text'),hit=group.querySelector<SVGRectElement>('[data-series-gap-hit]');if(!text||!hit)return;try{const box=text.getBBox();if(!box.width)return;const padding=12*Math.max(0,1-Math.log2(Math.max(1,s.zoom))/2)/s.zoom;hit.setAttribute('x',String(box.x-padding));hit.setAttribute('y',String(box.y-padding));hit.setAttribute('width',String(box.width+2*padding));hit.setAttribute('height',String(box.height+2*padding));}catch{}});
+      requestAnimationFrame(refreshGapHits);
+      void document.fonts.ready.then(()=>{if(editor.isConnected)refreshGapHits();});
+      const viewport=()=>{refreshGapHits();plane.style.transform=`translate(${s.pan.x}px,${s.pan.y}px) scale(${s.zoom})`;canvas.dataset.scale=String(base*s.zoom);const grid=s.interval*Math.max(1,Math.ceil(8/(s.interval*base*s.zoom)));canvas.style.backgroundSize=`${grid*base*s.zoom}px ${grid*base*s.zoom}px`;canvas.style.backgroundPosition=`${-ox*base*s.zoom+s.pan.x}px ${-oy*base*s.zoom+s.pan.y}px`;const select=editor.querySelector<HTMLSelectElement>('[data-series-setting="zoom"]');if(select){const value=String(s.zoom);if(![...select.options].some(o=>o.value===value))select.add(new Option(`${Math.round(s.zoom*100)}%`,value));select.value=value;}};
       const zoomAt=(zoom:number,center:{x:number;y:number})=>{const next=Math.max(.25,Math.min(8,zoom)),ratio=next/s.zoom;s.pan={x:center.x-(center.x-s.pan.x)*ratio,y:center.y-(center.y-s.pan.y)*ratio};s.zoom=next;viewport();};
       const pinchPair=()=>{const [a,b]=[...pointers.values()];return{distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),center:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};};
       const guides=canvas.querySelector<SVGSVGElement>("[data-series-guides]")!;
@@ -124,8 +127,9 @@ export function createSeriesEditor(options: Options) {
       canvas.addEventListener("pointerup",end);canvas.addEventListener("pointercancel",end);
       canvas.addEventListener("wheel",event=>{if(!event.ctrlKey||options.busy())return;event.preventDefault();zoomAt(s.zoom*Math.exp(-event.deltaY*.01),local(event));},{passive:false});
       let safariZoom=1;canvas.addEventListener("gesturestart",event=>{event.preventDefault();safariZoom=s.zoom;});canvas.addEventListener("gesturechange",event=>{event.preventDefault();const e=event as Event&{scale:number;clientX:number;clientY:number};zoomAt(safariZoom*e.scale,local(e));});
-      const clearSelection=()=>{if(drag?.photo)work.photos=drag.photos;drag=undefined;pinch=undefined;s.selected=[];paintPhotos();paintSelection();clearGuides();release();};
+      const clearSelection=()=>{if(drag?.photo)work.photos=drag.photos;drag=undefined;pinch=undefined;s.selected=[];s.gapEdit=undefined;editor.querySelectorAll(".series-gap-pick").forEach(p=>p.classList.remove("series-gap-pick"));paintPhotos();paintSelection();clearGuides();release();};
       editor.addEventListener("series:clear-selection",clearSelection);
+      editor.addEventListener("series:dispose",release);
       editor.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();event.stopPropagation();clearSelection();}});
       canvas.querySelectorAll<HTMLElement>("figure[data-series-photo]").forEach(figure=>figure.addEventListener("keydown",event=>{
         const i=Number(figure.dataset.seriesPhoto);if(options.busy()||!["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(event.key))return;
@@ -136,5 +140,7 @@ export function createSeriesEditor(options: Options) {
 
     });
   }
-  return {html,bind};
+  // Photo indices change after deletion; discard selection and pending gap edits.
+  const reset = (workId: string) => states.delete(workId);
+  return {html,bind,reset};
 }

@@ -3,7 +3,7 @@
   width: min(400px, calc(100vw - 32px)); height: auto; min-height: 0; max-height: 45dvh;
   box-sizing: border-box; border: 0; background: transparent;
   overflow: auto; overscroll-behavior: contain; z-index: 2147483647; pointer-events: none; display: grid; gap: 10px;
-  font-family: "Zen Old Mincho", serif; color: #272727;
+  font-family: YakuHanMP, "Zen Old Mincho", serif; color: #272727;
 }
 .site-notices:empty { display: none; }
 .site-notices::backdrop { background: transparent; pointer-events: none; }

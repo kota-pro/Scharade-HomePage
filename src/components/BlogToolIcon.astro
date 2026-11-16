@@ -1,0 +1,37 @@
+---
+const paths = {
+  bold: "M6 12h7a4 4 0 0 1 0 8H6V4h6a4 4 0 0 1 0 8",
+  italic: "M11 4h7M6 20h7m-4 0 6-16",
+  underline: "M6 4v7a6 6 0 0 0 12 0V4M4 21h16",
+  strikeThrough: "M4 12h16m-2-6c-1-2-3-3-6-3-3 0-5 1.5-5 4 0 2 2 3 5 4m0 10c3 0 5-1.5 5-4M6 18c1 2 3 3 6 3",
+  "inline-code": "m8 6-6 6 6 6m8-12 6 6-6 6",
+  justifyLeft: "M4 5h16M4 10h10M4 15h16M4 20h10",
+  justifyCenter: "M4 5h16M7 10h10M4 15h16M7 20h10",
+  justifyRight: "M4 5h16m-10 5h10M4 15h16m-10 5h10",
+  insertUnorderedList: "M9 5h12M9 12h12M9 19h12M4 5h.01M4 12h.01M4 19h.01",
+  insertOrderedList: "M10 5h11m-11 7h11m-11 7h11M4 3v4m-1 0h2m-2 4c0-2 3-2 3-.3 0 1-2 2-3 3h3m-3 4h2l-1 1.5c2 0 2 2.5-.5 2.5",
+  insertHorizontalRule: "M3 12h18",
+  quote: "M3 15h6v-5H5c0-2 1-3.5 3-4M14 15h6v-5h-4c0-2 1-3.5 3-4",
+  link: "m10 7 3-3a5 5 0 0 1 7 7l-3 3m-3 3-3 3a5 5 0 0 1-7-7l3-3m1 6 8-8",
+  image: "M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm-1 14 5-5 4 4 4-6 5 7M8 7h.01",
+  file: "M3 6a2 2 0 0 1 2-2h5l3 3h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z",
+  embed: "M8 12 16 7m-8 5 8 5m-8-5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Zm13-6a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Zm0 12a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z",
+  "code-block": "M4 3h16v18H4Zm6 5-3 3 3 3m4-6 3 3-3 3m-7 4h10",
+  table: "M3 4h18v16H3Zm0 6h18M9 10v10m6-10v10",
+  tableEdit: "M3 4h18v6M3 4v16h9m-9-10h11M9 10v10m4 0 4-1 5-5-3-3-5 5-1 4Z",
+  undo: "m8 5-5 5 5 5m-5-5h12a6 6 0 0 1 6 6v2",
+  redo: "m16 5 5 5-5 5m5-5H9a6 6 0 0 0-6 6v2",
+  removeFormat: "M3 5h13m-6 0-4 13m-3 0h7m5-6 6 6m0-6-6 6",
+  color: "m5 16 5-12 5 12m-8-4h6M3 21h18",
+  size: "M2 10h8m-4 0v9m5-15h11m-5.5 0v15",
+  custom: "M12 3v4m-2-2h4m5 5v4m-2-2h4M7 10l2 4 4 2-4 2-2 4-2-4-4-2 4-2Z",
+  expand: "M9 4H4v5m11-5h5v5m-5 11h5v-5M9 20H4v-5",
+  collapse: "M4 9h5V4m11 5h-5V4m0 16v-5h5M9 20v-5H4",
+  chevron: "m6 9 6 6 6-6",
+};
+interface Props { kind: keyof typeof paths; class?: string }
+const { kind, class: className } = Astro.props;
+---
+<svg class={className} viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <path d={paths[kind]} />
+</svg>

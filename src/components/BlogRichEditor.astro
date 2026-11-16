@@ -1,0 +1,121 @@
+---
+import type { BlogEditorOptions } from "../lib/blogManagement";
+import BlogToolIcon from "./BlogToolIcon.astro";
+interface Props { body: string; options: BlogEditorOptions }
+const { body, options } = Astro.props;
+const groups = [
+  [{ value: "bold", label: "太字" }, { value: "italic", label: "斜体" }, { value: "underline", label: "下線" }, { value: "strikeThrough", label: "取り消し線" }, { value: "inline-code", label: "インラインコード" }],
+  [{ value: "justifyLeft", label: "左揃え" }, { value: "justifyCenter", label: "中央揃え" }, { value: "justifyRight", label: "右揃え" }],
+  [{ value: "insertHorizontalRule", label: "区切り線" }, { value: "quote", label: "引用" }, { value: "insertUnorderedList", label: "箇条書き" }, { value: "insertOrderedList", label: "番号付きリスト" }],
+] as const;
+const insertions = [
+  { value: "link", label: "リンク" }, { value: "image", label: "画像" }, { value: "file", label: "添付ファイル" },
+  { value: "embed", label: "外部URL" }, { value: "code-block", label: "コードブロック" }, { value: "table", label: "表" },
+] as const;
+const history = [{ value: "undo", label: "元に戻す" }, { value: "redo", label: "やり直す" }, { value: "removeFormat", label: "書式をクリア" }] as const;
+const tableActions = [
+  ["row-add", "下に行を追加"], ["column-add", "右に列を追加"],
+  ["row-delete", "行を削除"], ["column-delete", "列を削除"],
+  ["header", "見出しセルを切り替え"], ["merge", "セルを結合"], ["split", "結合を解除"], ["table-delete", "表を削除"],
+];
+const sizes = options.sizes.length ? options.sizes : [80, 100, 120, 150, 200].map(value => ({ value: `${value}%`, label: `${value}%` }));
+---
+<div data-blog-rich class="blog-rich">
+  <label class="content-management-field" id="blog-body-label">本文</label>
+  <div class="blog-toolbar" role="group" aria-label="本文の編集ツール">
+    <div class="blog-tool-group">
+      <div class="blog-tool-select blog-tool-select-block">
+        <select data-rich-select="block" aria-label="段落・見出し" title="段落・見出し">
+          <option value="">段落・見出し</option>
+          <option value="p">段落</option>
+          {[1, 2, 3, 4, 5].map(level => <option value={`h${level}`}>見出し{level}</option>)}
+        </select>
+        <BlogToolIcon kind="chevron" class="blog-tool-chevron" />
+      </div>
+    </div>
+    {groups.map(group => <div class="blog-tool-group">
+      {group.map(({value, label}) => <button type="button" data-rich-command={value} aria-label={label} title={label}><BlogToolIcon kind={value} /></button>)}
+    </div>)}
+    <div class="blog-tool-group">
+      {!options.presetColorsOnly && <label class="blog-color-picker" title="文字色を選ぶ"><BlogToolIcon kind="color" /><input type="color" value="#222222" data-rich-color aria-label="文字色を選ぶ" /></label>}
+      {options.colors.length > 0 && <div class="blog-tool-select blog-tool-select-icon">
+        <BlogToolIcon kind="color" />
+        <select data-rich-select="color" aria-label="登録済みの文字色" title="登録済みの文字色">
+          <option value="">登録済みの文字色</option>
+          {options.colors.map(item => <option value={item.value}>{item.label}</option>)}
+        </select>
+        <BlogToolIcon kind="chevron" class="blog-tool-chevron" />
+      </div>}
+      <div class="blog-tool-select blog-tool-select-icon">
+        <BlogToolIcon kind="size" />
+        <select data-rich-select="size" aria-label="文字サイズ" title="文字サイズ">
+          <option value="">文字サイズ</option>
+          {sizes.map(item => <option value={item.value}>{item.label}</option>)}
+        </select>
+        <BlogToolIcon kind="chevron" class="blog-tool-chevron" />
+      </div>
+      {options.classes.length > 0 && <div class="blog-tool-select blog-tool-select-icon">
+        <BlogToolIcon kind="custom" />
+        <select data-rich-select="class" aria-label="登録済みの書式" title="登録済みの書式">
+          <option value="">登録済みの書式</option>
+          {options.classes.map(item => <option value={item.value}>{item.label}</option>)}
+        </select>
+        <BlogToolIcon kind="chevron" class="blog-tool-chevron" />
+      </div>}
+    </div>
+    <div class="blog-tool-group">
+      {insertions.map(({value, label}) => <button type="button" data-rich-dialog-open={value} aria-label={label} title={label}><BlogToolIcon kind={value} /></button>)}
+      <div class="blog-tool-select blog-tool-select-icon">
+        <BlogToolIcon kind="tableEdit" />
+        <select data-rich-select="table" aria-label="表を編集" title="表を編集" disabled>
+          <option value="">表を編集</option>
+          {tableActions.map(([value, label]) => <option value={value}>{label}</option>)}
+        </select>
+        <BlogToolIcon kind="chevron" class="blog-tool-chevron" />
+      </div>
+    </div>
+    <div class="blog-tool-group">
+      {history.map(({value, label}) => <button type="button" data-rich-command={value} aria-label={label} title={label}><BlogToolIcon kind={value} /></button>)}
+    </div>
+    <button type="button" data-rich-expand aria-label="全画面で編集" title="全画面で編集" aria-pressed="false">
+      <BlogToolIcon kind="expand" class="blog-expand-icon" />
+      <BlogToolIcon kind="collapse" class="blog-collapse-icon" />
+    </button>
+  </div>
+  <div class="blog-rich-body" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="blog-body-label" data-rich-body set:html={body}></div>
+  <p class="content-management-status" data-rich-status role="status"></p>
+</div>
+
+<dialog class="admin-dialog blog-insert-dialog" data-rich-dialog aria-labelledby="blog-insert-title">
+  <h2 id="blog-insert-title" data-rich-dialog-title></h2>
+  <div class="content-management-fields">
+    <label data-dialog-field="upload">アップロードするファイル<input type="file" data-rich-input="upload" /></label>
+    <details data-dialog-field="library" data-rich-media-library>
+      <summary>既存のメディアから選ぶ</summary>
+      <label>ファイル名<input type="search" maxlength="100" data-media-query /></label>
+      <button type="button" data-media-search>検索</button>
+      <ul class="content-management-list" data-media-results></ul>
+      <p data-media-status class="content-management-status" role="status"></p>
+      <button type="button" data-media-more hidden>さらに表示</button>
+    </details>
+    <label data-dialog-field="url">URL<input type="text" inputmode="url" data-rich-input="url" /></label>
+    <label data-dialog-field="text"><span data-rich-text-label>表示テキスト</span><input type="text" data-rich-input="text" maxlength="300" /></label>
+    <label data-dialog-field="newTab" class="blog-checkbox"><input type="checkbox" data-rich-input="newTab" /> 別のタブで開く</label>
+    <label data-dialog-field="caption">キャプション<input type="text" data-rich-input="caption" maxlength="300" /></label>
+    <label data-dialog-field="width">幅（px）<input type="number" data-rich-input="width" min="1" max="20000" /></label>
+    <label data-dialog-field="height">高さ（px）<input type="number" data-rich-input="height" min="1" max="20000" /></label>
+    <label data-dialog-field="alignment">画像の位置<select data-rich-input="alignment"><option value="">標準</option><option value="left">左</option><option value="center">中央</option><option value="right">右</option></select></label>
+    <label data-dialog-field="imageLink">画像のリンク先<input type="text" data-rich-input="imageLink" /></label>
+    <label data-dialog-field="rows">行数<input type="number" data-rich-input="rows" min="1" max="20" /></label>
+    <label data-dialog-field="columns">列数<input type="number" data-rich-input="columns" min="1" max="12" /></label>
+    <label data-dialog-field="language">言語<input type="text" data-rich-input="language" placeholder="javascript" maxlength="40" /></label>
+    <label data-dialog-field="filename">ファイル名<input type="text" data-rich-input="filename" maxlength="100" /></label>
+    <label data-dialog-field="code">コード<textarea data-rich-input="code" rows="7"></textarea></label>
+  </div>
+  <p class="content-management-status" data-dialog-status role="status"></p>
+  <div class="content-management-actions">
+    <button class="content-management-secondary" type="button" data-rich-unlink hidden>リンクを解除</button>
+    <button class="content-management-secondary" type="button" data-rich-dialog-cancel>戻る</button>
+    <button class="admin-button" type="button" data-rich-dialog-apply>適用</button>
+  </div>
+</dialog>

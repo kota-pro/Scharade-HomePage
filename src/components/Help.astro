@@ -1,0 +1,33 @@
+---
+import '../styles/Help.css';
+import SearchIcon from './SearchIcon.astro';
+---
+<div id="site-help" data-help-root data-approved={Astro.locals.user?.approved ? '1' : '0'} data-role={Astro.locals.user?.role || 'member'}>
+  <button type="button" class="help-launcher" data-help-open aria-label="ヘルプを開く" aria-haspopup="dialog" aria-controls="help-panel" aria-expanded="false">
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 36 36" aria-hidden="true"><path fill="currentColor" d="M25.39 25.45a1 1 0 0 0-1.38.29c-1.41 2.16-4 4.81-6.31 5.7s-4.12.57-4.84 0c-.31-.27-1.12-1-.43-3.49c.46-1.66 3.32-9.48 4-11.38l-2.18.28c-.69 1.86-3.29 8.84-3.76 10.58c-.68 2.49-.34 4.3 1.09 5.56A5.6 5.6 0 0 0 15 34a9.5 9.5 0 0 0 3.45-.7c2.79-1.09 5.72-4.12 7.26-6.47a1 1 0 0 0-.32-1.38" class="clr-i-outline clr-i-outline-path-1"/><path fill="currentColor" d="M19.3 11a4.5 4.5 0 1 0-4.5-4.5a4.5 4.5 0 0 0 4.5 4.5m0-7a2.5 2.5 0 1 1-2.5 2.5A2.5 2.5 0 0 1 19.3 4" class="clr-i-outline clr-i-outline-path-2"/><path fill="currentColor" d="M11.81 15c.06 0 6.27-.82 7.73-1c.65-.1 1.14 0 1.3.15s.21.8-.07 1.68c-.61 1.86-3.69 11-4.59 13.71a8 8 0 0 0 1.29-.38a7.3 7.3 0 0 0 1.15-.6c1.23-3.56 3.53-10.46 4.05-12.04s.39-2.78-.3-3.6a3.16 3.16 0 0 0-3.08-.83c-1.43.15-7.47.94-7.73 1a1 1 0 0 0 .26 2Z" class="clr-i-outline clr-i-outline-path-3"/><path fill="none" d="M0 0h36v36H0z"/></svg>
+    <span class="help-notification-badge" data-help-badge hidden aria-hidden="true"></span>
+  </button>
+  <dialog id="help-panel" class="help-panel" aria-labelledby="help-heading" lang="ja">
+    <header class="help-panel-header"><h2 id="help-heading">Help</h2><button type="button" class="help-close-button" data-help-close aria-label="ヘルプを閉じる" autofocus><span class="help-close-icon" aria-hidden="true"><span></span><span></span></span></button></header>
+    <div class="help-panel-body">
+      <label class="help-search-label" for="help-query">したいことを検索</label>
+      <form class="help-search" role="search" data-help-search><input type="search" id="help-query" placeholder="例：写真展に出展したい" autocomplete="off" maxlength="200" aria-controls="help-search-results"/><button type="submit" data-help-search-button aria-label="したいことを検索"><SearchIcon /></button></form>
+      <div id="help-search-results" class="help-results" aria-live="polite"></div>
+      <p class="help-status" data-help-status role="status" aria-live="polite"></p>
+      <div class="help-primary-actions">
+        <button type="button" data-help-page>このページの使い方 <span aria-hidden="true">▶︎</span></button>
+        <button type="button" data-help-tools>各ツール・機能説明 <span aria-hidden="true">▶︎</span></button>
+      </div>
+      <div class="help-resume" data-help-resume-box hidden><p data-help-resume-label>進行中の案内があります。</p><div><button type="button" data-help-resume>案内を再表示 ▶︎</button><button type="button" data-help-end>案内を終了</button></div></div>
+      <section data-help-selection hidden aria-labelledby="help-selection-heading"><h3 id="help-selection-heading" data-help-selection-heading tabindex="-1"></h3><p data-help-selection-description></p><div data-help-selection-content class="help-results"></div><button type="button" data-help-selection-close class="help-text-button">一覧に戻る</button></section>
+      <section class="help-tasks" aria-labelledby="help-tasks-heading"><div class="help-section-heading"><h3 id="help-tasks-heading">やることリスト</h3><button type="button" data-help-refresh aria-label="やることリストを更新">更新</button></div><div data-help-tasks aria-live="polite"><p>ヘルプを開くと最新の状況を確認できます。</p></div><div data-help-accounting aria-live="polite"></div></section>
+    </div>
+  </dialog>
+  <aside class="help-tour" data-help-tour popover="manual" hidden aria-label="操作の説明" lang="ja">
+    <button type="button" class="help-tour-close" data-help-stop aria-label="案内を終了する">×</button>
+    <div class="help-tour-summary"><span class="help-step-number" data-help-step-number></span><div><p class="help-tour-name" data-help-tour-name></p><h2 data-help-step-title tabindex="-1"></h2><p data-help-step-text aria-live="polite"></p><p class="help-target-status" data-help-target-status role="status"></p></div></div>
+    <div class="help-tour-actions"><button type="button" data-help-prev>戻る</button><button type="button" data-help-next class="help-next">次へ</button><button type="button" data-help-hide>非表示</button><button type="button" data-help-detail hidden>詳しい操作を選ぶ</button></div>
+  </aside>
+  <div class="help-arrow" data-help-arrow popover="manual" hidden aria-hidden="true"><svg viewBox="0 0 44 44" width="44" height="44"><path d="M16 2h12v21h12L22 42 4 23h12Z" fill="#ffe454" stroke="#715d00" stroke-width="2" stroke-linejoin="round"/></svg></div>
+</div>
+<script>import '../scripts/help';</script>

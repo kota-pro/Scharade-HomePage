@@ -1,7 +1,20 @@
 ---
-import { genderLabels, gradeLabels } from "../lib/activityTypes";
+import { activityDate, genderLabels, gradeLabels, type ActivityEvent } from "../lib/activityTypes";
+interface Props { events: Pick<ActivityEvent, "id" | "title" | "startsAt">[] }
+const events = [...Astro.props.events].sort((a, b) => b.startsAt.localeCompare(a.startsAt));
 ---
 <div class="grouping-participant-import">
+  <details>
+    <summary>企画の参加投票から追加</summary>
+    {events.length ? <>
+      <label>読み込む企画<select data-participant-event>
+        <option value="">企画を選択してください</option>
+        {events.map(event => <option value={event.id}>{event.title}（{activityDate(event.startsAt)}）</option>)}
+      </select></label>
+      <button type="button" data-participant-event-load>参加者を読み込む</button>
+      <p>読み込んだ時点で「参加」と回答している人を確認できます。</p>
+    </> : <p>公開済みの企画はまだありません。</p>}
+  </details>
   <details>
     <summary>フォームのスプレッドシートから追加</summary>
     <label>参加者フォームのスプレッドシートURL<input type="url" data-participant-url placeholder="https://docs.google.com/spreadsheets/d/…/edit#gid=…" /></label>
@@ -27,7 +40,11 @@ import { genderLabels, gradeLabels } from "../lib/activityTypes";
     <h4>追加する参加者を確認</h4>
     <p>不要な行のチェックを外し、名前・学年・性別を確認してください。既存の人と同一人物かどうかも確認してください。</p>
     <div class="activity-actions"><button type="button" data-preview-select="all">全選択</button><button type="button" data-preview-select="none">全解除</button></div>
-    <div data-participant-rows></div>
+    <div data-participant-rows>
+      <section data-import-group="event" hidden><h5>企画の参加投票</h5><div data-import-group-rows></div></section>
+      <section data-import-group="sheet" hidden><h5>スプレッドシート</h5><div data-import-group-rows></div></section>
+      <section data-import-group="manual" hidden><h5>手入力</h5><div data-import-group-rows></div></section>
+    </div>
     <button type="button" data-participant-confirm>確認した人を参加者に追加</button>
     <button type="button" data-participant-clear>確認一覧を閉じる</button>
   </section>

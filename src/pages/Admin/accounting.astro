@@ -1,0 +1,25 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { isExecutive } from "../../lib/auth.ts";
+import "../../styles/Accounting.css";
+if (!isExecutive(Astro.locals.user)) return new Response("幹部以上のみ利用できます。", { status: 403 });
+---
+<AdminLayout title="会計管理" pageClass="accounting-page" breadcrumbs={[{ label: "管理画面", href: "/Admin" }, { label: "会計管理" }]}>
+  <section class="admin-section" id="accounting" data-user-id={Astro.locals.user!.id}>
+    <h2>会計管理</h2>
+    <p>サークルの収支・立替申請・返金を管理します。会計年度は11月から翌年10月です。</p>
+    <nav class="accounting-nav" aria-label="会計のメニュー" id="accounting-nav"></nav>
+    <div class="accounting-tools"><button type="button" id="accounting-reload">最新の内容を読み込む</button><a href="/Admin">Adminへ戻る</a></div>
+    <p id="accounting-status" role="status" aria-live="polite" tabindex="-1">会計を読み込んでいます…</p>
+    <div id="accounting-retry" class="accounting-notice" hidden><p>前回の操作結果が未確認です。同じ内容で結果を確認してください。</p><button type="button" id="accounting-retry-button">前回の操作を再確認</button></div>
+    <div id="accounting-issues"></div>
+    <div id="accounting-content" aria-busy="true"></div>
+  </section>
+  <dialog id="accounting-confirm" class="admin-dialog accounting-confirm" aria-labelledby="accounting-confirm-heading">
+    <div class="accounting-confirm-head"><h2 id="accounting-confirm-heading">入力内容の確認</h2><button type="button" id="accounting-confirm-close" aria-label="確認を閉じる">×</button></div>
+    <div class="accounting-confirm-body"><p id="accounting-confirm-description"></p><dl id="accounting-confirm-fields"></dl></div>
+    <p id="accounting-send-status" role="status" aria-live="polite"></p>
+    <div class="accounting-confirm-actions"><button type="button" id="accounting-confirm-back">入力に戻る</button><button type="button" id="accounting-confirm-send">この内容で確定する</button></div>
+  </dialog>
+</AdminLayout>
+<script>import "../../scripts/accounting";</script>

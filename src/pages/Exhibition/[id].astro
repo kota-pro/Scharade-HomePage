@@ -1,13 +1,14 @@
 ---
+import {exhibitionLoadingHtml} from '../../scripts/exhibitionLoading.ts';
 import Layout from "../../layouts/Layout.astro";
 import "../../styles/Exhibitions.css";
 const { id } = Astro.params;
 ---
 
-<Layout title="写真展 出展フォーム">
+<Layout title="写真展 出展フォーム" wideContent>
   <div slot="main-slot" class="exhibition-section-title"><h1>Exhibition</h1><div class="exhibition-title-line" aria-hidden="true"></div></div>
-  <section slot="body-slot" class="exhibition-public" id="exhibition-submission" data-exhibition-id={id}>
-    <p class="exhibition-status" aria-live="polite">フォームを読み込んでいます…</p>
+  <section slot="body-slot" class="exhibition-public" id="exhibition-submission" data-exhibition-id={id} data-owner-id={Astro.locals.user?.id}>
+    <Fragment set:html={exhibitionLoadingHtml()} />
   </section>
 </Layout>
 <script>

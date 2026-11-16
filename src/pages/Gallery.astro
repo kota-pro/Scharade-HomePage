@@ -4,29 +4,19 @@ import { getContent } from "../lib/siteContent";
 import Layout from "../layouts/Layout.astro";
 import "../styles/UA+reset.css";
 import "../styles/Gallery.css";
-import { photoLinks } from "../lib/galleryTokens";
-import { getAlbums, getAlbumCoverId } from "../lib/lightroom";
+import { getGalleryAlbums, galleryAlbumAllowed, type GalleryAlbum } from "../lib/galleryCatalog";
+import GalleryAlbumCard from "../components/GalleryAlbumCard.astro";
 import {
   GALLERY_CATEGORY_LABELS,
   GALLERY_CATEGORY_ORDER,
   type GalleryAlbumCategory,
 } from "../data/galleryAlbums";
 
-let albums: Awaited<ReturnType<typeof getAlbums>> extends (infer U)[]
-  ? (U & { coverId: string | null })[]
-  : never[] = [];
+let albums: GalleryAlbum[] = [];
 let apiError = "";
 
 try {
-  const rawAlbums = await getAlbums();
-  albums = await Promise.all(
-    rawAlbums
-      .filter((album) => !album.hidden || Astro.locals.user?.approved)
-      .map(async (album) => {
-        const coverId = await getAlbumCoverId(album.id);
-        return { ...album, coverId };
-      }),
-  );
+  albums = (await getGalleryAlbums()).filter(album => galleryAlbumAllowed(album, Astro.locals.user));
 } catch (error: any) {
   console.error("[Gallery] Failed to load albums");
   apiError = error?.message || "アルバムの読み込みに失敗しました";
@@ -87,8 +77,7 @@ const getAlbumsForYearAndCategory = (
             ⚠ アルバムを読み込めませんでした
           </p>
           <p style="font-size:0.9rem; margin-top:0.5rem; color:#666;">
-            Adobe Lightroom
-            APIへの接続に失敗しました。管理者にお問い合わせください。
+            写真の保存サービスに接続できませんでした。時間をおいて再読み込みし、解決しない場合は運営へお問い合わせください。
           </p>
         </div>
       ) : (
@@ -98,6 +87,8 @@ const getAlbumsForYearAndCategory = (
             const inputId = `year-${year}`;
             return [
               <input
+                class="tab-radio"
+                tabindex="0"
                 type="radio"
                 id={inputId}
                 name="year"
@@ -122,46 +113,7 @@ const getAlbumsForYearAndCategory = (
                           {GALLERY_CATEGORY_LABELS[category]}
                         </summary>
                         <div class="gallery-grid">
-                          {categoryAlbums.map((item) => {
-                            const itemYear = item.created
-                              ? new Date(item.created).getFullYear()
-                              : new Date().getFullYear();
-                            return (
-                              <div class="gallery-item" data-year={itemYear}>
-                                <a
-                                  href={`/Gallery/${item.id}`}
-                                  class="gallery-link"
-                                >
-                                  <div class="image-wrapper">
-                                    {item.coverId ? (
-                                      <img
-                                        src={
-                                          photoLinks(item.id, {
-                                            id: item.coverId,
-                                            name: item.payload.name,
-                                          }).src
-                                        }
-                                        alt={item.payload.name}
-                                        loading="lazy"
-                                      />
-                                    ) : (
-                                      <div class="placeholder-image">
-                                        <img
-                                          src="/images/temp.png"
-                                          alt="placeholder"
-                                          loading="lazy"
-                                        />
-                                      </div>
-                                    )}
-                                    <p class="image-title">
-                                      {item.payload.name}
-                                      {item.hidden ? "（会員限定）" : ""}
-                                    </p>
-                                  </div>
-                                </a>
-                              </div>
-                            );
-                          })}
+                          {categoryAlbums.map(album => <GalleryAlbumCard album={album} />)}
                         </div>
                       </details>
                     );
@@ -197,46 +149,7 @@ const getAlbumsForYearAndCategory = (
                           {GALLERY_CATEGORY_LABELS[category]}
                         </summary>
                         <div class="gallery-grid">
-                          {categoryAlbums.map((item) => {
-                            const itemYear = item.created
-                              ? new Date(item.created).getFullYear()
-                              : new Date().getFullYear();
-                            return (
-                              <div class="gallery-item" data-year={itemYear}>
-                                <a
-                                  href={`/Gallery/${item.id}`}
-                                  class="gallery-link"
-                                >
-                                  <div class="image-wrapper">
-                                    {item.coverId ? (
-                                      <img
-                                        src={
-                                          photoLinks(item.id, {
-                                            id: item.coverId,
-                                            name: item.payload.name,
-                                          }).src
-                                        }
-                                        alt={item.payload.name}
-                                        loading="lazy"
-                                      />
-                                    ) : (
-                                      <div class="placeholder-image">
-                                        <img
-                                          src="/images/temp.png"
-                                          alt="placeholder"
-                                          loading="lazy"
-                                        />
-                                      </div>
-                                    )}
-                                    <p class="image-title">
-                                      {item.payload.name}
-                                      {item.hidden ? "（会員限定）" : ""}
-                                    </p>
-                                  </div>
-                                </a>
-                              </div>
-                            );
-                          })}
+                          {categoryAlbums.map(album => <GalleryAlbumCard album={album} />)}
                         </div>
                       </details>
                     );
@@ -266,6 +179,40 @@ const getAlbumsForYearAndCategory = (
 </Layout>
 
 <script>
+  const coverSelector = "img[data-gallery-cover]";
+  const canLoadCover = (image: HTMLImageElement) =>
+    image.closest("details")?.open && Boolean(image.closest(".tab-panel")?.getClientRects().length);
+
+  function loadCover(image: HTMLImageElement) {
+    const cover = image.dataset.galleryCover!;
+    const useSmallCover = matchMedia(image.dataset.galleryCoverMedia!).matches;
+    image.src = useSmallCover ? `${cover}?size=320` : cover;
+  }
+
+  const coverObserver = typeof IntersectionObserver === "undefined" ? undefined : new IntersectionObserver(entries => {
+    for (const { target, isIntersecting } of entries) {
+      const image = target.querySelector<HTMLImageElement>(`${coverSelector}:not([src])`);
+      if (!isIntersecting || !image || !canLoadCover(image)) continue;
+      coverObserver?.unobserve(target);
+      loadCover(image);
+    }
+  }, { rootMargin: "160px 0px" });
+
+  function observeCovers(scope: ParentNode = document) {
+    for (const image of scope.querySelectorAll<HTMLImageElement>(`${coverSelector}:not([src])`)) {
+      if (!canLoadCover(image)) continue;
+      const card = image.closest(".gallery-item");
+      if (card && coverObserver) coverObserver.observe(card);
+      else loadCover(image);
+    }
+  }
+
+  document.addEventListener("error", ({ target }) => {
+    if (!(target instanceof HTMLImageElement) || !target.matches(coverSelector)) return;
+    target.removeAttribute("data-gallery-cover");
+    target.src = "/images/temp.png";
+  }, true);
+
   // details arrow control
   const details = document.querySelectorAll("details");
   details.forEach((detail) => {
@@ -274,6 +221,7 @@ const getAlbumsForYearAndCategory = (
       if (arrow instanceof HTMLElement) {
         arrow.style.transform = detail.open ? "rotate(90deg)" : "rotate(0deg)";
       }
+      if (detail.open) observeCovers(detail);
     };
     detail.addEventListener("toggle", updateArrow);
     updateArrow();
@@ -298,6 +246,7 @@ const getAlbumsForYearAndCategory = (
         if (targetInput) {
           targetInput.checked = true;
           selectWrapper?.classList.add("active");
+          observeCovers();
         }
       }
     });
@@ -305,6 +254,7 @@ const getAlbumsForYearAndCategory = (
 
   tabInputs.forEach((input) => {
     input.addEventListener("change", () => {
+      observeCovers();
       const inputId = input.id;
       const year = inputId.replace("year-", "");
 

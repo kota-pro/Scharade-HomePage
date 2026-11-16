@@ -9,13 +9,13 @@
 .member-dashboard > .admin-section:last-child { margin-bottom: 15px; }
 @media(max-width:768px) { .member-dashboard > .admin-section { margin-top: 12px; } .member-dashboard > .admin-section:last-child { margin-bottom: 12px; } }
 .member-form { display: grid; gap: 24px; }
-.member-form label { margin-bottom: 6px; font-family: "Zen Old Mincho",serif; }
+.member-form label { margin-bottom: 6px; font-family: YakuHanMP, "Zen Old Mincho",serif; }
 .member-form .member-field-hint { margin: 6px 0 0; font-size: 14px; letter-spacing: .04em; }
 .member-form .member-field-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .member-submit { min-height: 48px; background: #000; color: #fff; border: 1px solid #000; padding: 12px 24px; font: inherit; cursor: pointer; }
 .member-submit:disabled { opacity: .55; cursor: wait; }
 .member-form fieldset { border: 0; border-top: 1px solid #000; margin: 0; padding: 20px 0 0; min-width: 0; display: grid; gap: 20px; }
-.member-form legend { padding-right: 16px; font-family: "Zen Old Mincho",serif; }
+.member-form legend { padding-right: 16px; font-family: YakuHanMP, "Zen Old Mincho",serif; }
 .member-notice { padding: 16px 0; border-block: 1px solid #909090; }
 .member-status { white-space: pre-wrap; overflow-wrap: anywhere; }
 .member-status[data-error="true"] { color: #a12020; }

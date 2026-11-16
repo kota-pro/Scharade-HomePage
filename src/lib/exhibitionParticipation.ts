@@ -1,11 +1,12 @@
-import { readUsers, isStaff, type User } from "./auth.ts";
+import { beforeEventDay, deadlinePassed } from './advisoryWarnings.ts';
+import { actorUser, isStaff, type User } from "./auth.ts";
 import { isAcceptingSubmissions, type Exhibition, type ExhibitionStore, type Submission } from "./exhibitionTypes.ts";
 import { ExhibitionError } from "./exhibitionValidation.ts";
 
 export function exhibitionMember(actorId?: string): User {
   if (!actorId) throw new ExhibitionError("ログインが必要です。", 401);
-  const user = readUsers().find(user => user.id === actorId && user.approved);
-  if (!user) throw new ExhibitionError("承認済みのアカウントでログインしてください。", 403);
+  const user = actorUser(actorId);
+  if (!user?.approved) throw new ExhibitionError("承認済みのアカウントでログインしてください。", 403);
   return user;
 }
 export function participationState(exhibition: Exhibition, user: User, now = Date.now()) {
@@ -13,16 +14,18 @@ export function participationState(exhibition: Exhibition, user: User, now = Dat
   const invited = Boolean(p?.recipientIds.includes(user.id));
   const published = p?.state === "published";
   const vote: "attending" | "absent" | "undecided" | "unanswered" = p?.votes[user.id]?.value ?? "unanswered";
-  const canVote = Boolean(invited && published && Date.parse(p!.opensAt) <= now && now < Date.parse(p!.closesAt));
-  const eligible = Boolean(invited && published && vote === "attending" && now >= Date.parse(p!.closesAt));
+  const eventDate=exhibition.openingSchedule?.startDate;
+  const beforeEvent=beforeEventDay(eventDate?eventDate+'T00:00:00+09:00':undefined,now);
+  const canVote = Boolean(invited && published && beforeEvent && Date.parse(p!.opensAt) <= now);
+  const voteOverdue=canVote&&deadlinePassed(p?.closesAt,now);
+  const eligible = Boolean(invited && published && vote === "attending");
   const accepting = eligible && isAcceptingSubmissions(exhibition, now);
   let message = "";
   if (!published) message = "参加投票の準備中です。運営からの通知をお待ちください。";
   else if (!invited) message = "この写真展の通知対象者ではありません。";
   else if (vote !== "attending") message = "参加投票で「参加」と回答した方がフォームを入力できます。";
-  else if (now < Date.parse(p!.closesAt)) message = "参加投票の終了後にフォーム入力を開始できます。";
   else if (!isAcceptingSubmissions(exhibition, now)) message = "現在はフォームの入力期間外です。";
-  return { invited, vote, canVote, eligible, accepting, message, voteOpensAt: p?.opensAt ?? "", voteClosesAt: p?.closesAt ?? "" };
+  return { invited, vote, canVote, voteOverdue, beforeEvent, eligible, accepting, submissionOverdue: accepting&&deadlinePassed(exhibition.closesAt,now), message, voteOpensAt: p?.opensAt ?? "", voteClosesAt: p?.closesAt ?? "" };
 }
 export function requireExhibitionInput(exhibition: Exhibition, actorId?: string, now = Date.now()) {
   const user = exhibitionMember(actorId), state = participationState(exhibition, user, now);

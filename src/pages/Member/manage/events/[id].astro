@@ -1,4 +1,5 @@
 ---
+import { isMemberAccount } from "../../../../lib/accountVisibility.ts";
 import ActivityShareButton from "../../../../components/ActivityShareButton.astro";
 import StaffLayout from "../../../../layouts/StaffLayout.astro";
 import ActivityEventForm from "../../../../components/ActivityEventForm.astro";
@@ -9,7 +10,7 @@ import { readUsers, isStaff } from "../../../../lib/auth";
 import { voteLabels } from "../../../../lib/activityTypes";
 const data = readActivities(),
   event = data.events.find((e) => e.id === Astro.params.id);
-const accounts = readUsers().filter((u) => u.approved);
+const accounts = readUsers().filter(isMemberAccount);
 const users = accounts.map((u) => ({ id: u.id, name: u.name }));
 const staffUsers = accounts
   .filter(isStaff)
@@ -42,38 +43,34 @@ const closed = !!event && Date.parse(event.deadline) <= Date.now();
             <a href={`/Member/events/${event.id}`}>メンバー向け詳細を確認</a>
           </p>
         )}
-        {event.status !== "cancelled" && (
-          <>
-            <details open={event.status === "draft"}>
-              <summary>企画の詳細を編集</summary>
-              <ActivityEventForm
-                event={event}
-                users={users}
-                staffUsers={staffUsers}
-              />
-            </details>
-            {event.status === "published" && (
-              <details>
-                <summary>企画を中止する</summary>
-                <form
-                  class="activity-form"
-                  data-activity-action="event.cancel"
-                  data-event-id={event.id}
-                  data-revision={event.revision}
-                >
-                  <p>投票を停止し、全宛先へ中止を通知します。</p>
-                  <label class="activity-check">
-                    <input type="checkbox" required />
-                    この企画を中止します
-                  </label>
-                  <button class="member-submit" type="submit">
-                    中止を確定して通知
-                  </button>
-                  <p data-status role="status" aria-live="polite" />
-                </form>
-              </details>
-            )}
-          </>
+        <details open={event.status === "draft" || Astro.url.searchParams.get("edit") === "1"}>
+          <summary>企画の詳細を編集</summary>
+          <ActivityEventForm
+            event={event}
+            users={users}
+            staffUsers={staffUsers}
+          />
+        </details>
+        {event.status === "published" && (
+          <details>
+            <summary>企画を中止する</summary>
+            <form
+              class="activity-form"
+              data-activity-action="event.cancel"
+              data-event-id={event.id}
+              data-revision={event.revision}
+            >
+              <p>投票を停止し、全宛先へ中止を通知します。</p>
+              <label class="activity-check">
+                <input type="checkbox" required />
+                この企画を中止します
+              </label>
+              <button class="member-submit" type="submit">
+                中止を確定して通知
+              </button>
+              <p data-status role="status" aria-live="polite" />
+            </form>
+          </details>
         )}
         <ActivityEventDelete event={event} />
         {event.status !== "draft" && (
@@ -167,8 +164,8 @@ const closed = !!event && Date.parse(event.deadline) <= Date.now();
         )}
       </>
     ) : (
-      <h2>企画が見つかりません。</h2>
+      <h2 data-error="true">企画が見つかりません。</h2>
     )
   }
-  <a class="member-back" href="/Member/manage">運営画面へ戻る</a>
+  <a class="member-back" href="/Management">運営画面へ戻る</a>
 </StaffLayout>

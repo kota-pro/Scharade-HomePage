@@ -14,13 +14,22 @@ export function layoutFrame(room:RoomLayout,view:string,o:LayoutObject) {
 export function framePoint(frame:ReturnType<typeof layoutFrame>,x:number,y:number):LayoutPoint {
   const a=frame.rotation*Math.PI/180,c=Math.cos(a),s=Math.sin(a);return {x:frame.x+x*c-y*s,y:frame.y+x*s+y*c};
 }
+export function resizeSelectionFrame(room:RoomLayout,view:string,objects:LayoutObject[]) {
+  return {frame:objects.length===1?layoutFrame(room,view,objects[0]):{...selectionBounds(objects),rotation:0},uniform:objects.some(o=>o.kind==='annotation'&&o.source.kind==='text')||objects.length>1&&objects.some(o=>Math.abs(o.rotation%180)>.001)};
+}
+/** Pure preview shared by snapping and the committed transform. */
+export function resizeFrameTarget(f:ReturnType<typeof layoutFrame>,corner:ResizeCorner,dx:number,dy:number,proportional=false) {
+  const k=cornerFactors[corner],a=-f.rotation*Math.PI/180,lx=dx*Math.cos(a)-dy*Math.sin(a),ly=dx*Math.sin(a)+dy*Math.cos(a);
+  let width=Math.max(1,f.width+(k.x?lx:-lx)),height=Math.max(1,f.height+(k.y?ly:-ly));
+  if(proportional){const factor=Math.abs(width/f.width-1)>Math.abs(height/f.height-1)?width/f.width:height/f.height;width=Math.max(1,f.width*factor);height=Math.max(1,f.height*factor);}
+  const fixed=framePoint(f,(1-k.x)*f.width,(1-k.y)*f.height),angle=f.rotation*Math.PI/180;
+  return {x:fixed.x-(1-k.x)*width*Math.cos(angle)+(1-k.y)*height*Math.sin(angle),y:fixed.y-(1-k.x)*width*Math.sin(angle)-(1-k.y)*height*Math.cos(angle),width,height,rotation:f.rotation};
+}
 /** Resize in the object's own axes. The diagonal corner stays fixed, including after rotation. */
 export function resizeLayoutFromCorner(room:RoomLayout,works:LayoutWork[],view:string,id:string,corner:ResizeCorner,dx:number,dy:number,proportional=false) {
   const o=layoutObjects(room,works,view).find(o=>o.id===id);if(!o||!o.resizable)throw new Error('この項目の実寸は変更できません。');
-  const f=layoutFrame(room,view,o),k=cornerFactors[corner],a=-f.rotation*Math.PI/180;
-  const lx=dx*Math.cos(a)-dy*Math.sin(a),ly=dx*Math.sin(a)+dy*Math.cos(a);
-  let width=Math.max(1,f.width+(k.x?lx:-lx)),height=Math.max(1,f.height+(k.y?ly:-ly));
-  if(proportional){const factor=Math.abs(width/f.width-1)>Math.abs(height/f.height-1)?width/f.width:height/f.height;width=Math.max(1,f.width*factor);height=Math.max(1,f.height*factor);}
+  const f=layoutFrame(room,view,o),k=cornerFactors[corner],target=resizeFrameTarget(f,corner,dx,dy,proportional||o.kind==='annotation'&&o.source.kind==='text');
+  let {width,height}=target;
   const fixed=framePoint(f,(1-k.x)*f.width,(1-k.y)*f.height),angle=f.rotation*Math.PI/180;
   resizeLayoutObject(room,works,view,id,width,height);
   const resized=layoutFrame(room,view,o);width=resized.width;height=resized.height;const actualX=fixed.x-(1-k.x)*width*Math.cos(angle)+(1-k.y)*height*Math.sin(angle),actualY=fixed.y-(1-k.x)*width*Math.sin(angle)-(1-k.y)*height*Math.cos(angle);
@@ -35,7 +44,7 @@ export function resizeLayoutSelectionFromCorner(room:RoomLayout,works:LayoutWork
   if(objects.length===1)return resizeLayoutFromCorner(room,works,view,ids[0],corner,dx,dy,proportional);
   const bounds=selectionBounds(objects),before={...bounds,rotation:0},k=cornerFactors[corner],fixed={x:bounds.x+(1-k.x)*bounds.width,y:bounds.y+(1-k.y)*bounds.height};
   let sx=Math.max(1/bounds.width,(bounds.width+(k.x?dx:-dx))/bounds.width),sy=Math.max(1/bounds.height,(bounds.height+(k.y?dy:-dy))/bounds.height);
-  if(proportional||objects.some(o=>Math.abs(o.rotation%180)>.001)){sx=sy=Math.abs(sx-1)>Math.abs(sy-1)?sx:sy;}
+  if(proportional||resizeSelectionFrame(room,view,objects).uniform){sx=sy=Math.abs(sx-1)>Math.abs(sy-1)?sx:sy;}
   const old=objects.map(o=>({o,frame:layoutFrame(room,view,o)}));
   for(const {o,frame:f} of old){resizeLayoutObject(room,works,view,o.id,f.width*sx,f.height*sy);const x=fixed.x+(f.x-fixed.x)*sx,y=fixed.y+(f.y-fixed.y)*sy;
     if(o.kind==='opening'){o.source.offset=x;o.source.bottom=surfaceHeight(room,view)-y-o.source.height;}

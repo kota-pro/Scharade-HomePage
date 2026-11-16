@@ -130,7 +130,7 @@ const labels=["Apr. - Jun.","Jul. - Sep.","Oct. - Dec.","Jan. - Mar.","Others"];
         <div class="contents-title a-anchor" id="annual-schedule-title"><h1>Annual Schedule</h1></div>
         <div class="tab">
           {scheduleGroups.map((group, i) => <>
-           <input type="radio" id={`tab${i+1}`} name="tab" checked={i === 0}/>
+           <input class={i < 4 ? "tab-radio" : undefined} tabindex={i < 4 ? 0 : undefined} type="radio" id={`tab${i+1}`} name="tab" checked={i === 0}/>
            <label for={`tab${i+1}`}>{labels[i]}</label>
            <div class="tab-content">
             {group.map((entry,j) => <div class="card-cover" id={`card-${cardIds[groupOffsets[i]+j] ?? "extra-"+j}`} tabindex="0" style={`background-image:url(${siteImage(entry.image,960)});`}>
@@ -283,7 +283,7 @@ const labels=["Apr. - Jun.","Jul. - Sep.","Oct. - Dec.","Jan. - Mar.","Others"];
 
     .explanation-about-us p{
         color: #000;
-        font-family: "Zen Kurenaido";
+        font-family: YakuHanRP, "Zen Kurenaido";
         font-size: 24px;
         font-style: normal;
         font-weight: 400;
@@ -323,7 +323,7 @@ const labels=["Apr. - Jun.","Jul. - Sep.","Oct. - Dec.","Jan. - Mar.","Others"];
         width: 100%;
         table-layout: auto;
         color: #000;
-        font-family: "Zen Kurenaido";
+        font-family: YakuHanRP, "Zen Kurenaido";
         font-size: 20px;
     }
 
@@ -338,7 +338,7 @@ const labels=["Apr. - Jun.","Jul. - Sep.","Oct. - Dec.","Jan. - Mar.","Others"];
         border-top: 1px solid #000;
         padding: 20px;
         color: #000;
-        font-family: "Zen Kurenaido";
+        font-family: YakuHanRP, "Zen Kurenaido";
         font-weight: 400;
     }
 
@@ -449,7 +449,7 @@ const labels=["Apr. - Jun.","Jul. - Sep.","Oct. - Dec.","Jan. - Mar.","Others"];
         color: #0db49b;
     }
 
-    .tab input {
+    .tab input:not(.tab-radio) {
         display: none;
     }
 
@@ -548,7 +548,7 @@ const labels=["Apr. - Jun.","Jul. - Sep.","Oct. - Dec.","Jan. - Mar.","Others"];
     }
 
     .card-cover h1 {
-        font-family: "Zen Old Mincho";
+        font-family: YakuHanMP, "Zen Old Mincho";
         font-size: calc(40/1440 * 100vw);
         font-style: normal;
         font-weight: 400;
@@ -556,7 +556,7 @@ const labels=["Apr. - Jun.","Jul. - Sep.","Oct. - Dec.","Jan. - Mar.","Others"];
         transition: opacity 0.3s ease 0.1s;
     }
     .card-cover h2 {
-        font-family: "Zen Old Mincho";
+        font-family: YakuHanMP, "Zen Old Mincho";
         font-size: calc(50/1440 * 100vw);
         font-style: normal;
         font-weight: 400;
@@ -610,7 +610,7 @@ const labels=["Apr. - Jun.","Jul. - Sep.","Oct. - Dec.","Jan. - Mar.","Others"];
 
     .card-textbox p {
         color: #000;
-        font-family: "Zen Kurenaido";
+        font-family: YakuHanRP, "Zen Kurenaido";
         font-size: 16px;
         font-style: normal;
         font-weight: 400;
@@ -888,7 +888,7 @@ const labels=["Apr. - Jun.","Jul. - Sep.","Oct. - Dec.","Jan. - Mar.","Others"];
         top: -20px;
         right: -20px;
         color: rgba(0, 0, 0, 0.20);
-        font-family: "Grandiflora One";
+        font-family: YakuHanMP, "Grandiflora One";
         font-size: 128px;
         font-style: normal;
         font-weight: 400;
@@ -898,7 +898,7 @@ const labels=["Apr. - Jun.","Jul. - Sep.","Oct. - Dec.","Jan. - Mar.","Others"];
 
     .equipment-description h2{
         color: #000;
-        font-family: "Zen Kurenaido";
+        font-family: YakuHanRP, "Zen Kurenaido";
         font-size: 48px;
         font-style: normal;
         font-weight: 400;
@@ -910,7 +910,7 @@ const labels=["Apr. - Jun.","Jul. - Sep.","Oct. - Dec.","Jan. - Mar.","Others"];
     .equipment-description p{
         height: 200px;
         color: #000;
-        font-family: "Zen Kurenaido";
+        font-family: YakuHanRP, "Zen Kurenaido";
         font-size: 20px;
         font-style: normal;
         font-weight: 400;
@@ -948,7 +948,7 @@ const labels=["Apr. - Jun.","Jul. - Sep.","Oct. - Dec.","Jan. - Mar.","Others"];
 
     .faq h1 {
         color: rgba(0, 0, 0, 0.20);
-        font-family: "Grandiflora One";
+        font-family: YakuHanMP, "Grandiflora One";
         font-size: 96px;
         font-style: normal;
         font-weight: 400;
@@ -961,7 +961,7 @@ const labels=["Apr. - Jun.","Jul. - Sep.","Oct. - Dec.","Jan. - Mar.","Others"];
 
     .faq h2 {
         color: #000;
-        font-family: "Zen Old Mincho";
+        font-family: YakuHanMP, "Zen Old Mincho";
         font-size: 24px;
         font-style: normal;
         font-weight: 400;
@@ -972,7 +972,7 @@ const labels=["Apr. - Jun.","Jul. - Sep.","Oct. - Dec.","Jan. - Mar.","Others"];
 
     .faq p {
         color: #000;
-        font-family: "Zen Kurenaido";
+        font-family: YakuHanRP, "Zen Kurenaido";
         font-size: 20px;
         font-style: normal;
         font-weight: 400;
@@ -1381,7 +1381,7 @@ const labels=["Apr. - Jun.","Jul. - Sep.","Oct. - Dec.","Jan. - Mar.","Others"];
 
         .faq h1 {
             color: #CFCFCF;
-            font-family: Didot;
+            font-family: YakuHanMP, Didot;
             font-size: 64px;
             font-style: normal;
             font-weight: 400;

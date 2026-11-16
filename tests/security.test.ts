@@ -29,6 +29,7 @@ beforeEach(() => {
   process.env.DATA_DIR = directory; process.env.MFA_ENCRYPTION_KEY = "cd".repeat(32); process.env.TRUST_PROXY = "0";
   writeData("users.json", [member, staff]); writeData("sessions.json", []); writeData("rate-limit.json", {});
   writeData("auth-security.json", emptyMfaState());
+  writeData("mfa-trusted-browsers.json", []);
   writeData("password-reset-tokens.json", []);
 });
 after(() => fs.rmSync(directory, { recursive: true, force: true }));
@@ -69,7 +70,7 @@ test("staff and admin require fresh email proof and a single-use account-bound g
   await assert.rejects(createSession(admin.id, 300, undefined, undefined, result.grant));
   const session = await createSession(staff.id, 86400, staff.passwordHash, staff.email, result.grant);
   assert.equal(session.mfaMethod, "email");
-  assert.equal(Date.parse(session.expiresAt) - Date.parse(session.createdAt), 8 * 3600_000);
+  assert.equal(Date.parse(session.expiresAt) - Date.parse(session.createdAt), 86400_000);
   await assert.rejects(createSession(staff.id, 300, undefined, undefined, result.grant));
   assert.throws(() => mfaChallengeView(challenge.token));
   assert.ok(!JSON.stringify(readSessions()).includes(session.token));
@@ -84,6 +85,8 @@ test("staff and admin require fresh email proof and a single-use account-bound g
   const adminSession = await createSession(admin.id, 300, admin.passwordHash, admin.email, completed.grant);
   assert.equal(getUserFromSession(adminSession.token).user?.role, "admin");
   const idle = readSessions(); idle.find(s => s.userId === admin.id)!.lastSeenAt = new Date(Date.now() - 31 * 60_000).toISOString(); writeData("sessions.json", idle);
+  assert.equal(getUserFromSession(adminSession.token).user?.role, "admin");
+  idle.find(s => s.userId === admin.id)!.lastSeenAt = new Date(Date.now() - 7 * 86400_000).toISOString(); writeData("sessions.json", idle);
   assert.equal(getUserFromSession(adminSession.token).user, null);
 });
 test("each privileged login sends a fresh email; code and grant replay fail", async () => {

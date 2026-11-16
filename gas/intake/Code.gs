@@ -11,12 +11,15 @@ function doPost(e) {
     if(!e || !e.postData || e.postData.contents.length>15*1024*1024) return reply({ok:false,code:'INVALID'});
     var envelope=JSON.parse(e.postData.contents);
     if(envelope.version!==2 || typeof envelope.nonce!=='string' || !/^[a-f0-9]{32}$/.test(envelope.nonce) || typeof envelope.timestamp!=='string' || !/^\d{13}$/.test(envelope.timestamp) || Math.abs(Date.now()-Number(envelope.timestamp))>300000 || typeof envelope.payload!=='string' || typeof envelope.signature!=='string') return reply({ok:false,code:'UNAUTHORIZED'});
+    var adminReceipt=JSON.parse(envelope.payload).action==='receipt.read';
+    if(adminReceipt){secret=config.getProperty('ACCOUNTING_ADMIN_WEBHOOK_SECRET');if(!secret||secret.length<32)return reply({ok:false,code:'NOT_CONFIGURED'});}
     var expected=Utilities.computeHmacSha256Signature('v2\n'+envelope.timestamp+'\n'+envelope.nonce+'\n'+envelope.payload,secret,Utilities.Charset.UTF_8).map(function(b){return ('0'+((b+256)%256).toString(16)).slice(-2);}).join('');
     var diff=expected.length^envelope.signature.length;
     for(var i=0;i<expected.length;i++) diff|=expected.charCodeAt(i)^(envelope.signature.charCodeAt(i)||0);
     if(diff!==0) return reply({ok:false,code:'UNAUTHORIZED'});
     if(!reserveSecurityNonce_(envelope.nonce)) return reply({ok:false,code:'REPLAY'});
     var p=JSON.parse(envelope.payload);
+    if(adminReceipt)return reply(accountingReceiptRead_(p,config));
     if(p.action==='health') {
       var healthSheet=SpreadsheetApp.openById(target).getSheetByName('立替申請');
       var healthy=!!healthSheet && healthSheet.getRange(1,1).getValue()==='申請ID';

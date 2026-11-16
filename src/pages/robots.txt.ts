@@ -14,8 +14,9 @@ export async function GET() {
     "Disallow: /503",
     "Disallow: /Admin",
     "Disallow: /Member",
-    // Public share pages must remain crawlable so their noindex is visible.
+    // Public shares must remain crawlable so their noindex is visible.
     "Allow: /Member/events/",
+    "Allow: /Member/tools/",
     "Disallow: /Exhibition",
     "Disallow: /Mfa",
     "Disallow: /SearchResult",

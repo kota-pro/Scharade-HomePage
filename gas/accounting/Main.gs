@@ -5,6 +5,7 @@ var PRIVATE_SHEETS_=['取引記録','人物対応','残高確認記録','名簿�
 var TYPES_={income:'収入',expense:'支出',transfer:'資金移動',advance:'立替',openingAdvance:'繰越立替',refund:'返金'};
 var ROSTER_FIELDS_=['name','kana','lineName','gender','grade','university','department','studentId','continuation','timestamp'];
 var bookCache_;
+function siteManaged_(){return PropertiesService.getScriptProperties().getProperty('ACCOUNTING_ROSTER_MODE')==='website';}
 
 function onOpen() { SpreadsheetApp.getUi().createMenu('サークル会計').addItem('会計画面を開く','openAccounting').addItem('名簿を更新','refreshRoster').addItem('台帳を再集計','refreshAccounting').addToUi(); }
 function openAccounting() { requireAdmin_();SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutputFromFile('Index').setTitle('サークル会計')); }
@@ -94,6 +95,7 @@ function initializeAccounting() {
 function refreshRoster() { requireAdmin_();var result=accountingAction({action:'syncRoster'});if(!result.ok)throw new Error(result.message); }
 function refreshAccounting() { requireAdmin_();renderReports_(); }
 function scheduledRosterRefresh() {
+  if(siteManaged_())return;
   var lock=LockService.getScriptLock();lock.waitLock(20000);
   try{syncRoster_();}catch(error){PropertiesService.getScriptProperties().setProperty('ROSTER_ERROR',error.message);}finally{lock.releaseLock();}
 }
@@ -101,16 +103,18 @@ function nameMap_(members) {var out={};members.forEach(function(p){out[p.id]=p.n
 function bootstrap_() {
   var s=readSettings_(),events=jsonRows_('取引記録'),members=jsonRows_('人物対応'),calculated=null,issue='';
   try{calculated=Accounting.build(s,events);}catch(error){issue=error.message;}
-  return {settings:s,members:members.map(function(p){return {id:p.id,name:p.name,university:p.university,lineName:p.lineName,active:p.active,siteUserIds:p.siteUserIds||[]};}),
+  return {websiteManaged:siteManaged_(),settings:s,members:members.map(function(p){return {id:p.id,name:p.name,university:p.university,lineName:p.lineName,active:p.active,siteUserIds:p.siteUserIds||[],rosterKey:p.rosterKey||''};}),
     requests:requests_(),events:events,summary:calculated,months:calculated?Accounting.months(s,events,s.fiscalYear,today_()):[],checks:calculated?Accounting.reconcile(s,events,jsonRows_('残高確認記録')):[],
     periods:periods_(),rosterPending:jsonRows_('名簿確認'),issue:issue,rosterError:PropertiesService.getScriptProperties().getProperty('ROSTER_ERROR')||'',rosterUpdatedAt:PropertiesService.getScriptProperties().getProperty('ROSTER_UPDATED_AT')||'',
     bookUrl:getBook_().getUrl(),today:today_()};
 }
 function accountingAction(input) {
   var actor=requireAdmin_(),lock=LockService.getScriptLock();
+  if(siteManaged_()&&input&&input.action!=='bootstrap')return {ok:false,message:'会計の操作はサイトのAdminから行ってください。'};
   if(!input || typeof input.action!=='string')throw new Error('操作を確認してください。');
   lock.waitLock(20000);
   try {
+    if(siteManaged_()&&input.action!=='bootstrap')return {ok:false,message:'会計の操作はサイトのAdminから行ってください。'};
     if(input.action==='bootstrap')return {ok:true,data:bootstrap_()};
     if(input.action==='transaction')registerTransaction_(input,actor);
     else if(input.action==='review')reviewRequest_(input,actor);
@@ -159,16 +163,18 @@ function reviewRequest_(input,actor) {
   var event={id:'REQ-'+r.id,date:r.date,type:'advance',description:r.description,amount:r.amount,memberId:p.id,sourceRequestId:r.id,createdAt:stamp_(),actor:actor,notes:r.notes,receiptUrl:r.receiptUrl};
   if(original && (original.memberId!==p.id || original.canceledAt))throw new Error('既存の計上内容を確認してください。');
   if(!original)Accounting.build(readSettings_(),events.concat([event]));
-  p.siteUserIds=p.siteUserIds||[];if(p.siteUserIds.indexOf(r.websiteUserId)<0)p.siteUserIds.push(r.websiteUserId);
+  p.siteUserIds=p.siteUserIds||[];if(!siteManaged_()&&p.siteUserIds.indexOf(r.websiteUserId)<0)p.siteUserIds.push(r.websiteUserId);
   writeJsonRows_('人物対応',members);
   if(!original)appendJson_('取引記録',event);
   sheet_('立替申請').getRange(r.row,14,1,7).setValues([['承認済み',p.id,event.id,stamp_(),text_(actor),text_(note),'未返金']]);
 }
 function cancelTransaction_(input,actor) {
-  var events=jsonRows_('取引記録'),e=events.find(function(e){return e.id===input.id;});if(!e)throw new Error('取引が見つかりません。');if(e.canceledAt)return;
-  if(!String(input.reason||'').trim())throw new Error('取消理由を記入してください。');
-  e.canceledAt=stamp_();e.cancelReason=String(input.reason);e.canceledBy=actor;
-  Accounting.build(readSettings_(),events);writeJsonRows_('取引記録',events);
+  var events=jsonRows_('取引記録'),e=events.find(function(e){return e.id===input.id;});if(!e)throw new Error('取引が見つかりません。');
+  if(!e.canceledAt){
+    if(!String(input.reason||'').trim())throw new Error('取消理由を記入してください。');
+    e.canceledAt=stamp_();e.cancelReason=String(input.reason);e.canceledBy=actor;
+    Accounting.build(readSettings_(),events);writeJsonRows_('取引記録',events);
+  }
   if(e.sourceRequestId){var r=requests_().find(function(r){return r.id===e.sourceRequestId;});if(r)sheet_('立替申請').getRange(r.row,14).setValue('取消済み');}
 }
 function registerCheck_(input,actor) {
@@ -203,6 +209,7 @@ function readRoster_(period) {
   return rows.filter(function(r){return String(r[cols.name]||'').trim();}).map(function(r){var p={};Object.keys(cols).forEach(function(k){p[k]=cols[k]>=0?String(r[cols[k]]||'').trim():'';});if(cols.continuation<0)p.continuation='はい';p.source=period.spreadsheetId+':'+period.sheetId;p.key=digest_(p.source+'|'+p.timestamp+'|'+p.name+'|'+p.kana+'|'+p.university+'|'+p.studentId+'|'+p.lineName);return p;});
 }
 function syncRoster_() {
+  if(siteManaged_())throw new Error('名簿の更新はサイトのAdminから行ってください。');
   var props=PropertiesService.getScriptProperties(),periods=Accounting.periods(periods_()),current=Accounting.activePeriod(periods,today_()),incoming=[],members=jsonRows_('人物対応'),pending=[],updates={};
   periods.filter(function(p){return p.start<=today_();}).forEach(function(period){var rows=readRoster_(period);rows.sort(function(a,b){return a.timestamp.localeCompare(b.timestamp,undefined,{numeric:true});});rows.forEach(function(r){r.currentPeriod=period.start===current.start;incoming.push(r);});});
   incoming.forEach(function(r){

@@ -8,6 +8,7 @@ async function submit(page: Page, action: string, button: string) {
   const navigation = page.waitForEvent("domcontentloaded");
   await page
     .locator(`form[data-activity-action="${action}"]`)
+    .filter({ has: page.getByRole("button", { name: button, exact: true }) })
     .getByRole("button", { name: button, exact: true })
     .click();
   await navigation;
@@ -36,7 +37,7 @@ test("administrator previews a roster change, confirms departures, preserves lin
   async function getPreview(url: string) {
     await page.goto("/Admin/grouping-roster");
     await page
-      .getByText("名簿の参照先を変更・退会対象を確認", { exact: true })
+      .getByText("旧形式の名簿の参照先を変更・退会対象を確認", { exact: true })
       .click();
     await page.getByLabel("参照するGoogleスプレッドシートのURL").fill(url);
     await submit(page, "roster.preview", "変更内容を確認");
@@ -122,7 +123,26 @@ test("administrator previews a roster change, confirms departures, preserves lin
   await expect(page.locator('[data-roster-user="activity-1"]')).toHaveValue(
     key1,
   );
-  await expect(page.locator(".activity-list")).toContainText(
+  const updates = page.locator('details.roster-update-status');
+  const summary = updates.locator('summary');
+  await expect(summary).toHaveText('退会・Portfolioの更新状況');
+  await expect(updates).not.toHaveAttribute('open', '');
+  expect(await page.locator('form[data-activity-action="roster.link"]').evaluate(form =>
+    !!(form.compareDocumentPosition(document.querySelector('details.roster-update-status')!) & Node.DOCUMENT_POSITION_FOLLOWING),
+  )).toBe(true);
+  await expect(updates.locator('.activity-list').first()).toBeHidden();
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await summary.click();
+    await expect(updates).toHaveAttribute('open', '');
+    await expect(updates.locator('.activity-list').first()).toBeVisible();
+    await updates.screenshot({ path: info.outputPath(`roster-updates-${width}.png`) });
+    await summary.click();
+    await expect(updates).not.toHaveAttribute('open', '');
+  }
+  await summary.focus(); await summary.press('Enter');
+  await expect(updates).toHaveAttribute('open', '');
+  await expect(updates.locator(".activity-list")).toContainText(
     "撮影会員 activity-0",
   );
   await submit(page, "roster.link", "対応を確認して連携を保存");

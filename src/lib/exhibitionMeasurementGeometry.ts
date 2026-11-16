@@ -1,14 +1,14 @@
+import {wallSurface} from "./exhibitionWallSurfaces.ts";
 import {boardChain,boardSurface} from './exhibitionBoards.ts';
 import {placedPhotos,rotatedCorners} from './exhibitionGeometry.ts';
 import {annotationLocalBounds} from './exhibitionAnnotationPath.ts';
-import {wallHeight} from './exhibitionRoomPath.ts';
 import {titleBoardPhoto} from './exhibitionTitleBoardLayout.ts';
 import type {RoomLayout,LayoutWork,VectorPoint} from './exhibitionTypes.ts';
 export type MeasurementPolygon={key:string;points:VectorPoint[]};
 type ObjectShape={id:string;kind:string;source:any;box:{x:number;y:number;width:number;height:number}};
 const rectangle=(x:number,y:number,w:number,h:number,rotation=0)=>rotatedCorners(w,h,rotation).map(p=>({x:x+p.x,y:y+p.y}));
 export function objectMeasurementPolygons(room:RoomLayout,works:LayoutWork[],view:string,o:ObjectShape):MeasurementPolygon[]{
-  const p=o.source,height=view==='floor'?0:view.startsWith('wall:')?wallHeight(room,Number(view.slice(5))):boardSurface(room.boardGroups?.find(g=>g.id===view.split(':')[1])??{panels:[{height:1,width:1}]} as any,'A').height;
+  const p=o.source,height=view==='floor'?0:view.startsWith('wall:')?wallSurface(room,view)?.height??0:boardSurface(room.boardGroups?.find(g=>g.id===view.split(':')[1])??{panels:[{height:1,width:1}]} as any,'A').height;
   if(o.kind==='work'&&view!=='floor'){const work=works.find(w=>w.id===p.workId);return work?placedPhotos(work,p,height).map((photo,i)=>({key:`photo:${i}`,points:rectangle(photo.x,photo.y,photo.width,photo.height,photo.rotation)})):[];}
   if(o.kind==='board'&&view==='floor')return boardChain(p).map(v=>({key:`panel:${v.panel.id}`,points:v.polygon}));
   if(o.kind==='titleboard'){const q=titleBoardPhoto(p,height);return[{key:'frame',points:rectangle(q.x,q.y,q.width,q.height,q.rotation)}];}

@@ -11,93 +11,74 @@ import {
   normalizeTags,
 } from "../utils/blog";
 import { linkToPost } from "../utils/linkToPost";
-import type { MicroCMSImage } from "microcms-js-sdk";
+import { getHomePhotoCatalog, selectHomePhotos } from "../lib/homePhotos";
 
 import { optimizeMicrocmsImage } from "../utils/microcmsImage";
+import HomeLogo from "../components/HomeLogo.astro";
 import SiteImage from "../components/SiteImage.astro";
 import { getContent, contentText } from "../lib/siteContent";
 import { siteImage } from "../utils/siteImage";
 const content = getContent("home", Astro.locals.preview);
 const common = getContent("common", Astro.locals.preview);
 
-const shuffleArray = <T,>(items: T[]) => {
-  for (let i = items.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [items[i], items[j]] = [items[j], items[i]];
-  }
-
-  return items;
-};
-
-type CarouselImageEntry = { image?: MicroCMSImage };
 const [postsResult, carouselResult] = await Promise.allSettled([
   microcmsClient.getList<Blog>({
     endpoint: "blog",
     queries: { limit: 20, orders: "-publishedAt", depth: 2 },
   }),
-  microcmsClient.getList<CarouselImageEntry>({
-    endpoint: "card_image",
-    queries: { limit: 20 },
-  }),
+  getHomePhotoCatalog(),
 ]);
 const posts =
   postsResult.status === "fulfilled" ? postsResult.value.contents : [];
-const carouselImageContents =
-  carouselResult.status === "fulfilled" ? carouselResult.value.contents : [];
 const tabs = buildTabs(posts);
 const tabPostLimit = 3;
 const activityCards = content.activities;
-const fallbackCarouselImages = shuffleArray([
-  { src: "/media/site/ads-images/Photo1.webp", alt: "写団シャレードの作品" },
-  { src: "/media/site/ads-images/Photo2.webp", alt: "写団シャレードの作品" },
-  { src: "/media/site/ads-images/Photo3.webp", alt: "写団シャレードの作品" },
-  { src: "/media/site/ads-images/Photo4.webp", alt: "写団シャレードの作品" },
-  { src: "/media/site/ads-images/Photo5.webp", alt: "写団シャレードの作品" },
-]);
-const carouselImages = shuffleArray(
-  carouselImageContents
-    .map((item) => item.image)
-    .filter((image): image is MicroCMSImage => Boolean(image?.url))
-    .map((image) => ({
-      src: optimizeMicrocmsImage(image.url, { width: 1600, quality: 75 }),
-      alt: "広告イメージ",
-    })),
-);
-const displayCarouselImages =
-  carouselImages.length > 0 ? carouselImages : fallbackCarouselImages;
+const displayCarouselImages = selectHomePhotos(
+  carouselResult.status === "fulfilled" ? carouselResult.value : [],
+  content.excludedPhotoIds,
+).map(photo => ({
+  id: photo.id,
+  ref: { source: "portfolio", containerId: photo.portfolioId, imageId: photo.id },
+  src: optimizeMicrocmsImage(photo.url, { width: 1600, quality: 75 }),
+  full: optimizeMicrocmsImage(photo.url, { width: 2048, quality: 85 }),
+  alt: `${photo.portfolioName}の作品`,
+}));
 
 const mainVisualImages = displayCarouselImages.slice(0, 3);
-
-import { Image } from "astro:assets";
-import logo from "/public/header/logo.svg";
 ---
 
 <Layout>
   <Fragment slot="setting-none">
     <div class="main-visual a-anchor">
       <div class="main-visual-logo">
-        <Image src={logo} alt="Logo" />
+        <HomeLogo />
       </div>
       <div class="main-visual-photos">
         {
           mainVisualImages.map((photo, index) => (
             <a
-              href={photo.src}
-              class={`main-visual-photo${index + 1}`}
-              data-lightbox="main-photo"
+              href={photo.full}
+              class={`main-visual-photo${index + 1} photo-open`}
+              data-photo-ref={JSON.stringify(photo.ref)}
+              data-photo-group="home-main"
+              data-home-photo-id={photo.id}
+              aria-label={`${photo.alt}を拡大`}
             >
-              <SiteImage
-                eager={true}
-                sizes="(max-width:767px) 60vw, 400px"
-                src={photo.src}
-                alt={photo.alt || `写団シャレードの活動写真${index + 1}`}
-                height={160}
-                width={240}
-              />
+              <span class="home-photo-frame">
+                <SiteImage
+                  eager={true}
+                  class="gallery-image"
+                  sizes="(max-width: 768px) 230px, (max-width: 1024px) 280px, 360px"
+                  src={photo.src}
+                  alt={photo.alt || `写団シャレードの活動写真${index + 1}`}
+                  height={160}
+                  width={240}
+                />
+              </span>
             </a>
           ))
         }
-        <div class="click-popup">
+        <div class="click-popup" hidden={mainVisualImages.length === 0}>
           <div class="arrow-line">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -160,6 +141,8 @@ import logo from "/public/header/logo.svg";
               const inputId = `home-tab-${tab.slug}`;
               return [
                 <input
+                  class="tab-radio"
+                  tabindex="0"
                   type="radio"
                   id={inputId}
                   name="home-tab"
@@ -298,7 +281,7 @@ import logo from "/public/header/logo.svg";
         <div class="section-title-line"></div>
       </div>
       <h1 class="advertising-title">{content.joinTitle.split("\n").map((line,i) => <>{i > 0 && <br/>}{line}</>)}</h1>
-      <div class="photo-carousel">
+      <div class="photo-carousel" hidden={displayCarouselImages.length === 0}>
         <div class="click-popup-3">
           <div class="arrow-line-3">
             <svg
@@ -338,14 +321,17 @@ import logo from "/public/header/logo.svg";
             {
               displayCarouselImages.map((image) => (
                 <li class="photo-carousel-list">
-                  <a href={image.src} data-lightbox="carousel-contents-group">
-                    <SiteImage
-                      sizes="240px"
-                      src={image.src}
-                      alt={image.alt}
-                      height={160}
-                      width={240}
-                    />
+                  <a class="photo-open" href={image.full} data-photo-ref={JSON.stringify(image.ref)} data-photo-group="home-film" data-home-photo-id={image.id} aria-label={`${image.alt}を拡大`}>
+                    <span class="home-photo-frame">
+                      <SiteImage
+                        class="gallery-image"
+                        sizes="240px"
+                        src={image.src}
+                        alt={image.alt}
+                        height={160}
+                        width={240}
+                      />
+                    </span>
                   </a>
                 </li>
               ))
@@ -370,3 +356,6 @@ import logo from "/public/header/logo.svg";
 </Layout>
 
 <script>import "../scripts/homeCarousel.js";</script>
+<style>
+  .photo-carousel[hidden], .click-popup[hidden] { display: none; }
+</style>

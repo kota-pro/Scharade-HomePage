@@ -11,6 +11,8 @@ import {
 import { ActivityError, readActivities } from "../src/lib/activities.ts";
 import {
   emptyActivities,
+  defaultRules,
+  type ActivityEvent,
   type ActivityStore,
 } from "../src/lib/activityTypes.ts";
 import { writeData, readData } from "../src/lib/store.ts";
@@ -93,6 +95,39 @@ async function setup() {
 }
 const summary = () =>
   groupingToolSummary(readActivities(), readGroupingTools(), current());
+test("reads attending votes as roster identities where available and keeps source labels out of group data", async () => {
+  const at = new Date().toISOString();
+  const event: ActivityEvent = {
+    id: "fixture-event", title: "撮影会", revision: 1, status: "published", description: "",
+    startsAt: at, endsAt: at, deadline: at, meeting: "", itinerary: "", fee: "", theme: "",
+    ownerId: "staff", ownerName: "運営", recipientIds: ["member", "staff"],
+    createdAt: at, updatedAt: at, rules: defaultRules(), groupHistory: [],
+    votes: { member: { value: "attending", at, actorId: "member" }, staff: { value: "attending", at, actorId: "staff" } },
+  };
+  activities.events.push(event);
+  activities.roster!.bindings.member = "p0";
+  writeData("member-activities.json", activities);
+  const read = { action: "participants.event", eventId: event.id };
+  await rejects(action(read, "member"), 403);
+  assert.deepEqual((await action(read)).rows, [
+    { name: "運営", lineName: "", grade: "", gender: "", participantId: undefined },
+    { name: "会員0", lineName: "", grade: "1", gender: "female", participantId: "p0" },
+  ]);
+  event.votes.staff.value = "absent";
+  writeData("member-activities.json", activities);
+  assert.equal(((await action(read)).rows as unknown[]).length, 1);
+  event.status = "cancelled";
+  writeData("member-activities.json", activities);
+  await rejects(action(read), 404);
+  const guest = { id: "guest-00000000-0000-4000-8000-000000000001", name: "手入力", gender: "male", grade: "2", inputSource: "manual" };
+  await action({ action: "run.save", title: "投票と手入力", participantIds: ["p0", guest.id], extraParticipants: [guest], participantSources: { p0: "event", [guest.id]: "manual" } });
+  assert.deepEqual(current().participantSources, { p0: "event", [guest.id]: "manual" });
+  assert.equal(readGroupingTools().guests![0].inputSource, "manual");
+  assert.ok(summary().people.every(person => !Object.hasOwn(person, "inputSource")));
+  await command("run.save", { title: current().title, participantIds: current().participantIds });
+  assert.equal(current().participantSources?.p0, "event");
+  assert.deepEqual(readActivities(), activities);
+});
 test("standalone grouping works with unlinked Google roster members and never creates events or notifications", async () => {
   await setup();
   await command("groups.generate");

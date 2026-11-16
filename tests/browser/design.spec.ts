@@ -20,8 +20,8 @@ test("original film motion, card reveal, schedule tabs and equipment slideshow r
   return page.locator("#card-2 p").evaluate(e => getComputedStyle(e).opacity);
  }).toBe("1");
  await page.locator(".main-visual-photo3").click();
- await expect(page.locator("#lightbox .lb-image")).toBeVisible();
- await page.keyboard.press("Escape");await expect(page.locator("#lightbox")).not.toBeVisible();
+ await expect(page.locator("#photo-dialog [data-photo-image]")).toBeVisible();
+ await page.keyboard.press("Escape");await expect(page.locator("#photo-dialog")).not.toBeVisible();
  await page.goto("/About_us");
  await page.locator('label[for="tab2"]').click();
  await expect(page.locator("#card-jul")).toBeVisible();

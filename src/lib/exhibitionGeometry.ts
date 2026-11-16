@@ -1,5 +1,6 @@
+import { wallSurface, wallSurfaceContains, wallViewSource, sameWallSurface } from "./exhibitionWallSurfaces.ts";
 import type { PhotoLayout, RoomLayout, Work } from "./exhibitionTypes.ts";
-import { roomWallLength, wallHeight } from './exhibitionRoomPath.ts';
+import { roomWallLength } from './exhibitionRoomPath.ts';
 export type Point = { x: number; y: number };
 export const mmToPt = (mm: number) => mm * 72 / 25.4;
 export function rotatedCorners(width: number, height: number, rotation: number): Point[] {
@@ -62,18 +63,20 @@ export function roomProblems(room: RoomLayout, works: Work[]): string[] {
     if (!work) { problems.push("配置済みの作品が提出から削除されています。"); continue; }
     if (seen.has(work.id)) problems.push(`${work.title} が重複して配置されています。`);
     seen.add(work.id);
-    const height = wallHeight(room,placement.wall), width = wallLength(room, placement.wall);
-    for (const photo of placedPhotos(work, placement, height)) {
+    const surface = wallSurface(room,placement.wall);
+    if(!surface){problems.push("配置先の壁が見つかりません。");continue;}
+    const height=surface.height, source=wallViewSource(room,`wall:${placement.wall}`,placement);
+    for (const photo of placedPhotos(work, source, height)) {
       const polygon = rotatedCorners(photo.width, photo.height, photo.rotation).map(c => ({ x: photo.x + c.x, y: photo.y + c.y }));
-      if (polygon.some(p => p.x < -.01 || p.y < -.01 || p.x > width + .01 || p.y > height + .01)) problems.push(`${work.title} が壁${placement.wall + 1}からはみ出しています。`);
-      shapes.push({ name: work.title, wall: placement.wall, polygon });
+      if (!wallSurfaceContains(surface,polygon)) problems.push(`${work.title} が壁${placement.wall + 1}からはみ出しています。`);
+      shapes.push({ name: work.title, wall: surface.wall, polygon });
     }
   }
   for (let i = 0; i < shapes.length; i++) {
     const shape = shapes[i];
     for (const other of shapes.slice(i + 1)) if (shape.wall === other.wall && polygonsOverlap(shape.polygon, other.polygon)) problems.push(`${shape.name} と ${other.name} が重なっています。`);
-    for (const opening of room.openings.filter(o => o.wall === shape.wall)) {
-      const top = wallHeight(room,opening.wall) - opening.bottom - opening.height;
+    for (const opening of room.openings.filter(o => sameWallSurface(room,`wall:${o.wall}`,`wall:${shape.wall}`)).map(o=>wallViewSource(room,`wall:${o.wall}`,o,["offset"]))) {
+      const top = wallSurface(room,opening.wall)!.height - opening.bottom - opening.height;
       const rect = [{ x: opening.offset, y: top }, { x: opening.offset + opening.width, y: top }, { x: opening.offset + opening.width, y: top + opening.height }, { x: opening.offset, y: top + opening.height }];
       if (polygonsOverlap(shape.polygon, rect)) problems.push(`${shape.name} が${opening.kind === "door" ? "扉" : "窓"}と重なっています。`);
     }

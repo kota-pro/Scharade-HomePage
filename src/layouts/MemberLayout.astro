@@ -1,23 +1,27 @@
 ---
+import PhotoNotificationBell from "../components/PhotoNotificationBell.astro";
 import PageTopNav from "../components/PageTopNav.astro";
 import Layout from "./Layout.astro";
 import ActivityShareDialog from "../components/ActivityShareDialog.astro";
 import "../styles/Admin.css";
 import "../styles/Member.css";
 import "../styles/Activities.css";
+import "../styles/PrivateMobile.css";
 interface Props {
   title: string;
 }
 const { title } = Astro.props;
+const isMemberHome = Astro.url.pathname.replace(/\/$/, "") === "/Member";
 ---
 
-<Layout title={title}>
+<Layout title={title} memberArea="member">
   <div slot="main-slot" class="admin-title member-title">
     <h1>Member</h1><div
       class="admin-title-line"
       aria-hidden="true"
     >
     </div>
+    {isMemberHome && <PhotoNotificationBell placement="member" />}
   </div>
   <Fragment slot="body-slot"><div class="admin-page member-page">
     <noscript

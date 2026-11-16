@@ -22,7 +22,10 @@ test("Approve email link works without login; confirmation sends Origin without 
   const target = `pending-${28 + ["chromium", "firefox", "webkit"].indexOf(info.project.name)}`;
   const previous = read("users.json").find((user: any) => user.id === target), link = signedReview(target, "approve");
   try {
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(link); await expect(page).toHaveURL(origin + link); await expect(page.getByRole("button", { name: "確定する", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "確定する", exact: true })).toHaveCSS("background-color", "rgb(0, 0, 0)");
+    await expect(page.getByRole("button", { name: "確定する", exact: true })).toHaveCSS("opacity", "1");
     expect(read("users.json").find((user: any) => user.id === target).approved).toBe(false);
     const confirmationPage = await page.request.get(link); expect(confirmationPage.headers()["referrer-policy"]).toBe("no-referrer");
     const posted = page.waitForResponse(response => new URL(response.url()).pathname === "/api/auth/review" && response.request().method() === "POST");
@@ -30,10 +33,12 @@ test("Approve email link works without login; confirmation sends Origin without 
     const response = await posted, headers = await response.request().allHeaders();
     expect(response.status(), JSON.stringify({ origin: headers.origin, referer: headers.referer })).toBe(303);
     expect(headers.origin).toBe(origin); expect(headers.referer).toBeUndefined();
-    await expect(page).toHaveURL(origin + "/ReviewAccount?result=updated");
-    await expect(page.locator('[data-review-result="success"]')).toBeVisible();
+    await expect(page).toHaveURL(new RegExp("/ReviewAccount\\?.*result=setup-unlinked"));
+    await expect(page.locator('[data-review-result="success"]')).toContainText("幹部以上のやることリスト");
+    await expect(page.locator('[data-review-result="unlinked"]')).toHaveCount(0);
     const changed = read("users.json").find((user: any) => user.id === target);
     expect(changed.approved).toBe(true); expect(changed.approvalNotifiedAt).toBeTruthy();
+    expect(changed.approvalSetup.rosterStatus).toBe("unlinked");
     expect(read("synthetic-mail.json")[previous.email]).toContain("開設が完了しました");
   } finally {
     const users = read("users.json").map((user: any) => user.id === target ? previous : user);
@@ -60,7 +65,7 @@ test("confirmation keeps a failed request on screen and permits a successful Rej
     await page.route("**/api/auth/review", route => route.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify({ ok: false, message: "このサイトの画面から操作してください" }) }));
     const button = page.getByRole("button", { name: "確定する", exact: true });
     await button.click();
-    await expect(page.locator("#review-status")).toHaveText("このサイトの画面から操作してください");
+    await expect(page.locator("#review-status")).toContainText("このサイトの画面から操作してください");
     await expect(button).toBeEnabled(); await expect(page).toHaveURL(origin + link);
     expect(read("users.json").find((user: any) => user.id === target).approvalReviewedAt).toBeUndefined();
     await page.unroute("**/api/auth/review");

@@ -7,7 +7,7 @@ Astro.response.headers.set("Referrer-Policy", "no-referrer");
 Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
 const result = Astro.url.searchParams.get("result");
 const token =
-  result && result !== "email-failed"
+  result && !["email-failed", "setup-failed", "setup-unlinked"].includes(result)
     ? null
     : validateReviewParameters(Astro.url.searchParams);
 const user = token ? readUsers().find((u) => u.id === token.userId) : null;
@@ -21,8 +21,8 @@ if (!result && !user) Astro.response.status = 410;
   <section slot="body-slot" class="review">
     <h1>アカウント承認</h1>
     {
-      result === "updated" ? (
-        <p data-review-result="success">アカウントの承認状態を更新しました。</p>
+      result === "updated" || (result !== "email-failed" && user?.approved && user.approvalNotifiedAt) ? (
+        <div data-review-result="success"><p>アカウントの承認状態を更新しました。</p>{user?.approved && <p>名簿の対応が必要な場合は、幹部以上のやることリストに表示します。</p>}</div>
       ) : user && token ? (
         <>
           <>
@@ -49,7 +49,7 @@ if (!result && !user) Astro.response.status = 410;
           </>
         </>
       ) : (
-        <p>
+        <p role="alert">
           このリンクは無効、期限切れ、または対象のアカウントがありません。管理担当者にご確認ください。
         </p>
       )
@@ -74,8 +74,13 @@ if (!result && !user) Astro.response.status = 410;
     padding: 10px 24px;
     min-height: 44px;
     cursor: pointer;
-    background: white;
-    border: 1px solid #888;
+    appearance: none;
+    -webkit-appearance: none;
+    background: #000;
+    color: #fff;
+    -webkit-text-fill-color: #fff;
+    opacity: 1;
+    border: 1px solid #000;
   }
   .review > a {
     display: block;
@@ -96,7 +101,7 @@ if (!result && !user) Astro.response.status = 410;
     submitting = true;
     const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
     if (button) button.disabled = true;
-    if (status) status.textContent = "更新しています…";
+    if (status) { status.textContent = "更新しています…"; status.dataset.error = "false"; }
     operationNotice("更新しています…", false, "account-review");
     try {
       const body = new URLSearchParams();
@@ -123,7 +128,7 @@ if (!result && !user) Astro.response.status = 410;
       const message = error instanceof Error && error.message !== "Failed to fetch"
         ? error.message
         : "通信に失敗しました。接続を確認して、もう一度お試しください。";
-      if (status) status.textContent = message;
+      if (status) { status.textContent = message; status.dataset.error = "true"; }
       operationNotice(message, true, "account-review");
       submitting = false;
       if (button) button.disabled = false;

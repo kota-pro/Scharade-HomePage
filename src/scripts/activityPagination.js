@@ -1,6 +1,8 @@
 const ITEMS_PER_PAGE = Number(document.querySelector(".tab")?.dataset.pageSize) || 10;
   const tabInputs = Array.from(document.querySelectorAll(".tab-input"));
   const tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
+  const saved = history.state?.scharadeActivityPosition;
+  const panelPages = {};
 
   function setActiveTab(index) {
     tabPanels.forEach((panel, panelIndex) => {
@@ -14,10 +16,12 @@ const ITEMS_PER_PAGE = Number(document.querySelector(".tab")?.dataset.pageSize) 
     });
   });
 
+  const savedTab = tabInputs.find(input => input.id === saved?.tab);
+  if (savedTab) savedTab.checked = true;
   const initialActiveIndex = tabInputs.findIndex((input) => input.checked);
   setActiveTab(initialActiveIndex >= 0 ? initialActiveIndex : 0);
 
-  document.querySelectorAll(".tab-panel").forEach((panel) => {
+  tabPanels.forEach((panel, panelIndex) => {
     const totalPages = parseInt(panel.getAttribute("data-total-pages") || "1");
     const totalPosts = parseInt(panel.getAttribute("data-total-posts") || "0");
 
@@ -37,10 +41,12 @@ const ITEMS_PER_PAGE = Number(document.querySelector(".tab")?.dataset.pageSize) 
     const btnPrevTop = panel.querySelector(".prev-btn-top");
     const btnNextTop = panel.querySelector(".next-btn-top");
 
-    const renderPage = (page) => {
+    const renderPage = (page, jump = false) => {
       if (page < 1) page = 1;
       if (page > totalPages) page = totalPages;
+      const changed = page !== currentPage;
       currentPage = page;
+      panelPages[panelIndex] = page;
 
       const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
       const endIndex = startIndex + ITEMS_PER_PAGE;
@@ -55,6 +61,7 @@ const ITEMS_PER_PAGE = Number(document.querySelector(".tab")?.dataset.pageSize) 
 
       if (inputTop) inputTop.value = currentPage.toString();
       updatePaginationNumbers();
+      if (jump && changed) (panel.querySelector(".panel-top") ?? panel).scrollIntoView({ block: "start", behavior: "instant" });
     };
 
     const updatePaginationNumbers = () => {
@@ -97,7 +104,7 @@ const ITEMS_PER_PAGE = Number(document.querySelector(".tab")?.dataset.pageSize) 
 
         a.addEventListener("click", (e) => {
           e.preventDefault();
-          renderPage(p);
+          renderPage(p, true);
         });
 
         numbersContainer.appendChild(a);
@@ -108,39 +115,48 @@ const ITEMS_PER_PAGE = Number(document.querySelector(".tab")?.dataset.pageSize) 
     if (inputTop) {
       inputTop.addEventListener("change", (e) => {
         const val = parseInt(e.target.value);
-        if (!isNaN(val)) renderPage(val);
+        if (!isNaN(val)) renderPage(val, true);
       });
     }
 
     btnPrevTop?.addEventListener("click", (e) => {
       e.preventDefault();
-      renderPage(currentPage - 1);
+      renderPage(currentPage - 1, true);
     });
 
     btnNextTop?.addEventListener("click", (e) => {
       e.preventDefault();
-      renderPage(currentPage + 1);
+      renderPage(currentPage + 1, true);
     });
 
     btnFirst?.addEventListener("click", (e) => {
       e.preventDefault();
-      renderPage(1);
+      renderPage(1, true);
     });
 
     btnPrev?.addEventListener("click", (e) => {
       e.preventDefault();
-      renderPage(currentPage - 1);
+      renderPage(currentPage - 1, true);
     });
 
     btnNext?.addEventListener("click", (e) => {
       e.preventDefault();
-      renderPage(currentPage + 1);
+      renderPage(currentPage + 1, true);
     });
 
     btnLast?.addEventListener("click", (e) => {
       e.preventDefault();
-      renderPage(totalPages);
+      renderPage(totalPages, true);
     });
 
-    renderPage(1);
+    const page = saved?.pages?.[panelIndex];
+    renderPage(Number.isSafeInteger(page) ? page : 1);
   });
+  if (Number.isFinite(saved?.scroll)) requestAnimationFrame(() => scrollTo({ top: saved.scroll, behavior: "instant" }));
+  function rememberPosition() {
+    history.replaceState({ ...history.state, scharadeActivityPosition: { tab: tabInputs.find(input => input.checked)?.id, pages: panelPages, scroll: scrollY } }, "");
+  }
+  window.addEventListener("pagehide", rememberPosition);
+  document.addEventListener("click", event => {
+    if (event.target.closest?.(".Activity-item a")) rememberPosition();
+  }, true);

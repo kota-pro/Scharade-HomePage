@@ -85,7 +85,7 @@
 
 .explanation-area p {
     color: #000;
-    font-family: "Zen Kurenaido";
+    font-family: YakuHanRP, "Zen Kurenaido";
     font-size: 24px;
     font-style: normal;
     font-weight: 400;
@@ -214,7 +214,7 @@ details[open] .arrow-icon {
     top: 5px;
     left: 10px;
     color: #ffffff;
-    font-family: "Grandiflora One", "Zen Kurenaido";
+    font-family: YakuHanRP, "Grandiflora One", "Zen Kurenaido";
     font-size: 16px;
     font-style: normal;
     font-weight: 400;
@@ -229,7 +229,7 @@ details[open] .arrow-icon {
     right: 10px;
     color: #ffffff;
     text-align: right;
-    font-family: "Zen Kurenaido";
+    font-family: YakuHanRP, "Zen Kurenaido";
     font-size: 20px;
     font-style: normal;
     font-weight: 400;

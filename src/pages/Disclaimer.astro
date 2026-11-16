@@ -4,11 +4,28 @@ import '../styles/UA+reset.css';
 import Layout from "../layouts/Layout.astro";
 import {getContent} from "../lib/siteContent";
 const sections=getContent("disclaimer",Astro.locals.preview).sections;
-const subheadings=["個人情報の利用","アクセス解析ツールについて","コメントについて"];
-const paragraphs=(text:string) => { const result:{heading?:string;text:string}[]=[]; for(const part of text.split("\n\n")){if(subheadings.includes(part))result.push({heading:part,text:""});else if(result.length)result[result.length-1].text+=(result[result.length-1].text ? "\n" : "")+part;else result.push({text:part});}return result;};
+const subheadings = new Set([
+    "個人情報の取得と利用",
+    "写真・プロフィールの公開範囲",
+    "外部サービスと情報の管理",
+    "Cookie・アクセス情報",
+    "個人情報に関するお問い合わせ",
+    // Keep existing saved content readable in the editor's preview and restore flow.
+    "個人情報の利用",
+    "アクセス解析ツールについて",
+    "コメントについて",
+]);
+const paragraphs = (text: string) => text.split(/\n\s*\n/).map(part => part.trim()).filter(Boolean);
+const links = new Map([
+    ["Contact", "/Contact"],
+    ["アカウント削除の申請ページ", "/AccountDeletion"],
+    ["アプリのプライバシーポリシー", "/AppPrivacy"],
+]);
+const linkedText = (text: string) => text.split(/(Contact|アカウント削除の申請ページ|アプリのプライバシーポリシー)/g)
+    .map(text => ({ text, href: links.get(text) }));
 ---
 
-<Layout>
+<Layout description="写団シャレード公式サイトの個人情報の取扱い、写真・作品の著作権、免責事項、リンクについてご案内します。">
 <Fragment slot="main-slot">
     <div class = "section-title"> 
         <h1>Disclaimer</h1>
@@ -21,7 +38,22 @@ const paragraphs=(text:string) => { const result:{heading?:string;text:string}[]
     </div>
 </Fragment>
 <Fragment slot="body-slot">
-    {sections.map(section => <div class="disclaim_container"><h1>{section.title}</h1>{paragraphs(section.text).map(block => <>{block.heading && <h2>{block.heading}</h2>}<p>{block.text.split("\n").map((line,i) => <>{i>0 && <br/>}{line}</>)}</p></>)}</div>)}
+    {sections.map((section, index) => (
+        <section class="disclaim_container" aria-labelledby={`disclaimer-section-${index}`}>
+            <h2 id={`disclaimer-section-${index}`}>{section.title}</h2>
+            {paragraphs(section.text).map(text => subheadings.has(text)
+                ? <h3>{text}</h3>
+                : <p>{text.split("\n").map((line, i) => <>{i > 0 && <br />}{linkedText(line).map(part => part.href
+                    ? <a class="href-anchor" href={part.href}>{part.text}</a>
+                    : part.text)}</>)}</p>
+            )}
+        </section>
+    ))}
+    <section class="disclaim_container" aria-labelledby="disclaimer-error-reports">
+        <h2 id="disclaimer-error-reports">エラーの自動報告</h2>
+        <p>障害の調査と改善のため、エラー番号、発生日時、ページの種類、ブラウザー・端末の種類、通信や文字表示の失敗状況を運営窓口へ自動報告します。入力した文章・氏名・メールアドレス・写真・パスワード・確認コード・Cookieは報告に含めません。URLの識別情報や検索条件も除いて送信します。</p>
+        <p>サイト内の送信待ちは最大7日間、送信済みの通知記録は24時間を目安に保持します。運営窓口に届いたメールは障害調査に使用します。<a class="href-anchor" href="/Errors">エラー番号の案内</a>も参照してください。</p>
+    </section>
 </Fragment>
 </Layout>
 
@@ -73,8 +105,9 @@ const paragraphs=(text:string) => { const result:{heading?:string;text:string}[]
 
     .disclaim_container {
         display:flex;
-        height: 100%;
         width: 100%;
+        box-sizing: border-box;
+        min-width: 0;
         padding-left: 20px;
         flex-direction: column;
         align-items: flex-start;
@@ -99,36 +132,41 @@ const paragraphs=(text:string) => { const result:{heading?:string;text:string}[]
         left: 0;
     }
 
-    .disclaim_container h1{
+    .disclaim_container h2{
         color:#000;
-        font-family:"Zen Old Mincho", serif;
+        font-family:YakuHanMP, "Zen Old Mincho", serif;
         font-size:32px;
         font-style:normal;
         font-weight: 400;
-        line-height:normal;
+        line-height:1.6;
         letter-spacing: 4.8px;
         margin-bottom: 40px;
     }
 
-    .disclaim_container h2{
+    .disclaim_container h3{
         color:#000;
-        font-family:"Zen Kurenaido", sans-serif;
+        font-family:YakuHanRP, "Zen Kurenaido", sans-serif;
         font-size:20px;
         font-style:normal;
         font-weight:400;
-        line-height:normal;
+        line-height:1.7;
         letter-spacing: 3px;
         margin-bottom:15px;
     }
 
+    .disclaim_container p + h3 {
+        margin-top: 24px;
+    }
+
     .disclaim_container p{
         color: #000;
-        font-family: "Zen Kurenaido", sans-serif;
+        font-family: YakuHanRP, "Zen Kurenaido", sans-serif;
         font-size: 16px;
         font-style: normal;
         font-weight: 400;
-        line-height: normal;
+        line-height: 1.9;
         letter-spacing: 2.4px;
+        overflow-wrap: anywhere;
     }
 
     .disclaim_container p:not(:last-child) {
@@ -145,7 +183,7 @@ const paragraphs=(text:string) => { const result:{heading?:string;text:string}[]
         left: 0px;
         right: 0px;
         content: '';
-        width: calc(100% - 30px);
+        width: 100%;
         height: 1px;
         background: #000000;
         bottom: 0px;
@@ -154,8 +192,13 @@ const paragraphs=(text:string) => { const result:{heading?:string;text:string}[]
         transition: transform 0.3s;
     }
 
-    .disclaim_container a:hover::after {
+    .disclaim_container a:is(:hover, :focus-visible)::after {
         transform: scale(1, 1);
+    }
+
+    .disclaim_container a:focus-visible {
+        outline: 1px solid currentColor;
+        outline-offset: 3px;
     }
 
     @media (max-width: 768px) {
@@ -184,13 +227,13 @@ const paragraphs=(text:string) => { const result:{heading?:string;text:string}[]
             top: -12px;
         }
 
-        .disclaim_container h1 {
+        .disclaim_container h2 {
             font-size: 25px;
             letter-spacing: 3px;
             margin-bottom: 24px;
         }
 
-        .disclaim_container h2 {
+        .disclaim_container h3 {
             font-size: 20px;
             letter-spacing: 1px;
             margin-bottom: 10px;

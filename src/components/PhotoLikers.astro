@@ -1,0 +1,11 @@
+---
+import "../styles/PhotoLikers.css";
+---
+<dialog id="photo-likers" class="photo-likers-dialog" aria-labelledby="photo-likers-heading">
+  <div class="photo-likers-heading"><h2 id="photo-likers-heading">いいねした会員</h2><button type="button" data-photo-likers-close aria-label="いいねした会員の表示を閉じる">×</button></div>
+  <p data-photo-likers-title class="photo-likers-title"></p>
+  <p data-photo-likers-total></p>
+  <div data-photo-likers-content></div>
+  <p class="photo-likers-note">会員名はログイン中に押されたいいねのみ表示します。</p>
+</dialog>
+<script>import "../scripts/photoLikers";</script>

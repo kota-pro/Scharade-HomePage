@@ -202,8 +202,16 @@
     background 0.3s,
     color 0.3s;
 }
-.activity-confirm-button:hover,
-.activity-form .activity-confirm-button:hover {
+.activity-confirm-button:not(:disabled):hover {
+  background: #e8e8e8;
+}
+.activity-confirm-button.activity-primary-action,
+.activity-form .activity-confirm-button.activity-primary-action {
+  background: #000;
+  color: #fff;
+}
+.activity-confirm-button.activity-primary-action:not(:disabled):hover,
+.activity-form .activity-confirm-button.activity-primary-action:not(:disabled):hover {
   background: #707070;
   color: #fff;
 }

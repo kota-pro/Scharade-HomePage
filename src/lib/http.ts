@@ -1,5 +1,43 @@
+import { brotliDecompress, gunzip, inflate } from "node:zlib";
+import { promisify } from "node:util";
+import { siteErrorBody } from './siteErrors.ts';
+
+const bodyDecoders = {
+  br: promisify(brotliDecompress),
+  gzip: promisify(gunzip),
+  deflate: promisify(inflate),
+};
+
+// Decode only on the patched runtime required by the server's startup guard.
+// Bound both the transmitted bytes and every decoded layer to prevent expansion
+// from bypassing the existing JSON/form/upload limits.
+export async function decodeRequestBody(request: Request, maximum: number) {
+  const encoding = request.headers.get("content-encoding");
+  if (!encoding) return request;
+  const encodings = encoding.split(",").map((value) => value.trim().toLowerCase());
+  if (encodings.length > 3 || encodings.some((value) => value !== "identity" && !Object.hasOwn(bodyDecoders, value))) {
+    throw new HttpInputError("送信内容の圧縮形式に対応していません。", 415);
+  }
+  if (encodings.every((value) => value === "identity")) return request;
+  let bytes = await boundedBody(request, maximum);
+  for (const value of encodings.reverse()) {
+    if (value === "identity") continue;
+    try {
+      bytes = await bodyDecoders[value as keyof typeof bodyDecoders](bytes, { maxOutputLength: maximum });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ERR_BUFFER_TOO_LARGE") throw new HttpInputError();
+      throw new HttpInputError("圧縮された送信内容を読み取れません。", 400);
+    }
+  }
+  const headers = new Headers(request.headers);
+  headers.delete("content-encoding");
+  headers.delete("transfer-encoding");
+  headers.set("content-length", String(bytes.byteLength));
+  return new Request(request, { headers, body: new Uint8Array(bytes) });
+}
+
 export function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
+  return new Response(JSON.stringify(siteErrorBody(body, status)), {
     status,
     headers: {
       "Content-Type": "application/json; charset=utf-8",

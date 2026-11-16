@@ -1,0 +1,68 @@
+---
+import { portfolioIntroductionHtml } from "../lib/portfolioIntroduction";
+import "../styles/PortfolioIntroduction.css";
+import { RICH_TEXT_SIZES } from "../utils/portfolioIntroduction";
+interface Props {
+  value?: string;
+  html?: string;
+  name?: "body" | "description" | "itinerary";
+  label?: string;
+  required?: boolean;
+}
+const { value, html, name, label = "Self introduction", required = false } = Astro.props;
+const prefix = name ? `activity-${name}` : "introduction";
+---
+
+<div class="form-field introduction-field" data-introduction-editor data-activity-rich-field={name} data-intro-field-label={name ? label : undefined}>
+  <label id={`${prefix}-label`}>{label}</label>
+  <div class="introduction-editor-frame">
+    <div class="introduction-toolbar" role="group" aria-label={name ? `${label}の文字装飾` : "自己紹介の文字装飾"}>
+      <button type="button" data-intro-command="bold" aria-label="太字" aria-pressed="false" title="太字（Ctrl / ⌘ + B）"><strong>B</strong></button>
+      <button type="button" data-intro-command="italic" aria-label="斜体" aria-pressed="false" title="斜体（Ctrl / ⌘ + I）"><em>I</em></button>
+      <button type="button" data-intro-command="underline" aria-label="下線" aria-pressed="false" title="下線（Ctrl / ⌘ + U）"><u>U</u></button>
+      <label class="introduction-color"><span>文字色</span><input type="color" value="#000000" data-intro-color aria-label="文字色" /></label>
+      {name && <select data-intro-size aria-label="文字サイズ">
+        <option value="" selected disabled>文字サイズ</option>
+        {RICH_TEXT_SIZES.map(size => <option value={size.command}>{size.pixels}px</option>)}
+      </select>}
+      <button type="button" data-intro-link>リンク</button>
+      <button type="button" data-intro-command="unlink" aria-label="リンクを解除">リンク解除</button>
+      <button type="button" data-intro-command="insertUnorderedList" aria-pressed="false">箇条書き</button>
+      <button type="button" data-intro-command="insertOrderedList" aria-pressed="false">番号付き</button>
+      <button type="button" data-intro-command="removeFormat">装飾を解除</button>
+      <button type="button" data-intro-command="undo" aria-label="元に戻す">↶</button>
+      <button type="button" data-intro-command="redo" aria-label="やり直す">↷</button>
+    </div>
+    <div
+      id={name ? prefix : "field-self-intro"}
+      data-intro-editable
+      class="introduction-editable portfolio-introduction-content"
+      contenteditable="true"
+      role="textbox"
+      aria-multiline="true"
+      aria-labelledby={`${prefix}-label`}
+      aria-describedby={`${prefix}-help ${prefix}-count ${prefix}-error`}
+      aria-required={required ? "true" : undefined}
+      spellcheck="true"
+      set:html={html ?? portfolioIntroductionHtml(value)}
+    />
+  </div>
+  <div class="introduction-footer">
+    <small class="helper" id={`${prefix}-help`}>文字を選択して装飾できます。リンクは文字を選ぶか、入力位置で追加できます。</small>
+    <small class="helper" id={`${prefix}-count`} data-intro-count></small>
+  </div>
+  <p class="introduction-error" id={`${prefix}-error`} data-intro-error role="alert"></p>
+
+  <dialog class="introduction-link-dialog" data-intro-dialog aria-labelledby={`${prefix}-link-title`}>
+    <h2 id={`${prefix}-link-title`}>リンクを設定</h2>
+    <label for={`${prefix}-link-text`}>表示テキスト</label>
+    <input id={`${prefix}-link-text`} type="text" data-intro-link-text maxlength="5000" />
+    <label for={`${prefix}-link-url`}>URL</label>
+    <input id={`${prefix}-link-url`} type="text" inputmode="url" data-intro-link-url placeholder="https://example.com" />
+    <p class="introduction-error" data-intro-link-error role="alert"></p>
+    <div class="introduction-dialog-actions">
+      <button type="button" data-intro-link-cancel>キャンセル</button>
+      <button type="button" data-intro-link-apply>設定する</button>
+    </div>
+  </dialog>
+</div>

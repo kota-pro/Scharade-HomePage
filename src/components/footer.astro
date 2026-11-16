@@ -3,7 +3,7 @@ import "../styles/UA+reset.css";
 import "../styles/footer.css";
 const pathname = Astro.url.pathname;
 import { getContent } from "../lib/siteContent";
-import { isAdmin } from "../lib/auth";
+import { isExecutive, isStaff } from "../lib/auth";
 const user = Astro.locals.user;
 const common = getContent("common", Astro.locals.preview);
 const optimizedBackground = { src: "/media/site/footer/background.webp" };
@@ -53,6 +53,13 @@ const optimizedBackground = { src: "/media/site/footer/background.webp" };
         class:list={["link", { active: /^\/Disclaimer\/?$/.test(pathname) }]}
         href="/Disclaimer"><span class="text">Disclaimer</span></a
       >
+      {user && (
+        <a
+          class:list={["link", { active: /^\/Errors\/?$/.test(pathname) }]}
+          href="/Errors"
+          aria-current={/^\/Errors\/?$/.test(pathname) ? "page" : undefined}
+        ><span class="text">Error Code List</span></a>
+      )}
     </div>
   </div>
   <h3>Members only</h3>
@@ -60,7 +67,8 @@ const optimizedBackground = { src: "/media/site/footer/background.webp" };
     {
       user ? (
         <>
-          {isAdmin(user) && <a href="/Admin">Admin</a>}
+          {isExecutive(user) && <a href="/Admin">Admin</a>}
+          {isStaff(user) && <a href="/Management">Management</a>}
           <a href="/Member">Member</a>
           {!user.siteManagement && (
             <a

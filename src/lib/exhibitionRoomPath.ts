@@ -3,9 +3,9 @@ import { compileVectorPath, pointAtLength, segmentLength, segmentTangent, neares
 export type RoomWall = { id:string; index:number; label:string; height:number; nodeIndex:number; corner:boolean; segment:VectorSegment; length:number };
 const cache=new WeakMap<RoomLayout,{key:string;path:ReturnType<typeof compileVectorPath>;walls:RoomWall[]}>();
 function compiled(room:RoomLayout) {
-  const key=JSON.stringify([room.vertices,room.wallIds,room.wallHeights]),prior=cache.get(room);if(prior?.key===key)return prior;
-  const path=compileVectorPath({nodes:room.vertices,closed:true}),walls:RoomWall[]=path.edges.map(({index,segment})=>({id:room.wallIds?.[index]??`legacy-wall:${index}`,index,label:`壁${index+1}`,height:room.wallHeights[index],nodeIndex:index,corner:false,segment,length:segmentLength(segment)}));
-  for(const c of path.corners)walls.push({id:`corner:${room.vertices[c.index].id??`legacy-${c.index}`}`,index:walls.length,label:`角${c.index+1}（曲面）`,height:room.vertices[c.index].cornerHeight??Math.min(room.wallHeights[c.index],room.wallHeights[(c.index-1+room.vertices.length)%room.vertices.length]),nodeIndex:c.index,corner:true,segment:c.segment,length:segmentLength(c.segment)});
+  const key=JSON.stringify([room.vertices,room.wallIds,room.wallHeights,room.wallNames]),prior=cache.get(room);if(prior?.key===key)return prior;
+  const path=compileVectorPath({nodes:room.vertices,closed:true}),walls:RoomWall[]=path.edges.map(({index,segment})=>{const id=room.wallIds?.[index]??`legacy-wall:${index}`;return{id,index,label:room.wallNames?.[id]||`壁${index+1}`,height:room.wallHeights[index],nodeIndex:index,corner:false,segment,length:segmentLength(segment)};});
+  for(const c of path.corners){const id=`corner:${room.vertices[c.index].id??`legacy-${c.index}`}`;walls.push({id,index:walls.length,label:room.wallNames?.[id]||`角${c.index+1}（曲面）`,height:room.vertices[c.index].cornerHeight??Math.min(room.wallHeights[c.index],room.wallHeights[(c.index-1+room.vertices.length)%room.vertices.length]),nodeIndex:c.index,corner:true,segment:c.segment,length:segmentLength(c.segment)});}
   const result={key,path,walls};cache.set(room,result);return result;
 }
 export const roomWalls=(room:RoomLayout)=>compiled(room).walls;
@@ -38,6 +38,12 @@ export function syncRoomWallReferences(room:RoomLayout) {
   for(const p of room.annotations??[])if(p.surfaceWallId)p.surface=`wall:${find(p.surfaceWallId)}`;
   room.dimensions=room.dimensions?.filter(d=>(!d.wallId||walls.some(w=>w.id===d.wallId))&&(!d.surfaceWallId||walls.some(w=>w.id===d.surfaceWallId))&&[d.a,d.b].every(a=>a.kind!=='wall'||walls.some(w=>w.id===a.wallId))&&[d.a,d.b].every(a=>a.kind!=='vertex'||room.vertices.some(n=>n.id===a.nodeId)));
   for(const d of room.dimensions??[])if(d.surfaceWallId)d.surface=`wall:${find(d.surfaceWallId)}`;
+  if(room.wallNames){room.wallNames=Object.fromEntries(Object.entries(room.wallNames).filter(([id])=>walls.some(w=>w.id===id)));if(!Object.keys(room.wallNames).length)delete room.wallNames;}
+}
+export function setRoomWallName(room:RoomLayout,index:number,name:string){
+  const value=name.trim();if([...value].length>150||/[\x00-\x1f\x7f]/.test(value))throw new Error('壁の名前は改行を含まない150文字以内で入力してください。');
+  ensureRoomPath(room);const wall=roomWalls(room)[index];if(!wall)throw new Error('名前を変更する壁を選択してください。');
+  if(value)(room.wallNames??={})[wall.id]=value;else if(room.wallNames){delete room.wallNames[wall.id];if(!Object.keys(room.wallNames).length)delete room.wallNames;}
 }
 export function setRoomCornerRadius(room:RoomLayout,index:number,radius:number) {
   const next=structuredClone(room);ensureRoomPath(next);const node=next.vertices[index];if(!node)throw new Error('頂点を選択してください。');
@@ -45,6 +51,11 @@ export function setRoomCornerRadius(room:RoomLayout,index:number,radius:number) 
   node.radius=radius;syncRoomWallReferences(next);if(!validRoomPath(next))throw new Error('角丸の壁が交差します。');return next;
 }
 export function moveVectorNode(node:VectorNode,dx:number,dy:number) {node.x+=dx;node.y+=dy;}
+export function roomFromPenPath(nodes:VectorNode[],name='展示室1'):RoomLayout {
+  const vertices=structuredClone(nodes);if(vertices.length<3||vertices.length>32||vertices.some(n=>[n,n.in,n.out].filter(Boolean).some(p=>![p!.x,p!.y].every(v=>Number.isFinite(v)&&Math.abs(v)<=100000))))throw new Error('展示室は±100000mm以内、3〜32頂点で描いてください。');
+  const room:RoomLayout={id:crypto.randomUUID(),name,vertices,wallHeights:vertices.map(()=>3000),openings:[],placements:[],tables:[],books:[],annotations:[]};ensureRoomPath(room);
+  if(!validRoomPath(room)||vertices.some((n,i)=>(n.radius??0)>cornerLimit({nodes:vertices,closed:true},i)+.01))throw new Error('展示室の壁が交差しています。連続した1つの外周になるように描いてください。');return room;
+}
 export function setRoomWallHeight(room:RoomLayout,index:number,height:number) {const wall=roomWalls(room)[index];if(!wall||!Number.isFinite(height)||height<1||height>100000)throw new Error('壁の高さを確認してください。');if(wall.corner)room.vertices[wall.nodeIndex].cornerHeight=height;else room.wallHeights[wall.nodeIndex]=height;}
 export function scaleRoomWall(room:RoomLayout,index:number,newLength:number,fixed:'a'|'b'='a') {
   const next=structuredClone(room);ensureRoomPath(next);const wall=roomWalls(next)[index];if(!wall||!Number.isFinite(newLength)||newLength<1||newLength>100000)throw new Error('壁長は1〜100000mmです。');

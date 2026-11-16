@@ -10,6 +10,10 @@ export function bindRecipientPicker(section: HTMLElement, changed?: (ids: string
     labels = [...section.querySelectorAll<HTMLElement>("[data-recipient-name]")];
     const query = normalize(search?.value ?? ""), group = grade?.value ?? "";
     for (const label of labels) label.hidden = !!(group && label.dataset.recipientGrade !== group) || !normalize(label.dataset.recipientName ?? "").includes(query);
+    section.querySelectorAll<HTMLElement>("[data-recipient-group]").forEach(section => {
+      const empty = section.querySelector<HTMLElement>("[data-recipient-empty]");
+      if (empty) empty.hidden = !!section.querySelector("[data-recipient-name]:not([hidden])");
+    });
     const count = section.querySelector<HTMLElement>("[data-recipient-count]");
     if (count) count.textContent = `選択中 ${choices.filter(c => c.checked).length}人 / ${choices.length}人（表示 ${labels.filter(l => !l.hidden).length}人）`;
   };

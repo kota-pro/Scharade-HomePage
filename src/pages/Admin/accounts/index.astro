@@ -1,4 +1,6 @@
 ---
+import { isSiteManagement } from "../../../lib/accountVisibility.ts";
+import { isAdmin } from "../../../lib/auth";
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { readUsers } from "../../../lib/auth";
 import {
@@ -9,8 +11,11 @@ import {
 
 const q = (Astro.url.searchParams.get("q") ?? "").trim().slice(0, 100);
 let accounts: AdminAccount[] | null = null;
+let pendingIds = new Set<string>();
 try {
-  accounts = readUsers()
+  const users = readUsers().filter(user => !isSiteManagement(user));
+  pendingIds = new Set(users.filter(u => !u.approved && !u.approvalReviewedAt && u.role !== 'admin').map(u => u.id));
+  accounts = users
     .map(toAdminAccount)
     .sort(
       (a, b) =>
@@ -21,7 +26,9 @@ try {
   Astro.response.status = 503;
 }
 const query = q.toLocaleLowerCase("ja");
+const pendingOnly = Astro.url.searchParams.get('status') === 'pending';
 const matches = (accounts ?? []).filter((account) =>
+  (!pendingOnly || pendingIds.has(account.id)) &&
   [
     account.name,
     account.email,
@@ -37,7 +44,7 @@ const page = Math.min(
 );
 const visibleAccounts = matches.slice((page - 1) * 30, page * 30);
 const href = (p: number) =>
-  `/Admin/accounts?${new URLSearchParams({ q, page: String(p) })}`;
+  `/Admin/accounts?${new URLSearchParams({ q, page: String(p), ...(pendingOnly ? { status: 'pending' } : {}) })}`;
 const pageNumbers = [...new Set([1, 2, totalPages - 1, totalPages, page - 1, page, page + 1])]
   .filter((p) => p >= 1 && p <= totalPages)
   .sort((a, b) => a - b);
@@ -69,7 +76,9 @@ const pageArrows = [
     </p>
   </div>
   <section class="admin-section" aria-label="アカウントの検索と一覧">
+    <nav class="admin-actions" aria-label="承認状態で絞り込み"><a href="/Admin/accounts" aria-current={!pendingOnly ? 'page' : undefined}>すべて</a><a href="/Admin/accounts?status=pending" aria-current={pendingOnly ? 'page' : undefined}>承認待ち</a></nav>
     <form method="get" class="admin-search">
+      {pendingOnly && <input type="hidden" name="status" value="pending" />}
       <label for="account-query"
         >名前・メールアドレス・登録時のPortfolio名・IDで検索</label
       >
@@ -121,7 +130,7 @@ const pageArrows = [
                   >
                     登録内容を見る
                   </a>
-                  {account.portfolioId && (
+                  {isAdmin(Astro.locals.user) && account.portfolioId && (
                     <a
                       class="admin-button"
                       href={`/Portfolio/edit?id=${encodeURIComponent(account.portfolioId)}`}

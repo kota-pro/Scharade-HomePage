@@ -1,7 +1,7 @@
 import { publicExhibition } from "../../../lib/exhibitionLayoutHistory.ts";
 import type { APIRoute } from "astro";
 import { exhibitionAction, findExhibition, readExhibitions } from "../../../lib/exhibitions.ts";
-import { ExhibitionError } from "../../../lib/exhibitionValidation.ts";
+import { ExhibitionError, exhibitionErrorBody } from "../../../lib/exhibitionValidation.ts";
 import { isStaff } from "../../../lib/auth.ts";
 import { createExhibitionAlbum, createExhibitionGoogleForm, importExistingExhibitionSheet } from "../../../lib/exhibitionIntegrations.ts";
 import { siteOrigin } from "../../../lib/config.ts";
@@ -22,12 +22,12 @@ export const POST: APIRoute = async ({ locals, request }) => {
       if (exhibition.revision !== body.revision) throw new ExhibitionError("別の画面で変更されています。再読み込みして確認してください。", 409);
       if (body.action === "google.create") return json({ ok: true, googleForm: await createExhibitionGoogleForm(exhibition.id) });
       if (body.action === "google.import") return json({ ok: true, imported: await importExistingExhibitionSheet(exhibition.id, String((body as any).sourceSpreadsheetId ?? "")) });
-      return json({ ok: true, albumId: await createExhibitionAlbum(exhibition.id, siteOrigin(request)) });
+      return json({ ok: true, albumId: await createExhibitionAlbum(exhibition.id, siteOrigin(request),Object.hasOwn(body,'excludedAssetIds')?{actorId:locals.user!.id,revision:body.revision,excludedAssetIds:(body as any).excludedAssetIds}:undefined) });
     }
     return json(await exhibitionAction(locals.user!.id, body));
   }
   catch (error) {
-    if (error instanceof ExhibitionError) return json({ ok: false, message: error.message, ...(error.issues?{issues:error.issues}:{}) }, error.status);
+    if (error instanceof ExhibitionError) return json(exhibitionErrorBody(error), error.status);
     console.error("[exhibition-admin] request failed");
     return json({ ok: false, message: "写真展の設定を保存できませんでした。" }, 503);
   }

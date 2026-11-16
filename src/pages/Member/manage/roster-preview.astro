@@ -1,5 +1,5 @@
 ---
-import { isAdmin } from "../../../lib/auth";
-if (!isAdmin(Astro.locals.user)) return new Response("管理者のみ閲覧できます。", { status: 403 });
+import { isExecutive } from "../../../lib/auth";
+if (!isExecutive(Astro.locals.user)) return new Response("幹部以上のみ閲覧できます。", { status: 403 });
 return Astro.redirect(`/Admin/grouping-roster/preview${Astro.url.search}`, 302);
 ---

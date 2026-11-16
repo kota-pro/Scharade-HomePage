@@ -274,16 +274,16 @@ test("portfolio API denies cross-user and administrative edits; permits deleting
     globalThis.fetch = original;
   }
 });
-test("missing optional CMS generation field returns actionable feedback", async () => {
+test("older Portfolio requests can save a grade without writing a CMS generation field", async () => {
   writeData("users.json", [admin]);
   writeData("sessions.json", []);
   const session = await privilegedSession(admin.id, 300);
   const original = globalThis.fetch;
-  globalThis.fetch = async () =>
-    Response.json(
-      { message: "'generation' is unexpected key." },
-      { status: 400 },
-    );
+  const changes: unknown[] = [];
+  globalThis.fetch = async (_input, init) => {
+    changes.push(JSON.parse(String(init?.body)));
+    return Response.json({ id: admin.portfolioId });
+  };
   try {
     const response = await updatePortfolio({
       request: new Request("http://localhost/api/portfolio/update", {
@@ -299,8 +299,8 @@ test("missing optional CMS generation field returns actionable feedback", async 
         }),
       }),
     } as any);
-    assert.equal(response.status, 422);
-    assert.match((await response.json()).message, /generation/);
+    assert.equal(response.status, 200);
+    assert.deepEqual(changes, [{ grade: "1st Grade" }]);
   } finally {
     globalThis.fetch = original;
   }

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { dataPath, withStoreLock } from "./store.ts";
+import { requestIdentity } from "./requestIdentity.ts";
 
 export async function audit(actorId: string, action: string, target: string) {
   await withStoreLock("audit", () => {
@@ -10,7 +11,8 @@ export async function audit(actorId: string, action: string, target: string) {
       file,
       JSON.stringify({
         at: new Date().toISOString(),
-        actorId,
+        actorId: requestIdentity()?.actorId ?? actorId,
+        ...(requestIdentity() ? { actingAsUserId: actorId, adminView: requestIdentity()!.mode, viewKey: requestIdentity()!.key } : {}),
         action,
         target,
       }) + "\n",

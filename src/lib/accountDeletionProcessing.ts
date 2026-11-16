@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { readUsers, readSessions, isAdmin } from "./auth.ts";
+import { readUsers, readSessions, isExecutive, canManageAccount } from "./auth.ts";
 import {
   readDeletionRequests,
   writeDeletionRequests,
@@ -25,11 +25,13 @@ export async function startDeletionProcessing(
       withStoreLock("exhibitions", () =>
         withStoreLock("member-activities", async () => {
           const users = readUsers();
-          if (!isAdmin(users.find((u) => u.id === actorId)))
-            throw new DeletionRequestError("管理者権限が必要です。", 403);
+          if (!isExecutive(users.find((u) => u.id === actorId)))
+            throw new DeletionRequestError("幹部以上の権限が必要です。", 403);
           const data = readDeletionRequests(),
             r = data.requests.find((r) => r.id === requestId);
           if (!r) throw new DeletionRequestError("申請が見つかりません。", 404);
+          const target = users.find(u => u.id === r.userId);
+          if (target && !canManageAccount(users.find(u => u.id === actorId), target)) throw new DeletionRequestError("このアカウントを削除する権限がありません。", 403);
           if (r.status === "complete") return r;
           if (r.userId === actorId)
             throw new DeletionRequestError(
@@ -106,10 +108,12 @@ export async function completeDeletionProcessing(
     );
   const r = await withStoreLock("auth", () =>
     withStoreLock("account-deletion-requests", () => {
-      if (!isAdmin(readUsers().find((u) => u.id === actorId)))
-        throw new DeletionRequestError("管理者権限が必要です。", 403);
+      if (!isExecutive(readUsers().find((u) => u.id === actorId)))
+        throw new DeletionRequestError("幹部以上の権限が必要です。", 403);
       const r = readDeletionRequests().requests.find((r) => r.id === requestId);
       if (!r) throw new DeletionRequestError("申請が見つかりません。", 404);
+      const users = readUsers(), target = users.find(u => u.id === r.userId);
+      if (target && !canManageAccount(users.find(u => u.id === actorId), target)) throw new DeletionRequestError("このアカウントを削除する権限がありません。", 403);
       if (r.status !== "processing" || (r.notBefore ?? Infinity) > now)
         throw new DeletionRequestError(
           "処理開始後15分以上待ち、進行中の外部送信が終了してから外部データとバックアップを確認してください。",
@@ -147,8 +151,8 @@ export async function completeDeletionProcessing(
   }
   await withStoreLock("auth", () =>
     withStoreLock("account-deletion-requests", () => {
-      if (!isAdmin(readUsers().find((u) => u.id === actorId)))
-        throw new DeletionRequestError("管理者権限が必要です。", 403);
+      if (!isExecutive(readUsers().find((u) => u.id === actorId)))
+        throw new DeletionRequestError("幹部以上の権限が必要です。", 403);
       if (readUsers().some((u) => u.id === r.userId))
         throw new DeletionRequestError(
           "アカウントの削除を完了できていません。",

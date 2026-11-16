@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { readUsers, isAdmin } from "./auth.ts";
+import { readUsers, isExecutive, canManageAccount } from "./auth.ts";
 import { readData, writeData, withStoreLock } from "./store.ts";
 import {
   normalizeSignupEmail,
@@ -263,12 +263,15 @@ export async function updateDeletionRequest(
 ) {
   return withStoreLock("auth", () =>
     withStoreLock(LOCK, () => {
-      if (!isAdmin(readUsers().find((u) => u.id === actorId)))
-        throw new DeletionRequestError("管理者権限が必要です。", 403);
+      const users = readUsers(), actor = users.find((u) => u.id === actorId);
+      if (!isExecutive(actor))
+        throw new DeletionRequestError("幹部以上の権限が必要です。", 403);
       const data = readDeletionRequests(),
         request = data.requests.find((r) => r.id === requestId);
       if (!request)
         throw new DeletionRequestError("申請が見つかりません。", 404);
+      const target = users.find(u => u.id === request.userId);
+      if (target && !canManageAccount(actor, target)) throw new DeletionRequestError("このアカウントを変更する権限がありません。", 403);
       update(request);
       writeDeletionRequests(data);
       return request;

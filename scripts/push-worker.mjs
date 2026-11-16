@@ -1,6 +1,9 @@
+import "./require-secure-runtime.mjs";
 import { createDueReminders } from "../src/lib/notificationReminders.ts";
 import { drainPushQueue } from "../src/lib/pushDelivery.ts";
 import { drainDeletionEmails } from "../src/lib/accountDeletionProcessing.ts";
+
+import { drainToolNotices } from "../src/lib/memberToolNotices.ts";
 
 let stopping = false,
   running = false,
@@ -18,6 +21,7 @@ process.on("SIGINT", stop);
 async function tick() {
   running = true;
   try {
+    await drainToolNotices();
     const deletionEmails = await drainDeletionEmails(
       undefined,
       Date.now,

@@ -1,0 +1,93 @@
+---
+import BlogRichEditor from "./BlogRichEditor.astro";
+import ManagementDelete from "./ManagementDelete.astro";
+import PopupCloseButton from "./PopupCloseButton.astro";
+import { sanitizeArticleHtml } from "../lib/contentSecurity";
+import type { BlogEditorOptions, getEditableBlog } from "../lib/blogManagement";
+import { normalizeTags } from "../utils/blog";
+import { linkToPost } from "../utils/linkToPost";
+
+interface Props { item?: NonNullable<Awaited<ReturnType<typeof getEditableBlog>>>; options: BlogEditorOptions; requestId?: string }
+const { item, options, requestId } = Astro.props;
+const post = item?.post;
+const tags = normalizeTags(post?.tags);
+const listedTags = [...new Set([...options.tags, ...tags])];
+const published = item?.status === "published" || item?.status === "published-with-draft";
+const endpoint = item ? `/api/member/blog/articles/${encodeURIComponent(item.id)}` : "/api/member/blog";
+---
+{options.bodyKind !== "richEditorV2" && <p role="status">
+  {options.bodyKind ? "本文を保存するには、microCMSでブログの本文を現行のリッチエディタに設定してください。" : "本文の設定を確認できませんでした。本文を保存するには、microCMSの「API情報の取得」権限が必要です。"}
+</p>}
+<form id="blog-management-form" class="blog-editor" novalidate data-blog-editor data-endpoint={endpoint} data-request-id={requestId} data-id={item?.id} data-updated-at={item?.updatedAt} data-published-at={item?.publishedAt ?? ""}>
+  <section class="content-management-panel blog-settings" aria-labelledby="blog-settings-title">
+    <h3 id="blog-settings-title">記事の設定</h3>
+    <div class="blog-settings-fields">
+      <div class="content-management-fields">
+        <label>タイトル<input name="title" required maxlength="200" value={post?.title} /></label>
+        <label>概要<textarea name="excerpt" rows="3" maxlength="1000">{post?.excerpt}</textarea></label>
+      </div>
+      <div class="content-management-fields">
+        <div class="content-management-field">
+          <label>記事URL
+            <input name="slug" maxlength="150" value={post?.slug} readonly={item?.slugLocked} aria-describedby="blog-slug-hint" required />
+          </label>
+          <small id="blog-slug-hint">{item?.slugLocked ? "初回公開時のURLを使用します。" : "記事URLの /posts/ に続く部分です。初回公開後は固定されます。"}</small>
+        </div>
+        <label>タグ
+          {listedTags.length && options.tags.length
+            ? <select name="tags" multiple size={Math.min(7, Math.max(2, listedTags.length))}>
+                {listedTags.map(tag => <option value={tag} selected={tags.includes(tag)}>{tag}</option>)}
+              </select>
+            : <input name="tagText" value={tags.join("、")} placeholder="「、」で区切って入力" />}
+        </label>
+      </div>
+      <div class="content-management-field blog-settings-photos">
+        <h4>記事写真</h4>
+        <ul data-blog-pictures class="content-management-list">
+          {post?.pictures?.map((image, index) => <li data-picture-url={image.url}>
+            <img src={image.url} alt={image.alt ?? `記事写真 ${index + 1}`} loading="lazy" />
+            <button type="button" data-picture-move="up" aria-label="写真を前に移動">↑</button>
+            <button type="button" data-picture-move="down" aria-label="写真を後ろに移動">↓</button>
+            <button type="button" data-picture-remove>外す</button>
+          </li>)}
+        </ul>
+        <button type="button" class="admin-button admin-button-outline" data-blog-media="picture">記事写真を追加</button>
+      </div>
+    </div>
+    {item && <div class="blog-settings-actions">
+      {published && post && <p><a href={linkToPost(post.slug, "activity")} target="_blank" rel="noopener">公開中の記事を開く</a></p>}
+      {item?.status === "published-with-draft" && <p>microCMSに別の下書きがあります。この画面の更新内容は公開版に反映されます。</p>}
+      <div class="blog-settings-danger">
+        {item.status === "published" && <button type="button" data-blog-unpublish>公開を取り下げる</button>}
+        <button type="button" data-management-delete data-delete-endpoint={endpoint} data-delete-updated-at={item.updatedAt} data-delete-title="記事を削除" data-delete-name={post?.title ?? item.id} data-delete-description="記事をmicroCMSから完全に削除します。この操作は取り消せません。添付画像・ファイルはメディアに残ります。" data-delete-redirect="/Management/blog?deleted=1">記事を削除</button>
+      </div>
+    </div>}
+  </section>
+  <BlogRichEditor body={sanitizeArticleHtml(post?.body ?? "")} options={options} />
+  <p data-status class="content-management-status" role="status"></p>
+  <div class="content-management-actions">
+    <a class="member-back" href="/Management/blog">一覧へ戻る</a>
+    <button class="admin-button admin-button-outline" type="button" data-blog-preview>プレビュー</button>
+    <button class:list={["admin-button", { "admin-button-outline": item?.status === "draft" }]} type="submit" value="save">{published ? "公開内容を更新" : "下書き保存"}</button>
+    {item?.status === "draft" && <button class="admin-button" type="submit" value="publish">公開する</button>}
+  </div>
+</form>
+
+<dialog class="admin-dialog blog-preview-dialog" data-blog-preview-dialog aria-labelledby="blog-preview-title">
+  <header class="blog-preview-heading">
+    <h2 id="blog-preview-title">プレビュー</h2>
+    <div class="blog-preview-controls">
+      <button type="button" data-preview-size="desktop" aria-pressed="true">PC幅</button>
+      <button type="button" data-preview-size="mobile" aria-pressed="false">スマートフォン幅</button>
+    </div>
+    <PopupCloseButton label="閉じる" data-close-preview />
+  </header>
+  <p data-blog-preview-status class="blog-preview-status" role="status"></p>
+  <div class="blog-preview-stage" data-blog-preview-stage hidden>
+    <div class="blog-preview-screen">
+      <iframe title="Activity記事のプレビュー" sandbox="allow-same-origin allow-scripts allow-presentation" data-blog-preview-frame></iframe>
+    </div>
+  </div>
+</dialog>
+{item && <ManagementDelete />}
+<script>import "../scripts/blogEditor";</script>

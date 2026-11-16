@@ -1,0 +1,13 @@
+---
+import MemberIcon from './MemberIcon.astro';
+import '../styles/ActivityEventEditor.css';
+interface Props {management?:boolean}
+const {management=false}=Astro.props;
+---
+<section class="tool-section tool-results" id="tool-results" data-tool-results-section aria-labelledby="tool-results-title">
+ <div class="tool-section-heading"><span class="tool-section-number" aria-hidden="true">{management?'03':'02'}</span><h3 id="tool-results-title">回答・結果</h3></div>
+ <div class="tool-results-toolbar"><p data-results-message aria-live="polite"></p><div class="activity-actions"><button type="button" data-load-results>結果を更新</button><button type="button" class="admin-button" data-export-results hidden><MemberIcon kind="image" class="tool-action-icon"/><span>結果を画像でコピー</span></button></div></div>
+ {management&&<p class="tool-help">管理権限がある場合は、会員向けの公開前・公開停止中も確認できます。</p>}
+ <div data-tool-results></div>
+</section>
+<dialog class="activity-confirm tool-dialog tool-export-dialog" data-tool-export aria-labelledby="tool-export-title"><header class="activity-confirm-header"><h2 id="tool-export-title">Results</h2><button type="button" class="activity-confirm-close" data-close-dialog aria-label="画像のプレビューを閉じる"><span></span><span></span></button></header><h3>画像のプレビュー</h3><p class="activity-confirm-note">ページごとにコピー、またはPNGで保存できます。匿名の名前は画像に含まれません。</p><div data-export-pages></div><div class="activity-confirm-footer"><button type="button" data-close-dialog>閉じる</button></div></dialog>

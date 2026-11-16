@@ -1,10 +1,16 @@
 ---
+import { isAdmin } from "../../lib/auth";
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import { pageDefinitions } from "../../lib/siteContent";
+import MemberIcon from "../../components/MemberIcon.astro";
+import { isSiteManagement } from "../../lib/accountVisibility.ts";
+const administrator = isAdmin(Astro.locals.user);
+const pages = Object.entries(pageDefinitions);
+const pageIcons = { common: "settings", home: "home", about: "users", gallery: "image", portfolio: "user", contact: "bell", disclaimer: "file" } as const;
 ---
 
 <AdminLayout title="管理画面">
-  <div class="admin-intro">
+  {administrator && <div class="admin-intro">
     <p>
       文章や写真を編集したら、下書きを保存してプレビューを確認し、公開してください。
     </p>
@@ -13,37 +19,46 @@ import { pageDefinitions } from "../../lib/siteContent";
     <h2 id="content-heading">サイト情報・ページ編集</h2>
     <ul class="admin-link-list">
       {
-        Object.entries(pageDefinitions).map(([key, page]) => (
-          <li>
+        pages.map(([key, page], index) => (
+          <li class:list={{ "admin-desktop-extra": index > 2 }}>
             <a href={`/Admin/content/${key}`}>
+              <MemberIcon kind={pageIcons[key as keyof typeof pageIcons] || "file"} />
               <span class="admin-item-label">{page.title}</span>
-              <span class="admin-item-description">編集する →</span>
+              <span class="admin-item-description">編集する<span class="private-link-arrow" aria-hidden="true"> →</span></span>
             </a>
           </li>
         ))
       }
+      <li class="admin-mobile-more"><details><summary>その他のページを編集</summary><ul class="admin-link-list">{pages.slice(3).map(([key, page]) => <li><a href={`/Admin/content/${key}`}><MemberIcon kind={pageIcons[key as keyof typeof pageIcons] || "file"} /><span class="admin-item-label">{page.title}</span><span class="admin-item-description">編集する<span class="private-link-arrow" aria-hidden="true"> →</span></span></a></li>)}</ul></details></li>
     </ul>
   </section>
+  }
   <section class="admin-section">
     <h2>アカウント管理</h2>
     <p>
-      登録内容の確認・編集と、各アカウントのPortfolioの編集ができます。
+      {administrator ? "登録内容の確認・編集と、各アカウントのPortfolioの編集ができます。" : "登録内容を確認し、一般会員・運営のアカウントを編集・削除できます。"}
     </p>
     <ul class="admin-link-list">
       <li>
         <a href="/Admin/accounts">
+          <MemberIcon kind="users" />
           <span class="admin-item-label">アカウント一覧へ</span>
-          <span class="admin-item-description">登録内容・Portfolioを管理 →</span>
+          <span class="admin-item-description">{administrator ? "登録内容・Portfolioを管理" : "一般会員・運営の登録内容を管理"}<span class="private-link-arrow" aria-hidden="true"> →</span></span>
         </a>
       </li>
-      <li><a href="/Admin/account-deletion-requests"><span class="admin-item-label">アカウント削除申請</span><span class="admin-item-description">本人確認済みの削除申請を7日以内に処理 →</span></a></li>
+      <li><a href="/Admin/view"><MemberIcon kind="users" /><span class="admin-item-label">ログイン・ロールの表示確認</span><span class="admin-item-description">代理ログイン・ロール別に表示<span class="private-link-arrow" aria-hidden="true"> →</span></span></a></li>
+      {administrator && isSiteManagement(Astro.locals.user) && <li><a href={`/Admin/accounts/${Astro.locals.user!.id}`}><MemberIcon kind="shield" /><span class="admin-item-label">管理専用アカウントの設定</span><span class="admin-item-description">登録内容を確認する</span></a></li>}
+      <li><a href="/Admin/account-deletion-requests"><MemberIcon kind="file" /><span class="admin-item-label">アカウント削除申請</span><span class="admin-item-description">本人確認済みの削除申請を7日以内に処理<span class="private-link-arrow" aria-hidden="true"> →</span></span></a></li>
     </ul>
   </section>
+  <section class="admin-section"><h2>会計</h2><ul class="admin-link-list"><li><a href="/Admin/accounting"><MemberIcon kind="file" /><span class="admin-item-label">会計管理へ</span><span class="admin-item-description">収支・通帳・立替申請・返金を管理<span class="private-link-arrow" aria-hidden="true"> →</span></span></a></li></ul></section>
   <section class="admin-section">
-    <h2>班分け名簿</h2>
+    <h2>名簿</h2>
     <ul class="admin-link-list">
-      <li><a href="/Admin/grouping-roster" aria-label="班分け用名簿"><span class="admin-item-label">班分け用名簿</span><span class="admin-item-description">Google名簿の更新・参照先・アカウント連携を管理 →</span></a></li>
+      <li><a href="/Admin/club-forms"><MemberIcon kind="file" /><span class="admin-item-label">入会・継続・新歓フォーム</span><span class="admin-item-description">春秋のフォーム作成・回答リンク・受付期限を管理<span class="private-link-arrow" aria-hidden="true"> →</span></span></a></li>
+      <li><a href="/Admin/grouping-roster" aria-label="名簿"><MemberIcon kind="file" /><span class="admin-item-label">名簿</span><span class="admin-item-description">Google名簿の更新・参照先・アカウント連携を管理<span class="private-link-arrow" aria-hidden="true"> →</span></span></a></li>
     </ul>
   </section>
-  <section class="admin-section"><h2>アプリ・通知</h2><ul class="admin-link-list"><li><a href="/Admin/notifications"><span class="admin-item-label">プッシュ通知の配信状況</span><span class="admin-item-description">送信待ち・配信結果・失敗を確認 →</span></a></li></ul></section>
+  <section class="admin-section"><h2>写真</h2><ul class="admin-link-list"><li><a href="/Admin/photos"><MemberIcon kind="image" /><span class="admin-item-label">写真のいいねランキング</span><span class="admin-item-description">写真のランキングといいねの概要を確認する</span></a></li></ul></section>
+  {administrator && <section class="admin-section"><h2>アプリ・通知</h2><ul class="admin-link-list"><li><a href="/Admin/notifications"><MemberIcon kind="bell" /><span class="admin-item-label">プッシュ通知の配信状況</span><span class="admin-item-description">送信待ち・配信結果・失敗を確認<span class="private-link-arrow" aria-hidden="true"> →</span></span></a></li></ul></section>}
 </AdminLayout>

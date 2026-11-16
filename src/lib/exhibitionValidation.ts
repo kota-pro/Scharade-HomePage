@@ -1,7 +1,12 @@
+import { wallSurface, wallSurfacePart, wallSurfaceContains, sameWallSurface, wallSurfaceKey } from "./exhibitionWallSurfaces.ts";
+import {parseTitleBoardSettings,reconcileTitleRuby} from './exhibitionTitleText.ts';
+import { exhibitionNotesLimit } from "./exhibitionNotes.ts";
+import { exhibitionErrorCode, exhibitionErrorMessage, exhibitionErrors, type ExhibitionErrorCode } from './exhibitionErrors.ts';
 import { roomWalls, validRoomPath, wallHeight } from './exhibitionRoomPath.ts';
 import { cornerLimit } from './exhibitionVector.ts';
-import { emptyWorkDetails, metadataStrings, prefectures, type TextIssue } from "./exhibitionText.ts";
-import { validateBoardText } from "./exhibitionTextMetrics.ts";
+import { parsePhotoMetadata } from "./photoMetadata.ts";
+import { emptyWorkDetails, metadataStrings, normalizeMetadataInput, prefectures, type TextIssue } from "./exhibitionText.ts";
+import { contentTextIssues } from "./exhibitionText.ts";
 import { paperSizes } from './exhibitionEditing.ts';
 import type { EffectiveSubmissionLimits, LimitIssue, SectionLimits } from './exhibitionTypes.ts';
 import type { ExhibitionAsset, FieldValue, FormField, FormSchema, RoomLayout, RoomAnnotation, VectorNode, VectorPath, RichTextRun, LayoutDimension, DimensionAnchor, SubmissionContent, WorkKind } from "./exhibitionTypes.ts";
@@ -9,10 +14,17 @@ import { validPolygon, wallLength } from "./exhibitionGeometry.ts";
 import { layoutObjectIds, placementSurface } from "./exhibitionLayoutModel.ts";
 export class ExhibitionError extends Error {
   status: number;
+  code: ExhibitionErrorCode;
   issues?: TextIssue[];
   limitIssues?: LimitIssue[];
   effectiveLimits?: EffectiveSubmissionLimits;
-  constructor(message: string, status = 400, issues?: TextIssue[]) { super(message); this.status = status; this.issues = issues; }
+  constructor(message: string, status = 400, issues?: TextIssue[], code?: ExhibitionErrorCode) { super(message); this.status = status; this.issues = issues; this.code = code ?? exhibitionErrorCode(message, status); }
+}
+export function exhibitionErrorBody(error: unknown, fallback: ExhibitionErrorCode = 'EXH-015') {
+  if (!(error instanceof ExhibitionError)) return { ok: false, code: fallback, message: exhibitionErrors[fallback] };
+  return { ok: false, code: error.code, message: exhibitionErrorMessage(error.code, error.message),
+    ...(error.issues ? { issues: error.issues } : {}),
+    ...(error.limitIssues ? { limitIssues: error.limitIssues, effectiveLimits: error.effectiveLimits } : {}) };
 }
 export const idPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 export function id(value: unknown): string {
@@ -28,6 +40,10 @@ export function text(value: unknown, label: string, max = 4000, required = false
   const result = value.trim();
   if (required && !result) throw new ExhibitionError(`${label}を入力してください。`);
   return result;
+}
+export function metadataInputText(value:unknown) {
+  text(value,"撮影情報",1000);
+  return normalizeMetadataInput(value as string);
 }
 export function number(value: unknown, label: string, min = 0, max = 100000, integer = false): number {
   if (typeof value !== "number" || !Number.isFinite(value) || value < min || value > max || (integer && !Number.isSafeInteger(value))) throw new ExhibitionError(`${label}の数値を確認してください。`);
@@ -113,6 +129,7 @@ function answers(value: unknown, fields: FormField[], required: boolean): Record
 export function parseContent(value: unknown, schema: FormSchema, assets: ExhibitionAsset[], final = true): SubmissionContent {
   const raw = object(value);
   const content: SubmissionContent = {
+    ...(raw.notes === undefined ? {} : { notes: text(raw.notes, "その他ご意見、ご要望など", exhibitionNotesLimit) }),
     name: text(raw.name, "名前", 150, final), grade: text(raw.grade, "学年", 100, final), authorName: text(raw.authorName, "作者名", 150, final),
     portfolioUrl: httpsUrl(raw.portfolioUrl ?? ""), fields: answers(raw.fields, schema.fields.filter(f => fieldApplies(f, "common")), final),
     sections: [], works: [],
@@ -125,23 +142,34 @@ export function parseContent(value: unknown, schema: FormSchema, assets: Exhibit
       fields: answers(s.fields, schema.fields.filter(f => fieldApplies(f, "section", sectionId)), final) };
   });
   unique(content.sections.map(s => s.sectionId), "参加セクション");
-  content.works = list(raw.works, "作品", 300).map(w0 => {
+  content.works = list(raw.works, "作品", 300).map((w0, workIndex) => {
     const w = object(w0), kind = w.kind as WorkKind, sectionId = id(w.sectionId);
     if (!["single", "series", "book"].includes(kind) || !content.sections.some(s => s.sectionId === sectionId)) throw new ExhibitionError("作品の種類・参加セクションを確認してください。");
-    const photos = list(w.photos, "作品の写真", 100).filter(p => !(final && kind === "book" && object(p).assetId === "")).map(p0 => {
-      const p = object(p0), assetId = !final && p.assetId === "" ? "" : id(p.assetId);
+    const workLabel = `${schema.sections.find(s => s.id === sectionId)?.title ?? '展示'}・作品${workIndex + 1}`;
+    const requiredPhotos = list(w.photos, "作品の写真", 100);
+    if (final && kind !== 'book' && (!requiredPhotos.length || requiredPhotos.some(p => object(p).assetId === ''))) {
+      const missing = requiredPhotos.flatMap((p, i) => object(p).assetId === '' ? [i + 1] : []);
+      throw new ExhibitionError(`提出する写真の枚数分、写真を添付してください。${workLabel}${missing.length ? `の写真${missing.join('・')}枚目` : ''}の写真が未添付です。`, 400, undefined, 'EXH-001');
+    }
+    const photos = requiredPhotos.filter(p => !(final && kind === "book" && object(p).assetId === "")).map(p0 => {
+      const p = object(p0);
+      let assetId: string;
+      try { assetId = !final && p.assetId === '' ? '' : id(p.assetId); }
+      catch { throw new ExhibitionError('添付した写真を確認できません。この作品の写真をもう一度選んで添付してください。', 400, undefined, 'EXH-002'); }
       if (assetId && !assets.some(a => a.id === assetId)) throw new ExhibitionError("写真の添付を確認してください。他の提出者の写真は使用できません。");
-      return { assetId, x: number(p.x, "写真のX位置", -100000), y: number(p.y, "写真のY位置", -100000), width: number(p.width, "写真の幅", .1), height: number(p.height, "写真の高さ", .1), rotation: number(p.rotation, "写真の回転", -360, 360) };
+      return { ...(p.metadata !== undefined ? { metadata: parsePhotoMetadata(p.metadata) } : {}), assetId, x: number(p.x, "写真のX位置", -100000), y: number(p.y, "写真のY位置", -100000), width: number(p.width, "写真の幅", .1), height: number(p.height, "写真の高さ", .1), rotation: number(p.rotation, "写真の回転", -360, 360) };
     });
     unique(photos.map(p => p.assetId).filter(Boolean), "作品内の写真");
     if (final && (kind === "single" && photos.length !== 1 || kind === "series" && !photos.length)) throw new ExhibitionError("各作品のデータを添付してください。単写真は1枚、組写真は指定枚数の画像が必要です。ブックの画像は任意です。");
     const details = w.details === undefined ? undefined : emptyWorkDetails();
     if(details) {
       const values=object(w.details);
-      for(const key of Object.keys(details) as (keyof typeof details)[]) details[key]=text(values[key] ?? "", "撮影情報", 1000);
+      for(const key of Object.keys(details) as (keyof typeof details)[]) details[key]=key==="prefecture"?text(values[key]??"","都道府県",1000):metadataInputText(values[key]??"");
       if(details.prefecture && ![...prefectures,"海外・その他"].includes(details.prefecture)) throw new ExhibitionError("都道府県を選択してください。");
     }
-    return { ...(details ? {details} : {}), id: id(w.id), sectionId, kind, title: text(w.title, "作品タイトル", 300, final), caption: text(w.caption ?? "", "キャプション"),
+    const title=text(w.title ?? "","作品タイトル",300,false);let titleBoard;
+    try{const prepared={title:w.title,titleBoard:parseTitleBoardSettings(w.titleBoard,w.title,final)};reconcileTitleRuby(prepared,w.title,title);titleBoard=prepared.titleBoard;}catch(error){throw new ExhibitionError(error instanceof Error?error.message:"ふりがなの設定を確認してください。");}
+    return { ...(titleBoard?{titleBoard}:{}), ...(details ? {details} : {}), id: id(w.id), sectionId, kind, title, caption: text(w.caption ?? "", "キャプション"),
       ...(details ? metadataStrings(details) : {location: text(w.location ?? "", "撮影場所", 1000), equipment: text(w.equipment ?? "", "使用機材", 1000), settings: text(w.settings ?? "", "撮影設定", 1000)}), photos,
       fields: answers(w.fields, schema.fields.filter(f => fieldApplies(f, "work", sectionId, kind)), final) };
   });
@@ -153,7 +181,7 @@ export function parseContent(value: unknown, schema: FormSchema, assets: Exhibit
     if (final && (works.filter(w => w.kind === "single").length !== s.singles || series.length !== s.series || works.filter(w => w.kind === "book").length !== s.books || s.seriesPhotoCounts.length !== s.series || series.some((w, i) => w.photos.length !== s.seriesPhotoCounts[i]))) throw new ExhibitionError("作品数・組写真の写真枚数と、登録した作品・写真の数を一致させてください。");
   }
   if (content.works.reduce((n, w) => n + w.photos.length, 0) > 1000) throw new ExhibitionError("1回の提出は写真1000枚までです。");
-  if(final) { const issues=validateBoardText(content); if(issues.length) throw new ExhibitionError(issues.map(i=>i.message).join("\n"),400,issues); }
+  if(final) { const issues=contentTextIssues(content).filter(issue=>!issue.layout); if(issues.length) throw new ExhibitionError(issues.map(i=>i.message).join("\n"),400,issues); }
   return content;
 }
 function color(value: unknown, fallback: string) {
@@ -183,6 +211,9 @@ function parseRichText(value:unknown):RichTextRun[] {
 export function parseLayoutAnnotation(a0:unknown):RoomAnnotation {
       const a=object(a0);if(!['power','door','window','image','text','rect','ellipse','path','freehand'].includes(a.kind))throw new ExhibitionError('図形・注記の種類を確認してください。');
       text(a.text??'','注記',2000);const annotation:RoomAnnotation={id:id(a.id),kind:a.kind,x:number(a.x,'注記X',-100000),y:number(a.y,'注記Y',-100000),width:number(a.width,'図形幅',.01),height:number(a.height,'図形高',.01),rotation:number(a.rotation,'図形回転',-360,360),text:a.text??'',fontSize:number(a.fontSize,'文字サイズ',.1,3000),color:color(a.color,'#343434')};
+      if(a.name!==undefined){const name=text(a.name,'図形の名前',100);if(name)annotation.name=name;}
+      if(a.showName!==undefined){if(typeof a.showName!=='boolean')throw new ExhibitionError('図形の名前の表示設定を確認してください。');annotation.showName=a.showName;}
+      for(const key of ['nameFontSize','noteFontSize'] as const)if(a[key]!==undefined)annotation[key]=number(a[key],key==='nameFontSize'?'名前の文字サイズ':'注記の文字サイズ',.1,3000);
       if(a.kind==='image')annotation.assetId=id(a.assetId);
       if(a.surface!==undefined)annotation.surface=text(a.surface,'注記の図面',100,true);
       if(a.surfaceWallId!==undefined)annotation.surfaceWallId=text(a.surfaceWallId,'注記の壁',100,true);
@@ -190,6 +221,7 @@ export function parseLayoutAnnotation(a0:unknown):RoomAnnotation {
       if(['path','freehand'].includes(a.kind)&&!annotation.path)throw new ExhibitionError('図形のパスがありません。');
       if(a.runs!==undefined){annotation.runs=parseRichText(a.runs);if(annotation.runs.map(r=>r.text).join('')!==annotation.text)throw new ExhibitionError('文字と装飾の内容が一致しません。');}
       for(const key of ['textScaleX','textScaleY'] as const)if(a[key]!==undefined)annotation[key]=number(a[key],'文字の拡縮',.01,100);
+      for(const key of ['flipX','flipY'] as const)if(a[key]!==undefined){if(typeof a[key]!=='boolean')throw new ExhibitionError('図形の反転を確認してください。');annotation[key]=a[key];}
       if(a.strokeWidth!==undefined)annotation.strokeWidth=number(a.strokeWidth,'線の太さ',.01,1000);
       if(a.opacity!==undefined)annotation.opacity=number(a.opacity,'線の濃さ',0,1);
       if(a.fill!==undefined)annotation.fill=a.fill==='none'?'none':color(a.fill,'#ffffff');return annotation;
@@ -208,11 +240,15 @@ export function parseRooms(value: unknown): RoomLayout[] {
     if(!validRoomPath(result))throw new ExhibitionError('部屋の頂点は交差しない閉じた形にしてください。');
     const walls=roomWalls(result),wall=(n:unknown)=>number(n,'壁番号',0,walls.length-1,true),wallRef=(value:unknown,index:number)=>{if(value===undefined)return{};const wallId=text(value,'壁の識別番号',100,true);if(walls[index]?.id!==wallId)throw new ExhibitionError('壁の参照が一致しません。');return{wallId};};
 
+    if(r.wallNames!==undefined){const entries=Object.entries(object(r.wallNames));if(entries.length>64)throw new ExhibitionError('壁の名前が多すぎます。');result.wallNames=Object.fromEntries(entries.map(([key,value])=>{if(!walls.some(w=>w.id===key))throw new ExhibitionError('名前を設定する壁が見つかりません。');return[key,text(value,'壁の名前',150,true)];}));}
     result.openings = list(r.openings, "開口部", 100).map(o0 => {
       const o = object(o0), w = wall(o.wall);
       if (!["door", "window"].includes(o.kind)) throw new ExhibitionError("開口部の種類を確認してください。");
-      const opening = { id: id(o.id), wall: w, kind: o.kind, offset: number(o.offset, "開口部の位置"), width: number(o.width, "開口部の幅", 1), bottom: number(o.bottom, "開口部の下端"), height: number(o.height, "開口部の高さ", 1), color:color(o.color,"#a32b2b"),...wallRef(o.wallId,w),...(o.visualPath!==undefined?{visualPath:parseVectorPath(o.visualPath)}:{}),...(o.swingAngle!==undefined?{swingAngle:number(o.swingAngle,"ドアの開閉角度",0,180)}:{}) };
-      if (opening.offset + opening.width > wallLength(result, w) || opening.bottom + opening.height > wallHeight(result,w)) throw new ExhibitionError("扉・窓を壁の内側に設定してください。");
+      const opening = { id: id(o.id), ...(o.name!==undefined&&text(o.name,"扉・窓の名前",100)?{name:text(o.name,"扉・窓の名前",100)}:{}), wall: w, kind: o.kind, offset: number(o.offset, "開口部の位置"), width: number(o.width, "開口部の幅", 1), bottom: number(o.bottom, "開口部の下端"), height: number(o.height, "開口部の高さ", 1), color:color(o.color,"#a32b2b"),...wallRef(o.wallId,w),...(o.visualPath!==undefined?{visualPath:parseVectorPath(o.visualPath)}:{}),...(o.swingAngle!==undefined?{swingAngle:number(o.swingAngle,"ドアの開閉角度",0,180)}:{}) };
+      const surface=wallSurface(result,w)!,part=wallSurfacePart(result,w)!,x=part.left+opening.offset,y=surface.height-opening.bottom-opening.height;
+      if (!wallSurfaceContains(surface,[{x,y},{x:x+opening.width,y},{x:x+opening.width,y:y+opening.height},{x,y:y+opening.height}])) throw new ExhibitionError("扉・窓を壁の内側に設定してください。");
+      if(o.hingeSide!==undefined){if(!['start','end'].includes(o.hingeSide))throw new ExhibitionError('ドアの吊元を確認してください。');Object.assign(opening,{hingeSide:o.hingeSide});}
+      if(o.swingSide!==undefined){if(!['inward','outward'].includes(o.swingSide))throw new ExhibitionError('ドアの開く方向を確認してください。');Object.assign(opening,{swingSide:o.swingSide});}
       return opening;
     });
     result.placements = list(r.placements, "作品配置", 300).map(p0 => { const p = object(p0); return { workId: id(p.workId), wall: wall(p.wall), ...wallRef(p.wallId,wall(p.wall)), x: number(p.x, "作品X", -100000), bottom: number(p.bottom, "作品下端", -100000), rotation: number(p.rotation, "作品回転", -360, 360) }; });
@@ -231,7 +267,7 @@ export function parseRooms(value: unknown): RoomLayout[] {
     const surfaces = new Set([...walls.map(w=>`wall:${w.index}`), ...result.boardGroups.flatMap(g=>[`board:${g.id}:A`,`board:${g.id}:B`])]);
     result.titleBoards = list(r.titleBoards ?? [], "タイトルボード", 300).map(p0 => {
       const p=object(p0),workId=id(p.workId),surface=text(p.surface,"タイトルボードの配置先",100,true);
-      if(!surfaces.has(surface)||placementSurface(result,workId)!==surface)throw new ExhibitionError("タイトルボードは対応する作品と同じ壁面に配置してください。");
+      if(!surfaces.has(surface)||!sameWallSurface(result,placementSurface(result,workId)??"",surface))throw new ExhibitionError("タイトルボードは対応する作品と同じ壁面に配置してください。");
       return {id:id(p.id),workId,surface,...(surface.startsWith("wall:")?wallRef(p.wallId,Number(surface.slice(5))):{}),x:number(p.x,"タイトルボードX",-100000),bottom:number(p.bottom,"タイトルボード下端",-100000),rotation:number(p.rotation,"タイトルボード回転",-360,360)};
     });
     unique(result.titleBoards.map(p=>p.id),"タイトルボード");unique(result.titleBoards.map(p=>p.workId),"作品のタイトルボード");
@@ -240,7 +276,7 @@ export function parseRooms(value: unknown): RoomLayout[] {
     const venueObjects=new Set(layoutObjectIds(result)),vertexIds=new Set(vertices.flatMap(n=>n.id?[n.id]:[])),wallIds=new Set(walls.map(w=>w.id));
     const anchor=(value:unknown):DimensionAnchor=>{const p=object(value);if(p.kind==='free')return{kind:'free',x:number(p.x,'測定X',-100000),y:number(p.y,'測定Y',-100000)};if(p.kind==='vertex'){const nodeId=id(p.nodeId);if(!vertexIds.has(nodeId))throw new ExhibitionError('測定する頂点がありません。');return{kind:'vertex',nodeId};}if(p.kind==='wall'){const wallId=text(p.wallId,'測定する壁',100,true);if(!wallIds.has(wallId))throw new ExhibitionError('測定する壁がありません。');return{kind:'wall',wallId,ratio:number(p.ratio,'壁の測定位置',0,1)};}if(p.kind==='surface'||p.kind==='panel'){return{kind:p.kind,u:number(p.u,'測定位置X',0,1),v:number(p.v,'測定位置Y',0,1),...(p.kind==='panel'?{panelId:id(p.panelId)}:{})} as DimensionAnchor;}if(p.kind==='object'){const objectId=text(p.objectId,'測定する物体',100,true);if(!venueObjects.has(objectId))throw new ExhibitionError('測定する物体がありません。');return{kind:'object',objectId,u:number(p.u,'測定位置X',0,1),v:number(p.v,'測定位置Y',0,1),...(p.feature?{feature:{key:text(object(p.feature).key,'測定する辺',200,true),edge:number(object(p.feature).edge,'辺の番号',0,3),ratio:number(object(p.feature).ratio,'辺の測定位置',0,1)}}:{})};}throw new ExhibitionError('測定の端点を確認してください。');};
     result.dimensions=list(r.dimensions??[],'寸法',200).map(v=>{const d=object(v),surface=text(d.surface,'寸法の図面',100,true);if(!surfaces.has(surface))throw new ExhibitionError('寸法の図面がありません。');const dimension:LayoutDimension={id:id(d.id),surface,a:anchor(d.a),b:anchor(d.b),offset:number(d.offset,'寸法線の位置',-100000),color:color(d.color,'#777777')};if(d.wallId!==undefined){dimension.wallId=text(d.wallId,'測定する壁',100,true);if(!wallIds.has(dimension.wallId))throw new ExhibitionError('測定する壁がありません。');}if(d.surfaceWallId!==undefined){dimension.surfaceWallId=text(d.surfaceWallId,'寸法の壁',100,true);if(walls[Number(surface.slice(5))]?.id!==dimension.surfaceWallId)throw new ExhibitionError('寸法の壁の参照が一致しません。');}return dimension;});unique(result.dimensions.map(d=>d.id),'寸法');
-    for(const d of result.dimensions){for(const a of [d.a,d.b]){if(a.kind==='object'&&a.feature&&!Number.isInteger(a.feature.edge))throw new ExhibitionError('測定する辺の番号を確認してください。');if(a.kind==='surface'&&d.surface==='floor'||a.kind==='panel'&&(!d.surface.startsWith('board:')||!result.boardGroups.find(g=>g.id===d.surface.split(':')[1])?.panels.some(p=>p.id===a.panelId)))throw new ExhibitionError('測定する壁面・パネルが見つかりません。');if(a.kind==='vertex'&&d.surface!=='floor')throw new ExhibitionError('頂点の寸法は平面図に配置してください。');if(a.kind==='wall'&&d.surface!=='floor'&&walls[Number(d.surface.slice(5))]?.id!==a.wallId)throw new ExhibitionError('寸法と測定対象の図面が一致しません。');if(a.kind==='object'){const [kind,value]=a.objectId.split(':');const allowed=kind==='annotation'?[result.annotations.find(p=>p.id===value)?.surface??'floor']:kind==='titleboard'?[result.titleBoards.find(p=>p.id===value)?.surface]:kind==='opening'?['floor',`wall:${result.openings.find(p=>p.id===value)?.wall}`]:kind==='work'?[placementSurface(result,value),...(result.placements.some(p=>p.workId===value)?['floor']:[])]:kind==='table'||kind==='board'?['floor',...((kind==='table'?result.tables.find(t=>t.id===value):result.boardGroups!.find(g=>g.id===value))?.attachment?walls.filter(w=>w.id===(kind==='table'?result.tables.find(t=>t.id===value):result.boardGroups!.find(g=>g.id===value))?.attachment?.wallId).map(w=>`wall:${w.index}`):[])]:['floor'];if(!allowed.includes(d.surface))throw new ExhibitionError('寸法と測定対象の図面が一致しません。');}}if(d.wallId&&!(d.a.kind==='wall'&&d.b.kind==='wall'&&d.a.wallId===d.wallId&&d.b.wallId===d.wallId&&d.a.ratio===0&&d.b.ratio===1))throw new ExhibitionError('壁全体の寸法の端点を確認してください。');}
+    for(const d of result.dimensions){for(const a of [d.a,d.b]){if(a.kind==='object'&&a.feature&&!Number.isInteger(a.feature.edge))throw new ExhibitionError('測定する辺の番号を確認してください。');if(a.kind==='surface'&&d.surface==='floor'||a.kind==='panel'&&(!d.surface.startsWith('board:')||!result.boardGroups.find(g=>g.id===d.surface.split(':')[1])?.panels.some(p=>p.id===a.panelId)))throw new ExhibitionError('測定する壁面・パネルが見つかりません。');if(a.kind==='vertex'&&d.surface!=='floor')throw new ExhibitionError('頂点の寸法は平面図に配置してください。');if(a.kind==='wall'&&d.surface!=='floor'&&!sameWallSurface(result,d.surface,`wall:${walls.find(w=>w.id===a.wallId)?.index}`))throw new ExhibitionError('寸法と測定対象の図面が一致しません。');if(a.kind==='object'){const [kind,value]=a.objectId.split(':');const allowed=kind==='annotation'?[result.annotations.find(p=>p.id===value)?.surface??'floor']:kind==='titleboard'?[result.titleBoards.find(p=>p.id===value)?.surface]:kind==='opening'?['floor',`wall:${result.openings.find(p=>p.id===value)?.wall}`]:kind==='work'?[placementSurface(result,value),...(result.placements.some(p=>p.workId===value)?['floor']:[])]:kind==='table'||kind==='board'?['floor',...((kind==='table'?result.tables.find(t=>t.id===value):result.boardGroups!.find(g=>g.id===value))?.attachment?walls.filter(w=>w.id===(kind==='table'?result.tables.find(t=>t.id===value):result.boardGroups!.find(g=>g.id===value))?.attachment?.wallId).map(w=>`wall:${w.index}`):[])]:['floor'];if(!allowed.some(surface=>surface&&sameWallSurface(result,surface,d.surface)))throw new ExhibitionError('寸法と測定対象の図面が一致しません。');}}if(d.wallId&&!(d.a.kind==='wall'&&d.b.kind==='wall'&&d.a.wallId===d.wallId&&d.b.wallId===d.wallId&&d.a.ratio===0&&d.b.ratio===1))throw new ExhibitionError('壁全体の寸法の端点を確認してください。');}
 
 
     result.labelPositions=list(r.labelPositions??[],'ラベルの位置',1500).map(v=>{const p=object(v),surface=text(p.surface,'ラベルの図面',100,true),target=text(p.target,'ラベルの対象',100,true);if(!surfaces.has(surface)||!venueObjects.has(target)||! /^(work|book|table|board):/.test(target))throw new ExhibitionError('ラベルの対象・図面を確認してください。');return{id:id(p.id),surface,target,dx:number(p.dx,'ラベルX',-100000),dy:number(p.dy,'ラベルY',-100000)};});
@@ -251,11 +287,13 @@ export function parseRooms(value: unknown): RoomLayout[] {
       result.editor={order:refs(m.order,"表示順"),hidden:refs(m.hidden,"非表示"),locked:refs(m.locked,"ロック"),groups:list(m.groups??[],"編集グループ",750).map(g0=>{const g=object(g0),objectIds=refs(g.objectIds,"グループの項目");if(objectIds.length<2)throw new ExhibitionError("グループは2項目以上必要です。");return{id:id(g.id),name:text(g.name,"グループ名",150,true),objectIds};})};
       unique(result.editor.groups.map(g=>g.id),"編集グループ");unique(result.editor.groups.flatMap(g=>g.objectIds),"グループ所属");
       const frame=(ref:string)=>{const [kind,value]=ref.split(":");if(kind==="work")return placementSurface(result,value);if(kind==="titleboard")return result.titleBoards!.find(p=>p.id===value)?.surface;if(kind==="opening")return `wall:${result.openings.find(p=>p.id===value)?.wall}`;if(kind==="book")return `table:${result.books.find(p=>p.workId===value)?.tableId}`;if(kind==="annotation")return result.annotations!.find(a=>a.id===value)?.surface??"floor";if(kind==="dimension")return result.dimensions!.find(d=>d.id===value)?.surface;return "floor";};
-      if(result.editor.groups.some(g=>new Set(g.objectIds.map(frame)).size>1))throw new ExhibitionError("同じ図面の項目をグループ化してください。");
+      if(result.editor.groups.some(g=>new Set(g.objectIds.map(frame).map(key=>wallSurfaceKey(result,key??""))).size>1))throw new ExhibitionError("同じ図面の項目をグループ化してください。");
     }
     unique(result.boardGroups.map(g=>g.id),"展示ボード群");unique(result.boardGroups.flatMap(g=>g.panels.map(p=>p.id)),"展示ボード");
     if (r.showExhibitorNames !== undefined && typeof r.showExhibitorNames !== "boolean") throw new ExhibitionError("展示者名の表示設定を確認してください。");
     result.showExhibitorNames = r.showExhibitorNames ?? true;
+    if(r.showWorkTitles!==undefined&&typeof r.showWorkTitles!=="boolean")throw new ExhibitionError("作品タイトルの表示設定を確認してください。");
+    result.showWorkTitles=r.showWorkTitles??true;
     unique(result.annotations.map(a => a.id), "図形・注記");
     unique(result.openings.map(o => o.id), "開口部"); unique(result.tables.map(t => t.id), "机");
     unique([...result.placements.map(p => p.workId), ...result.books.map(p => p.workId), ...result.boardPlacements.map(p=>p.workId)], "配置する作品");

@@ -43,3 +43,9 @@ export function isActivityHeaderImage(value: string) {
     return false;
   }
 }
+export const ACTIVITY_TEXT_LIMIT = 10000;
+export const ACTIVITY_HTML_LIMIT = 60000;
+
+export function escapeActivityText(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}

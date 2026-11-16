@@ -1,10 +1,14 @@
 import { displayName, publishedGroupPeople } from "./groupPresentation.ts";
+import { beforeEventDay, deadlinePassed } from './advisoryWarnings.ts';
 import { enqueuePushNotice } from "./pushQueue.ts";
 import { syncEventReminders } from "./reminderRules.ts";
 import crypto from "node:crypto";
 import { reconcileRoster } from "./rosterReconciliation.ts";
-import { isActivityHeaderImage } from "./activityPresentation.ts";
-import { readUsers, isStaff, isAdmin, type User } from "./auth.ts";
+import { queueRosterPortfolioGrades } from "./portfolioRosterGrade.ts";
+import { ACTIVITY_HTML_LIMIT, ACTIVITY_TEXT_LIMIT, isActivityHeaderImage } from "./activityPresentation.ts";
+import { activityRichTextPlain } from "./activityRichText.ts";
+import { sanitizePortfolioIntroduction } from "./portfolioIntroduction.ts";
+import { readUsers, isStaff, isExecutive, type User } from "./auth.ts";
 import {
   fetchActivityRoster,
   activityRosterSource,
@@ -12,6 +16,7 @@ import {
 } from "./activityRoster.ts";
 import { readData, writeData, withStoreLock } from "./store.ts";
 import { audit } from "./audit.ts";
+import { isMemberAccount, isSiteManagement } from "./accountVisibility.ts";
 import {
   emptyActivities,
   defaultRules,
@@ -47,12 +52,13 @@ export async function removeExhibitionNotices(exhibitionId: string) {
 export async function appendExhibitionNotice(notice: import("./exhibitionTypes.ts").ExhibitionNotice) {
   return withStoreLock("member-activities", () => {
     const data = readActivities();
+    if (data.deletedNotificationIds?.includes(notice.id)) return;
     const existing = data.notifications.find(n => n.id === notice.id);
     if (existing) {
       if (existing.exhibitionId !== notice.exhibitionId) throw new ActivityError("通知IDが重複しています。", 409);
       return;
     }
-    const notification = { id: notice.id, exhibitionId: notice.exhibitionId, title: notice.title, body: notice.body, senderId: notice.senderId, senderName: notice.senderName, recipientIds: [...notice.recipientIds], createdAt: notice.createdAt, readBy: {}, kind: "exhibition" as const };
+    const notification = { id: notice.id, exhibitionId: notice.exhibitionId, title: notice.title, body: notice.body, senderId: notice.senderId, senderName: notice.senderName, recipientIds: [...notice.recipientIds], createdAt: notice.createdAt, readBy: {}, kind: notice.kind === "exhibition-shift" ? "exhibition-shift" as const : "exhibition" as const };
     data.notifications.push(notification);
     enqueuePushNotice(data, notification);
     writeData(file, data);
@@ -100,6 +106,14 @@ function strings(input: unknown, max = 1000): string[] {
     throw new ActivityError("対象メンバーの指定を確認してください。");
   return input as string[];
 }
+function activityText(input: unknown, html: unknown, label: string, required = true) {
+  if (html === undefined) return { text: text(input, label, ACTIVITY_TEXT_LIMIT, required), html: undefined };
+  if (typeof html !== "string" || html.length > ACTIVITY_HTML_LIMIT)
+    throw new ActivityError(`${label}の文章や装飾を減らしてください。`);
+  const clean = sanitizePortfolioIntroduction(html, true);
+  const plain = text(activityRichTextPlain(clean), label, ACTIVITY_TEXT_LIMIT, required);
+  return { text: plain, html: plain ? clean : undefined };
+}
 function date(input: unknown, name: string) {
   const value = text(input, name, 40);
   if (
@@ -125,10 +139,11 @@ function staff(user: User) {
     throw new ActivityError("運営以上の権限が必要です。", 403);
 }
 function recipientIds(input: unknown, users: User[]) {
-  const ids = [...new Set(strings(input))];
+  const hidden = new Set(users.filter(isSiteManagement).map(user => user.id));
+  const ids = [...new Set(strings(input))].filter(id => !hidden.has(id));
   if (
     !ids.length ||
-    ids.some((id) => !users.some((u) => u.id === id && u.approved))
+    ids.some((id) => !users.some((u) => u.id === id && isMemberAccount(u)))
   )
     throw new ActivityError(
       "通知先は承認済みメンバーを1人以上選択してください。",
@@ -155,7 +170,7 @@ export function eventPeople(
   return users
     .filter(
       (u) =>
-        u.approved &&
+        isMemberAccount(u) &&
         !data.roster?.retiredRecords?.some(
           (r) => r.key === data.roster?.bindings[u.id],
         ) &&
@@ -248,11 +263,13 @@ function notify(
   now: number,
   eventId?: string,
   id: string = crypto.randomUUID(),
+  bodyHtml?: string,
 ) {
   data.notifications.push({
     id,
     title,
     body,
+    ...(bodyHtml ? { bodyHtml } : {}),
     senderId: actor.id,
     senderName: actor.name,
     recipientIds: recipients,
@@ -338,9 +355,17 @@ export async function activityAction(
   }
   if (action === "roster.sync") {
     const actor = activeUser(readUsers(), actorId);
-    if (!isAdmin(actor))
+    if (!isExecutive(actor))
       throw new ActivityError("名簿の更新は管理者のみ行えます。", 403);
     revision(readActivities().roster?.revision ?? 0, p.revision);
+    const selectedRoster = readActivities().roster;
+    if (selectedRoster?.term) {
+      const { rosterChangeAction } = await import("./rosterChanges.ts");
+      const { rosterSourceLinks } = await import("./termRoster.ts");
+      const links = rosterSourceLinks(selectedRoster);
+      return rosterChangeAction(actorId, { action: "roster.preview", mode: "term", year: selectedRoster.term.year, season: selectedRoster.term.season,
+        admissionUrl: links[0].url, continuationUrl: links[1].url, revision: p.revision });
+    }
     let incoming;
     try {
       incoming = await fetchActivityRoster(
@@ -353,7 +378,7 @@ export async function activityAction(
       );
     }
     const result = await transaction(actorId, (data, current, users) => {
-      if (!isAdmin(current))
+      if (!isExecutive(current))
         throw new ActivityError("名簿の更新は管理者のみ行えます。", 403);
       revision(data.roster?.revision ?? 0, p.revision);
       const source = data.roster || activityRosterSource;
@@ -385,6 +410,8 @@ export async function activityAction(
       applyRosterProfiles(data, users);
       return { ok: true, imported: incoming.records.length };
     });
+    const { queueAccountingRoster } = await import("./accountingRoster.ts");
+    await queueAccountingRoster().catch(() => console.error("accounting.roster: will retry in worker"));
     await audit(
       actorId,
       "activities.roster.sync",
@@ -459,8 +486,21 @@ export async function activityAction(
         n.readBy[actor.id] ||= timestamp;
         return { ok: true };
       }
+      if (action === "notification.delete") {
+        staff(actor);
+        if (p.confirmation !== "delete")
+          throw new ActivityError("通知の削除を確認してください。");
+        const id = text(p.id, "通知ID", 80);
+        if (data.deletedNotificationIds?.includes(id)) return { ok: true, id };
+        if (!data.notifications.some((n) => n.id === id))
+          throw new ActivityError("通知が見つかりません。", 404);
+        data.notifications = data.notifications.filter((n) => n.id !== id);
+        if (data.push) data.push.jobs = data.push.jobs.filter((j) => j.noticeId !== id);
+        (data.deletedNotificationIds ||= []).push(id);
+        return { ok: true, id };
+      }
       if (action === "profile.save") {
-        if (!isAdmin(actor))
+        if (!isExecutive(actor))
           throw new ActivityError("名簿の更新は管理者のみ行えます。", 403);
         throw new ActivityError(
           "性別・学年の手入力は廃止しました。Google名簿から更新してください。",
@@ -468,7 +508,7 @@ export async function activityAction(
         );
       }
       if (action === "roster.link") {
-        if (!isAdmin(actor))
+        if (!isExecutive(actor))
           throw new ActivityError("名簿の更新は管理者のみ行えます。", 403);
         if (!data.roster)
           throw new ActivityError("先にGoogle名簿を取得してください。", 409);
@@ -494,14 +534,26 @@ export async function activityAction(
           throw new ActivityError(
             "同じ名簿の人物を複数のアカウントに連携できません。",
           );
+        const initialUserIds = new Set(Object.keys(bindings).filter(id => !data.roster!.bindings[id]));
         data.roster.bindings = bindings;
         data.roster.revision++;
         applyRosterProfiles(data, users);
+        queueRosterPortfolioGrades(data, users, timestamp, initialUserIds);
+        for (const id of Object.keys(input)) {
+          const owner = users.find((user) => user.id === id);
+          if (owner) {
+            delete owner.rosterRelink;
+            if (owner.approvalSetup) owner.approvalSetup.rosterStatus = bindings[id] ? "linked" : "unlinked";
+          }
+        }
+        writeData("users.json", users);
         return { ok: true };
       }
       if (action === "notification.send") {
         staff(actor);
         const id = text(p.id, "通知ID", 80);
+        if (data.deletedNotificationIds?.includes(id))
+          throw new ActivityError("この通知は削除されています。新しいお知らせとして作成してください。", 410);
         if (!/^[0-9a-f-]{36}$/.test(id))
           throw new ActivityError("通知IDが正しくありません。");
         const previous = data.notifications.find((n) => n.id === id);
@@ -510,16 +562,35 @@ export async function activityAction(
             throw new ActivityError("通知IDが重複しています。", 409);
           return { ok: true, id };
         }
+        const body = activityText(p.body, p.bodyHtml, "本文");
         notify(
           data,
           actor,
           recipientIds(p.recipientIds, users),
           text(p.title, "件名"),
-          text(p.body, "本文", 10000),
+          body.text,
           now,
           undefined,
           id,
+          body.html,
         );
+        return { ok: true, id };
+      }
+      if (action === "notification.edit") {
+        staff(actor);
+        const id = text(p.id, "通知ID", 80);
+        const notice = data.notifications.find(n => n.id === id);
+        if (!notice) throw new ActivityError("通知が見つかりません。", 404);
+        const currentRevision = notice.revision ?? 0;
+        revision(currentRevision, p.revision);
+        const title = text(p.title, "件名");
+        const body = activityText(p.body, p.bodyHtml, "本文");
+        notice.title = title;
+        notice.body = body.text;
+        if (body.html) notice.bodyHtml = body.html;
+        else delete notice.bodyHtml;
+        notice.revision = currentRevision + 1;
+        notice.updatedAt = timestamp;
         return { ok: true, id };
       }
       if (action === "event.save") {
@@ -527,8 +598,6 @@ export async function activityAction(
         const old = p.eventId ? eventFor(data, p.eventId) : undefined;
         if (old) {
           revision(old.revision, p.revision);
-          if (old.status === "cancelled")
-            throw new ActivityError("中止済みの企画は編集できません。", 409);
         }
         const owner = activeUser(users, text(p.ownerId, "担当者", 128));
         if (!isStaff(owner))
@@ -545,22 +614,26 @@ export async function activityAction(
           );
         const category = p.category ?? old?.category ?? "other";
         if (typeof category !== "string" || !Object.hasOwn(eventCategoryLabels, category)) throw new ActivityError("企画の種類を選択してください。");
+        const description = activityText(p.description, p.descriptionHtml, "企画内容");
+        const itinerary = activityText(p.itinerary, p.itineraryHtml, "行程", false);
         const details = {
           category: category as EventCategory,
           title: text(p.title, "企画名"),
-          description: text(p.description, "企画内容", 10000),
+          description: description.text,
+          descriptionHtml: description.html,
           headerImage,
           startsAt: date(p.startsAt, "開始日時"),
           endsAt: date(p.endsAt, "終了日時"),
           deadline: date(p.deadline, "参加投票期日"),
           meeting: text(p.meeting, "集合場所", 1000, false),
-          itinerary: text(p.itinerary, "行程", 10000, false),
+          itinerary: itinerary.text,
+          itineraryHtml: itinerary.html,
           fee: text(p.fee, "徴収費", 300, false),
           theme: text(p.theme, "テーマ", 1000, false),
           ownerId: owner.id,
           ownerName: owner.name,
           recipientIds:
-            old?.status === "published"
+            old && old.status !== "draft"
               ? old.recipientIds
               : recipientIds(p.recipientIds, users),
           updatedAt: timestamp,
@@ -583,7 +656,7 @@ export async function activityAction(
         if (old) {
           Object.assign(old, details);
           old.revision++;
-          if (old.status === "published")
+          if (old.status === "published" && p.notifyMembers !== false)
             notify(
               data,
               actor,
@@ -613,6 +686,7 @@ export async function activityAction(
         staff(actor);
         revision(event.revision, p.revision);
         const target = activeUser(users, text(p.userId, "メンバー", 128));
+        if (isSiteManagement(target)) throw new ActivityError("管理専用アカウントは参加者に追加できません。");
         if (event.status !== "published")
           throw new ActivityError("公開中の企画に参加者を追加できます。", 409);
         if (event.recipientIds.includes(target.id))
@@ -651,9 +725,9 @@ export async function activityAction(
         )
           throw new ActivityError("この企画に回答できません。", 403);
         activeUser(users, target);
-        if (action === "vote" && now >= Date.parse(event.deadline))
+        if (action === "vote" && !beforeEventDay(event.startsAt,now))
           throw new ActivityError(
-            "投票期日を過ぎています。変更は運営へご連絡ください。",
+            "開催日以降は参加投票を変更できません。変更は運営へご連絡ください。",
             409,
           );
         if (
@@ -821,18 +895,23 @@ export async function activityAction(
       console.error("[activities] audit write failed after saving");
     }
   }
+  if (action === "roster.link") {
+    const { queueAccountingRoster } = await import("./accountingRoster.ts");
+    await queueAccountingRoster().catch(() => console.error("accounting.roster: will retry in worker"));
+  }
   return result;
 }
 
 /** Public share DTO: only event details, aggregate votes and attending display names. */
 export function publicEvent(event: ActivityEvent, users: User[]) {
   if (event.status === "draft") throw new ActivityError("企画が見つかりません。", 404);
-  const recipients = users.filter(u => u.approved && event.recipientIds.includes(u.id));
+  const recipients = users.filter(u => isMemberAccount(u) && event.recipientIds.includes(u.id));
   const counts = { attending: 0, absent: 0, undecided: 0, unanswered: 0 };
   recipients.forEach(u => counts[event.votes[u.id]?.value || "unanswered"]++);
   return {
     id: event.id, title: event.title, category: event.category ?? "other",
     description: event.description, headerImage: event.headerImage || "",
+    descriptionHtml: event.descriptionHtml, itineraryHtml: event.itineraryHtml,
     startsAt: event.startsAt, endsAt: event.endsAt, deadline: event.deadline,
     meeting: event.meeting, itinerary: event.itinerary, fee: event.fee,
     theme: event.theme, ownerName: event.ownerName, status: event.status,
@@ -856,7 +935,7 @@ export function memberEvent(
   )
     throw new ActivityError("企画が見つかりません。", 404);
   const roster = users.filter(
-    (u) => u.approved && event.recipientIds.includes(u.id),
+    (u) => isMemberAccount(u) && event.recipientIds.includes(u.id),
   );
   const attendees = roster
     .filter((u) => event.votes[u.id]?.value === "attending")
@@ -876,7 +955,8 @@ export function memberEvent(
     canVote:
       event.status === "published" &&
       event.recipientIds.includes(user.id) &&
-      now < Date.parse(event.deadline),
+      beforeEventDay(event.startsAt,now),
+    voteOverdue: event.status === "published" && event.recipientIds.includes(user.id) && beforeEventDay(event.startsAt,now) && deadlinePassed(event.deadline,now),
     groups:
       published && canSeeGroups
         ? published.groups.map((g) => ({

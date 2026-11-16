@@ -1,0 +1,32 @@
+---
+import { sessionStatus } from "../lib/auth.ts";
+const { actor: user, session } = Astro.locals;
+const status = user && session ? sessionStatus(session, user) : null;
+---
+{status && <div data-session-guard data-server-now={status.serverNow} data-expires-at={status.expiresAt} data-warning-ms={status.warningMs}>
+  <dialog class="session-dialog" aria-labelledby="session-dialog-title" aria-describedby="session-dialog-description">
+    <h2 id="session-dialog-title">ログインを延長しますか？</h2>
+    <p id="session-dialog-description">ログインの有効期限が近づいています。作業を続ける場合は延長してください。</p>
+    <p class="session-countdown" data-session-countdown aria-live="off"></p>
+    <p data-session-message role="status" aria-live="polite"></p>
+    <div class="session-dialog-actions">
+      <button type="button" data-session-renew>ログインを延長する</button>
+      <button type="button" data-session-logout>ログアウトする</button>
+      <a data-session-login href="/Login" target="_blank" rel="noopener" hidden>新しいタブでログインする</a>
+      <button type="button" data-session-recheck hidden>ログイン状態を再確認する</button>
+    </div>
+  </dialog>
+</div>}
+<script>import { setupSessionGuard } from "../scripts/sessionGuard"; setupSessionGuard();</script>
+<style>
+  .session-dialog {width:min(460px,calc(100vw - 40px));box-sizing:border-box;border:1px solid #ddd;border-radius:16px;padding:28px;color:#222;background:#fff;font:16px/1.8 sans-serif;box-shadow:0 18px 70px #0003;opacity:1;transition:none;}
+  .session-dialog::backdrop {background:#0007;opacity:1;transition:none;}
+  h2 {font-size:1.25rem;margin:0 0 16px;line-height:1.5;}
+  p {margin:12px 0;}
+  .session-countdown {font-variant-numeric:tabular-nums;}
+  .session-dialog-actions {display:flex;flex-wrap:wrap;gap:12px;margin-top:20px;}
+  button,a {padding:10px 14px;border:1px solid #777;border-radius:8px;background:#fff;color:#222;cursor:pointer;font:inherit;text-decoration:none;}
+  [data-session-renew],a {background:#243b38;border-color:#243b38;color:#fff;}
+  button:disabled {opacity:.6;cursor:wait;}
+  [hidden] {display:none;}
+</style>

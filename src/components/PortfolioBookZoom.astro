@@ -1,0 +1,14 @@
+<div class="book-zoom-toolbar" data-book-zoom-toolbar role="group" aria-label="拡大・縮小">
+  <button type="button" data-book-zoom="out" aria-label="縮小" disabled>−</button>
+  <button type="button" data-book-zoom="reset" aria-label="拡大率を100%に戻す" disabled>100%</button>
+  <button type="button" data-book-zoom="in" aria-label="拡大" disabled>＋</button>
+</div>
+<style is:global>
+  .book-zoom-stage { overflow: hidden; touch-action: none; user-select: none; }
+  .book-zoom-stage[data-zoomed] { cursor: grab; }
+  .book-zoom-stage[data-zoomed]:active { cursor: grabbing; }
+  .book-zoom-toolbar { display: flex; align-items: center; justify-content: center; gap: 4px; }
+  .book-zoom-toolbar button { min-width: 44px; min-height: 44px; border: 1px solid #aaa; border-radius: 6px; background: #fff; color: #222; cursor: pointer; padding: 0 6px; font: inherit; }
+  .book-zoom-toolbar button:disabled { opacity: .45; cursor: default; }
+  .book-zoom-toolbar [data-book-zoom="reset"] { min-width: 62px; font-variant-numeric: tabular-nums; }
+</style>

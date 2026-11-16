@@ -80,7 +80,18 @@ test("event confirmation saves a draft, supports editing, images and links, and 
       .fill(`画像付き企画 ${info.project.name}`);
     const description =
       "案内 https://example.com/details?q=1&b=2。\n<img src=x onerror=alert(1)> javascript:alert(1)";
-    await page.getByLabel("企画内容", { exact: true }).fill(description);
+    const descriptionEditor = page.getByRole("textbox", { name: "企画内容", exact: true });
+    const descriptionTools = page.getByRole("group", { name: "企画内容の文字装飾" });
+    await descriptionEditor.fill(description);
+    await descriptionEditor.press("ControlOrMeta+A");
+    await descriptionTools.getByLabel("文字サイズ", { exact: true }).selectOption("5");
+    await descriptionEditor.press("ControlOrMeta+A");
+    await descriptionTools.getByLabel("文字色", { exact: true }).evaluate((input: HTMLInputElement) => {
+      input.value = "#c42b48";
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await descriptionEditor.press("ControlOrMeta+A");
+    await descriptionTools.getByRole("button", { name: "下線", exact: true }).click();
     const date = (days: number) =>
       new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
     await page.getByLabel("開始日時（日本時間）").fill(`${date(8)}T09:00`);
@@ -89,9 +100,11 @@ test("event confirmation saves a draft, supports editing, images and links, and 
     await page
       .getByLabel("集合場所", { exact: true })
       .fill("駅前 https://maps.example/place_(park)");
-    await page
-      .getByLabel("行程", { exact: true })
-      .fill("行程 https://example.com/plan");
+    const itineraryEditor = page.getByRole("textbox", { name: "行程", exact: true });
+    await itineraryEditor.fill("行程 https://example.com/plan");
+    await itineraryEditor.press("ControlOrMeta+A");
+    await page.getByRole("group", { name: "行程の文字装飾" })
+      .getByRole("button", { name: "番号付き", exact: true }).click();
     await page.getByRole("button", { name: "全解除", exact: true }).click();
     await page.locator('[name="recipientIds"][value="activity-0"]').check();
     const upload = page.waitForResponse("**/api/member/event-image/upload");
@@ -107,7 +120,11 @@ test("event confirmation saves a draft, supports editing, images and links, and 
     const dialog = page.getByRole("dialog", { name: "Confirm" });
     await expect(
       dialog.locator('[data-preview-value="description"]'),
-    ).toHaveText(description);
+    ).toHaveText(description, { useInnerText: true });
+    await expect(dialog.locator('[data-preview-value="description"] [style*="font-size"]').first()).toHaveCSS("font-size", "24px");
+    await expect(dialog.locator('[data-preview-value="description"] [style*="color:"]').first()).toHaveCSS("color", "rgb(196, 43, 72)");
+    await expect(dialog.locator('[data-preview-value="description"] [style*="text-decoration"]').first()).toHaveCSS("text-decoration-line", "underline");
+    await expect(dialog.locator('[data-preview-value="itinerary"] ol li')).toHaveText("行程 https://example.com/plan");
     await expect(
       dialog.locator('a[href="https://example.com/details?q=1&b=2"]'),
     ).toHaveAttribute("rel", "noopener noreferrer");
@@ -141,8 +158,8 @@ test("event confirmation saves a draft, supports editing, images and links, and 
     await page
       .getByLabel("画像を選択", { exact: true })
       .setInputFiles(fixtureImage);
-    await expect(page.locator("[data-image-status]")).toHaveText(
-      "画像の保存に失敗しました",
+    await expect(page.locator("[data-image-status]")).toContainText(
+      "SITE-011",
     );
     await expect(page.locator('[name="headerImage"]')).toHaveValue(
       /microcms-assets/,
@@ -209,6 +226,10 @@ test("event confirmation saves a draft, supports editing, images and links, and 
     expect(await notices()).toBe(initialNotices + 1);
     await expect(dialog).not.toBeVisible();
     await page.goto(`/Member/events/${id}`);
+    await expect(page.locator('.activity-details [style*="font-size"]').first()).toHaveCSS("font-size", "24px");
+    await expect(page.locator('.activity-details [style*="color:"]').first()).toHaveCSS("color", "rgb(196, 43, 72)");
+    await expect(page.locator('.activity-details [style*="text-decoration"]').first()).toHaveCSS("text-decoration-line", "underline");
+    await expect(page.locator(".activity-details ol li")).toHaveText("行程 https://example.com/plan");
     await expect(page.locator(".activity-eyecatch img")).toBeVisible();
     await expect(
       page.locator('.activity-details a[href="https://maps.example/new"]'),
@@ -217,8 +238,10 @@ test("event confirmation saves a draft, supports editing, images and links, and 
       path: info.outputPath("event-mobile.png"),
       fullPage: true,
     });
-    await page.goto(`/Member/manage/events/${id}`);
-    await page.getByText("企画の詳細を編集", { exact: true }).click();
+    await page.goto("/Management");
+    await page.locator("li").filter({ has: page.locator(`a[href="/Member/manage/events/${id}"]`) })
+      .getByRole("link", { name: "企画を編集", exact: true }).click();
+    await expect(descriptionEditor.locator('[style*="font-size"]').first()).toHaveCSS("font-size", "24px");
     await page.getByLabel("企画名", { exact: true }).fill("変更後のタイトル");
     await page.getByRole("button", { name: "画像を外す", exact: true }).click();
     await page
@@ -240,6 +263,16 @@ test("event confirmation saves a draft, supports editing, images and links, and 
     expect(final.event.title).toBe("変更後のタイトル");
     expect(final.event.headerImage).toBe("");
     expect(await notices()).toBe(initialNotices + 2);
+    await page.getByText("企画の詳細を編集", { exact: true }).click();
+    await page.getByLabel("企画名", { exact: true }).fill("通知せずに保存した企画名");
+    await page.getByRole("button", { name: "変更内容を確認", exact: true }).click();
+    await dialog.getByLabel("メンバーに変更を通知する").uncheck();
+    const quietSave = page.waitForEvent("domcontentloaded");
+    await dialog.getByRole("button", { name: "変更を保存", exact: true }).click();
+    await quietSave;
+    expect(await notices()).toBe(initialNotices + 2);
+    await page.goto(`/Member/events/${id}`);
+    await expect(page.getByRole("heading", { name: "通知せずに保存した企画名", exact: true })).toBeVisible();
     expect(errors).toEqual([]);
   } finally {
     await member.close();

@@ -5,6 +5,7 @@ import type { Participant } from "../lib/activityTypes";
 import { selectedGroups, setupGroupBoard } from "./groupBoard";
 import { setupPersonPicker, createPersonPicker } from "./groupPersonPicker";
 import { setupEventEditor } from "./activityEventEditor";
+import { createPortfolioIntroductionEditor } from "./portfolioIntroductionEditor";
 
 async function send(
   payload: Record<string, unknown>,
@@ -40,7 +41,9 @@ document
   .forEach((form) => {
     const action = form.dataset.activityAction!;
     const status = form.querySelector<HTMLElement>("[data-status]")!;
-    const eventEditor = action === "event.save" ? setupEventEditor(form) : null;
+    const richFields = new Map([...form.querySelectorAll<HTMLElement>("[data-activity-rich-field]")]
+      .map(root => [root.dataset.activityRichField!, createPortfolioIntroductionEditor(root)] as const));
+    const eventEditor = action === "event.save" ? setupEventEditor(form, richFields) : null;
     let busy = false;
     form.addEventListener("input", (event) => {
       if ((event.target as HTMLElement).hasAttribute("data-person-search"))
@@ -55,6 +58,7 @@ document
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       if (busy) return;
+      if (![...richFields.values()].every(editor => editor.validate())) return;
       if (eventEditor && !eventEditor.beforeSave()) return;
       status.textContent = "";
       status.dataset.error = "false";
@@ -85,6 +89,7 @@ document
         action,
       };
       delete payload.headerFile;
+      for (const [name, editor] of richFields) payload[`${name}Html`] = editor.html();
       for (const key of ["id", "eventId", "runId", "userId", "source"] as const)
         if (form.dataset[key]) payload[key] = form.dataset[key];
       if (form.dataset.revision)
@@ -94,9 +99,13 @@ document
       if (action === "event.save")
         for (const key of ["startsAt", "endsAt", "deadline"])
           payload[key] = `${fd.get(key)}:00+09:00`;
+      if (eventEditor) payload.notifyMembers = eventEditor.notifyMembers();
       if (action === "run.save") {
-        payload.participantIds = fd.getAll("participantIds");
-        payload.extraParticipants = JSON.parse(form.dataset.extraParticipants || "[]");
+        const participantIds = fd.getAll("participantIds");
+        payload.participantIds = participantIds;
+        payload.extraParticipants = (JSON.parse(form.dataset.extraParticipants || "[]") as Participant[])
+          .filter(person => participantIds.includes(person.id));
+        payload.participantSources = JSON.parse(form.dataset.participantSources || "{}");
       }
       if (action === "groups.rules")
         payload.rules = {
@@ -122,7 +131,10 @@ document
             ...form.querySelectorAll<HTMLSelectElement>("[data-roster-user]"),
           ].map((select) => [select.dataset.rosterUser!, select.value]),
         );
-      if (action === "roster.preview") payload.url = fd.get("url");
+      if (action === "roster.preview") {
+        payload.url = fd.get("url");
+        if (fd.get("mode") === "term") payload.year = Number(fd.get("year"));
+      }
       if (action === "roster.apply") {
         payload.previewId = fd.get("previewId");
         payload.confirm = fd.get("confirm") === "on";
@@ -143,6 +155,7 @@ document
       controls.forEach((c) => {
         c.disabled = true;
       });
+      richFields.forEach(editor => editor.setDisabled(true));
       status.textContent =
         action === "groups.generate"
           ? "条件を確認し、班を生成しています…"
@@ -157,9 +170,9 @@ document
             .replace("{runId}", result.runId || ""),
           location.href,
         );
-        destination.searchParams.set("saved", "1");
+        destination.searchParams.set(action === "notification.edit" ? "edited" : "saved", "1");
         destination.searchParams.delete("preview");
-        if (action === "event.save" && form.dataset.published !== "true")
+        if (action === "event.save" && form.dataset.released !== "true")
           destination.searchParams.set("preview", "1");
         form.dataset.dirty = "false";
         flashNotice("保存しました。");
@@ -183,8 +196,9 @@ document
           status.textContent || "保存できませんでした。",
         );
         if (dialog) dialog.dataset.busy = "false";
+        richFields.forEach(editor => editor.setDisabled(false));
         controls.forEach((c) => {
-          c.disabled = false;
+          c.disabled = form.dataset.advisoryClosed === "true";
         });
         busy = false;
         form.dataset.busy = "false";
@@ -296,5 +310,6 @@ if (notice) {
   }).catch(() => {
     notice.querySelector<HTMLElement>("[data-read-status]")!.textContent =
       "既読を保存できませんでした。再読み込みしてください。";
+    notice.querySelector<HTMLElement>("[data-read-status]")!.dataset.error = "true";
   });
 }

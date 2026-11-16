@@ -1,33 +1,46 @@
 ---
 import "../styles/UA+reset.css";
 import "../styles/global.css";
+import "../styles/YakuHan.css";
+import "../styles/GrandifloraOne.css";
 import "../styles/textLinks.css";
 import "../styles/SiteNotice.css";
 import "../styles/MobileApp.css";
-import Loader from "../components/loading.astro";
+import PhotoNotifications from "../components/PhotoNotifications.astro";
+import PhotoLikers from "../components/PhotoLikers.astro";
+import PhotoDialog from "../components/PhotoDialog.astro";
 import Header from "../components/header.astro";
 import Footer from "../components/footer.astro";
 import Breadcrumbs from "../components/Breadcrumbs.astro";
 import PageTopNav from "../components/PageTopNav.astro";
+import SessionGuard from "../components/SessionGuard.astro";
+import PrivateMobileNav from "../components/PrivateMobileNav.astro";
+import Help from '../components/Help.astro';
+import AdminViewBanner from '../components/AdminViewBanner.astro';
 import { breadcrumbsFor, type BreadcrumbItem } from "../lib/breadcrumbs";
 import { getContent, isPageKey } from "../lib/siteContent";
+import { photoVisitor } from "../lib/photoVisitor";
 interface Props {
   title?: string;
   description?: string;
   breadcrumbs?: BreadcrumbItem[];
+  wideContent?: boolean;
+  memberArea?: "member" | "staff" | "admin";
 }
 const common = getContent("common", Astro.locals.preview);
 const {
   title,
+  wideContent = false,
+  memberArea,
   description = `${common.affiliation} ${common.name}の公式サイトです。`,
   breadcrumbs = breadcrumbsFor(Astro.url.pathname, title),
 } = Astro.props;
 const pageTitle = title || breadcrumbs.at(-1)?.label;
-const needsLightbox =
-  Astro.url.pathname === "/About_us" ||
-  Astro.url.pathname === "/" ||
-  Astro.url.pathname.startsWith("/Gallery") ||
-  Astro.url.pathname.startsWith("/Portfolio/");
+const needsLightbox = Astro.url.pathname === "/About_us";
+const needsPhotoViewer = Astro.url.pathname === "/" || /^\/(?:Portfolio|Gallery)\/[^/]+\/?$/.test(Astro.url.pathname) && Astro.url.pathname.replace(/\/$/, "") !== "/Portfolio/edit" || Astro.url.pathname.startsWith("/posts/");
+// Issue the anonymous identity with HTML, before simultaneous state/EXIF requests.
+// Read-only requests never replace a visitor cookie while a first like is saving.
+if (needsPhotoViewer) photoVisitor({ cookies: Astro.cookies, url: Astro.url });
 const editorKey = Astro.url.searchParams.get("editor") ?? "";
 const editorLink = isPageKey(editorKey)
   ? `/Admin/content/${editorKey}`
@@ -35,14 +48,17 @@ const editorLink = isPageKey(editorKey)
 
 const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
 const needsMaps = Astro.url.pathname === "/About_us";
-const showLoader = Astro.url.pathname === "/";
 const appShell = Astro.locals.appShell && !Astro.locals.preview;
+const memberHome = Boolean(memberArea && ["/Member", "/Management", "/Dashboard", "/Member/manage", "/Admin"].includes(Astro.url.pathname.replace(/\/$/, "")));
 ---
 
 <!DOCTYPE html>
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
+        <meta name="admin-view-key" content={Astro.locals.adminView?.key || ""} />
+        <script>import "../scripts/adminView";</script>
+        <script>import "../scripts/listReturn";</script>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta name="description" content={description}>
 		<link rel="icon" type="image/svg+xml" href="/icons/camera.svg" />
@@ -50,7 +66,7 @@ const appShell = Astro.locals.appShell && !Astro.locals.preview;
 		<title>{pageTitle && pageTitle !== "Home" ? `${pageTitle} | ${common.name}` : common.name}</title>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Grandiflora+One&family=Zen+Kaku+Gothic+New:wght@300;400;500;700;900&family=Zen+Kurenaido&family=Zen+Old+Mincho&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;500;700;900&family=Zen+Kurenaido&family=Zen+Old+Mincho&display=swap" rel="stylesheet">
 		<link rel="stylesheet" href="https://use.typekit.net/egc4okq.css">
 		<script>
 			(function(d) {
@@ -73,14 +89,14 @@ const appShell = Astro.locals.appShell && !Astro.locals.preview;
 			<script is:inline src={`https://maps.googleapis.com/maps/api/js?lang=ja&key=${googleMapsApiKey}&libraries=maps,marker`} defer></script>
 		)}
 	</head>
-	<body data-app-shell={appShell ? "1" : undefined} data-app-client={Astro.locals.appShell ? "1" : undefined}>
-		{showLoader && <Loader />}
+	<body data-member-area={memberArea} data-member-home={memberHome ? "1" : undefined} data-app-shell={appShell ? "1" : undefined} data-app-client={Astro.locals.appShell ? "1" : undefined} data-error-report-route={Astro.routePattern}>
 		{!appShell && <Header />}
+        <AdminViewBanner />
         {Astro.locals.preview && <aside class="preview-banner"><strong>下書きのプレビュー</strong> この内容はまだ公開されていません。 <a href={editorLink}>編集画面へ戻る</a></aside>}
         <Breadcrumbs items={breadcrumbs} />
 		<main id="main-content">
 		<slot name="main-slot" />
-		<div class="container">
+		<div class:list={["container", { "container-wide": wideContent }]}>
 			<div class="for-padding"></div>
 			<div class="body-contents">
 				<slot name="body-slot" />
@@ -92,8 +108,15 @@ const appShell = Astro.locals.appShell && !Astro.locals.preview;
 		<div><slot name="setting-none" /></div>
 		</main>
 		{!appShell && <Footer />}
+		{memberArea && !Astro.locals.appShell && Astro.locals.user?.approved && <PrivateMobileNav />}
+		{needsPhotoViewer && <PhotoDialog />}
+		{Astro.locals.user?.approved && <PhotoNotifications />}
+		{Astro.locals.user?.approved && <PhotoLikers />}
+		<SessionGuard />
+		<Help />
 		<script>import "../scripts/mobileBridge";</script>
 		<script>import { setupNotices } from "../scripts/siteNotice"; setupNotices();</script>
+        <script>import { setupSiteErrors } from '../scripts/siteErrors'; setupSiteErrors();</script>
 	</body>
 </html>
 
@@ -116,6 +139,11 @@ const appShell = Astro.locals.appShell && !Astro.locals.preview;
 		grid-template-columns: repeat(12, [col-start] 1fr);
 	}
 	
+	.container-wide { display:block;padding-inline:clamp(16px,3vw,48px); }
+	@media (min-width:1024px) { .container-wide { padding-inline:120px; } }
+	.container-wide .for-padding { display:none; }
+	.container-wide .body-contents { min-width:0; }
+
 	.for-padding {
 		grid-column: col-start / span 1;
 	}

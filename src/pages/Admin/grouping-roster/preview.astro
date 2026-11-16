@@ -2,16 +2,17 @@
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import "../../../styles/Member.css";
 import "../../../styles/Activities.css";
-import { isAdmin } from "../../../lib/auth";
+import { isExecutive } from "../../../lib/auth";
 import { readActivities } from "../../../lib/activities";
 import {
   readRosterPreview,
   rosterPreviewSummary,
 } from "../../../lib/rosterChanges";
-import { rosterSourceUrl } from "../../../lib/activityRoster";
+import { rosterSourceLinks } from "../../../lib/termRoster";
+import { gradeLabels } from "../../../lib/activityTypes";
 import { displayName } from "../../../lib/groupPresentation";
-if (!isAdmin(Astro.locals.user))
-  return new Response("管理者権限が必要です。", { status: 403 });
+if (!isExecutive(Astro.locals.user))
+  return new Response("幹部以上の権限が必要です。", { status: 403 });
 const preview = readRosterPreview(
   Astro.locals.user!.id,
   Astro.url.searchParams.get("id") || "",
@@ -30,14 +31,17 @@ if (!preview) Astro.response.status = 404;
         <section class="admin-section">
           <h3>新しい参照先</h3>
           <p>
-            <a
-              href={rosterSourceUrl(preview.source)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {preview.incoming.title} / {preview.incoming.sheetTitle}
-            </a>
+            {preview.incoming.title} / {preview.incoming.sheetTitle}
           </p>
+          <ul>
+            {rosterSourceLinks(preview.source).map((source) => (
+              <li>
+                <a href={source.url} target="_blank" rel="noopener noreferrer">
+                  {source.label}
+                </a>
+              </li>
+            ))}
+          </ul>
           <p>
             取得した回答：{summary.records.length}人 · 継続対象：
             {summary.records.filter((r) => r.active).length}人 · 退会対象：
@@ -46,7 +50,57 @@ if (!preview) Astro.response.status = 404;
           <p>
             この画面ではまだ変更していません。適用すると、下記の退会対象を班分けから除外し、連携済みPortfolioの学年をOB/OGに更新します。
           </p>
+          <p>
+            {preview.source.term
+              ? "入会・継続の回答を統合します。学年変更・復会した会員のPortfolioも更新し、未変更の会員の学年は一律に再設定しません。"
+              : summary.sourceChanged
+                ? "参照先が変わるため、適用すると継続メンバーのPortfolioの学年も、新しい名簿の学年に再設定します。"
+                : "参照先は現在と同じです。継続メンバーのPortfolioの学年は再設定しません。"}
+          </p>
         </section>
+        {preview.source.term && (
+          <section class="admin-section">
+            <h3>追加・復会・学年変更</h3>
+            <p>
+              新しい在籍者：{summary.added.length}人 · 復会・学年変更：
+              {summary.gradeChanges.length}人
+            </p>
+            <ul class="activity-list">
+              {summary.added.map((row) => (
+                <li>
+                  <strong>{displayName(row)}</strong>
+                  <span>
+                    追加 · {row.grade ? gradeLabels[row.grade] : "学年要確認"}
+                  </span>
+                </li>
+              ))}
+              {summary.gradeChanges.map((change) => (
+                <li>
+                  <strong>{change.name}</strong>
+                  <span>
+                    {change.returning ? "復会 · " : ""}
+                    {change.before
+                      ? gradeLabels[change.before]
+                      : "未設定"} →{" "}
+                    {change.after ? gradeLabels[change.after] : "要確認"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {summary.linkCandidates.length > 0 && (
+              <>
+                <h4>適用時に連携する候補</h4>
+                <ul class="activity-list">
+                  {summary.linkCandidates.map((candidate) => (
+                    <li>
+                      {candidate.name} → {candidate.rosterName}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </section>
+        )}
         <section class="admin-section">
           <h3>退会扱いになるメンバー</h3>
           <p>
@@ -57,7 +111,12 @@ if (!preview) Astro.response.status = 404;
               {summary.departures.map((row) => (
                 <li>
                   <strong>{displayName(row)}</strong>
-                  <small>{row.university || "大学未記入"}</small>
+                  <small>
+                    {row.university || "大学未記入"} ·{" "}
+                    {row.departureReason === "declined"
+                      ? "継続しない"
+                      : "両回答に氏名がない"}
+                  </small>
                   <span>
                     {row.accounts.length
                       ? row.accounts
@@ -85,6 +144,22 @@ if (!preview) Astro.response.status = 404;
               {summary.unresolved.map((row) => (
                 <li>
                   {displayName(row)} · {row.university}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        {summary.reviewRecords.length > 0 && (
+          <section class="admin-section">
+            <h3>回答の確認が必要なメンバー</h3>
+            <p>
+              本人や継続意思を確定できない旧会員は、現在の在籍状態を保持します。性別・学年などの不明な情報は推測しません。
+            </p>
+            <ul class="activity-list">
+              {summary.reviewRecords.map((row) => (
+                <li>
+                  <strong>{displayName(row)}</strong>
+                  <span>{row.needsReview?.join(" / ")}</span>
                 </li>
               ))}
             </ul>

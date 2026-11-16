@@ -48,7 +48,7 @@ const ITEMS_PER_PAGE = 10;
   <Fragment slot="body-slot">
     {
       failed && (
-        <p class="service-notice">
+        <p class="service-notice" role="alert">
           活動記事を取得できません。時間をおいて再読み込みしてください。
         </p>
       )
@@ -61,7 +61,8 @@ const ITEMS_PER_PAGE = 10;
 
             return [
               <input
-                class="tab-input"
+                class="tab-input tab-radio"
+                tabindex="0"
                 type="radio"
                 id={inputId}
                 name="tab"
@@ -141,11 +142,7 @@ const ITEMS_PER_PAGE = 10;
                             ) : null}
                           </div>
                         </div>
-                        <img
-                          class="link-button"
-                          src="/icons/link.svg"
-                          alt="Link Icon"
-                        />
+                        <img class="link-button" src="/icons/link.svg" alt="" />
                       </a>
                     </article>
                   ))

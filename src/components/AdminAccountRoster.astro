@@ -1,7 +1,7 @@
 ---
 import { readActivities } from "../lib/activities";
 import { toAdminAccountRoster, accountDate } from "../lib/adminAccounts";
-import { rosterSourceUrl } from "../lib/activityRoster";
+import { rosterSourceLinks } from "../lib/termRoster";
 interface Props {
   accountId: string;
 }
@@ -44,13 +44,8 @@ try {
     <div>
       <dt>現在の名簿の参照元・最終取得</dt>
       <dd>
-        <a
-          href={rosterSourceUrl(roster.source)}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {roster.title}
-        </a>
+        <span>{roster.title}</span>
+        {roster.source && rosterSourceLinks(roster.source).map(source => <small><a href={source.url} target="_blank" rel="noopener noreferrer">{source.label}</a></small>)}
         <small>{accountDate(roster.fetchedAt)}（日本時間）</small>
       </dd>
     </div>

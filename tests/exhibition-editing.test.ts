@@ -39,3 +39,11 @@ test("anchor insertion/deletion remaps unaffected walls and refuses to orphan pl
   assert.equal(edited.vertices[1].x, 5000); close(wallLength(edited, 0), 5000);
   assert.deepEqual(edited.openings.map(({wallId,...o})=>o), room.openings);
 });
+
+
+test('wall direction edits use the actual angle and treat -180 and 180 as the same target', async()=>{
+ const {roomFromPenPath,roomWalls}=await import('../src/lib/exhibitionRoomPath.ts');
+ const r=roomFromPenPath([{x:6000,y:0},{x:4000,y:.1},{x:0,y:0},{x:0,y:4000},{x:6000,y:4000}]),before=structuredClone(r);
+ for(const angle of [-540,-180,180,540]){const fixed=setRoomWall(r,0,wallLength(r,0),angle),w=roomWalls(fixed)[0];assert.ok(Math.abs(w.segment.b.y-w.segment.a.y)<1e-8);assert.ok(w.segment.b.x<w.segment.a.x);assert.deepEqual(fixed.wallIds,r.wallIds);assert.deepEqual(fixed.vertices[0],r.vertices[0]);}
+ const positive=setRoomWall(r,0,wallLength(r,0),180),negative=setRoomWall(r,0,wallLength(r,0),-180);assert.ok(Math.hypot(positive.vertices[1].x-negative.vertices[1].x,positive.vertices[1].y-negative.vertices[1].y)<1e-8);assert.deepEqual(r,before);
+});

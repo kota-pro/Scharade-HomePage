@@ -1,0 +1,54 @@
+.photo-ranking-page { max-width: 1200px; }
+.photo-ranking-intro { max-width: 780px; color: #555; }
+.photo-ranking-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin: 32px 0; }
+.photo-ranking-summary dl { min-width: 0; margin: 0; padding: 20px 24px; border: 1px solid #d4d4d4; border-radius: 10px; }
+.photo-ranking-summary dt { color: #666; font-size: 14px; letter-spacing: .08em; }
+.photo-ranking-summary dd { margin: 6px 0 0; font-family: "Grandiflora One", serif; font-size: 42px; line-height: 1.2; }
+.photo-ranking-summary small { margin-left: 8px; font: 13px "Zen Kurenaido", sans-serif; }
+.photo-ranking-toolbar { display: flex; align-items: end; gap: 16px; margin-bottom: 28px; }
+.photo-ranking-toolbar label { flex: 1; max-width: 600px; min-width: 0; font-size: 14px; }
+.photo-ranking-toolbar select { display: block; box-sizing: border-box; width: 100%; min-width: 0; min-height: 46px; margin-top: 6px; padding: 10px 12px; border: 1px solid #aaa; border-radius: 6px; background: #fff; color: #111; font: inherit; font-size: 16px; }
+.photo-ranking-toolbar button, .photo-ranking-pagination button { flex: none; min-height: 46px; padding: 10px 18px; border: 1px solid #888; border-radius: 6px; background: #fff; color: #111; font: inherit; cursor: pointer; }
+.photo-ranking-page button:disabled { opacity: .45; cursor: wait; }
+.photo-ranking-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.photo-ranking-heading h3 { margin: 0; }
+.photo-ranking-heading p { flex: none; margin: 0; font-size: 12px; color: #777; letter-spacing: .05em; }
+[data-photo-manager-status] { margin: 10px 0 20px; color: #666; font-size: 13px; letter-spacing: .06em; }
+[data-photo-manager-status][data-error="true"] { color: #973e3e; }
+.photo-ranking-loading { display: flex; justify-content: center; align-items: center; gap: 16px; min-height: 200px; font-size: 14px; }
+.photo-ranking-loading[hidden] { display: none; }
+.photo-manager-list { margin: 0; padding: 0; list-style: none; }
+.photo-ranking-row { display: grid; grid-template-columns: 48px 160px minmax(0, 1fr) 90px; align-items: center; gap: 24px; min-width: 0; padding: 24px 0; border-top: 1px solid #ddd; }
+.photo-ranking-position { color: #777; font: 30px "Grandiflora One", serif; text-align: center; }
+.photo-ranking-row:is([data-photo-rank="1"],[data-photo-rank="2"],[data-photo-rank="3"]) .photo-ranking-position { color: #111; }
+.photo-ranking-thumbnail { display: grid; place-items: center; background: #f3f3f1; border-radius: 6px; overflow: hidden; }
+.photo-ranking-thumbnail img { display: block; width: 100%; height: 120px; object-fit: contain; }
+.photo-ranking-detail { min-width: 0; }
+.photo-ranking-detail h4 { margin: 0 0 6px; font: 400 22px/1.5 YakuHanMP, "Zen Old Mincho", serif; letter-spacing: .08em; }
+.photo-ranking-detail a { color: #111; text-decoration: none; }
+.photo-ranking-detail a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.photo-ranking-detail .photo-ranking-source { display: inline-block; margin: 0 0 8px; padding: 1px 8px; border: 1px solid #ddd; border-radius: 4px; color: #666; font-size: 11px; letter-spacing: .05em; }
+.photo-ranking-detail .photo-ranking-author, .photo-ranking-detail .photo-ranking-equipment { margin: 0; color: #777; font-size: 12px; line-height: 1.8; letter-spacing: .04em; }
+.photo-ranking-detail .photo-ranking-caption { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin: 8px 0; color: #555; font-size: 13px; line-height: 1.7; letter-spacing: .05em; white-space: pre-line; }
+.photo-ranking-likes { display: grid; justify-items: end; color: #222; }
+.photo-ranking-likes > span { font: 36px/1.2 "Grandiflora One", serif; }
+.photo-ranking-likes small { color: #777; font-size: 12px; }
+.photo-ranking-pagination { display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 28px; font-size: 14px; }
+.photo-ranking-pagination [hidden] { display: none; }
+@media (max-width: 640px) {
+  .photo-ranking-summary { grid-template-columns: minmax(0, 1fr); gap: 10px; margin-block: 24px; }
+  .photo-ranking-summary dl { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px; }
+  .photo-ranking-summary dd { margin: 0; font-size: 30px; }
+  .photo-ranking-toolbar { gap: 10px; }
+  .photo-ranking-toolbar button { padding-inline: 12px; font-size: 14px; }
+  .photo-ranking-heading { flex-wrap: wrap; gap: 6px; }
+  .photo-ranking-row { grid-template-columns: 28px 80px minmax(0, 1fr); gap: 10px; align-items: start; padding-block: 18px; }
+  .photo-ranking-position { grid-column: 1; grid-row: 1; font-size: 24px; }
+  .photo-ranking-thumbnail { grid-column: 2; grid-row: 1; }
+  .photo-ranking-thumbnail img { height: 100px; }
+  .photo-ranking-detail { grid-column: 3; grid-row: 1 / 3; }
+  .photo-ranking-detail h4 { font-size: 18px; }
+  .photo-ranking-likes { grid-column: 1 / 3; grid-row: 2; justify-items: center; display: flex; justify-content: center; align-items: baseline; gap: 6px; }
+  .photo-ranking-likes > span { font-size: 26px; }
+  .photo-ranking-pagination { gap: 10px; font-size: 12px; }
+}

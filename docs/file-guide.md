@@ -25,7 +25,7 @@
 
 | 機能・URL | 主なファイル | データ・表示・注意 |
 | --- | --- | --- |
-| Home `/` | `src/pages/index.astro`、`src/scripts/homeCarousel.js`、`src/styles/index.css` | 管理画面のhome設定、microCMS記事・カルーセル |
+| Home `/` | `src/pages/index.astro`、`src/lib/homePhotos.ts`、`src/scripts/homeCarousel.js`、`src/styles/index.css` | 管理画面のhome設定・写真除外、microCMS記事・公開Portfolio写真。除外ポップアップは `HomePhotoPicker.astro`／`homePhotoPicker.ts`／`HomePhotoPicker.css` |
 | 活動紹介 `/About_us` | `src/pages/About_us.astro`、`src/assets/equipments/`・`annual_schedule/` | 管理画面about・common、地図・固定写真 |
 | 記事一覧 `/Activity` | `src/pages/Activity.astro`、`src/lib/blog.ts`、`src/scripts/activityPagination.js`、`src/styles/Activity.css` | microCMS `blog` |
 | 記事 `/posts/…` | `src/pages/posts/[slug].astro`、`src/lib/blog.ts`、`src/utils/linkToPost.ts`、`src/scripts/postBody.js` | slugの正確なエンコード・照合、本文HTMLのサニタイズ |
@@ -70,6 +70,7 @@
 | 画像・本文・共有 | `src/components/ActivityHeaderImage.astro`・`ActivityText.astro`・`ActivityShare*.astro`、`src/scripts/activityShare.ts`、`src/lib/activityPresentation.ts`、`src/pages/api/member/event-image/upload.ts` | 本文は任意HTMLとして解釈しない。`src/styles/ActivityShare.css` |
 | 通知・宛先 | `src/pages/Member/notifications/`・`manage/notifications.astro`、`src/components/ActivityRecipients.astro`、`src/lib/notificationRecipients.ts`、`src/scripts/recipientPicker.ts` | 本人宛だけ閲覧。通知対象と企画の公開部分は別 |
 | 名簿同期・紐付け | `src/lib/activityRoster.ts`・`rosterChanges.ts`・`rosterReconciliation.ts`・`rosterPortfolioUpdates.ts`、`src/pages/Admin/grouping-roster/`、`gas/intake/Code.gs` | 元名簿は読み取りのみ。管理者が対応を確認。年度変更・退会反映は操作資料を参照 |
+| 春秋の名簿・フォーム | `src/lib/termRoster.ts`・`clubForms.ts`・`rosterExports.ts`、`src/pages/Admin/club-forms.astro`、`scripts/club-forms-worker.mjs`、`gas/club-forms/` | 幹部以上。入会＋継続の確認適用、Portfolioの変更、4種類のフォーム生成・期限管理。[導入資料](club-forms.md) |
 | 企画内／単独班分け | `src/pages/Member/manage/grouping/`、`src/pages/api/member/grouping.ts`、`src/lib/grouping.ts`・`groupingTools.ts`・`groupingParticipants.ts`・`groupingGrade.ts` | 必須条件と希望条件、入力競合、公開スナップショットを区別 |
 | 班表示・編集・画像出力 | `src/components/GroupBoard.astro`・`GroupEditor.astro`・`GroupPersonPicker.astro`、`src/scripts/groupBoard.ts`・`groupPersonPicker.ts`・`groupExport.ts`・`groupPng.ts`、`src/lib/groupPresentation.ts`・`groupExport.ts` | `src/styles/GroupBoard.css`。氏名・LINE名の出力先を確認 |
 | プッシュ・リマインダー | `src/lib/pushDevices.ts`・`pushDeviceState.ts`・`pushQueue.ts`・`pushDelivery.ts`・`notificationReminders.ts`・`reminderRules.ts`・`noticeTiming.ts`、`scripts/push-worker.mjs` | `push-devices.json` と活動キュー。配信フラグ・Expo設定・実機検証が必要 |

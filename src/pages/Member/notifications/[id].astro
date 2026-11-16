@@ -1,12 +1,18 @@
 ---
+import ActivityHeaderImage from "../../../components/ActivityHeaderImage.astro";
 import ActivityShareButton from "../../../components/ActivityShareButton.astro";
+import ActivityText from "../../../components/ActivityText.astro";
 import MemberLayout from "../../../layouts/MemberLayout.astro";
 import { readActivities } from "../../../lib/activities";
 import { activityDate } from "../../../lib/activityTypes";
 const user = Astro.locals.user!;
-const notice = readActivities().notifications.find(
+const activities = readActivities();
+const notice = activities.notifications.find(
   (n) => n.id === Astro.params.id && n.recipientIds.includes(user.id),
 );
+const event = notice?.eventId
+  ? activities.events.find((event) => event.id === notice.eventId && event.status !== "draft")
+  : undefined;
 if (!notice) Astro.response.status = 404;
 ---
 
@@ -15,12 +21,16 @@ if (!notice) Astro.response.status = 404;
     notice ? (
       <article data-notification-id={notice.id}>
         <>
-          <div class="activity-title-row"><h2>{notice.title}</h2><ActivityShareButton kind="notifications" eventId={notice.eventId} id={notice.id} title={notice.title} /></div>
+          <div class="activity-title-row"><h2>{notice.title}</h2><ActivityShareButton kind={notice.toolId ? "tools" : "notifications"} eventId={notice.eventId} toolId={notice.toolId} id={notice.id} title={notice.title} /></div>
           <p>
             {activityDate(notice.createdAt)} · {notice.senderName}
           </p>
         </>
-        <div class="activity-prose">{notice.body}</div>
+        {event?.headerImage && (
+          <ActivityHeaderImage src={event.headerImage} alt={event.title} />
+        )}
+        <div class="activity-prose"><ActivityText text={notice.body} html={notice.bodyHtml} /></div>
+        {notice.toolId && <p><a class="admin-button" href={`/Member/tools/${notice.toolId}`}>質問・回答・結果を見る</a></p>}
         {notice.eventId && (
           <p>
             <a class="admin-button" href={`/Member/events/${notice.eventId}`}>
@@ -28,11 +38,11 @@ if (!notice) Astro.response.status = 404;
             </a>
           </p>
         )}
-        {notice.exhibitionId && <p><a class="admin-button" href={`/Member/exhibitions/${notice.exhibitionId}`}>写真展の参加投票・入力期間を見る</a></p>}
+        {notice.exhibitionId && <p><a class="admin-button" href={`/Member/exhibitions/${notice.exhibitionId}${notice.kind === "exhibition-shift" ? "/shifts" : ""}`}>{notice.kind === "exhibition-shift" ? "展示シフトを見る" : "写真展の参加投票・入力期間を見る"}</a></p>}
         <p data-read-status role="status" aria-live="polite" />
       </article>
     ) : (
-      <h2>通知が見つかりません。</h2>
+      <h2 data-error="true">通知が見つかりません。</h2>
     )
   }
   <a class="member-back" href="/Member">メンバーページへ戻る</a>

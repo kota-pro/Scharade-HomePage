@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { readUsers, readSessions, isAdmin, type User } from "./auth.ts";
+import { readUsers, readSessions, isAdmin, isExecutive, canManageAccount, type User } from "./auth.ts";
 import { accountRevision, AccountUpdateError } from "./accountManagement.ts";
 import { withStoreLock, writeData } from "./store.ts";
 import { revokeUserPasswordResetTokens } from "./passwordReset.ts";
@@ -7,6 +7,10 @@ import { env } from "./config.ts";
 import { fetchWithTimeout } from "./http.ts";
 import { invalidateCache } from "./cache.ts";
 import { audit } from "./audit.ts";
+import { clearAccountPhotoReferences } from "./photoState.ts";
+import { clearHelpTaskReads } from "./helpTaskReads.ts";
+import { clearPortfolioBooks } from "./portfolioBooks.ts";
+import { siteErrorDetails } from "./siteErrors.ts";
 
 export function accountDeletionRevision(user: User) {
   return crypto
@@ -66,13 +70,13 @@ async function deletePortfolioContent(id: string) {
     throw new AccountUpdateError(
       response.status === 401 || response.status === 403
         ? "microCMSのPortfolioに対するDELETE権限を確認してください。アカウントは削除していません。"
-        : "Portfolioの削除を確認できませんでした。アカウントは残しています。microCMSのDELETE権限・コンテンツの参照関係・取得権限を確認して再試行してください。",
+        : siteErrorDetails["account-deletion-unconfirmed"].message,
       502,
     );
   } catch (error) {
     if (error instanceof AccountUpdateError) throw error;
     throw new AccountUpdateError(
-      "Portfolioの削除結果を確認できませんでした。アカウントは残しています。時間をおいて再試行してください。",
+      siteErrorDetails["account-deletion-unknown"].message,
       502,
     );
   } finally {
@@ -101,8 +105,9 @@ export async function deleteAccount(
   await withStoreLock("account-review", () =>
     withStoreLock("auth", async () => {
       const users = readUsers();
-      if (!isAdmin(users.find((user) => user.id === actorId)))
-        throw new AccountUpdateError("管理者権限が必要です。", 403);
+      const actor = users.find((user) => user.id === actorId);
+      if (!isExecutive(actor))
+        throw new AccountUpdateError("幹部以上の権限が必要です。", 403);
       if (actorId === targetId)
         throw new AccountUpdateError(
           "ログイン中の管理者自身は削除できません。",
@@ -114,6 +119,8 @@ export async function deleteAccount(
           "対象のアカウントは見つかりません。一覧を確認してください。",
           404,
         );
+      if (!canManageAccount(actor, user))
+        throw new AccountUpdateError("このアカウントを削除する権限がありません。", 403);
       if (data.revision !== accountDeletionRevision(user))
         throw new AccountUpdateError(
           "登録内容が更新されています。ページを再読み込みし、対象を確認してください。",
@@ -142,6 +149,9 @@ export async function deleteAccount(
         (session) => session.userId !== user.id,
       );
       if (user.portfolioId) await deletePortfolioContent(user.portfolioId);
+      await clearAccountPhotoReferences(user.id, user.portfolioId);
+      if (user.portfolioId) await clearPortfolioBooks(user.portfolioId);
+      await clearHelpTaskReads(user.id);
       try {
         revokeUserPasswordResetTokens(user.id);
         writeData("sessions.json", remainingSessions);

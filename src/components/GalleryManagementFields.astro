@@ -1,0 +1,21 @@
+---
+import { GALLERY_CATEGORY_LABELS, GALLERY_CATEGORY_ORDER } from "../data/galleryAlbums";
+import type { GalleryAlbum } from "../lib/galleryCatalog";
+interface Props { album?: GalleryAlbum }
+const { album } = Astro.props;
+---
+<div class="content-management-fields">
+  <label>アルバム名<input name="name" required maxlength="120" value={album?.payload.name} /></label>
+  <label>分類
+    <select name="category">
+      {GALLERY_CATEGORY_ORDER.map(category => <option value={category} selected={category === (album?.category ?? "other")}>{GALLERY_CATEGORY_LABELS[category]}</option>)}
+    </select>
+  </label>
+  {album && <label>公開範囲
+    <select name="visibility">
+      <option value="staff" selected={album.visibility === "staff"}>運営限定</option>
+      <option value="members" selected={album.visibility === "members"}>会員限定</option>
+      <option value="public" selected={album.visibility === "public"}>一般公開</option>
+    </select>
+  </label>}
+</div>

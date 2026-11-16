@@ -34,7 +34,8 @@ test("signup UI proves mailbox ownership before creating an unapproved account a
   expect(fixtureFile("users.json").some((user: any) => user.email === email)).toBe(false);
   const code = emailCode(email), wrong = code === "000000" ? "000001" : "000000";
   await page.locator("#signup-code").fill(wrong); await page.getByRole("button", { name: "確認して登録を申請", exact: true }).click();
-  await expect(page.locator("#signup-message")).toHaveText("確認コードが正しくありません。");
+  await expect(page.locator("#signup-message")).toContainText("エラー番号：SITE-015");
+  await expect(page.locator("#signup-message")).toContainText("確認コードが正しくありません。");
   expect(fixtureFile("users.json").some((user: any) => user.email === email)).toBe(false);
   await page.locator("#signup-code").fill(code); await page.getByRole("button", { name: "確認して登録を申請", exact: true }).click();
   await expect(page).toHaveURL(origin + "/Login?next=%2F");

@@ -17,11 +17,11 @@ if (dialog) {
   let generating = false;
   let copying = false;
   let opener: HTMLButtonElement | null = null;
-  const notify = (message: string) => { status.textContent = message; operationNotice(message,false,"portfolio-share"); };
+  const notify = (message: string, error = false) => { status.textContent = message; status.dataset.error = String(error); operationNotice(message,error,"portfolio-share"); };
 
   async function prepareQr() {
     if (qrBlob || generating) return;
-    generating = true;
+    generating = true; loading.dataset.error = "false";
     qrArea.setAttribute("aria-busy", "true");
     retry.hidden = true;
     loading.hidden = false;
@@ -41,9 +41,9 @@ if (dialog) {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       objectUrl = "";
       qrBlob = null;
-      loading.textContent = "QRコードを作成できませんでした。";
+      loading.textContent = "QRコードを作成できませんでした。再生成をお試しください。"; loading.dataset.error = "true";
       retry.hidden = false;
-      notify("再生成をお試しください。リンクは引き続きコピーできます。");
+      notify("QRコードを作成できませんでした。再生成をお試しください。リンクは引き続きコピーできます。", true);
     } finally {
       generating = false;
       qrArea.setAttribute("aria-busy", "false");
@@ -60,7 +60,7 @@ if (dialog) {
       else if (!document.execCommand("copy")) throw new Error("Copy unavailable");
       notify("リンクをコピーしました。");
     } catch {
-      notify("コピーできませんでした。表示中のリンクを長押し、または選択してコピーしてください。");
+      notify("コピーできませんでした。表示中のリンクを長押し、または選択してコピーしてください。", true);
     } finally { copying = false; }
   }
   link.addEventListener("click", () => void copyLink());
@@ -81,7 +81,7 @@ if (dialog) {
       else await navigator.clipboard.write([new ClipboardItem({ "image/png": qrBlob })]);
       notify("QR画像をコピーしました。");
     } catch {
-      notify("QR画像をコピーできませんでした。ダウンロードしてお使いください。");
+      notify("QR画像をコピーできませんでした。ダウンロードしてお使いください。", true);
     } finally { copying = false; }
   });
   download.addEventListener("click", event => {

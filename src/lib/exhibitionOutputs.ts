@@ -1,3 +1,5 @@
+import {boardDesignScene,boardElementLabels,photographyMarkSvg,type BoardDesign} from './exhibitionBoardDesign.ts';
+import {titleBoardSettings} from './exhibitionTitleText.ts';
 import {zipSync,strToU8} from 'fflate';
 import {outlineSvgText} from './exhibitionSvgText.ts';
 import { outlinedAnnotationText } from './exhibitionVectorText.ts';
@@ -10,10 +12,10 @@ import { wrapLayoutLabel } from "./exhibitionLabels.ts";
 import fs from "node:fs";
 import path from "node:path";
 import { exhibitionQrPng } from "./exhibitionQr.ts";
-import { titleOriginMm, boardTextLayout, wrapBoardText } from "./exhibitionText.ts";
-import { validateBoardText } from "./exhibitionTextMetrics.ts";
+import { submissionQrTarget } from "./exhibitionQrTarget.ts";
+import { measureBoardText } from "./exhibitionTextMetrics.ts";
 import type { LayoutWork } from "./exhibitionTypes.ts";
-import { PDFDocument, type PDFFont, type PDFPage, rgb } from "pdf-lib";
+import { PDFDocument, type PDFFont, type PDFImage, type PDFPage, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import { Resvg } from "@resvg/resvg-js";
 import { latestContent, type Exhibition, type ExhibitionStore, type RoomLayout, type Submission, type Work } from "./exhibitionTypes.ts";
@@ -26,31 +28,26 @@ const A4: [number, number] = [mmToPt(210), mmToPt(297)];
 const A4Landscape: [number, number] = [mmToPt(297), mmToPt(210)];
 const BOARD_W = mmToPt(105), BOARD_H = mmToPt(74.25);
 
-export type BoardWork = { submission: Submission; work: Work; qrUrl: string };
+export type BoardWork = { submission: Submission; work: Work; qrUrl: string; design?:BoardDesign };
 export type BoardIssue = { workId: string; title: string; message: string };
 const html = (value: string) => value.replace(/[&<>'"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[c]!);
 
 export function qrFor(submission: Submission, origin: string) {
-  const content = latestContent(submission)!;
-  if (submission.portfolioId) return `${origin.replace(/\/$/, "")}/Portfolio/${encodeURIComponent(submission.portfolioId)}`;
-  return content.portfolioUrl;
+  return submissionQrTarget(submission, origin).url;
 }
 export function titleBoardWorks(data: ExhibitionStore, exhibition: Exhibition, origin: string): BoardWork[] {
   return data.submissions
     .filter(s => s.exhibitionId === exhibition.id && !s.inactive && latestContent(s))
-    .flatMap(submission => latestContent(submission)!.works.map(work => ({ submission, work, qrUrl: qrFor(submission, origin) })))
+    .flatMap(submission => latestContent(submission)!.works.map(work => ({ submission, work, qrUrl: qrFor(submission, origin), design:exhibition.boardDesigns?.[work.id] })))
     .sort((a, b) => {
       const ac = latestContent(a.submission)!, bc = latestContent(b.submission)!;
       return ac.authorName.localeCompare(bc.authorName, "ja") || a.work.title.localeCompare(b.work.title, "ja");
     });
 }
-function wrap(font: PDFFont, value: string, size: number, width: number) {
-  return wrapBoardText(value,size,width, (text,fontSize)=>font.widthOfTextAtSize(text,fontSize));
-}
-function boardIssue(_regular: PDFFont, _bold: PDFFont, board: BoardWork): BoardIssue[] {
+function boardIssue(board: BoardWork, origin: string): BoardIssue[] {
   const content=latestContent(board.submission)!;
-  const issues=validateBoardText({...content,works:[board.work]}).map(i=>({workId:board.work.id,title:board.work.title,message:i.message}));
-  if(!board.submission.qrConfirmed || !board.qrUrl) issues.push({workId:board.work.id,title:board.work.title,message:"QRコードの宛先を運営が確定してください。"});
+  const issues=boardDesignScene(content,board.work,measureBoardText,board.design).issues.map(i=>({workId:board.work.id,title:board.work.title,message:`${boardElementLabels[i.element]}: ${i.message}`}));
+  if(!submissionQrTarget(board.submission,origin).confirmed || !board.qrUrl) issues.push({workId:board.work.id,title:board.work.title,message:"QRコードの宛先を運営が確定してください。"});
   return issues;
 }
 async function openBoardFonts(doc: PDFDocument) {
@@ -59,40 +56,40 @@ async function openBoardFonts(doc: PDFDocument) {
   // Embed the licensed family in full so every Japanese title remains printable.
   return Promise.all([doc.embedFont(fs.readFileSync(regularFont)), doc.embedFont(fs.readFileSync(boldFont))]);
 }
-export async function titleBoardPreflight(data: ExhibitionStore, exhibition: Exhibition, origin: string) {
-  const doc = await PDFDocument.create(), [regular, bold] = await openBoardFonts(doc);
-  const works = titleBoardWorks(data, exhibition, origin);
-  return { works, issues: works.length ? works.flatMap(work => boardIssue(regular, bold, work)) : [{ workId: "", title: exhibition.title, message: "提出済みの作品がありません。" }] };
+export function selectedBoardWorks(works:BoardWork[],ids?:unknown) {
+  if(ids===undefined)return works;
+  if(!Array.isArray(ids)||!ids.length||ids.length>10000||ids.some(id=>typeof id!=='string')||new Set(ids).size!==ids.length)throw new Error('印刷する作品を1つ以上選択してください。');
+  const selected=new Set(ids);
+  if(ids.some(id=>!works.some(w=>w.work.id===id)))throw new Error('選択した作品が変更されています。一覧を開き直してください。');
+  return works.filter(w=>selected.has(w.work.id));
+}
+export async function titleBoardPreflight(data: ExhibitionStore, exhibition: Exhibition, origin: string,ids?:unknown) {
+  const works=selectedBoardWorks(titleBoardWorks(data,exhibition,origin),ids);
+  return {works,issues:works.length?works.flatMap(w=>boardIssue(w,origin)):[{workId:'',title:exhibition.title,message:'提出済みの作品がありません。'}]};
 }
 function boardTextTop(page: PDFPage, text: string, x: number, top: number, size: number, font: PDFFont, boardBottom: number) {
   page.drawText(text, { x, y: boardBottom + BOARD_H - top - size, size, font, color: rgb(.13, .11, .1) });
 }
-async function drawBoard(doc: PDFDocument, page: PDFPage, offsetX: number, offsetY: number, item: BoardWork, regular: PDFFont, bold: PDFFont, origin: string) {
+async function drawBoard(doc: PDFDocument, page: PDFPage, offsetX: number, offsetY: number, item: BoardWork, regular: PDFFont, bold: PDFFont, origin: string, photographyIcon?: PDFImage) {
   const content = latestContent(item.submission)!;
-  const x = (mm: number) => offsetX + mmToPt(mm);
-  const max = mmToPt(89);
-  const titleLines = wrap(bold, `「${item.work.title}」`, 21, mmToPt(boardTextLayout.titleWidth));
-  titleLines.forEach((line, i) => boardTextTop(page, line, x(titleOriginMm), mmToPt(8.5 + i * 8.2), 21, bold, offsetY));
-  const authorTop = 23;
-  boardTextTop(page, content.authorName, x(8), mmToPt(authorTop), 14, regular, offsetY);
-  const gradeX = x(8) + regular.widthOfTextAtSize(content.authorName, 14) + mmToPt(6.5);
-  boardTextTop(page, content.grade, gradeX, mmToPt(authorTop + 1.1), 10, regular, offsetY);
-  const captions = wrap(regular, item.work.caption, 10, max);
-  captions.forEach((line, i) => boardTextTop(page, line, x(8), mmToPt(32.3 + i * 4.23), 10, regular, offsetY));
-  const metas = [["撮影場所", item.work.location], ["使用機材", item.work.equipment], ["撮影設定", item.work.settings]].filter(([, value]) => value) as [string, string][];
-  metas.forEach(([label, value], i) => {
-    const row = 50 + i * 6.17;
-    boardTextTop(page, label, x(8), mmToPt(row), 8, bold, offsetY);
-    boardTextTop(page, value, x(25.4), mmToPt(row), 8, regular, offsetY);
-  });
-  const qr = await exhibitionQrPng(item.qrUrl, origin);
-  const image = await doc.embedPng(qr), box = image.scale(mmToPt(18) / image.width);
-  page.drawImage(image, { x: offsetX + BOARD_W - mmToPt(8) - box.width, y: offsetY + mmToPt(7), width: box.width, height: box.height });
+  const scene=boardDesignScene(content,item.work,measureBoardText,item.design);
+  for(const run of scene.runs)boardTextTop(page,run.text,offsetX+mmToPt(run.x),mmToPt(run.y),run.size,run.bold?bold:regular,offsetY);
+  const qr = await exhibitionQrPng(item.qrUrl, origin),image=await doc.embedPng(qr),f=scene.frames.qr;
+  page.drawImage(image,{x:offsetX+mmToPt(f.x),y:offsetY+BOARD_H-mmToPt(f.y+f.height),width:mmToPt(f.width),height:mmToPt(f.height)});
+  if (photographyIcon && scene.photographyMark) {
+    const {x,y,size}=scene.photographyMark;
+    page.drawImage(photographyIcon,{
+      x:offsetX+mmToPt(x),y:offsetY+BOARD_H-mmToPt(y+size),width:mmToPt(size),height:mmToPt(size),
+    });
+  }
 }
-export async function generateTitleBoards(data: ExhibitionStore, exhibition: Exhibition, origin: string) {
-  const preflight = await titleBoardPreflight(data, exhibition, origin);
+export async function generateTitleBoards(data: ExhibitionStore, exhibition: Exhibition, origin: string,ids?:unknown) {
+  const preflight = await titleBoardPreflight(data, exhibition, origin,ids);
   if (preflight.issues.length) return { ...preflight, pdf: null as Uint8Array | null };
   const doc = await PDFDocument.create(), [regular, bold] = await openBoardFonts(doc);
+  const photographyIcon = preflight.works.some(({work})=>titleBoardSettings(work).noPhotography)
+    ? await doc.embedPng(new Resvg(photographyMarkSvg(),{fitTo:{mode:'width',value:480}}).render().asPng())
+    : undefined;
   for (let start = 0; start < preflight.works.length; start += 8) {
     const page = doc.addPage(A4);
     for (let index = 0; index < 8; index++) {
@@ -101,7 +98,7 @@ export async function generateTitleBoards(data: ExhibitionStore, exhibition: Exh
     }
     for (const [index, board] of preflight.works.slice(start, start + 8).entries()) {
       const column = index % 2, row = Math.floor(index / 2);
-      await drawBoard(doc, page, column * BOARD_W, page.getHeight() - (row + 1) * BOARD_H, board, regular, bold, origin);
+      await drawBoard(doc, page, column * BOARD_W, page.getHeight() - (row + 1) * BOARD_H, board, regular, bold, origin, photographyIcon);
     }
   }
   return { ...preflight, pdf: await doc.save() };

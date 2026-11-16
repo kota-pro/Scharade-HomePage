@@ -4,8 +4,11 @@ import { verifyPasswordAsync, hashPasswordAsync, needsPasswordRehash } from "../
 import { json, safeReturnPath } from "../../../lib/http.ts";
 import { checkLoginAttempts, recordLoginAttempt } from "../../../lib/rateLimit.ts";
 import { startMfaChallenge, MfaError } from "../../../lib/mfa.ts";
-import { mfaCookieName, cookieOptions, setSessionCookie } from "../../../lib/sessionCookies.ts";
+import { mfaCookieName, cookieOptions, setSessionCookie, trustedBrowserCookieName } from "../../../lib/sessionCookies.ts";
+import { trustedMfaBrowser } from "../../../lib/mfaTrustedBrowsers.ts";
+import { DEFAULT_SESSION_SECONDS, REMEMBER_SESSION_SECONDS } from "../../../lib/sessionPolicy.ts";
 import { audit } from "../../../lib/audit.ts";
+import { credentialMismatchMessage } from "../../../lib/siteErrors.ts";
 
 export const POST: APIRoute = async (context) => {
   const { request, cookies } = context;
@@ -35,7 +38,7 @@ export const POST: APIRoute = async (context) => {
     return json(
       {
         ok: false,
-        message: "メールアドレスまたはパスワードが正しくありません。",
+        message: credentialMismatchMessage,
       },
       400,
     );
@@ -46,7 +49,8 @@ export const POST: APIRoute = async (context) => {
       { ok: false, message: "アカウントの承認をお待ちください。" },
       403,
     );
-  const maxAge = data.remember ? 60 * 60 * 24 * 30 : 60 * 60 * 8;
+  const remember = data.remember === true || data.remember === "on" || data.remember === "true";
+  const maxAge = remember ? REMEMBER_SESSION_SECONDS : DEFAULT_SESSION_SECONDS;
   if (needsPasswordRehash(user.passwordHash)) {
     const old = user.passwordHash, upgraded = await hashPasswordAsync(password);
     await updateUsers(users => {
@@ -56,7 +60,8 @@ export const POST: APIRoute = async (context) => {
     });
     user.passwordHash = upgraded;
   }
-  if (isStaff(user)) {
+  const trustedToken = cookies.get(trustedBrowserCookieName(request))?.value;
+  if (isStaff(user) && !trustedMfaBrowser(user, trustedToken)) {
     try {
       const challenge = await startMfaChallenge(user, safeReturnPath(typeof data.next === "string" ? data.next : null, "/"), maxAge);
       cookies.set(mfaCookieName(request), challenge.token, cookieOptions(request, 600));
@@ -73,8 +78,17 @@ export const POST: APIRoute = async (context) => {
       maxAge,
       user.passwordHash,
       user.email,
+      undefined,
+      trustedToken,
     );
-  } catch {
+  } catch (error) {
+    if (!(error instanceof Error) || ![
+      '認証情報が更新されました。再度ログインしてください。',
+      'メールアドレスが更新されました。再度ログインしてください。',
+      '承認されたアカウントが必要です。',
+      'パスワードの再設定が必要です。',
+      '二段階認証が必要です。',
+    ].includes(error.message)) throw error;
     return json(
       {
         ok: false,

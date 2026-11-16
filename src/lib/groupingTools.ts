@@ -7,6 +7,7 @@ import {
   ActivityError,
   parseRules,
   parseGroups,
+  eventPeople,
 } from "./activities.ts";
 import {
   defaultRules,
@@ -23,7 +24,7 @@ import {
   validateGroups,
 } from "./grouping.ts";
 import { audit } from "./audit.ts";
-import { activeGuests, guestExpiry, parseGuest, rosterParticipants, previewGroupingParticipants, type GroupingGuest } from "./groupingParticipants.ts";
+import { activeGuests, guestExpiry, isGroupingParticipantSource, parseGuest, rosterParticipants, previewGroupingParticipants, type GroupingGuest, type GroupingParticipant, type GroupingParticipantSource } from "./groupingParticipants.ts";
 import { removeDepartedRules } from "./rosterReconciliation.ts";
 
 export type GroupingReference = {
@@ -36,7 +37,8 @@ export type GroupingRun = {
   title: string;
   revision: number;
   participantIds: string[];
-  guests?: Participant[];
+  guests?: GroupingParticipant[];
+  participantSources?: Record<string, GroupingParticipantSource>;
   previousRunId: string;
   previousSnapshot?: GroupingReference;
   createdAt: string;
@@ -70,7 +72,10 @@ export function groupingPeople(
 ): Participant[] {
   return run.participantIds.map((id) => {
     const guest = run.guests?.find(p => p.id === id);
-    if (guest) return { ...guest };
+    if (guest) {
+      const { inputSource, ...person } = guest;
+      return person;
+    }
     const row = activities.roster?.records.find((r) => r.key === id);
     return {
       id,
@@ -191,6 +196,27 @@ export async function groupingToolAction(
     if (!isStaff(readUsers().find(u => u.id === actorId))) throw new ActivityError("運営以上の権限が必要です。", 403);
     return preview;
   }
+  if (p.action === "participants.event") {
+    const users = readUsers();
+    if (!isStaff(users.find(u => u.id === actorId)))
+      throw new ActivityError("運営以上の権限が必要です。", 403);
+    const activities = readActivities();
+    const event = activities.events.find(e => e.id === p.eventId && e.status === "published");
+    if (!event) throw new ActivityError("公開された企画が見つかりません。", 404);
+    const roster = new Map(rosterParticipants(activities).map(person => [person.id, person]));
+    const rows = eventPeople(activities, event, users).map(person => {
+      const rosterKey = activities.roster?.bindings[person.id];
+      const match = rosterKey ? roster.get(rosterKey) : undefined;
+      return {
+        name: match?.name ?? person.name,
+        grade: match?.grade ?? "",
+        gender: match?.gender ?? "",
+        lineName: match?.lineName ?? person.lineName ?? "",
+        participantId: match?.id,
+      };
+    });
+    return { ok: true, title: event.title, rows };
+  }
   let result: Record<string, unknown>;
   if (p.action === "groups.generate") {
     const snapshot = await transaction(actorId, (data, activities) => {
@@ -273,6 +299,17 @@ export async function groupingToolAction(
             p.participantIds.some(id => typeof id !== "string" || !available.has(id)))
           throw new ActivityError("性別・学年を確認した参加者を1〜200人選択してください。候補の有効期限が切れた場合は再度追加してください。");
         const ids = [...new Set(p.participantIds as string[])];
+        const submittedSources = p.participantSources ?? existing?.participantSources ?? {};
+        if (!submittedSources || typeof submittedSources !== "object" || Array.isArray(submittedSources))
+          throw new ActivityError("参加者の追加元を確認してください。");
+        const participantSources = new Map<string, GroupingParticipantSource>();
+        for (const id of ids) {
+          if (!Object.hasOwn(submittedSources, id)) continue;
+          const source = (submittedSources as Record<string, unknown>)[id];
+          if (!isGroupingParticipantSource(source))
+            throw new ActivityError("参加者の追加元を確認してください。");
+          participantSources.set(id, source);
+        }
         const previousId =
           p.previousRunId ??
           existing?.previousRunId ??
@@ -308,6 +345,8 @@ export async function groupingToolAction(
         };
         run.title = p.title.trim();
         run.participantIds = ids;
+        if (participantSources.size) run.participantSources = Object.fromEntries(participantSources);
+        else delete run.participantSources;
         run.guests = ids.filter(id => id.startsWith("guest-")).map(id => parseGuest(available.get(id)));
         touchGuests(data, run, now);
         run.previousRunId = previousId;

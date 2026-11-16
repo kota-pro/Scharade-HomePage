@@ -1,12 +1,12 @@
 import type { RoomLayout } from './exhibitionTypes.ts';
 import { layoutObjectIds } from './exhibitionLayoutModel.ts';
 /** A template contains the venue, never another exhibition's assigned works. */
-export function reusableRoom(room:RoomLayout,name=room.name):RoomLayout {
+export function reusableRoom(room:RoomLayout,name=room.name,includeImages=false):RoomLayout {
   const map=new Map<string,string>();
   const newid=(kind:string,old:string)=>{const id=crypto.randomUUID();map.set(`${kind}:${old}`,`${kind}:${id}`);return id;};
   const next:RoomLayout={...structuredClone(room),id:crypto.randomUUID(),name,placements:[],books:[],boardPlacements:[],titleBoards:[],
     boardGroups:(room.boardGroups??[]).map(g=>({...g,id:newid('board',g.id),panels:g.panels.map(p=>({...p,id:newid('panel',p.id)}))})),
-    openings:room.openings.map(o=>({...structuredClone(o),id:newid('opening',o.id)})),tables:room.tables.map(t=>({...t,id:newid('table',t.id)})),annotations:(room.annotations??[]).filter(a=>a.kind!=='image').map(a=>({...structuredClone(a),id:newid('annotation',a.id)}))};
+    openings:room.openings.map(o=>({...structuredClone(o),id:newid('opening',o.id)})),tables:room.tables.map(t=>({...t,id:newid('table',t.id)})),annotations:(room.annotations??[]).filter(a=>includeImages||a.kind!=='image').map(a=>({...structuredClone(a),id:newid('annotation',a.id)}))};
   // Keep the venue's stable geometry references; object identities are new for each reuse.
   const remapAnchor=(a:import('./exhibitionTypes.ts').DimensionAnchor):import('./exhibitionTypes.ts').DimensionAnchor=>a.kind==='object'?{...a,objectId:map.get(a.objectId)!,...a.feature?.key.startsWith('panel:')?{feature:{...a.feature,key:map.get(a.feature.key)!}}:{}}:a.kind==='panel'?{...a,panelId:map.get('panel:'+a.panelId)!.slice(6)}:structuredClone(a);
   next.dimensions=(room.dimensions??[]).filter(d=>[d.a,d.b].every(a=>a.kind!=='object'||map.has(a.objectId))).map(d=>({...structuredClone(d),id:newid('dimension',d.id),a:remapAnchor(d.a),b:remapAnchor(d.b)}));

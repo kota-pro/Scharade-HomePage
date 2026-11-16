@@ -17,6 +17,24 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+/* Native radio navigation stays available while labels provide the visual tabs. */
+.tab-radio {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.tab-radio:focus + label {
+  outline: 2px solid #0b8978;
+  outline-offset: -3px;
+}
 .skip-link {
   position: fixed;
   top: -100px;
@@ -42,3 +60,6 @@
 .service-notice a {
   color: #315d46;
 }
+
+/* Keep the number and explanation readable in inline messages as well as banners. */
+[data-site-error-code], .site-notice-text { white-space: pre-line; overflow-wrap: anywhere; }

@@ -1,0 +1,161 @@
+---
+import type { ClubFormInput } from "../lib/clubFormsTypes";
+import {
+  clubFormLabels,
+  clubSeasonLabels,
+  welcomeFeeOnDayMessage,
+} from "../lib/clubFormsTypes";
+import { localDateTime } from "../lib/activityTypes";
+import { welcomeFormTitle } from "../lib/clubFormTitle";
+type Props = { value?: ClubFormInput; disabled?: boolean };
+const { value, disabled = false } = Astro.props;
+const year =
+  value?.year ??
+  Number(
+    new Intl.DateTimeFormat("en", {
+      timeZone: "Asia/Tokyo",
+      year: "numeric",
+    }).format(new Date()),
+  );
+const welcome = value?.kind.startsWith("welcome_") ?? false;
+const feeOnDay = welcome && value?.feeOnDay === true;
+---
+
+<fieldset disabled={disabled} class="club-form-fields">
+  <legend class="visually-hidden">フォームの設定</legend>
+  <label
+    >西暦<input
+      type="number"
+      name="year"
+      min="2000"
+      max="9999"
+      required
+      value={year}
+      readonly={Boolean(value)}
+    /></label
+  >
+  <label
+    >春・秋<select name="season" required disabled={Boolean(value)}
+      >{
+        Object.entries(clubSeasonLabels).map(([key, label]) => (
+          <option value={key} selected={key === (value?.season ?? "spring")}>
+            {label}
+          </option>
+        ))
+      }</select
+    >{
+      value && <input type="hidden" name="season" value={value.season} />
+    }</label
+  >
+  <label
+    >フォームの種類<select
+      name="kind"
+      data-club-kind
+      required
+      disabled={Boolean(value)}
+      >{
+        Object.entries(clubFormLabels).map(([key, label]) => (
+          <option value={key} selected={key === (value?.kind ?? "admission")}>
+            {label}
+          </option>
+        ))
+      }</select
+    >{value && <input type="hidden" name="kind" value={value.kind} />}</label
+  >
+  <div class="club-fee-fields">
+    <label data-club-fee-amount hidden={feeOnDay}
+      >会費・参加費（円）<input
+        type="number"
+        name="fee"
+        min="0"
+        step="1"
+        value={value?.fee ?? 0}
+        required={!feeOnDay}
+        disabled={feeOnDay}
+      /><small>無料の場合は0を入力してください。</small></label
+    >
+    <div class="club-fee-options" data-club-fee-options hidden={!welcome}>
+      <input
+        type="hidden"
+        name="feeOnDay"
+        value={feeOnDay ? "true" : "false"}
+        disabled={!welcome}
+      />
+      <button type="button" data-club-fee-on-day aria-pressed={feeOnDay}>
+        {welcomeFeeOnDayMessage}
+      </button>
+      <button type="button" data-club-fee-fixed hidden={!feeOnDay}>
+        金額を指定する
+      </button>
+      <small data-club-fee-hint hidden={!feeOnDay}>
+        フォームの参加費欄に上記の文言を表示します。
+      </small>
+    </div>
+  </div>
+  <label
+    >提出期限<input
+      type="datetime-local"
+      name="deadline"
+      value={localDateTime(value?.deadline)}
+      required
+    /></label
+  >
+  <label data-club-capacity hidden={value?.kind === "continuation"}>
+    定員（人・任意）<input
+      type="number"
+      name="capacity"
+      min="1"
+      step="1"
+      value={value?.capacity ?? ""}
+      placeholder="制限なし"
+      disabled={value?.kind === "continuation"}
+    />
+    <small
+      >空欄なら人数制限なし。回答数が定員に達すると期限前でも受付を終了します。同時送信では定員を超える場合があります。</small
+    >
+  </label>
+  <div class="club-welcome-fields" data-club-welcome hidden={!welcome}>
+    <label
+      >企画名<input
+        name="eventName"
+        maxlength="150"
+        value={value?.autoEventName ? "" : (value?.eventName ?? "")}
+        placeholder={welcomeFormTitle(
+          value?.kind ?? "welcome_photo",
+          value?.startsAt,
+          value?.place,
+        )}
+        disabled={!welcome}
+      /></label
+    >
+    <label
+      >場所<input
+        name="place"
+        maxlength="500"
+        value={value?.place ?? ""}
+        required={welcome}
+        disabled={!welcome}
+      /></label
+    >
+    <label
+      >開催日時<input
+        type="datetime-local"
+        name="startsAt"
+        value={localDateTime(value?.startsAt)}
+        required={welcome}
+        disabled={!welcome}
+      /></label
+    >
+    <label
+      >終了日時（任意）<input
+        type="datetime-local"
+        name="endsAt"
+        value={localDateTime(value?.endsAt)}
+        disabled={!welcome}
+      /></label
+    >
+    <small class="club-title-hint"
+      >企画名は空欄のままで表示中のタイトルを使えます。入力すると、その名前を使います。</small
+    >
+  </div>
+</fieldset>

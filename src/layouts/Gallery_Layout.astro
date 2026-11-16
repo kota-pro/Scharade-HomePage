@@ -1,10 +1,14 @@
 ---
 import PageTopNav from "../components/PageTopNav.astro";
 import Layout from "./Layout.astro";
+import MemberIcon from "../components/MemberIcon.astro";
+import type { GalleryVisibility } from "../lib/gallerySettings";
 import "../styles/UA+reset.css";
 import "../styles/Gallery.css";
 
-const { title } = Astro.props;
+interface Props { title: string; visibility?: GalleryVisibility }
+const { title, visibility = "public" } = Astro.props;
+const audience = visibility === "staff" ? "運営限定" : "会員限定";
 ---
 
 <Layout title={title}>
@@ -21,7 +25,8 @@ const { title } = Astro.props;
   </Fragment>
   <Fragment slot="body-slot">
     <div class="album-title">
-      <h1>{title}</h1>
+      <h1><span>{title}</span>{visibility !== "public" && <span class="gallery-audience-icon" role="img" aria-label={audience} title={audience}><MemberIcon kind="membersOnly" class="gallery-audience-svg" /></span>}</h1>
+      <slot name="album-actions" />
     </div>
     <div class="gallery-detail-wrapper">
       <slot />
@@ -33,14 +38,20 @@ const { title } = Astro.props;
   .album-title {
     width: 100%;
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
   }
 
   .album-title h1 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    margin: 0;
+    overflow-wrap: anywhere;
     color: #000;
-    font-family: "Zen Old Mincho";
+    font-family: YakuHanMP, "Zen Old Mincho";
     font-size: 48px;
     font-style: normal;
     font-weight: 400;

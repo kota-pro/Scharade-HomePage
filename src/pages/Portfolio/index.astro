@@ -7,8 +7,10 @@ import "../../styles/Portfolio.css";
 import { getAllPortfolios, normalizePortfolioGrade } from "../../lib/microcms";
 import { getContent } from "../../lib/siteContent";
 import { optimizeMicrocmsImage } from "../../utils/microcmsImage";
-import { isListedPortfolio } from "../../data/portfolioVisibility";
+import { isListedPortfolio, isArchivedPortfolio } from "../../data/portfolioVisibility";
+import { portfolioOffice, portfolioOfficeOrder } from "../../data/portfolioOffices";
 
+const isLoggedIn = Boolean(Astro.locals.user);
 const allMembers = await getAllPortfolios().catch(() => null);
 
 const GRADE_TABS = [
@@ -18,31 +20,33 @@ const GRADE_TABS = [
   "3rd Grade",
   "4th Grade",
   "Master's Program",
+  "Doctor's Program",
   "International",
   "OB/OG",
 ] as const;
 
 const allPortfolios = (allMembers ?? [])
-  .filter(isListedPortfolio)
-  .map((portfolio) => ({
-    ...portfolio,
-    gradeText: normalizePortfolioGrade(portfolio.grade),
-  }))
+  .filter(
+    (portfolio) =>
+      isListedPortfolio(portfolio) &&
+      (isLoggedIn ||
+        Boolean(portfolio.icon?.url?.trim()) ||
+        (portfolio.pictures ?? []).some((picture) => Boolean(picture?.url?.trim()))),
+  )
+  .map((portfolio) => {
+    const gradeText = isArchivedPortfolio(portfolio) ? "OB/OG" : normalizePortfolioGrade(portfolio.grade);
+    const office = gradeText === "OB/OG" ? "" : portfolioOffice(portfolio.role);
+    const iconSrc = optimizeMicrocmsImage(portfolio.icon?.url ?? "", { width: 480, quality: 78 }) ||
+      "/images/placeholder_icon.jpeg";
+    return { ...portfolio, gradeText, office, iconSrc };
+  })
   .sort(
     (a, b) =>
-      (a.displayOrder ?? Number.MAX_SAFE_INTEGER) -
-        (b.displayOrder ?? Number.MAX_SAFE_INTEGER) ||
+      portfolioOfficeOrder(a.office) - portfolioOfficeOrder(b.office) ||
       a.name.localeCompare(b.name, "ja"),
   );
 
-const executives = allPortfolios
-  .filter((portfolio) => portfolio.isExecutive || Boolean(portfolio.role))
-  .sort(
-    (a, b) =>
-      (a.displayOrder ?? Number.MAX_SAFE_INTEGER) -
-        (b.displayOrder ?? Number.MAX_SAFE_INTEGER) ||
-      a.name.localeCompare(b.name, "ja"),
-  );
+const executives = allPortfolios.filter((portfolio) => portfolio.office);
 ---
 
 <Layout title="Portfolio">
@@ -66,7 +70,7 @@ const executives = allPortfolios
 
     {
       !allMembers && (
-        <p class="service-notice">
+        <p class="service-notice" role="alert">
           Portfolioを読み込めませんでした。時間をおいて再読み込みしてください。
         </p>
       )
@@ -83,22 +87,13 @@ const executives = allPortfolios
               <a href={`/Portfolio/${portfolio.id}`} class="member-card">
                 <div class="member-image-placeholder">
                   <img
-                    src={
-                      portfolio.icon
-                        ? optimizeMicrocmsImage(portfolio.icon.url, {
-                            width: 480,
-                            quality: 78,
-                          })
-                        : "/images/placeholder_icon.jpeg"
-                    }
+                    src={portfolio.iconSrc}
                     alt={portfolio.name}
                     loading="lazy"
                   />
                 </div>
                 <div class="member-info">
-                  <p class="member-grade">
-                    {portfolio.role || portfolio.gradeText}
-                  </p>
+                  <p class="member-grade">{portfolio.office}</p>
                   <p class="member-name">{portfolio.name}</p>
                 </div>
               </a>
@@ -112,6 +107,7 @@ const executives = allPortfolios
         <details
           class="member-section-details"
           name="member-section"
+          data-portfolio-grade={tab}
           open={tab === "All"}
         >
           <summary class="section-heading">
@@ -125,21 +121,14 @@ const executives = allPortfolios
           <div class="member-grid">
             {allPortfolios
               .filter((p) => {
-                if (tab === "All") return true;
+                if (tab === "All") return p.gradeText !== "OB/OG";
                 return p.gradeText === tab;
               })
               .map((portfolio) => (
                 <a href={`/Portfolio/${portfolio.id}`} class="member-card">
                   <div class="member-image-placeholder">
                     <img
-                      src={
-                        portfolio.icon
-                          ? optimizeMicrocmsImage(portfolio.icon.url, {
-                              width: 480,
-                              quality: 78,
-                            })
-                          : "/images/placeholder_icon.jpeg"
-                      }
+                      src={portfolio.iconSrc}
                       alt={portfolio.name}
                       loading="lazy"
                     />

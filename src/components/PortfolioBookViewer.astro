@@ -1,0 +1,35 @@
+---
+import LoadingIndicator from "./LoadingIndicator.astro";
+import PortfolioBookZoom from "./PortfolioBookZoom.astro";
+import "../styles/PortfolioBooks.css";
+---
+<dialog id="portfolio-book-reader" class="portfolio-book-dialog" aria-labelledby="portfolio-book-reader-title">
+  <header class="book-dialog-header">
+    <h2 id="portfolio-book-reader-title">ブックリーダー</h2>
+    <form method="dialog"><button class="book-close" aria-label="リーダーを閉じて作品詳細に戻る">
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="m5 5 14 14M19 5 5 19" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+    </button></form>
+  </header>
+  <div class="book-reader-stage book-zoom-stage" data-book-stage>
+    <div class="book-reader-pages" data-book-pages></div>
+    <div class="book-reader-loading" data-book-loading hidden>
+      <LoadingIndicator />
+      <span class="visually-hidden" role="status">読み込み中</span>
+    </div>
+    <div class="book-reader-loading" data-book-error hidden>
+      <span role="alert">ページを読み込めませんでした。</span>
+      <button type="button" data-book-retry>再試行</button>
+    </div>
+  </div>
+  <div class="book-reader-footer">
+    <div class="book-reader-navigation" role="group" aria-label="ページ操作">
+      <button type="button" data-book-turn="left" aria-label="左へめくる" disabled>〈</button>
+      <span data-book-position aria-live="polite"></span>
+      <button type="button" data-book-turn="right" aria-label="右へめくる" disabled>〉</button>
+    </div>
+    <PortfolioBookZoom />
+  </div>
+</dialog>
+<script>
+  import "../scripts/portfolioBookViewer";
+</script>

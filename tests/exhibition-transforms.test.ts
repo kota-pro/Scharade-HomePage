@@ -22,3 +22,7 @@ test('legacy symbol captions remain inside the resize frame and preserve the fix
 test('a vertical stroke can resize its thickness and length without moving the fixed diagonal',()=>{
  const r=room(),a=r.annotations![0];a.kind='freehand';a.rotation=0;a.strokeWidth=8;a.path={closed:false,nodes:[{x:0,y:0},{x:0,y:500}]};const id=`annotation:${a.id}`,before=layoutFrame(r,'floor',layoutObjects(r,[])[0]),fixed=framePoint(before,0,0);resizeLayoutFromCorner(r,[],'floor',id,'se',12,100);const after=layoutFrame(r,'floor',layoutObjects(r,[])[0]);assert.ok(Math.hypot(after.x-fixed.x,after.y-fixed.y)<.01);assert.equal(after.width,20);assert.equal(after.height,608);assert.equal(a.strokeWidth,20);
 });
+
+test('type-size resizing uses the same fixed diagonal at all four corners, including rotated text',()=>{
+ for(const corner of ['nw','ne','se','sw'] as const){const r=room(),a=r.annotations![0];a.kind='text';a.text='案内';a.width=200;a.height=130;const id=`annotation:${a.id}`,before=layoutFrame(r,'floor',layoutObjects(r,[])[0]),k=cornerFactors[corner],fixed=framePoint(before,(1-k.x)*before.width,(1-k.y)*before.height);resizeLayoutFromCorner(r,[],'floor',id,corner,100,60);const after=layoutFrame(r,'floor',layoutObjects(r,[])[0]),now=framePoint(after,(1-k.x)*after.width,(1-k.y)*after.height);assert.ok(Math.hypot(now.x-fixed.x,now.y-fixed.y)<.001);assert.notEqual(a.fontSize,100);assert.equal(a.textScaleX,undefined);assert.equal(a.textScaleY,undefined);assert.ok(Math.abs(after.width/after.height-before.width/before.height)<.00001);}
+});

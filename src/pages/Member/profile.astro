@@ -6,7 +6,7 @@ import {
   gradeLabels,
   activityDate,
 } from "../../lib/activityTypes";
-import { isAdmin } from "../../lib/auth";
+import { isExecutive } from "../../lib/auth";
 const data = readActivities(),
   profile = data.profiles[Astro.locals.user!.id];
 const retired = data.roster?.retiredRecords?.find(
@@ -41,7 +41,7 @@ const retired = data.roster?.retiredRecords?.find(
   }
   {data.roster && <p>名簿の最終取得：{activityDate(data.roster.fetchedAt)}</p>}
   {
-    isAdmin(Astro.locals.user) && (
+    isExecutive(Astro.locals.user) && (
       <p>
         <a href="/Admin/grouping-roster">Google名簿の更新・連携へ</a>
       </p>

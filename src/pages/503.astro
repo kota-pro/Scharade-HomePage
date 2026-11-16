@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { formatSiteError } from '../lib/siteErrors.ts';
 Astro.response.status = 503;
 Astro.response.headers.set("Retry-After", "60");
 ---
@@ -12,8 +13,6 @@ Astro.response.headers.set("Retry-After", "60");
   ]}
 >
   <section slot="body-slot" class="service-notice">
-    <h1>一時的に表示できません</h1><p>
-      情報の取得に失敗しました。時間をおいて、このページを再読み込みしてください。
-    </p><p><a href="/">Homeへ戻る</a> ／ <a href="/Contact">お問い合わせ</a></p>
+    <h1>一時的に表示できません</h1><p role="alert">{formatSiteError('情報の取得に失敗しました。時間をおいて、このページを再読み込みしてください。', 'SITE-011')}</p><p><a href="/">Homeへ戻る</a> ／ <a href="/Contact">お問い合わせ</a></p>
   </section>
 </Layout>

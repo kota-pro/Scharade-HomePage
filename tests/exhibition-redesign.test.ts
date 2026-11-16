@@ -7,7 +7,7 @@ import jsQR from "jsqr";
 import { qrBrand } from "../src/lib/qrBrand.ts";
 import { exhibitionQrPng } from "../src/lib/exhibitionQr.ts";
 import { validateBoardText, measureBoardText } from "../src/lib/exhibitionTextMetrics.ts";
-import { emptyWorkDetails, metadataStrings, titleOriginMm, titleBracketInsetMm } from "../src/lib/exhibitionText.ts";
+import { emptyWorkDetails, metadataStrings, titleOriginMm, titleBracketInsetMm, fitBoardCaption, captionTypography, boardTextLayout, wrapBoardText } from "../src/lib/exhibitionText.ts";
 import { snapPhotoEdges } from "../src/lib/exhibitionEditing.ts";
 import { boardChain, boardSurface, boardPlacementProblems, joinBoardGroups, detachBoardGroup } from "../src/lib/exhibitionBoards.ts";
 import { reusableRoom } from "../src/lib/exhibitionRoomReuse.ts";
@@ -29,7 +29,8 @@ test("board text uses actual font widths, fits four caption lines, and positions
   assert.deepEqual(validateBoardText(c),[]);
   c.works[0].title="あ".repeat(11);assert.ok(validateBoardText(c).some(i=>i.path.endsWith("title")));
   c.works[0].title="i".repeat(30);assert.ok(!validateBoardText(c).some(i=>i.path.endsWith("title")));
-  c.works[0].caption="あ".repeat(101);assert.ok(validateBoardText(c).some(i=>i.path.endsWith("caption")));
+  c.works[0].caption="あ".repeat(101);assert.ok(!validateBoardText(c).some(i=>i.path.endsWith("caption")));
+  c.works[0].caption="あ".repeat(156);assert.ok(validateBoardText(c).some(i=>i.path.endsWith("caption")));
   c.authorName="あ".repeat(20);assert.ok(validateBoardText(c).some(i=>i.path==="authorName"));
   const font:any=fontkit.create(fs.readFileSync("public/fonts/zen-old-mincho/ZenOldMincho-Bold.ttf"));
   const ink=font.glyphForCodePoint(0x300c).bbox.minX/font.unitsPerEm*21*25.4/72;
@@ -84,4 +85,43 @@ test("room export includes folded board geometry, both faces, colors, wrapped wo
   const floor=exhibitionLayoutSvg(r,[a,b,c]);assert.match(floor,/data-board-floor-face="A"/);assert.match(floor,/data-board-floor-face="B"/);const svg=exhibitionLayoutSvg(r,[a,b,c],{view:`board:${g.id}:A`})+exhibitionLayoutSvg(r,[a,b,c],{view:`board:${g.id}:B`});assert.match(svg,/data-board-face="A"/);assert.match(svg,/data-board-face="B"/);assert.match(floor,/#2277aa/);assert.match(svg,/900.0 mm/);for(const w of [a,b,c])assert.ok(svg.includes(`data-label-id="work:${w.id}"`));
   const png=await sharp(exhibitionLayoutPng(r,[a,b,c])).metadata();assert.equal(png.width,2244);assert.ok(png.height!>1500);
   const pdf=await PDFDocument.load(await exhibitionLayoutPdf([r],[a,b,c]));assert.equal(pdf.getPageCount(),7);assert.ok(pdf.getPage(0).getWidth()>pdf.getPage(0).getHeight());
+});
+
+test("caption fitting preserves the print area and picks the largest size from 10pt down to 8pt",()=>{
+  for(const [value,size,lines] of [["",10,1],["あ".repeat(100),10,4],["あ".repeat(101),9.7,4],["あ".repeat(150),8.2,5],["あ".repeat(155)+"i",8,5]] as const){
+    const fitted=fitBoardCaption(value,measureBoardText);
+    assert.equal(fitted.fontSize,size);assert.equal(fitted.lines.length,lines);assert.equal(fitted.fits,true);
+    assert.equal(fitted.lines.join(''),value);
+    assert.ok(fitted.lines.every(line=>measureBoardText(line,size)<=boardTextLayout.bodyWidth+.001));
+    assert.ok((lines-1)*fitted.lineHeightMm+size*25.4/72<=captionTypography.heightMm+.001);
+    if(size<10){const next=size+.1,wrapped=wrapBoardText(value,next,boardTextLayout.bodyWidth,measureBoardText);assert.ok((wrapped.length-1)*captionTypography.lineHeightMm*next/10+next*25.4/72>captionTypography.heightMm+.001);}
+  }
+  for(const value of ['あ'.repeat(156),'行\n'.repeat(5),'\n'.repeat(5)]){
+    const fitted=fitBoardCaption(value,measureBoardText);assert.equal(fitted.fontSize,8);assert.equal(fitted.fits,false);
+    const c=content();c.works[0].caption=value;assert.ok(validateBoardText(c).some(i=>i.path.endsWith('caption')&&i.message.includes('標準の8ptの枠に収まりません')));
+  }
+  const c=content();c.works[0].caption='i'.repeat(400);assert.ok(!validateBoardText(c).some(i=>i.path.endsWith('caption')));
+  c.works[0].caption+='i';assert.ok(validateBoardText(c).some(i=>i.path.endsWith('caption')&&i.layout&&i.message.includes('400文字')));
+});
+
+test("PDF cards and layout previews accept longer captions at the fitted size without changing saved content",async()=>{
+  const {generateTitleBoards}=await import('../src/lib/exhibitionOutputs.ts');
+  const {titleBoardPreview}=await import('../src/lib/exhibitionTitleBoardPreview.ts');
+  const {PDFDocument,PDFArray,PDFRawStream,decodePDFRawStream}=await import('pdf-lib');
+  const {emptySubmission}=await import('../src/lib/exhibitionTypes.ts');
+  const c=emptySubmission(),now=new Date().toISOString(),eid=uuid(),sectionId=uuid();
+  c.name=c.authorName='作者';c.grade='1年';
+  c.works=[100,101,155].map((n,i)=>({...work(),sectionId,kind:'book' as const,title:['標準','自動縮小','最小サイズ'][i],caption:'あ'.repeat(n)+(i===2?'i':''),photos:[]}));
+  const exhibition={id:eid,title:'可変サイズ',revision:1,status:'open' as const,opensAt:'',closesAt:'',createdAt:now,updatedAt:now,schemas:[{version:1,sections:[{id:sectionId,title:'通常展示',description:''}],fields:[],captionLabel:'キャプション'}],rooms:[],albumId:uuid(),gallery:'staff' as const,googleForms:[]};
+  const submission={id:uuid(),exhibitionId:eid,tokenHash:'',revision:1,schemaVersion:1,createdAt:now,updatedAt:now,draft:c,versions:[{version:1,schemaVersion:1,at:now,content:c,delivery:'delivered' as const,attempts:0,nextAttemptAt:0}],portfolioId:'author',qrConfirmed:true};
+  const data={version:1 as const,exhibitions:[exhibition],submissions:[submission],assets:[]},before=structuredClone(data);
+  const output=await generateTitleBoards(data,exhibition,'https://scharade.jp');
+  assert.deepEqual(output.issues,[]);assert.ok(output.pdf);
+  const pdf=await PDFDocument.load(output.pdf),streams=pdf.getPage(0).node.Contents();assert.ok(streams instanceof PDFArray);
+  const commands=streams.asArray().map(ref=>{const stream=pdf.context.lookup(ref);assert.ok(stream instanceof PDFRawStream);return Buffer.from(decodePDFRawStream(stream).decode()).toString('utf8');}).join('\n');
+  assert.equal([...commands.matchAll(/ 9\.7 Tf/g)].length,4);
+  assert.equal([...commands.matchAll(/ 8 Tf/g)].length,5);
+  for(const w of c.works){const preview=await titleBoardPreview({submission,work:w,qrUrl:'https://scharade.jp/Portfolio/author'},'https://scharade.jp');assert.deepEqual(preview.issues,[]);assert.equal((await sharp(preview.png).metadata()).width,840);}
+  assert.deepEqual(data,before);
+  c.works[0].caption='あ'.repeat(156);const rejected=await generateTitleBoards(data,exhibition,'https://scharade.jp');assert.equal(rejected.pdf,null);assert.ok(rejected.issues.some(i=>/キャプション|配置/.test(i.message)),JSON.stringify(rejected.issues));
 });

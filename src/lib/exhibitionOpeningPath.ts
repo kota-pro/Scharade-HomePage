@@ -3,10 +3,16 @@ import {roomWallPoint} from './exhibitionRoomPath.ts';
 import {compileVectorPath,pointBounds} from './exhibitionVector.ts';
 export function openingPath(room:RoomLayout,o:Opening):VectorPath {
   if(o.visualPath)return o.visualPath;
-  const w=o.width,area=room.vertices.reduce((sum,p,i)=>{const q=room.vertices[(i+1)%room.vertices.length];return sum+p.x*q.y-q.x*p.y;},0),sign=area>0?1:-1;
+  const w=o.width,area=room.vertices.reduce((sum,p,i)=>{const q=room.vertices[(i+1)%room.vertices.length];return sum+p.x*q.y-q.x*p.y;},0),sign=(area>0?1:-1)*(o.swingSide==='outward'?-1:1);
   if(o.kind==='window')return{closed:false,nodes:[{id:crypto.randomUUID(),x:0,y:0},{id:crypto.randomUUID(),x:w,y:0}]};
   const angle=(o.swingAngle??90)*Math.PI/180,k=4/3*Math.tan(angle/4),x=w*Math.cos(angle),y=sign*w*Math.sin(angle);
-  return{closed:true,nodes:[{id:crypto.randomUUID(),x:0,y:0},{id:crypto.randomUUID(),x:w,y:0,out:{x:0,y:sign*k*w}},{id:crypto.randomUUID(),x,y,in:{x:k*w*Math.sin(angle),y:-sign*k*w*Math.cos(angle)}}]};
+  const path:VectorPath={closed:true,nodes:[{id:crypto.randomUUID(),x:0,y:0},{id:crypto.randomUUID(),x:w,y:0,out:{x:0,y:sign*k*w}},{id:crypto.randomUUID(),x,y,in:{x:k*w*Math.sin(angle),y:-sign*k*w*Math.cos(angle)}}]};
+  if(o.hingeSide==='end')for(const n of path.nodes){n.x=w-n.x;for(const h of [n.in,n.out])if(h)h.x=-h.x;}
+  return path;
+}
+export function setDoorOpening(o:Opening,hingeSide:'start'|'end',swingSide:'inward'|'outward') {
+  if(o.kind!=='door')throw new Error('ドアを選択してください。');
+  o.hingeSide=hingeSide;o.swingSide=swingSide;delete o.visualPath;
 }
 export function openingPathWorld(room:RoomLayout,o:Opening,p:VectorPoint,inverse=false) {
   const origin=roomWallPoint(room,o.wall,o.offset),angle=(inverse?-1:1)*origin.angle*Math.PI/180,x=inverse?p.x-origin.x:p.x,y=inverse?p.y-origin.y:p.y;

@@ -1,7 +1,11 @@
 ---
 import "../../styles/PhotoGallery.css";
+import PhotoCard from "../../components/PhotoCard.astro";
+import LoadingIndicator from "../../components/LoadingIndicator.astro";
 import GalleryLayout from "../../layouts/Gallery_Layout.astro";
-import { getAlbumPhotosPage } from "../../lib/lightroom";
+import GalleryAlbumSettings from "../../components/GalleryAlbumSettings.astro";
+import { isStaff } from "../../lib/auth";
+import { getGalleryPhotosPage } from "../../lib/galleryCatalog";
 import { accessibleAlbum } from "../../lib/galleryAccess";
 import { photoLinks } from "../../lib/galleryTokens";
 
@@ -11,7 +15,7 @@ let album,
   failed = false;
 try {
   album = await accessibleAlbum(id ?? "", Astro.locals.user);
-  if (album) page = await getAlbumPhotosPage(album.id, {limit:100});
+  if (album) page = await getGalleryPhotosPage(album.id, { limit: 100, groupSeries: true });
 } catch {
   failed = true;
   Astro.response.status = 503;
@@ -27,13 +31,14 @@ const photos = (page?.photos ?? []).map((photo) =>
 
 const initialPhotos=photos;
 const ITEMS_PER_PAGE=100;
-const initialTotalPages=Math.max(1,Math.ceil(initialPhotos.length/ITEMS_PER_PAGE));
 const albumTitle=album?.payload.name ?? "Gallery";
 const initialCursor=page?.nextCursor ?? "";
+const initialTotalPages=Math.max(1,Math.ceil((initialPhotos.length + Number(Boolean(initialCursor)))/ITEMS_PER_PAGE));
 ---
 
-<GalleryLayout title={albumTitle}>
-  {failed && <p class="service-notice">写真を取得できません。時間をおいて再読み込みしてください。</p>}
+<GalleryLayout title={albumTitle} visibility={album?.visibility}>
+  {album && isStaff(Astro.locals.user) && !Astro.locals.adminView?.readOnly && <GalleryAlbumSettings slot="album-actions" album={album} />}
+  {failed && <p class="service-notice" role="alert">写真を取得できません。時間をおいて再読み込みしてください。</p>}
   <p class="gallery-load-status" role="status"></p>
   {initialPhotos.length === 0 && <div class="no-photos">No photos found.</div>}
   {
@@ -75,24 +80,19 @@ const initialCursor=page?.nextCursor ?? "";
     )
   }
   <div class="gallery-container-inner">
-    <div class="justified-grid" data-page-size={ITEMS_PER_PAGE} data-album-id={id} data-next-cursor={initialCursor}>
+    <div class="justified-grid" data-layout={initialPhotos.length ? "loading" : undefined} data-page-size={ITEMS_PER_PAGE} data-album-id={id} data-next-cursor={initialCursor}>
+      <div class="photo-grid-loading" role="status"><LoadingIndicator /><span class="visually-hidden">写真一覧を読み込んでいます</span></div>
       {
         initialPhotos.map((photo, photoIndex) => (
-          <a
-            class="photo-wrapper photo-trigger"
-            href={photo.full}
-            data-lightbox="album"
-            data-index={photoIndex}
-          >
-            <img
-              src={photo.src}
-              alt={photo.name}
-              decoding="async"
-              loading={photoIndex < 6 ? "eager" : "lazy"}
-              class="gallery-image"
-              data-full-src={photo.full}
-            />
-          </a>
+          <PhotoCard
+            photoRef={{ source: "gallery", containerId: id!, imageId: photo.id, proof: new URL(photo.full, Astro.url).searchParams.get("proof")! }}
+            src={photo.src} full={photo.full} alt={photo.name}
+            series={photo.series}
+            width={photo.width} height={photo.height}
+            aspectRatio={photo.width && photo.height ? photo.width / photo.height : undefined}
+            loading={photoIndex === 0 ? "eager" : "lazy"}
+            fetchPriority={photoIndex === 0 ? "high" : undefined}
+          />
         ))
       }
     </div>
@@ -332,5 +332,5 @@ const initialCursor=page?.nextCursor ?? "";
 
 <script>
   import "../../scripts/portfolioGallery";
-  import "../../scripts/portfolioLightbox";
+
 </script>

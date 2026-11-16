@@ -147,6 +147,7 @@ beforeEach(() => {
         records: rows,
       });
     }
+    if (String(input).endsWith("/portfolio/p1")) return Response.json({ grade: "3rd Grade" });
     assert.match(String(input), /\/portfolio\/p2$/);
     if (options?.method === "PATCH") {
       const patch = JSON.parse(String(options.body));
@@ -206,9 +207,9 @@ test("preview is read-only; applying preserves identity/history and excludes dep
   assert.equal(run.publishedGroups!.groups[0].memberIds.length, 2);
   assert.equal(data.rosterPortfolioUpdates![0].status, "pending");
   await apply(p.previewId);
-  assert.equal(readActivities().rosterPortfolioUpdates!.length, 1);
+  assert.equal(readActivities().rosterPortfolioUpdates!.length, 2);
   const done = await drainRosterPortfolioUpdates();
-  assert.equal(done.completed, 1);
+  assert.equal(done.completed, 2);
   assert.deepEqual(patches, [{ grade: "OB/OG" }]);
   assert.deepEqual(cms.pictures, ["preserve"]);
   assert.equal(cms.role, "元幹部");
@@ -252,10 +253,10 @@ test("failed reads, stale revisions, changed sheets and unconfirmed submissions 
   await assert.rejects(apply(p.previewId), /更新されました/);
   assert.deepEqual(readActivities(), changed);
 });
-test("role changes and account relinking during confirmation prevent writes, and non-admins cannot preview/retry", async () => {
+test("role changes and account relinking during confirmation prevent writes, and members and staff cannot preview/retry", async () => {
   const before = readActivities();
   for (const action of ["roster.preview", "roster.apply", "roster.retry"])
-    await assert.rejects(act({ action }, "one"), /管理者/);
+    await assert.rejects(act({ action }, "one"), /幹部以上/);
   const p = await preview();
   writeData(
     "users.json",
@@ -267,7 +268,7 @@ test("role changes and account relinking during confirmation prevent writes, and
     "users.json",
     users.map((u) => (u.id === "admin" ? { ...u, role: "staff" } : u)),
   );
-  await assert.rejects(apply(p.previewId), /管理者/);
+  await assert.rejects(apply(p.previewId), /幹部以上/);
 });
 test("queued updates never follow a replaced Portfolio or a member restored to the roster", async () => {
   await apply((await preview()).previewId);
@@ -323,13 +324,13 @@ test("returning members cancel pending graduation and a later departure creates 
   assert.equal(readActivities().roster!.retiredRecords!.length, 0);
   assert.equal(readActivities().profiles.two.grade, "3");
   await drainRosterPortfolioUpdates();
-  assert.equal(patches.length, 0);
+  assert.deepEqual(patches, []);
   assert.equal(readActivities().rosterPortfolioUpdates![0].status, "cancelled");
   rows = rows.slice(0, 1);
   await apply((await preview()).previewId);
-  assert.equal(readActivities().rosterPortfolioUpdates!.length, 2);
+  assert.equal(readActivities().rosterPortfolioUpdates!.filter(job => !job.targetGrade).length, 2);
   await drainRosterPortfolioUpdates();
-  assert.equal(patches.length, 1);
+  assert.deepEqual(patches, [{ grade: "OB/OG" }]);
 });
 
 test("an array grade is updated without changing other fields", async () => {

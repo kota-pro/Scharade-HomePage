@@ -7,7 +7,7 @@ const { event } = Astro.props;
 ---
 
 <section class="activity-section">
-  <button class="admin-button" type="button" data-open-event-delete
+  <button class="admin-button admin-button-outline" type="button" data-open-event-delete
     >企画を削除</button
   >
   <dialog
@@ -29,7 +29,7 @@ const { event } = Astro.props;
       data-activity-action="event.delete"
       data-event-id={event.id}
       data-revision={event.revision}
-      data-redirect="/Member/manage?deleted=1"
+      data-redirect="/Management?deleted=1"
     >
       <label class="activity-check"
         ><input

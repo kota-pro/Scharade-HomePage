@@ -1,0 +1,91 @@
+---
+import BlogArticle from "./BlogArticle.astro";
+import MypostLayout from "../layouts/Mypost_Layout.astro";
+import { breadcrumbsFor } from "../lib/breadcrumbs";
+import type { Blog } from "../types/microcms";
+
+interface Props { post: Blog; fromParam: string | null; preview?: boolean }
+const { post, fromParam, preview = false } = Astro.props;
+const breadcrumbs = breadcrumbsFor("/posts/article", post.title);
+const backLinkMap = {
+  activity: { href: "/Activity", label: "Activityへ戻る" },
+  gallery: { href: "/Gallery", label: "Galleryへ戻る" },
+} as const;
+type BackLinkMap = typeof backLinkMap;
+type FromParam = keyof BackLinkMap;
+const isFromParam = (value: string | null): value is FromParam =>
+  value === "activity" || value === "gallery";
+const backLink = isFromParam(fromParam) ? backLinkMap[fromParam] : null;
+const backLinkMapJSON = JSON.stringify(backLinkMap);
+---
+
+<MypostLayout title={post.title} from="Activity" breadcrumbs={breadcrumbs}>
+  <BlogArticle post={post} preview={preview} />
+  <div
+    class="back-link"
+    id="post-back-link"
+    data-map={backLinkMapJSON}
+    hidden={!backLink}
+  >
+    {
+      backLink ? (
+        <a href={backLink.href}>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="25"
+            height="25"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fill="currentColor"
+              d="M11.25 17.308L5.942 12l5.308-5.308l.708.708L7.364 12l4.594 4.6zm6.1 0L12.042 12l5.308-5.308l.708.708l-4.594 4.6l4.594 4.6z"
+            />
+          </svg>
+          {backLink.label}
+        </a>
+      ) : null
+    }
+  </div>
+</MypostLayout>
+
+<style>
+  .back-link {
+    margin-top: 48px;
+    font-family: "Zen Kurenaido";
+    font-size: 20px;
+    letter-spacing: 3px;
+    text-align: right;
+    color: #6f6f6f;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 15px;
+  }
+
+  .back-link:hover {
+    color: #0db49b;
+  }
+
+  .back-link a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+  }
+
+  @media screen and (max-width: 780px) {
+    .back-link {
+      font-size: 12px;
+      letter-spacing: 2px;
+    }
+
+    .back-link a {
+      gap: 8px;
+    }
+
+    .back-link a svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+</style>

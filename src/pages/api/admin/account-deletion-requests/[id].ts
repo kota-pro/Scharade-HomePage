@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { json } from "../../../../lib/http.ts";
-import { isAdmin } from "../../../../lib/auth.ts";
+import { isExecutive } from "../../../../lib/auth.ts";
 import {
   startDeletionProcessing,
   completeDeletionProcessing,
@@ -8,8 +8,8 @@ import {
 import { DeletionRequestError } from "../../../../lib/accountDeletionRequests.ts";
 import { AccountUpdateError } from "../../../../lib/accountManagement.ts";
 export const POST: APIRoute = async ({ locals, params, request }) => {
-  if (!isAdmin(locals.user))
-    return json({ ok: false, message: "管理者権限が必要です。" }, 403);
+  if (!isExecutive(locals.user))
+    return json({ ok: false, message: "幹部以上の権限が必要です。" }, 403);
   const data = await request.json().catch(() => null);
   try {
     if (

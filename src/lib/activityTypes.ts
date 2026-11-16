@@ -41,6 +41,12 @@ export type RosterRecord = {
   gender: Gender | null;
   grade: Grade | null;
   active: boolean;
+  identityHash?: string;
+  provenance?: import("./clubFormsTypes.ts").RosterProvenance[];
+  needsReview?: string[];
+  identityUncertain?: boolean;
+  membershipUncertain?: boolean;
+  departureReason?: "missing" | "declined";
 };
 export type ActivityRoster = {
   revision: number;
@@ -54,6 +60,8 @@ export type ActivityRoster = {
   bindings: Record<string, string>;
   retiredRecords?: RosterRecord[];
   managedSource?: boolean;
+  term?: import("./clubFormsTypes.ts").TermRosterSource;
+  mergedSpreadsheetUrl?: string;
 };
 export type RosterPortfolioUpdate = {
   id: string;
@@ -66,6 +74,10 @@ export type RosterPortfolioUpdate = {
   createdAt: string;
   updatedAt: string;
   previousGrade?: unknown;
+  /** Absent on legacy departure jobs, whose target remains OB/OG. */
+  targetGrade?: string;
+  rosterFetchedAt?: string;
+  initialOnly?: true;
   message?: string;
 };
 export type Participant = {
@@ -107,11 +119,13 @@ export type ActivityEvent = {
   title: string;
   category?: EventCategory;
   description: string;
+  descriptionHtml?: string;
   headerImage?: string;
   startsAt: string;
   endsAt: string;
   meeting: string;
   itinerary: string;
+  itineraryHtml?: string;
   fee: string;
   deadline: string;
   theme: string;
@@ -128,16 +142,20 @@ export type ActivityEvent = {
 };
 export type MemberNotification = {
   id: string;
+  revision?: number;
+  updatedAt?: string;
   title: string;
   body: string;
+  bodyHtml?: string;
   senderId: string;
   senderName: string;
   eventId?: string;
   exhibitionId?: string;
+  toolId?: string;
   createdAt: string;
   recipientIds: string[];
   readBy: Record<string, string>;
-  kind?: "announcement" | "event" | "cancellation" | "exhibition" | "reminder";
+  kind?: "announcement" | "event" | "cancellation" | "exhibition" | "exhibition-shift" | "reminder";
   reminder?: import("./pushTypes.ts").ReminderSchedule;
 };
 export type ActivityStore = {
@@ -145,10 +163,12 @@ export type ActivityStore = {
   profiles: Record<string, Profile>;
   events: ActivityEvent[];
   notifications: MemberNotification[];
+  deletedNotificationIds?: string[];
   push?: import("./pushTypes.ts").PushQueue;
   roster?: ActivityRoster;
   rosterPortfolioUpdates?: RosterPortfolioUpdate[];
   rosterChangeId?: string;
+  rosterExports?: import("./clubFormsTypes.ts").RosterExport[];
   eventGroupingHistory?: Pick<
     ActivityEvent,
     "id" | "title" | "startsAt" | "endsAt" | "publishedGroups"

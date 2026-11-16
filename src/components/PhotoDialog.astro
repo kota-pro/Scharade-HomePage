@@ -1,0 +1,50 @@
+---
+import LoadingIndicator from "./LoadingIndicator.astro";
+import GalleryPhotoEditor from "./GalleryPhotoEditor.astro";
+import PortfolioBookViewer from "./PortfolioBookViewer.astro";
+const showGalleryEditor = /^\/Gallery\/[^/]+\/?$/.test(Astro.url.pathname) && Astro.locals.user?.approved && !Astro.locals.adminView?.readOnly;
+const showBookReader = /^\/Portfolio\/[^/]+\/?$/.test(Astro.url.pathname);
+---
+<dialog id="photo-dialog" class="photo-dialog" aria-label="写真の詳細" data-info-open="false">
+  <div class="photo-dialog-viewport" data-photo-viewport>
+    <div class="photo-dialog-controls">
+      <div class="photo-author" data-photo-author hidden></div>
+      <button class="photo-dialog-close" type="button" data-photo-close aria-label="写真を閉じる" autofocus><span></span><span></span></button>
+    </div>
+    <button class="photo-series-back" type="button" data-photo-series-back hidden>‹ 組写真の全体へ</button>
+    <div class="photo-dialog-layout">
+      <div class="photo-dialog-picture">
+        <section class="photo-series-overview" data-photo-series-overview aria-label="組写真の全体" hidden>
+          <div class="photo-series-stage"><div class="photo-series-canvas" data-photo-series-canvas></div></div>
+          <p data-photo-series-help role="status"></p>
+        </section>
+        <button class="photo-image-toggle" type="button" data-photo-toggle aria-controls="photo-information" aria-expanded="false" aria-label="写真の情報を表示"><img data-photo-image alt="" hidden /></button>
+        <button class="photo-prev" type="button" data-photo-prev aria-label="前の写真">‹</button><button class="photo-next" type="button" data-photo-next aria-label="次の写真">›</button><span data-photo-position></span>
+      </div>
+      <section id="photo-information" class="photo-dialog-information" aria-label="作品と撮影の情報" aria-hidden="true" inert>
+        <div class="photo-information-content">
+          <div class="photo-information-heading">
+            <h2 data-photo-title hidden></h2>
+          </div>
+          <div class="photo-exif"><span data-photo-equipment><span data-photo-camera hidden></span>&#10;<span data-photo-lens hidden></span>&#10;<span data-photo-film hidden></span></span><span data-photo-settings></span></div>
+          <p class="photo-caption" data-photo-caption tabindex="0" aria-label="キャプション" hidden></p>
+          <p data-photo-detail-error role="status" hidden></p>
+          <button type="button" data-photo-detail-retry hidden>情報を再読み込み</button>
+        </div>
+        <div class="photo-information-loading" data-photo-details-loading role="status" hidden><LoadingIndicator /><span class="visually-hidden">写真の情報を読み込んでいます</span></div>
+      </section>
+    </div>
+    <div class="photo-dialog-actions photo-like-controls">
+      {showBookReader && <button class="photo-book-read" type="button" data-open-book-reader aria-haspopup="dialog" aria-controls="portfolio-book-reader" hidden>ブックを読む</button>}
+      {showGalleryEditor && <button class="photo-like photo-edit" type="button" data-photo-edit aria-label="写真情報を編集" title="写真情報を編集" aria-haspopup="dialog" aria-controls="gallery-photo-editor" hidden>
+        <svg width="32" height="32" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 21h14c1.1 0 2-.9 2-2v-7h-2v7H5V5h7V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2"/><path fill="currentColor" d="M7 13v3c0 .55.45 1 1 1h3c.27 0 .52-.11.71-.29l9-9a.996.996 0 0 0 0-1.41l-3-3a.996.996 0 0 0-1.41 0l-9.01 8.99A1 1 0 0 0 7 13m10-7.59L18.59 7L17.5 8.09L15.91 6.5zm-8 8l5.5-5.5l1.59 1.59l-5.5 5.5H9z"/></svg>
+      </button>}
+      <button class="photo-like" type="button" data-photo-like aria-label="いいねする" aria-pressed="false" disabled><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 28S3 20 3 10a7 7 0 0 1 13-3 7 7 0 0 1 13 3c0 10-13 18-13 18Z" /></svg></button><button class="photo-like-count" type="button" data-photo-count aria-haspopup="dialog" aria-controls="photo-likers" aria-label="いいねした会員を見る" hidden></button>
+    </div>
+    <p data-photo-status role="status" aria-live="polite"></p>
+  </div>
+  <div class="photo-media-loading" data-photo-media-loading role="status" hidden><LoadingIndicator /><span class="visually-hidden">写真を読み込んでいます</span></div>
+</dialog>
+{showGalleryEditor && <GalleryPhotoEditor />}
+{showBookReader && <PortfolioBookViewer />}
+<script>import "../scripts/photoViewer";</script>

@@ -1,0 +1,13 @@
+---
+import { isAdmin, isStaff, isExecutive } from "../lib/auth";
+import { privateNavigation, privateSection } from "../lib/privateNavigation";
+import MemberIcon from "./MemberIcon.astro";
+const links = privateNavigation({ staff: isStaff(Astro.locals.user), admin: isAdmin(Astro.locals.user), executive: isExecutive(Astro.locals.user) });
+const active = privateSection(Astro.url.pathname, Astro.url.hash, Astro.url.searchParams.get("view") || "");
+---
+<nav class="private-mobile-nav" aria-label="会員ページのメニュー" style={`--private-nav-count:${links.length}`}>
+  {links.map(link => <a href={link.href} data-private-nav-key={link.key} aria-current={active === link.key ? "page" : undefined}><MemberIcon kind={link.icon} class="private-nav-icon" /><span>{link.label}</span></a>)}
+</nav>
+<script>
+  import "../scripts/privateMobileNavigation";
+</script>

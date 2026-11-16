@@ -1,0 +1,24 @@
+---
+import type { User } from '../lib/auth';
+import { canApproveRegistration } from '../lib/accountReview';
+import { accountRevision } from '../lib/accountManagement';
+import { readDeletionRequests } from '../lib/accountDeletionRequests';
+interface Props { target: User; }
+const { target } = Astro.props;
+const allowed = canApproveRegistration(Astro.locals.user, target) && !readDeletionRequests().requests.some(r => r.userId === target.id && r.status !== 'complete');
+const pending = !target.approved && !target.approvalReviewedAt;
+const retry = target.approvalReviewAction === 'approve' && (!target.approvalNotifiedAt || target.approvalSetup && !target.approvalSetup.recipientsCompletedAt);
+---
+{allowed && (pending || retry) && <section class="admin-section" data-help-target="account-approval">
+  <h3>登録の承認</h3>
+  <p>{pending ? '登録内容を確認してから承認してください。承認後、名簿連携と通知先の追加を行い、開設完了メールを送ります。' : '登録は承認済みです。通知先への追加と開設メールの結果を再確認できます。名簿の対応は幹部以上のやることリストで確認できます。'}</p>
+  <button type="button" class="admin-button" data-approval-open>{pending ? '登録を承認する' : '承認後の処理を再確認する'}</button>
+  <p data-approval-status role="status" aria-live="polite"></p>
+  <dialog class="admin-dialog" data-approval-dialog aria-labelledby="approval-title" data-account-id={target.id} data-revision={accountRevision(target)}>
+    <h2 id="approval-title">{pending ? '登録を承認しますか？' : '承認後の処理を再試行しますか？'}</h2>
+    <dl><dt>アカウント名</dt><dd>{target.name}</dd><dt>メールアドレス</dt><dd>{target.email}</dd><dt>登録時のPortfolio名</dt><dd>{target.portfolioName || '記録なし'}</dd></dl>
+    <p data-approval-result role="status" aria-live="polite"></p>
+    <div class="admin-actions"><button type="button" data-approval-back>戻る</button><button type="button" class="admin-button" data-approval-confirm>{pending ? 'この登録を承認する' : '再試行する'}</button></div>
+  </dialog>
+</section>}
+<script>import '../scripts/accountApproval';</script>

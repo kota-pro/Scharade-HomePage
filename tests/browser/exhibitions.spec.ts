@@ -51,7 +51,7 @@ test("exhibition editor preserves draft slots, numeric questions, replacements a
   await page.getByRole("button", { name: "展示室を追加", exact: true }).click();
   await expect(page.locator('[data-room-root="name"]')).toHaveValue("展示室 1");
   await page.getByRole("button", { name: "展示室レイアウトを保存", exact: true }).click();
-  await expect(page.locator(".exhibition-status")).toContainText("展示室レイアウトを保存しました");
+  await expect.poll(async () => (await (await page.request.get(`/api/member/exhibitions/${e.id}`)).json()).exhibition.rooms.length).toBe(1);
   const publicContext = await browser.newContext({ timezoneId: "Asia/Tokyo" });
   const submit = await publicContext.newPage();
   const errors: string[] = []; submit.on("pageerror", e => errors.push(e.message));
@@ -62,7 +62,7 @@ test("exhibition editor preserves draft slots, numeric questions, replacements a
     e = await command({ action: "settings", exhibitionId: e.id, revision: e.revision, title: e.title, status: "open", gallery: "staff", opensAt: seed.opensAt, closesAt: seed.closesAt, voteOpensAt: seed.participation.opensAt, voteClosesAt: seed.participation.closesAt });
     await submit.goto(`http://127.0.0.1:4329/Exhibition/${e.id}`);
     if (await submit.locator('[data-begin]').count()) await submit.locator('[data-begin]').click();
-    await submit.locator('[data-common="name"]').fill("作者"); await submit.locator('[data-common="grade"]').fill("1年"); await submit.locator('[data-common="authorName"]').fill("作者");
+    await submit.locator('[data-common="name"]').fill("作者"); await submit.locator('[data-common="grade"]').selectOption("1年"); await submit.locator('[data-common="authorName"]').fill("作者");
     await submit.getByLabel("展示費用").fill("1200");
     await submit.getByLabel("通常展示", { exact: true }).check();
     await submit.getByLabel("単写真枚数").fill("0"); await submit.getByLabel("単写真枚数").press("Tab");
@@ -89,13 +89,18 @@ test("exhibition editor preserves draft slots, numeric questions, replacements a
     await upload(1, "a.png", a);
     await submit.getByRole("button", { name: "提出する", exact: true }).click(); await expect(submit.locator(".exhibition-status")).toContainText("提出しました");
     await page.goto(`/Member/manage/exhibitions/${e.id}/submissions`);
-    await page.getByText("タイトルボードの内容を修正", { exact: true }).click();
-    await page.locator('[data-board-key="title"]').fill("修正した組写真");
+    await page.getByRole("tab",{name:"提出状況",exact:true}).click();
+    await page.locator("[data-submission-row] [data-submission-detail]").first().click();
+    await page.getByRole("button",{name:"作品タイトルを修正",exact:true}).click();
+    await page.locator('[data-work-key="title"]').fill("修正した組写真");
+    await page.locator("[data-se-next]").click();
     await page.getByRole("button", { name: "修正を保存", exact: true }).click();
-    await expect(page.locator(".exhibition-status")).toContainText("タイトルボードの内容を修正しました");
+    await expect(page.locator(".exhibition-status")).toContainText("提出内容の修正を保存しました");
     await page.reload();
-    await page.getByText("タイトルボードの内容を修正", { exact: true }).click();
-    await expect(page.locator('[data-board-key="title"]')).toHaveValue("修正した組写真");
+    await page.getByRole("tab",{name:"提出状況",exact:true}).click();
+    await page.locator("[data-submission-row] [data-submission-detail]").first().click();
+    await page.getByRole("button",{name:"作品タイトルを修正",exact:true}).click();
+    await expect(page.locator('[data-work-key="title"]')).toHaveValue("修正した組写真");
     await page.screenshot({ path: "/private/tmp/scharade-exhibition-reviewed.png", fullPage: true });
     expect(errors).toEqual([]);
   } finally { await publicContext.close(); }
@@ -110,13 +115,15 @@ test("series mm controls, grid drag and paper sizes remain usable without overla
   await page.getByLabel("単写真枚数").fill("0"); await page.getByLabel("単写真枚数").press("Tab");
   await page.getByLabel("ブック冊数").fill("0"); await page.getByLabel("ブック冊数").press("Tab");
   await page.getByLabel("組写真作品数").fill("1"); await page.getByLabel("組写真作品数").press("Tab");
-  await expect(page.locator('[data-series-editor]')).toBeVisible();
+  if(await page.locator('[data-upload-work]').count()<2)await page.locator('[data-add-series-photo]').click();
   await page.locator('[data-photo-paper="0"]').selectOption("A4");
   await page.locator('[data-photo-orientation="0"]').selectOption("portrait");
   await expect(page.locator('[data-photo-index="0"][data-photo-key="width"]')).toHaveValue("210");
   await expect(page.locator('[data-photo-index="0"][data-photo-key="height"]')).toHaveValue("297");
   await page.locator('[data-photo-index="0"][data-photo-key="rotation"]').fill("37");
   await page.locator('[data-photo-index="0"][data-photo-key="rotation"]').press("Tab");
+  await page.locator('[data-series-open]').click();
+  await expect(page.locator('[data-series-editor]')).toBeVisible();
   await page.locator('[data-series-pair-gap="x"]').fill("12.5"); await page.locator('[data-series-pair-gap="x"]').press("Tab");
   await expect(page.locator('[data-series-pair-gap="x"]')).toHaveValue("12.5");
   await page.locator('[data-series-select-all]').click();
@@ -127,6 +134,8 @@ test("series mm controls, grid drag and paper sizes remain usable without overla
   const canvas = page.locator('[data-series-work]'), first = canvas.locator('[data-series-photo="0"]');
   await first.scrollIntoViewIfNeeded(); const box = (await first.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await page.mouse.move(box.x + box.width / 2 + 23, box.y + box.height / 2 + 13); await page.mouse.up();
+  await page.locator('[data-series-dialog-close]').first().click();
+  await expect(page.locator('.series-editor-dialog')).toHaveCount(0);
   const x = Number(await page.locator('[data-photo-index="0"][data-photo-key="x"]').inputValue());
   expect(Math.abs(x / 5 - Math.round(x / 5))).toBeLessThan(.001);
   await page.getByRole("button", { name: "下書きを保存", exact: true }).click();
@@ -148,8 +157,8 @@ test("room anchors and precision inspector are separate columns on PC, retain wa
   expect(created.status()).toBe(200);
   const id = (await created.json()).exhibition.id;
   await page.setViewportSize({ width: 1440, height: 1000 }); await page.goto(`/Member/manage/exhibitions/${id}/layout`);
-  await page.locator('[data-room-add]').click();
-  await page.locator('[data-open-room-editor="floor"]').click();await page.locator('[data-layout-tool="direct"]').click();await expect(page.locator('[data-vector-node][data-vector-target="room"]')).toHaveCount(4);
+  await page.locator('[data-open-room-editor="floor"]').click();
+  await page.locator('[data-room-add]').click();await page.locator('[data-layout-tool="direct"]').click();await expect(page.locator('[data-vector-node][data-vector-target="room"]')).toHaveCount(4);
   const left = (await page.locator('.layout-stage').boundingBox())!, right = (await page.locator('.layout-sidebar').boundingBox())!;
   expect(right.x).toBeGreaterThanOrEqual(left.x + left.width);
   await page.locator('[data-layout-tool="direct"]').click();await page.locator('[data-vector-node="0"][data-vector-target="room"]').click();await page.locator('[data-vector-coordinate="0"][data-vector-key="x"]').fill("100"); await page.locator('[data-vector-coordinate="0"][data-vector-key="x"]').press("Tab");
@@ -183,7 +192,7 @@ test("nonparticipants and anonymous callers cannot read forms, uploads or anothe
   finally { await owner.close(); }
 });
 
-test("staff notice opens voting, both periods appear in the calendar, and only attendees start the form after the vote closes", async ({ page, browser }, info) => {
+test("staff notice opens voting, both periods appear in the calendar, and a later form opening is still enforced", async ({ page, browser }, info) => {
   await fixtureLogin(page.request, "/api/auth/login", { headers, data: { email: "planner@example.invalid", password: "fixture-password-123" } });
   let e = (await (await page.request.post('/api/member/exhibitions',{headers,data:{action:'create',title:`参加投票確認 ${info.project.name}`}})).json()).exhibition;
   const now = Date.now(), iso = (delta: number) => new Date(now+delta).toISOString();
@@ -208,5 +217,67 @@ test("staff notice opens voting, both periods appear in the calendar, and only a
     await expect(member.locator('[data-common="name"]')).toBeVisible();
     await fixtureLogin(member.request, 'http://127.0.0.1:4329/api/auth/login', {headers,data:{email:'other@example.invalid',password:'fixture-password-123'}});
     expect((await member.request.post(`http://127.0.0.1:4329/api/exhibitions/${e.id}`,{headers,data:{action:'begin'}})).status()).toBe(403);
+  } finally { await context.close(); }
+});
+
+test("staff reopens voting in reception settings and overlapping input opens immediately after an attending vote", async ({ page, browser }, info) => {
+  test.setTimeout(90000);
+  await fixtureLogin(page.request, "/api/auth/login", { headers, data: { email: "planner@example.invalid", password: "fixture-password-123" } });
+  const command = async (data: Record<string, unknown>) => {
+    const response = await page.request.post("/api/member/exhibitions", { headers, data });
+    expect(response.status(), await response.text()).toBe(200);
+    return (await response.json()).exhibition;
+  };
+  let e = await command({ action: "create", title: `参加投票の再開・同時受付 ${info.project.name}` });
+  const now = Date.now(), iso = (delta: number) => new Date(now + delta).toISOString();
+  const local = (delta: number) => new Date(now + delta + 9 * 3600000).toISOString().slice(0, 16);
+  e = await command({ action: "settings", exhibitionId: e.id, revision: e.revision, title: e.title, status: "open", gallery: "staff", voteOpensAt: iso(-3600000), voteClosesAt: iso(7200000), opensAt: iso(-3600000), closesAt: iso(3600000), recipientIds: ["member", "other"] });
+  await command({ action: "participation.publish", exhibitionId: e.id, revision: e.revision });
+  await expect.poll(async () => (await (await page.request.get(`/api/member/exhibitions/${e.id}`)).json()).exhibition.participation.state).toBe("published");
+  const context = await browser.newContext({ timezoneId: "Asia/Tokyo" }), member = await context.newPage();
+  const errors: string[] = []; member.on("pageerror", error => errors.push(error.message));
+  try {
+    await fixtureLogin(member.request, "http://127.0.0.1:4329/api/auth/login", { headers, data: { email: "member@example.invalid", password: "fixture-password-123" } });
+    await member.goto(`http://127.0.0.1:4329/Member/exhibitions/${e.id}`);
+    await expect(member.getByRole("link", { name: "出展フォームを入力する", exact: true })).toHaveCount(0);
+    await member.locator('[data-exhibition-answer="attending"]').click();
+    await expect(member.getByText("現在の回答：参加", { exact: true })).toBeVisible();
+    await member.getByRole("link", { name: "出展フォームを入力する", exact: true }).click();
+    await member.getByRole("button", { name: "出展を開始する", exact: true }).click();
+    await expect(member.locator('[data-common="name"]')).toBeVisible();
+    await member.locator('[data-common="name"]').fill("再開しても保持する作者");
+    await member.getByRole("button", { name: "下書きを保存", exact: true }).click();
+    await expect(member.locator(".exhibition-status")).toContainText("下書きを保存しました");
+    const original = await (await member.request.get(`http://127.0.0.1:4329/api/exhibitions/${e.id}`)).json();
+    await page.goto(`/Member/manage/exhibitions/${e.id}`);
+    await expect(page.getByText(/投票期間と入力期間は重ねて設定できます/)).toBeVisible();
+    await page.locator('[data-setting="voteClosesAt"]').fill(local(-120000));
+    await page.getByRole("button", { name: "受付設定を保存", exact: true }).click();
+    await expect(page.locator(".exhibition-status")).toContainText("受付設定を保存しました");
+    await member.goto(`http://127.0.0.1:4329/Member/exhibitions/${e.id}`);
+    await expect(member.locator('[data-exhibition-answer="attending"]')).toBeDisabled();
+    await expect(member.getByRole("link", { name: "出展フォームを入力する", exact: true })).toBeVisible();
+    const closed = (await (await page.request.get(`/api/member/exhibitions/${e.id}`)).json()).exhibition;
+    await expect(page.getByText(/「参加投票終了」を未来の日時に変更して保存すると投票を再開できます/)).toBeVisible();
+    await page.locator('[data-setting="voteClosesAt"]').fill(local(7200000));
+    await page.getByRole("button", { name: "受付設定を保存", exact: true }).click();
+    await expect(page.locator(".exhibition-status")).toContainText("受付設定を保存しました");
+    const reopened = (await (await page.request.get(`/api/member/exhibitions/${e.id}`)).json()).exhibition;
+    expect(reopened.participation.votes).toEqual(closed.participation.votes);
+    expect(reopened.participation.noticeId).toBe(closed.participation.noticeId);
+    expect(Date.parse(reopened.opensAt)).toBeLessThan(Date.parse(reopened.participation.closesAt));
+    const month = new Date(now + 9 * 3600000).toISOString().slice(0, 7);
+    await member.goto(`http://127.0.0.1:4329/Member?view=calendar&month=${month}`);
+    await expect(member.locator('[data-calendar-kind="exhibition-vote"]').filter({ hasText: e.title }).first()).toBeVisible();
+    await expect(member.locator('[data-calendar-kind="exhibition-form"]').filter({ hasText: e.title }).first()).toBeVisible();
+    await member.goto(`http://127.0.0.1:4329/Member/exhibitions/${e.id}`);
+    await expect(member.locator('[data-exhibition-answer="attending"]')).toBeEnabled();
+    await expect(member.locator('[data-exhibition-answer="attending"]')).toHaveAttribute("aria-pressed", "true");
+    await member.getByRole("link", { name: "出展フォームを入力する", exact: true }).click();
+    await expect(member.locator('[data-common="name"]')).toHaveValue("再開しても保持する作者");
+    const after = await (await member.request.get(`http://127.0.0.1:4329/api/exhibitions/${e.id}`)).json();
+    expect(after.submission).toEqual(original.submission);
+    await member.screenshot({ path: info.outputPath("overlapping-form-after-reopening.png"), fullPage: true });
+    expect(errors).toEqual([]);
   } finally { await context.close(); }
 });

@@ -1,5 +1,6 @@
 import { readApiResponse, apiErrorMessage } from "./apiResponse";
 import { operationNotice } from "./siteNotice";
+import { homePhotoPicker } from "./homePhotoPicker";
 export {};
 type Data = Record<string, any>;
 const root = document.querySelector<HTMLFormElement>("#content-editor");
@@ -15,6 +16,7 @@ if (root && initial?.textContent) {
   const toc = document.querySelector<HTMLElement>("#editor-toc");
   const tocList = document.querySelector<HTMLUListElement>("#editor-toc-list");
   const labels: Record<string, string> = {
+    excludedPhotoIds: "メイン写真・フィルム写真の除外設定",
     name: "サークル名",
     affiliation: "所属・公認表記",
     founded: "設立",
@@ -84,7 +86,7 @@ if (root && initial?.textContent) {
     for (const [key, sample] of Object.entries(bootstrap.defaults)) {
       const entry = document.createElement("li");
       entry.append(tocLink(sectionId(key), labels[key] ?? key));
-      if (Array.isArray(sample) && Array.isArray(data[key]) && data[key].length) {
+      if (key !== "excludedPhotoIds" && Array.isArray(sample) && Array.isArray(data[key]) && data[key].length) {
         const details = document.createElement("details");
         details.dataset.section = key;
         details.open = expanded.has(key);
@@ -115,6 +117,11 @@ if (root && initial?.textContent) {
     toc.hidden = false;
   }
   let id = 0;
+  const photoPicker = bootstrap.key === "home" ? homePhotoPicker({
+    read: () => data.excludedPhotoIds ?? [],
+    change: ids => { data.excludedPhotoIds = ids; changed(); notify("除外設定を編集画面に反映しました。保存・公開するとトップページに反映されます。"); },
+    busy: () => busy,
+  }) : null;
   function empty(template: any): any {
     if (Array.isArray(template)) return [];
     if (template && typeof template === "object")
@@ -133,6 +140,9 @@ if (root && initial?.textContent) {
   function renderObject(template: Data, value: Data, container: HTMLElement) {
     const isTopLevel = container === fields;
     for (const [key, sample] of Object.entries(template)) {
+      if (isTopLevel && key === "excludedPhotoIds" && photoPicker) {
+        const section = photoPicker.field(); markTarget(section, sectionId(key)); container.append(section); continue;
+      }
       if (Array.isArray(sample)) {
         const group = document.createElement("fieldset");
         group.className = "admin-list";

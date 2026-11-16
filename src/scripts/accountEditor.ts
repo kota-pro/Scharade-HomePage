@@ -48,11 +48,11 @@ if (form) {
       }
       const destination = `${location.pathname}?saved=1`;
       const next =
-        result.roleChanged && values.get("role") !== "admin"
+        result.roleChanged && !["executive", "admin"].includes(String(values.get("role")))
           ? "/"
           : destination;
       const reason = result.roleChanged ? "role-updated" : "email-updated";
-      flashNotice("登録内容を保存しました。");
+      flashNotice(result.rosterSync === "linked" ? "登録内容を保存し、名簿を再読み込みして対応しました。" : result.rosterSync ? "登録内容を保存しました。名簿の対応はやることリストで確認できます。" : "登録内容を保存しました。");
       location.assign(
         result.reauthenticate
           ? `/Login?reason=${reason}&next=${encodeURIComponent(next)}`

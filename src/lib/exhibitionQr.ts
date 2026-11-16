@@ -5,7 +5,13 @@ import sharp from "sharp";
 import { Resvg } from "@resvg/resvg-js";
 import { qrBrand, qrLogoPaths } from "./qrBrand.ts";
 
-export async function exhibitionQrPng(url: string, origin: string, width=720) {
+const cache=new Map<string,Promise<Buffer>>();
+export async function exhibitionQrPng(url:string,origin:string,width=720){
+  const key=JSON.stringify([url,origin,width]);let result=cache.get(key);
+  if(!result){result=renderQrPng(url,origin,width);cache.set(key,result);if(cache.size>128)cache.delete(cache.keys().next().value!);void result.catch(()=>{if(cache.get(key)===result)cache.delete(key);});}
+  return Buffer.from(await result);
+}
+async function renderQrPng(url: string, origin: string, width:number) {
   const qr=await QRCode.toBuffer(url,{width,margin:4,errorCorrectionLevel:"H",color:{dark:"#000000",light:"#ffffff"}});
   const brand=qrBrand(url,origin); if(!brand) return qr;
   const plate=Math.round(width*.18), logoSize=Math.round(plate*.8);

@@ -1,0 +1,33 @@
+---
+import StaffLayout from "../../../layouts/StaffLayout.astro";
+import { getGalleryAlbums } from "../../../lib/galleryCatalog";
+import { readGallerySettings } from "../../../lib/gallerySettings";
+import { GALLERY_CATEGORY_LABELS } from "../../../data/galleryAlbums";
+import "../../../styles/ContentManagement.css";
+
+const albums = await getGalleryAlbums().catch(() => null);
+albums?.sort((a, b) => b.created.localeCompare(a.created));
+const pending = Object.entries(readGallerySettings()).filter(([, value]) => value.deletePending);
+const labels = { staff: "運営限定", members: "会員限定", public: "一般公開" };
+---
+<StaffLayout title="Galleryのアルバム管理">
+  <div class="content-management-heading">
+    <h2>Galleryのアルバム管理</h2>
+    <a class="admin-button" href="/Management/gallery/new">新規作成</a>
+  </div>
+  {Astro.url.searchParams.has("deleted") && <p role="status">アルバムを削除しました。</p>}
+  {albums ? (
+    albums.length ? <ul class="content-management-list">
+      {albums.map(album => <li class="content-management-row">
+        <div><a href={`/Management/gallery/${encodeURIComponent(album.id)}`}>{album.payload.name}</a>
+          <p><small>{GALLERY_CATEGORY_LABELS[album.category]} · {labels[album.visibility]}</small></p>
+        </div>
+        <a class="admin-button" href={`/Management/gallery/${encodeURIComponent(album.id)}`} aria-label={`${album.payload.name}を管理`}>管理</a>
+      </li>)}
+    </ul> : <p>アルバムはまだありません。</p>
+  ) : <p role="alert">アルバム一覧を取得できませんでした。時間をおいて再読み込みしてください。</p>}
+  {pending.length > 0 && <section class="content-management-danger"><h3>Lightroomでの削除待ち</h3><ul class="content-management-list">
+    {pending.map(([id, value]) => <li><a href={`/Management/gallery/${encodeURIComponent(id)}`}>{value.name ?? id}の削除を再試行</a></li>)}
+  </ul></section>}
+  <div class="content-management-actions"><a class="member-back" href="/Management">Managementへ戻る</a></div>
+</StaffLayout>

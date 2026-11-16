@@ -1,4 +1,7 @@
 ---
+import PhotoCard from "../../components/PhotoCard.astro";
+import LoadingIndicator from "../../components/LoadingIndicator.astro";
+import { cmsPhotoId } from "../../lib/photoIdentity";
 import PageTopNav from "../../components/PageTopNav.astro";
 import "../../styles/PhotoGallery.css";
 export const prerender = false;
@@ -15,6 +18,12 @@ import {
 } from "../../lib/microcms";
 import { optimizeMicrocmsImage } from "../../utils/microcmsImage";
 import { safeExternalUrl } from "../../lib/contentSecurity.ts";
+import { portfolioIntroductionHtml } from "../../lib/portfolioIntroduction";
+import { portfolioSeriesForPictures, portfolioSeriesLayout } from "../../lib/portfolioSeries";
+import { photoSeriesPreview } from "../../utils/photoSeriesLayout";
+import { listPortfolioBooks } from "../../lib/portfolioBooks";
+import { portfolioBookMediaUrl } from "../../types/portfolioBooks";
+import "../../styles/PortfolioIntroduction.css";
 import "../../styles/UA+reset.css";
 
 const { id } = Astro.params;
@@ -26,31 +35,28 @@ try {
   return Astro.rewrite("/503");
 }
 const gradeText = normalizePortfolioGrade(portfolio.grade);
-const generation = Number.isInteger(portfolio.generation) && Number(portfolio.generation) > 0 && Number(portfolio.generation) <= 100000 ? portfolio.generation : null;
+const programPrefix = /^(Master's|Doctor's) Program$/.exec(gradeText)?.[1];
 const externalX = safeExternalUrl(portfolio.x_url);
-const hasPictures = portfolio.pictures && portfolio.pictures.length > 0;
+const series = portfolioSeriesForPictures(portfolio.id, portfolio.pictures);
+const seriesByPhoto = new Map(series.flatMap(work => work.photos.map(photo => [photo.assetId, work] as const)));
+const pictureUrls = new Map((portfolio.pictures ?? []).map(pic => [cmsPhotoId(pic.url), pic.url]));
+const seenSeries = new Set<string>();
+const displayPictures = (portfolio.pictures ?? []).flatMap(pic => {
+  const imageId = cmsPhotoId(pic.url), work = seriesByPhoto.get(imageId);
+  if (work && seenSeries.has(work.id)) return [];
+  if (work) seenSeries.add(work.id);
+  return [{ pic, imageId, series: work && photoSeriesPreview(portfolioSeriesLayout(work, pictureUrls, 480)) }];
+});
+const books = listPortfolioBooks(portfolio.id);
+const workCount = displayPictures.length + books.length;
+const hasPictures = workCount > 0;
 const pageTitle = `${portfolio.name} | Portfolio`;
 const { user } = getUserFromRequest(Astro.request);
 const canEditLink = canEditPortfolio(user, id ?? "");
 const isOwnPortfolio = Boolean(user && user.portfolioId === id);
 
-const backLinkMap = {
-  portfolio: {
-    href: "/Portfolio",
-    label: "Portfolioへ戻る",
-  },
-};
-type BackLinkMap = typeof backLinkMap;
-type FromParam = keyof BackLinkMap;
-const isFromParam = (value: string | null): value is FromParam => {
-  return value !== null && value in backLinkMap;
-};
-const fromParam = Astro.url.searchParams.get("from");
-const backLink = isFromParam(fromParam) ? backLinkMap[fromParam] : null;
-const backLinkMapJSON = JSON.stringify(backLink);
-
 const ITEMS_PER_PAGE = 100;
-const totalPages = Math.max(1, Math.ceil((portfolio.pictures?.length ?? 0) / ITEMS_PER_PAGE));
+const totalPages = Math.max(1, Math.ceil(workCount / ITEMS_PER_PAGE));
 ---
 
 <Layout title={pageTitle}>
@@ -112,9 +118,7 @@ const totalPages = Math.max(1, Math.ceil((portfolio.pictures?.length ?? 0) / ITE
             <p class="camera-info">
               使用機材：{portfolio.camera || "なし"}
             </p>
-            <p class="self-introduction">
-              {portfolio.self_introduction}
-            </p>
+            <div class="self-introduction portfolio-introduction-content" set:html={portfolioIntroductionHtml(portfolio.self_introduction)} />
           </div>
           <div class="icon">
             <div class="circle">
@@ -128,9 +132,9 @@ const totalPages = Math.max(1, Math.ceil((portfolio.pictures?.length ?? 0) / ITE
                 alt={portfolio.name}
                 class="profile-icon"
               />
-              <span class="suffix">{generation && <>{generation}<br/>期生</>}</span>
+              {programPrefix && <p class="profile-grade profile-grade-program" aria-label={gradeText}>{programPrefix}<br/>Program</p>}
             </div>
-            {gradeText && <p class="profile-grade">{gradeText}</p>}
+            {gradeText && !programPrefix && <p class="profile-grade">{gradeText}</p>}
           </div>
         </div>
       </section>
@@ -140,8 +144,6 @@ const totalPages = Math.max(1, Math.ceil((portfolio.pictures?.length ?? 0) / ITE
     <div
       class="back-link"
       id="post-back-link"
-      data-map={backLinkMapJSON}
-      hidden={!backLink && !canEditLink}
     >
       {
         canEditLink && (
@@ -165,7 +167,7 @@ const totalPages = Math.max(1, Math.ceil((portfolio.pictures?.length ?? 0) / ITE
         )
       }
 
-      <a href="javascript:history.back()" aria-label="Back">
+      <a href="/Portfolio">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="25"
@@ -184,7 +186,7 @@ const totalPages = Math.max(1, Math.ceil((portfolio.pictures?.length ?? 0) / ITE
 
     {
       hasPictures && (
-        <p class="picture-count">{portfolio.pictures.length} pictures</p>
+        <p class="picture-count"><span class="picture-count-value">{workCount}</span> {books.length ? "works" : "pictures"}</p>
       )
     }
 
@@ -193,7 +195,7 @@ const totalPages = Math.max(1, Math.ceil((portfolio.pictures?.length ?? 0) / ITE
         hasPictures && totalPages > 1 && (
           <div
             class="tab-panel-number panel-top"
-            data-total-posts={portfolio.pictures.length}
+            data-total-posts={workCount}
             data-total-pages={totalPages}
           >
             <p class="total-pages-label">Total {totalPages}</p>
@@ -221,29 +223,31 @@ const totalPages = Math.max(1, Math.ceil((portfolio.pictures?.length ?? 0) / ITE
       }
       {
         hasPictures ? (
-          <div class="justified-grid" data-page-size={ITEMS_PER_PAGE}>
-            {portfolio.pictures.map((pic, i) => (
-              <a
-                class="photo-wrapper"
+          <div class="justified-grid" data-layout="loading" data-page-size={ITEMS_PER_PAGE}>
+            <div class="photo-grid-loading" role="status"><LoadingIndicator /><span class="visually-hidden">写真一覧を読み込んでいます</span></div>
+            {displayPictures.map(({ pic, imageId, series }, i) => (
+              <PhotoCard
+                photoRef={{ source: "portfolio", containerId: id!, imageId }}
                 hidden={i >= ITEMS_PER_PAGE}
-                data-aspect-ratio={pic.width && pic.height ? pic.width / pic.height : undefined}
-                href={optimizeMicrocmsImage(pic.url,{width:2048,quality:85})}
-                data-lightbox="portfolio"
-              >
-                <img
-                  src={optimizeMicrocmsImage(pic.url, {
-                    width: 960,
-                    quality: 75,
-                  })}
-                  alt={`${portfolio.name}の作品 ${i + 1}`}
-                  decoding="async"
-                  class="gallery-image"
-                  loading="lazy" width={pic.width ?? 960} height={pic.height ?? 640}
-                  srcset={[240,480,720,960,1440,1920].map(w => `${optimizeMicrocmsImage(pic.url,{width:w,quality:78})} ${w}w`).join(", ")}
-                  sizes="(max-width:768px) 80vw, 30vw"
-                />
-              </a>
+                aspectRatio={pic.width && pic.height ? pic.width / pic.height : undefined}
+                src={optimizeMicrocmsImage(pic.url, { width: 960, quality: 75 })}
+                full={pic.url}
+                alt={`${portfolio.name}の作品 ${i + 1}`}
+                width={pic.width ?? 960} height={pic.height ?? 640}
+                srcset={[240,480,720,960,1440,1920].map(w => `${optimizeMicrocmsImage(pic.url,{width:w,quality:78})} ${w}w`).join(", ")}
+                sizes="(max-width:768px) 80vw, 30vw"
+                series={series}
+              />
             ))}
+            {books.map((book, i) => {
+              const cover = portfolioBookMediaUrl(portfolio.id, book.coverId);
+              return <PhotoCard photoRef={{ source: "portfolio", containerId: portfolio.id, imageId: book.id }}
+                src={cover} full={cover} title={book.metadata.title} alt={`${book.metadata.title}の表紙`}
+                width={book.width} height={book.height} aspectRatio={book.width / book.height}
+                hidden={displayPictures.length + i >= ITEMS_PER_PAGE}
+                book={{ source: portfolioBookMediaUrl(portfolio.id, book.pdfId), direction: book.direction,
+                  pageLayout: book.pageLayout, blankPagesAfter: book.blankPagesAfter }} />;
+            })}
           </div>
         ) : (
           <div class="no-photos">
@@ -275,14 +279,6 @@ const totalPages = Math.max(1, Math.ceil((portfolio.pictures?.length ?? 0) / ITE
           </div>
         )
       }
-    </div>
-    <div id="image-modal" class="modal-overlay" aria-hidden="true">
-      <div class="modal-content">
-        <button id="modal-close-btn" class="modal-close" aria-label="Close"
-          >&times;</button
-        >
-        <img id="modal-image" src="" alt="" />
-      </div>
     </div>
   </Fragment>
 </Layout>
@@ -360,7 +356,7 @@ const totalPages = Math.max(1, Math.ceil((portfolio.pictures?.length ?? 0) / ITE
 
   .user-name {
     color: #000;
-    font-family: "Zen Old Mincho";
+    font-family: YakuHanMP, "Zen Old Mincho";
     font-size: calc(2 / 45 * 100vw);
     font-style: normal;
     font-weight: 400;
@@ -404,7 +400,7 @@ const totalPages = Math.max(1, Math.ceil((portfolio.pictures?.length ?? 0) / ITE
   .tag {
     margin-right: 15px;
     color: #6f6f6f;
-    font-family: "Zen Kurenaido";
+    font-family: YakuHanRP, "Zen Kurenaido";
     font-size: 20px;
     font-style: normal;
     font-weight: 400;
@@ -463,9 +459,19 @@ const totalPages = Math.max(1, Math.ceil((portfolio.pictures?.length ?? 0) / ITE
     right: 0;
   }
 
+  .profile-grade.profile-grade-program {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: max-content;
+    margin: 0;
+    text-align: left;
+    line-height: 1.1;
+  }
+
   .camera-info {
     color: #000;
-    font-family: "Zen Kurenaido";
+    font-family: YakuHanRP, "Zen Kurenaido";
     font-size: calc(1 / 72 * 100vw);
     font-style: normal;
     font-weight: 400;
@@ -476,13 +482,13 @@ const totalPages = Math.max(1, Math.ceil((portfolio.pictures?.length ?? 0) / ITE
   }
 
   .self-introduction {
-    white-space: pre-line;
+    white-space: pre-wrap;
     color: #000;
-    font-family: "Zen Kurenaido";
+    font-family: YakuHanRP, "Zen Kurenaido";
     font-size: calc(1 / 72 * 100vw);
     font-style: normal;
     font-weight: 400;
-    line-height: normal;
+    line-height: 1.85;
     letter-spacing: 3px;
     border-left: 7px solid #d2d2d2;
     padding-left: 20px;
@@ -494,18 +500,6 @@ const totalPages = Math.max(1, Math.ceil((portfolio.pictures?.length ?? 0) / ITE
     object-fit: cover;
     border-radius: 50%;
     border: 1px solid #ddd;
-  }
-
-  .icon .suffix {
-    position: absolute;
-    right: 10px;
-    bottom: 0px;
-    line-height: 1.1;
-    font-size: 3rem;
-    font-family: "Courier New", monospace;
-    padding: 4px 8px;
-    border-radius: 3px;
-    text-align: center;
   }
 
   .section-divider {
@@ -908,5 +902,5 @@ const totalPages = Math.max(1, Math.ceil((portfolio.pictures?.length ?? 0) / ITE
 
 <script>
   import "../../scripts/portfolioGallery";
-  import "../../scripts/portfolioLightbox";
+
 </script>

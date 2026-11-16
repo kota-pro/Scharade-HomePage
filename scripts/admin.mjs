@@ -1,3 +1,4 @@
+import "./require-secure-runtime.mjs";
 import crypto from "node:crypto";
 import readline from "node:readline/promises";
 import { Writable } from "node:stream";
@@ -125,6 +126,7 @@ try {
         passwordHash: hashPassword(password),
         approved: true,
         role: "admin",
+        siteManagement: true,
         portfolioId,
         portfolioName: name,
         authVersion: 0,

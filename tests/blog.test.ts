@@ -1,6 +1,11 @@
 import {test,after,beforeEach} from 'node:test';
 import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import type {User} from '../src/lib/auth.ts';
 import {getBlogBySlug} from '../src/lib/blog.ts';
+import {deleteBlog,updateBlog} from '../src/lib/blogManagement.ts';
 import {invalidateCache} from '../src/lib/cache.ts';
 import {linkToPost} from '../src/utils/linkToPost.ts';
 import {buildTabs} from '../src/utils/blog.ts';
@@ -57,3 +62,41 @@ test('blog lookup paginates the slug index and never turns URL text into a CMS f
  assert.equal(await getBlogBySlug('存在しない記事！'),undefined);
  assert.equal(urls.length,3,'missing slugs reuse the cached index and fetch no unrelated post');
 });
+
+for (const operation of ['unpublish', 'delete'] as const) {
+ test(`a public article is no longer served from cache when CMS ${operation} succeeds before a lost response`, async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'blog-cache-'));
+  const previousDirectory = process.env.DATA_DIR;
+  process.env.DATA_DIR = directory;
+  const actor = {id: 'staff', role: 'staff', approved: true} as User;
+  const post = {id: 'post', slug: 'article', title: 'Article', updatedAt: '2026-11-01T00:00:00Z'};
+  let publicPost = true;
+  let mutationCalls = 0;
+  globalThis.fetch = async (input, options) => {
+   const url = new URL(input instanceof Request ? input.url : input);
+   if (options?.method === 'PATCH' || options?.method === 'DELETE') {
+    assert.equal(url.pathname, operation === 'delete' ? '/api/v1/blog/post' : '/api/v1/contents/blog/post/status');
+    mutationCalls++;
+    publicPost = false;
+    throw new TypeError('connection dropped after the CMS write');
+   }
+   if (url.host === 'fixture.microcms-management.io')
+    return Response.json({...post, status: ['PUBLISH']});
+   return Response.json({contents: publicPost ? [post] : [], totalCount: Number(publicPost), offset: 0, limit: 100});
+  };
+  try {
+   assert.equal((await getBlogBySlug(post.slug))?.id, post.id);
+   const input = {updatedAt: post.updatedAt};
+   const result = operation === 'delete'
+    ? deleteBlog(post.id, {...input, confirmation: 'delete'}, actor)
+    : updateBlog(post.id, {...input, action: 'unpublish'}, actor);
+   await assert.rejects(result, /connection dropped/);
+   assert.equal(mutationCalls, 1);
+   assert.equal(await getBlogBySlug(post.slug), undefined);
+  } finally {
+   if (previousDirectory === undefined) delete process.env.DATA_DIR;
+   else process.env.DATA_DIR = previousDirectory;
+   rmSync(directory, {recursive: true, force: true});
+  }
+ });
+}

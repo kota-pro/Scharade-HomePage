@@ -9,6 +9,7 @@ import { env } from "./config.ts";
 import { cached } from "./cache.ts";
 import { fetchWithTimeout } from "./http.ts";
 import { signGalleryValue, verifyGalleryValue } from "./galleryTokens.ts";
+import { lightroomPhotoMetadata } from "./lightroomPhotoMetadata.ts";
 const CLIENT_ID = env("ADOBE_CLIENT_ID");
 const CATALOG_ID = env("LIGHTROOM_CATALOG_ID");
 const LIGHTROOM_API_BASE_URL = "https://lr.adobe.io";
@@ -228,7 +229,7 @@ function mapLightroomResourceToPhoto(
   const assetId = resource.asset?.id;
   return {
     id: assetId || resource.id,
-    name: resource.payload?.importSource?.fileName || "Photo",
+    name: resource.asset?.payload?.importSource?.fileName || resource.payload?.importSource?.fileName || "Photo",
   };
 }
 
@@ -380,25 +381,26 @@ export async function getAlbumPhotosPage(
   if (!validLightroomId(albumId)) throw new Error("Invalid album ID");
   const path = `/v2/catalogs/${CATALOG_ID}/albums/${albumId}/assets`;
   const limit = Math.max(1, Math.min(100, options.limit ?? 30));
-  let target = `${LIGHTROOM_API_BASE_URL}${path}?limit=${limit}`;
+  let target = new URL(`${LIGHTROOM_API_BASE_URL}${path}?limit=${limit}`);
   if (options.cursor) {
     const cursor = verifyGalleryValue(options.cursor, "cursor");
     if (cursor.album !== albumId || typeof cursor.url !== "string")
       throw new Error("Invalid cursor");
-    target = resolveLightroomUrl(cursor.url);
-    if (new URL(target).pathname !== path)
+    target = new URL(resolveLightroomUrl(cursor.url));
+    if (target.pathname !== path)
       throw new Error("Invalid cursor path");
   }
+  target.searchParams.set("embed", "asset");
   return cached(
     `lr:photos:${target}`,
     async () => {
       const data = await fetchLightroomJson(
         await getAdobeAccessToken(),
-        target,
+        target.href,
       );
       const next =
         typeof data.links?.next?.href === "string"
-          ? resolveLightroomUrl(data.links.next.href, data.base || target)
+          ? resolveLightroomUrl(data.links.next.href, data.base || target.href)
           : null;
       if (next && new URL(next).pathname !== path)
         throw new Error("Invalid next page");
@@ -421,12 +423,13 @@ export async function getAlbumCoverId(albumId: string): Promise<string | null> {
 }
 export async function fetchRendition(
   assetId: string,
-  size: 640 | 2048,
+  size: 320 | 640 | 2048,
 ): Promise<ArrayBuffer | null> {
   if (!validLightroomId(assetId)) return null;
   const token = await getAdobeAccessToken();
+  const rendition = size === 320 ? "thumbnail2x" : size;
   const response = await fetchWithTimeout(
-    `${LIGHTROOM_API_BASE_URL}/v2/catalogs/${CATALOG_ID}/assets/${assetId}/renditions/${size}`,
+    `${LIGHTROOM_API_BASE_URL}/v2/catalogs/${CATALOG_ID}/assets/${assetId}/renditions/${rendition}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -438,4 +441,14 @@ export async function fetchRendition(
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Lightroom image: ${response.status}`);
   return response.arrayBuffer();
+}
+
+export async function getLightroomPhotoMetadata(assetId: string) {
+  if (!validLightroomId(assetId)) return {};
+  return cached(`lr:metadata:${assetId}`, async () => {
+    try {
+      const data = await fetchLightroomJson(await getAdobeAccessToken(), `${LIGHTROOM_API_BASE_URL}/v2/catalogs/${CATALOG_ID}/assets/${assetId}`);
+      return lightroomPhotoMetadata((data.resource ?? data).payload ?? {});
+    } catch { return {}; }
+  }, 300_000);
 }

@@ -1,0 +1,63 @@
+---
+import { photoFieldLabels, photoMetadataFields } from "../types/photos";
+import PortfolioBookZoom from "./PortfolioBookZoom.astro";
+---
+<dialog id="portfolio-book-editor" class="portfolio-photo-editor" aria-labelledby="portfolio-book-editor-title">
+  <form>
+    <div class="photo-editor-header">
+      <h2 id="portfolio-book-editor-title">ブックを追加</h2>
+      <button type="button" class="photo-editor-close" data-book-edit-close aria-label="ブックの編集を閉じる">
+        <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 5 14 14M19 5 5 19" fill="none" stroke="currentColor" stroke-width="1.2" /></svg>
+      </button>
+    </div>
+    <div class="photo-editor-body">
+      <div class="photo-editor-fields">
+        <label><span>閲覧用PDF</span><input name="pdf" type="file" accept=".pdf,application/pdf" aria-describedby="book-pdf-help" /></label>
+        <p id="book-pdf-help">20MBを超えるPDFは自動で圧縮します（元のファイルは200MBまで）。圧縮時に文字を選択できなくなる場合があります。InDesignの原稿はページ単位でPDFに書き出してください。</p>
+        <p data-book-filename></p>
+        <label><span>表紙</span>
+          <select name="coverMode"><option value="page">PDFのページを使う</option><option value="image">画像を使う</option></select>
+        </label>
+        <label data-book-cover-page><span>表紙のページ番号</span><input name="coverPage" type="number" value="1" min="1" step="1" inputmode="numeric" /></label>
+        <label data-book-cover-file hidden><span>表紙画像</span><input name="coverFile" type="file" accept="image/jpeg,image/png,image/webp" /></label>
+        <button type="button" data-book-preview-page>選んだページをプレビュー</button>
+        <img data-book-cover-preview alt="表紙のプレビュー" hidden />
+        <button type="button" data-book-preview-layout aria-controls="book-layout-preview" aria-expanded="false">ページ配置をプレビュー</button>
+        <section id="book-layout-preview" data-book-layout-preview hidden>
+          <label><span>ページの表示</span>
+            <select name="pageLayout"><option value="spread">見開き</option><option value="single">1ページずつ</option></select>
+          </label>
+          <div class="book-layout-navigation">
+            <button type="button" data-book-layout-go="first">先頭</button>
+            <button type="button" data-book-layout-go="previous">前へ</button>
+            <span data-book-layout-position aria-live="polite"></span>
+            <button type="button" data-book-layout-go="next">次へ</button>
+            <button type="button" data-book-layout-go="last">末尾</button>
+          </div>
+          <div class="book-layout-stage book-zoom-stage" data-book-layout-stage>
+            <div class="book-layout-artwork" data-book-layout-artwork></div>
+          </div>
+          <PortfolioBookZoom />
+          <div class="book-layout-pages" data-book-layout-pages></div>
+        </section>
+      </div>
+      <div class="photo-editor-fields">
+        <label><span>ページの開き方</span>
+          <select name="direction"><option value="left">左開き（左綴じ）</option><option value="right">右開き（右綴じ）</option></select>
+        </label>
+        {photoMetadataFields.map(key => (
+          <label>
+            <span>{photoFieldLabels[key]}</span>
+            {key === "caption"
+              ? <textarea name={key} rows="4" maxlength="5000" />
+              : <input name={key} type="text" required={key === "title"} maxlength={key === "title" ? 300 : 1000} />}
+          </label>
+        ))}
+      </div>
+    </div>
+    <div class="photo-editor-footer">
+      <p data-book-edit-status role="status" aria-live="polite"></p>
+      <div><button type="submit" class="photo-editor-apply">ブックを反映</button></div>
+    </div>
+  </form>
+</dialog>

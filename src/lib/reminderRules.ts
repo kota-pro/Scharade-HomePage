@@ -1,3 +1,4 @@
+import { isMemberAccount } from "./accountVisibility.ts";
 import type { ActivityStore } from "./activityTypes.ts";
 import type { ExhibitionStore } from "./exhibitionTypes.ts";
 import type { User } from "./auth.ts";
@@ -103,7 +104,7 @@ export function reminderAudience(
 ) {
   if (now < s.dueAt || now >= s.targetAt) return null;
   const approved = new Set(
-    users.filter((u) => u.approved && !u.mustResetPassword).map((u) => u.id),
+    users.filter((u) => isMemberAccount(u) && !u.mustResetPassword).map((u) => u.id),
   );
   if (s.kind === "event-deadline" || s.kind === "event-start") {
     const e = data.events.find(

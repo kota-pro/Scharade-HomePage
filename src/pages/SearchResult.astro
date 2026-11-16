@@ -1,9 +1,15 @@
 ---
 import PageTopNav from "../components/PageTopNav.astro";
 import Layout from "../layouts/Layout.astro";
-import { searchPublic } from "../lib/search";
+import { searchCategories, searchCategory, searchCategoryLabels, searchSite } from "../lib/search";
 const query = (Astro.url.searchParams.get("q") ?? "").trim().slice(0, 100);
-const { results, partial } = await searchPublic(query);
+const category = searchCategory(Astro.url.searchParams.get("category"));
+const user = Astro.locals.user;
+const categories = searchCategories(user);
+const selectedCategory = categories.includes(category) ? category : "all";
+const { results, partial } = await searchSite(query, category, user);
+Astro.response.headers.set("Cache-Control", "private, no-store");
+Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
 ---
 <Layout>
   <Fragment slot="main-slot">
@@ -20,12 +26,32 @@ const { results, partial } = await searchPublic(query);
   <Fragment slot="body-slot">
     <div class="search-results">
       <div class="search-summary-container">
+        <div class="search-summary-heading">
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M9.5 16q-2.725 0-4.612-1.888T3 9.5t1.888-4.612T9.5 3t4.613 1.888T16 9.5q0 1.1-.35 2.075T14.7 13.3l5.6 5.6q.275.275.275.7t-.275.7t-.7.275t-.7-.275l-5.6-5.6q-.75.6-1.725.95T9.5 16m0-2q1.875 0 3.188-1.312T14 9.5t-1.312-3.187T9.5 5T6.313 6.313T5 9.5t1.313 3.188T9.5 14"/></svg>
-        <p id="search-summary" class="search-summary">{query ? `「${query}」の検索結果：${results.length}件` : "検索ワードを入力してください。"}</p>
+          <p id="search-summary" class="search-summary">{query ? `「${query}」の検索結果：${results.length}件` : "検索ワードを入力してください。"}</p>
+        </div>
+        <form class="search-controls" action="/SearchResult" method="get" role="search" aria-label="検索結果を絞り込む">
+          <input type="search" name="q" value={query} maxlength="100" aria-label="検索キーワード" placeholder="検索キーワード" required />
+          <select name="category" aria-label="検索対象">
+            {categories.map(kind => <option value={kind} selected={kind === selectedCategory}>{searchCategoryLabels[kind]}</option>)}
+          </select>
+          <button type="submit">検索</button>
+        </form>
       </div>
-      {partial && <p class="service-notice">一部の情報を取得できませんでした。時間をおいて再度お試しください。</p>}
+      {partial && <p class="service-notice" role="alert">一部の情報を取得できませんでした。時間をおいて再度お試しください。</p>}
        <ul id="search-list" class="search-list">
-        {results.map(result => <li class="search-item"><a href={result.url}><h1>{result.title}</h1><div class="search-excerpt-wrapper"><svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 25 25"><path fill="currentColor" d="m14 20l-.713-.713l3.792-3.787H6V5h1v9.5h10.079l-3.792-3.792l.707-.714L19 15z"/></svg><p class="search-excerpt">{result.excerpt}</p></div></a></li>)}
+        {results.map(result => (
+          <li class="search-item">
+            <a href={result.url}>
+              <span class="search-result-category">{searchCategoryLabels[result.category]}</span>
+              <h2>{result.title}</h2>
+              <div class="search-excerpt-wrapper">
+                <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 25 25"><path fill="currentColor" d="m14 20l-.713-.713l3.792-3.787H6V5h1v9.5h10.079l-3.792-3.792l.707-.714L19 15z"/></svg>
+                <p class="search-excerpt">{result.excerpt}</p>
+              </div>
+            </a>
+          </li>
+        ))}
         {query && !results.length && <li class="search-empty">該当するページが見つかりませんでした。</li>}
        </ul>
     </div>
@@ -71,18 +97,55 @@ const { results, partial } = await searchPublic(query);
 
   .search-summary-container {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
     align-items: center;
     gap: 12px;
     border-bottom: 1px solid #000;
     padding-bottom: 8px;
   }
 
+  .search-summary-heading {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    flex: 1 1 17rem;
+    gap: 12px;
+  }
+
+  .search-summary-heading svg {
+    flex: none;
+  }
+
   .search-summary {
     margin: 0;
-    font-family: "Zen Old Mincho", serif;
+    font-family: YakuHanMP, "Zen Old Mincho", serif;
     font-size: 28px;
     letter-spacing: 2px;
+    overflow-wrap: anywhere;
   }
+
+  .search-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
+    flex: 0 1 25rem;
+    min-width: 0;
+    font: 16px/1.4 YakuHanRP, "Zen Kurenaido", sans-serif;
+  }
+
+  .search-controls :is(input, select, button) {
+    min-width: 0;
+    min-height: 44px;
+    padding: 6px 10px;
+    border: 1px solid #909090;
+    border-radius: 4px;
+    background: #fff;
+    color: #111;
+  }
+
+  .search-controls :is(select, button) { cursor: pointer; }
+  .search-controls button:hover { background: #eee; }
 
   .search-list {
     list-style: none;
@@ -125,7 +188,7 @@ const { results, partial } = await searchPublic(query);
   :global(.search-item) a {
     text-decoration: none;
     color: #000;
-    font-family: "Zen Old Mincho", serif;
+    font-family: YakuHanMP, "Zen Old Mincho", serif;
     font-size: 24px;
     letter-spacing: 2px;
   }
@@ -134,38 +197,35 @@ const { results, partial } = await searchPublic(query);
     background-color: #f0f0f0;
   }
 
-  :global(.search-item a h1) {
+  .search-item h2 {
     color: #000;
-    font-family: "Zen Old Mincho";
+    font-family: YakuHanMP, "Zen Old Mincho";
     font-size: 20px;
     font-style: normal;
     font-weight: 400;
     line-height: normal;
     letter-spacing: 3px;
     margin-bottom: 12px;
+    overflow-wrap: anywhere;
   }
 
-  :global(.search-excerpt-wrapper) {
-    display: flex;
-    justify-content: flex-start;
-    align-items: flex-start;
-    gap: 8px;
+  .search-result-category {
+    color: #555;
+    font: 13px/1.4 YakuHanRP, "Zen Kurenaido", sans-serif;
+    letter-spacing: .04em;
   }
 
-  :global(.search-excerpt-wrapper svg) {
-    flex-shrink: 0;
-    width: 25px;
-    height: 25px;
-    color: #444;
-  }
+  .search-excerpt-wrapper { display: flex; align-items: flex-start; gap: 8px; }
+  .search-excerpt-wrapper svg { flex: none; color: #444; }
 
   :global(.search-excerpt) {
     margin: 0px;
-    font-family: "Zen Kurenaido";
+    font-family: YakuHanRP, "Zen Kurenaido";
     font-size: 15px;
     line-height: 1.7;
     letter-spacing: 0.5px;
     color: #333;
+    overflow-wrap: anywhere;
   }
 
   .search-empty {
@@ -187,7 +247,7 @@ const { results, partial } = await searchPublic(query);
       gap: 8px;
     }
 
-    .search-summary-container svg {
+    .search-summary-heading svg {
       width: 22px;
       height: 22px;
     }
@@ -196,28 +256,21 @@ const { results, partial } = await searchPublic(query);
       font-size: 18px;
     }
 
+    .search-controls { flex: 1 1 100%; }
+
     :global(.search-item) {
       padding: 7px 7px 7px 15px;
     }
 
-    :global(.search-item a h1) {
+    .search-item h2 {
       font-size: 16px;
-    }
-
-    :global(.search-excerpt-wrapper) {
-      height: -webkit-fill-available;
-      height: stretch;
-      overflow: hidden;
-    }
-
-    :global(.search-excerpt-wrapper svg) {
-      width: 18px;
-      height: 18px;
     }
 
     :global(.search-excerpt) {
       font-size: 12px;
     }
+
+    .search-excerpt-wrapper svg { width: 18px; height: 18px; }
 
     :global(.search-item)::before {
       bottom: -15px;

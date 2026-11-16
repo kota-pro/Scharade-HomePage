@@ -1,8 +1,9 @@
 ---
+import { isMemberAccount } from "../../../../lib/accountVisibility.ts";
 import StaffLayout from "../../../../layouts/StaffLayout.astro";
 import ActivityEventForm from "../../../../components/ActivityEventForm.astro";
 import { readUsers, isStaff } from "../../../../lib/auth";
-const accounts = readUsers().filter((u) => u.approved);
+const accounts = readUsers().filter(isMemberAccount);
 const users = accounts.map((u) => ({ id: u.id, name: u.name }));
 const staffUsers = accounts
   .filter(isStaff)
@@ -12,5 +13,5 @@ const staffUsers = accounts
 <StaffLayout title="企画を作成"
   ><h2>企画を作成</h2><p>内容を下書き保存した後、確認して公開できます。</p>
   <ActivityEventForm users={users} staffUsers={staffUsers} />
-  <a class="member-back" href="/Member/manage">運営画面へ戻る</a>
+  <a class="member-back" href="/Management">運営画面へ戻る</a>
 </StaffLayout>

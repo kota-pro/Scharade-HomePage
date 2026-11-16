@@ -1,5 +1,7 @@
 # VPS運用・公開・バックアップ・復旧
 
+Node.jsは22.23.4以上の22系を使用します。[React2Shell・HTTP2Shell対策](shell-security-2026-10.md)を参照してください。更新時はWebだけでなく、全ワーカー・PM2本体・systemdの起動パス・PM2保存構成を確認します。
+
 最初に[引き継ぎ書](handover.md)で担当範囲と保存先、[機能別ファイル対応表](file-guide.md)で修正対象を確認してください。本番パス・過去の移行記録は担当交代時にVPSの実設定と照合します。
 
 ## 環境変数
@@ -14,7 +16,7 @@
 | TRUST_PROXY                               | Nginx経由だけで到達でき、X-Real-IPを上書きしている場合のみ1            |
 | PUBLIC_GOOGLE_MAPS_API_KEY                 | About usの地図。ブラウザに公開されるキー。変更後は再ビルドが必要       |
 | MICROCMS_SERVICE_DOMAIN                   | microCMSのサービスID                                                   |
-| MICROCMS_SERVER_API_KEY                   | Hobby向けの新しいサーバー専用キー。blog/card_imageはGET、PortfolioはGET/POST/PATCH/DELETE、Managementはメディアアップロードとコンテンツの取得（一覧・詳細）だけ |
+| MICROCMS_SERVER_API_KEY                   | Hobby向けのサーバー専用キー。blogはGET/PUT/PATCH/DELETE、card_imageはGET、PortfolioはGET/POST/PATCH/DELETE。Management権限は下記参照 |
 | MICROCMS_PORTFOLIO_ENDPOINT / GRADE_FIELD | 通常portfolio / grade                                                  |
 | ADOBE_CLIENT_ID / CLIENT_SECRET           | Adobe OAuth                                                            |
 | ADOBE_REFRESH_TOKEN                       | 初回認証用。更新後はadobe-auth.json側が優先                            |
@@ -23,6 +25,7 @@
 | GALLERY_SIGNING_SECRET                    | 写真所属証明・追加読込カーソルの署名。独立した32文字以上の鍵が必須    |
 | MFA_ENCRYPTION_KEY                       | メール二段階認証コードのHMAC鍵。64桁hex、会員データと分けて保管（既存の変数名・鍵を維持） |
 | GMAIL_PASS                                | contact@scharade.jpのメール送信用アプリパスワード                      |
+| SITE_ERROR_REPORTS_ENABLED                 | エラーの自動メール報告。本番は既定で有効、開発は無効。0で停止、1で明示的に有効化 |
 | INSTAGRAM\_\*                             | 旧連携を利用する場合のみ。新規会員の自動承認はしない                   |
 | ACCOUNTING_GAS_URL / ACCOUNTING_WEBHOOK_SECRET | 会計受付GASと署名鍵。`gas/intake/` 側と一致させる |
 | EXHIBITION_GAS_URL / EXHIBITION_WEBHOOK_SECRET | 写真展Forms連携GASと署名鍵 |
@@ -36,11 +39,15 @@
 
 Content APIのPortfolioに対するDELETE権限に加え、Management APIの「コンテンツの取得（一覧・詳細）」を有効にします。後者は、削除の再試行時に「削除済み」と「下書き・非公開」を区別するために使用します。
 
-microCMSサービスの左側「○個のAPIキー」から新しいサーバー専用キーを設定します。Hobbyプランの上限1個を維持するため、用途別の鍵分離は行えません。デフォルトのContent API権限はすべて無効にし、blog/card_imageのGETとPortfolioのGET/POST/PATCH/DELETEだけを個別に許可します。Management APIでは画像アップロードと「コンテンツの取得（一覧・詳細）」だけを許可します。旧キーの露出に対する切替と最小権限は[セキュリティ対策記録](security-hardening.md)を参照してください。Content API側の下書き・非公開コンテンツの全取得は有効にしません。[APIキーの公式説明](https://document.microcms.io/content-api/x-microcms-api-key)、[メタ情報取得に必要な権限](https://document.microcms.io/management-api/get-content)。
+microCMSサービスの左側「○個のAPIキー」から既存のサーバー専用キーを設定します。Hobbyプランではキー上限が1個です。デフォルトのContent API権限は無効にし、blogのGET/PUT/PATCH/DELETE、card_imageのGET、PortfolioのGET/POST/PATCH/DELETEをエンドポイントごとに許可します。Management APIでは「コンテンツの取得（一覧・詳細）」「コンテンツの公開状態を変更」「API情報の取得」「メディアの取得」「メディアのアップロード」を許可します。運営画面での下書き取得は記事ごとのキーをサーバー内で使います。[APIキーの公式説明](https://document.microcms.io/content-api/x-microcms-api-key)、[メタ情報取得に必要な権限](https://document.microcms.io/management-api/get-content)。
+
+ブログ管理を使う前に `blog.body` が現行リッチエディタで、ツールバーに使用する書式が有効になっていることを確認します。旧リッチエディタを使っている場合は、microCMSの案内に沿って事前に本文を移行します。検証用の記事で下書き・公開・取り下げ・削除を確認します。[リッチエディタの書き込みAPI](https://document.microcms.io/manual/rich-editor-write-api)
+
+Gallery管理を使う前に、既存のAdobe接続で検証用の連携アルバムを作成し、画像登録・表示・アルバム削除を確認します。サイトのバックアップには `gallery-settings.json` を含め、写真データはLightroom側で保全します。[Lightroomアルバムの仕様](https://developer.adobe.com/lightroom/lightroom-api-docs/getting-started/manage-content/)
 
 Content APIの400・404だけでは削除済みと判断しません。削除済み確認にはManagement APIの一覧取得成功と対象詳細の404が必要です。403の場合は権限、400で対象が残る場合はDELETE権限・ほかのコンテンツからの参照を確認します。失敗時にアカウントが残るのは、Portfolioの削除漏れを防ぐためです。
 
-運営・管理者はログイン時に二段階認証が必要です。セキュリティ切替時の強制再設定・旧セッション失効・復旧手順は[セキュリティ対策記録](security-hardening.md)を優先してください。
+全権限でKeep me signed inを選択すると30日、未選択では8時間ログインを維持します。運営・管理者は新しいブラウザー、明示ログアウト後、同じブラウザーで7日間利用がない場合にメールで二段階認証します。期限5分前の確認画面で延長でき、無応答なら期限どおり失効します。セキュリティ切替時の強制再設定・旧セッション失効・復旧手順は[セキュリティ対策記録](security-hardening.md)を優先してください。
 
 ## 初回の移行（既存会員データを守る）
 
@@ -79,7 +86,11 @@ pm2 logs astro-site --lines 50 --nostream
 
 ### Web以外のPM2ワーカー
 
-上の例はWebのみの再起動です。`ecosystem.config.cjs` は `astro-site` に加え、`scharade-accounting-worker`（立替再送）、`scharade-exhibition-worker`（写真展連携・転送・通知）、`scharade-push-worker`（リマインダー・プッシュ配信）を定義します。共有ライブラリやワーカーの変更時は `pm2 status` で起動済みの名前を確認し、該当プロセスも `pm2 restart <名前> --update-env` で再起動します。構成変更後は稼働を確認して `pm2 save` します。
+新規アカウントの承認後にGoogle名簿の更新・連携と全会員宛て対象への通知先追加を自動実行します。失敗した初期設定は `scharade-accounting-worker`（`scripts/advance-worker.mjs`）で再試行します。この変更の反映時はWebとこのワーカーの両方を更新・再起動してください。Google名簿の取得には従来の `ACCOUNTING_GAS_URL`・`ACCOUNTING_WEBHOOK_SECRET` が必要です。状態はアカウント詳細で確認でき、ワーカーログには `account.setup` が出ます。氏名を一意に照合できない場合は自動再試行を止め、管理者が通常の名簿連携画面で確定します。
+
+上の例はWebのみの再起動です。`ecosystem.config.cjs` は `astro-site` に加え、`scharade-accounting-worker`（立替再送）、`scharade-exhibition-worker`（写真展連携・転送・通知）、`scharade-push-worker`（リマインダー・プッシュ配信）、`scharade-club-forms-worker`（入会・継続・新歓フォームと統合名簿のGoogle反映）を定義します。共有ライブラリやワーカーの変更時は `pm2 status` で起動済みの名前を確認し、該当プロセスも `pm2 restart <名前> --update-env` で再起動します。構成変更後は稼働を確認して `pm2 save` します。
+
+春秋の2参照先の名簿とフォーム管理は、専用の `CLUB_FORMS_GAS_URL`・`CLUB_FORMS_WEBHOOK_SECRET` を使います。Google側の専用プロジェクト・認可・締切トリガーは別途設定が必要です。[フォーム・名簿の導入と復旧](club-forms.md)に従ってください。既存の単一シートは明示的な切替まで会計GASを使い続けます。
 
 新規ワーカー導入と本番通知の有効化は別作業です。設定にあることだけで起動済み・配信確認済みとは判断しません。起動対象の確認なしに全定義を追加して重複起動しないでください。
 
@@ -128,7 +139,9 @@ location / {
 
 ### 手順と世代
 
-少なくとも変更前・毎日・年度交代前に取得します。日次7世代、週次4世代、月次12世代を目安に担当者が容量に合わせて決めます。実行環境への定期ジョブ登録は別途必要です。この実装だけではバックアップは自動実行されません。
+サイト更新時は、MacとVPSのそれぞれで取得済みのバックアップを新しい順に最大5世代残します。AI導入前の基準版は別枠で保持します。VPSで記録されている最古の基準版は `before-20260917` です。新しいバックアップの読み取りを検証し、公開後の動作確認とGitへの反映が済んだら、6世代目以降の古いバックアップを削除します。
+
+VPSでは `node scripts/rotate-site-backups.mjs --root /home/ubuntu/scharade-backups --protect before-20260917` で対象を確認し、同じコマンドに `--apply <表示されたchecksum>` を追加して整理します。Macではリポジトリ内の `backups` の絶対パスを指定します。基準版がその中にある場合は名前を `--protect` で指定します。復旧手順が別に持っている旧 `dist` を参照する場合は、対応する世代を確認して同じ期間を保持します。稼働中の `dist` と `DATA_DIR` のパスはこの整理に指定しません。
 
 整合性を確保するため、`pm2 status` で書き込み元を確認し、Web・会計・写真展・プッシュのうち稼働中のプロセスと同じDATA_DIRを使うCLIをすべて停止して、DATA_DIRと.envをコピーし、元のプロセスを再開します。Webだけ止めてもワーカーから書き込まれます。tar等でまとめる際は所有者だけが読み書きできる場所に保存し、暗号化してVPS以外にも保管します。バックアップには個人情報・認証キーを含むため公開リンクを作らないでください。エクスポート後は容量・展開可否・取得日を記録します。
 
@@ -139,7 +152,7 @@ location / {
 3. DATA_DIR全体を同じ時点のセットで復元し、所有者・権限を戻す。
 4. 必要なら控えたコードのコミットへ戻して再ビルドする。知らないコミットへ推測で戻さない。
 5. PM2起動後、ログイン・写真取得・管理画面を確認する。
-6. セッションの侵害が疑われる場合は、停止中にsessions.jsonを空配列にして全員をログアウトし、管理パスワードと該当キーを変更する。
+6. セッションの侵害が疑われる場合は、停止中にsessions.jsonとmfa-trusted-browsers.jsonを空配列にして全員のセッションとブラウザーの認証済み記録を失効し、管理パスワードと該当キーを変更する。
 
 サイト情報だけの誤操作は、管理画面の前の公開版への復元を先に使います。コードだけ戻す場合も、今回追加したroleやsite-contentを旧コードがどう扱うか確認します。
 
@@ -164,3 +177,9 @@ PM2と同じDATA_DIRを使うCLIを**すべて停止**し、ロック内owner.js
 | 更新が戻ったように見える       | 下書きと公開版の違い、DATA_DIR相違、別PM2プロセス              |
 
 ログへ秘密キー、パスワード、リセットURLを記録しないでください。audit.jsonlは日時・実行者ID・操作・対象を記録し、本文やパスワードは記録しません。保存期間はサークルの運用方針で決めて定期的に保管・整理してください。
+
+エラーの自動報告・重複抑制・送信待ちの扱いは [エラー番号対応表](error-codes.md#エラーレポートの自動送信) を参照してください。送信に失敗してもフォームの操作は継続します。
+
+2026-10-30に自動報告を本番で有効化し、確認用レポート1件のSMTP受理を確認しました。配備・復旧先と検証内容は [本番反映記録](deployment-2026-10.md) を参照してください。
+
+エラーレポートの現在の送信先は `contact@scharade.jp` です。2026-10-30に一時的に `System.Maintenance@scharade.jp` へ変更した後、同日中に元の宛先へ戻しました。

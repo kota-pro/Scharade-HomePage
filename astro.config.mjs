@@ -1,9 +1,12 @@
+import "./scripts/require-secure-runtime.mjs";
 import { defineConfig } from "astro/config";
 import node from "@astrojs/node";
 
 export default defineConfig({
   site: "https://scharade.jp",
   output: "server",
+  // Inlined CSS adds hashes to CSP and can exceed the proxy's response-header buffer on authenticated pages.
+  build: { inlineStylesheets: "never" },
   adapter: node({
     mode: "standalone",
     bodySizeLimit: 21 * 1024 * 1024,
@@ -16,7 +19,7 @@ export default defineConfig({
         "img-src 'self' data: blob: https://*.microcms-assets.io https://maps.googleapis.com https://maps.gstatic.com https://*.googleusercontent.com https://streetviewpixels-pa.googleapis.com https://p.typekit.net",
         "font-src 'self' data: https://fonts.gstatic.com https://*.typekit.net",
         "connect-src 'self' blob: https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://*.typekit.net",
-        "frame-src 'self' https://www.google.com https://maps.google.com",
+        "frame-src 'self' https://www.google.com https://maps.google.com https://www.youtube-nocookie.com",
       ],
       scriptDirective: { resources: ["'self'", "https://use.typekit.net", "https://maps.googleapis.com", "https://maps.gstatic.com"] },
       styleDirective: { resources: ["'self'", "https://fonts.googleapis.com", "https://use.typekit.net", "https://p.typekit.net", { resource: "'unsafe-inline'", kind: "attribute" }] },

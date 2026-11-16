@@ -1,0 +1,19 @@
+---
+import { randomUUID } from "node:crypto";
+import StaffLayout from "../../../layouts/StaffLayout.astro";
+import GalleryManagementFields from "../../../components/GalleryManagementFields.astro";
+import "../../../styles/ContentManagement.css";
+---
+<StaffLayout title="アルバムを作成">
+  <h2>アルバムを作成</h2>
+  <form data-gallery-create data-request-id={randomUUID()}>
+    <GalleryManagementFields />
+    <p>作成したアルバムは運営限定になります。写真を追加してから公開範囲を変更できます。</p>
+    <p data-status class="content-management-status" role="status"></p>
+    <div class="content-management-actions">
+      <a class="member-back" href="/Management/gallery">一覧へ戻る</a>
+      <button class="admin-button" type="submit">アルバムを作成</button>
+    </div>
+  </form>
+</StaffLayout>
+<script>import "../../../scripts/galleryManagement";</script>

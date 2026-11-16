@@ -25,8 +25,8 @@ test("only the dedicated management account has no personal Portfolio navigation
   page,
 }, info) => {
   for (const [id, expected] of [
-    ["site-manager", ["Admin", "Member"]],
-    ["admin", ["Admin", "Member", "My Portfolio"]],
+    ["site-manager", ["Admin", "Management", "Member"]],
+    ["admin", ["Admin", "Management", "Member", "My Portfolio"]],
     ["other", ["Member", "My Portfolio"]],
   ] as const) {
     await page.setViewportSize({ width: 390, height: 1000 });
@@ -49,7 +49,7 @@ test("only the dedicated management account has no personal Portfolio navigation
       menu.getByRole("button", { name: "Log out", exact: true }),
     ).toBeVisible();
     await page.keyboard.press("Escape");
-    for (const width of [320, 390, 800, 1024, 1440]) {
+    for (const width of [320, 390, 800, 1024, 1200, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
       await expect
         .poll(() =>

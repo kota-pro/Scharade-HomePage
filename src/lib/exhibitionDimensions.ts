@@ -1,3 +1,4 @@
+import { wallSurfacePart, sameWallSurface } from "./exhibitionWallSurfaces.ts";
 import type { DimensionAnchor, LayoutDimension, RoomLayout, VectorPoint } from './exhibitionTypes.ts';
 import { roomWalls, roomWallById, roomWallPoint } from './exhibitionRoomPath.ts';
 import { distance, add, subtract, scale, unitVector, pointBounds } from './exhibitionVector.ts';
@@ -5,10 +6,10 @@ import {boardSurface} from './exhibitionBoards.ts';
 import {polygonMeasurementPoint,type MeasurementPolygon} from './exhibitionMeasurementGeometry.ts';
 type MeasurementObject={id:string;box:{x:number;y:number;width:number;height:number};source?:any;measurementPolygons?:MeasurementPolygon[]};
 export function dimensionPoint(room:RoomLayout,d:LayoutDimension,a:DimensionAnchor,objects:MeasurementObject[]):VectorPoint|undefined {
-  if(a.kind==='free')return{x:a.x,y:a.y};
+  if(a.kind==='free'){const p=wallSurfacePart(room,d.surface);return{x:a.x+(p?.left??0),y:a.y+(p?.top??0)};}
   if(a.kind==='vertex'){const n=room.vertices.find(n=>n.id===a.nodeId);return n?{x:n.x,y:n.y}:undefined;}
-  if(a.kind==='wall'){const w=roomWallById(room,a.wallId);if(!w)return;if(d.surface==='floor')return roomWallPoint(room,w.index,w.length*a.ratio);if(d.surface===`wall:${w.index}`)return{x:w.length*a.ratio,y:0};return;}
-  if(a.kind==='panel'||a.kind==='surface'){if(d.surface.startsWith('wall:')&&a.kind==='surface'){const w=roomWalls(room)[Number(d.surface.slice(5))];return w?{x:w.length*a.u,y:w.height*a.v}:undefined;}const group=room.boardGroups?.find(g=>g.id===d.surface.split(':')[1]);if(!group)return;const s=boardSurface(group,d.surface.endsWith(':B')?'B':'A');if(a.kind==='surface')return{x:s.width*a.u,y:s.height*a.v};const panel=s.panels.find(p=>p.panel.id===a.panelId);return panel?{x:panel.left+panel.panel.width*a.u,y:panel.top+panel.panel.height*a.v}:undefined;}
+  if(a.kind==='wall'){const w=roomWallById(room,a.wallId);if(!w)return;if(d.surface==='floor')return roomWallPoint(room,w.index,w.length*a.ratio);if(sameWallSurface(room,d.surface,`wall:${w.index}`)){const p=wallSurfacePart(room,w.index)!;return{x:p.left+w.length*a.ratio,y:p.top};}return;}
+  if(a.kind==='panel'||a.kind==='surface'){if(d.surface.startsWith('wall:')&&a.kind==='surface'){const p=wallSurfacePart(room,d.surface);return p?{x:p.left+p.wall.length*a.u,y:p.top+p.wall.height*a.v}:undefined;}const group=room.boardGroups?.find(g=>g.id===d.surface.split(':')[1]);if(!group)return;const s=boardSurface(group,d.surface.endsWith(':B')?'B':'A');if(a.kind==='surface')return{x:s.width*a.u,y:s.height*a.v};const panel=s.panels.find(p=>p.panel.id===a.panelId);return panel?{x:panel.left+panel.panel.width*a.u,y:panel.top+panel.panel.height*a.v}:undefined;}
   const o=objects.find(o=>o.id===a.objectId);return a.feature?polygonMeasurementPoint(o?.measurementPolygons,a.feature):o?{x:o.box.x+o.box.width*a.u,y:o.box.y+o.box.height*a.v}:undefined;
 }
 export function dimensionGeometry(room:RoomLayout,d:LayoutDimension,objects:MeasurementObject[]) {

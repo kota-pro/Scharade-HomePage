@@ -1,41 +1,57 @@
 ---
+import {overdueWarningHtml} from '../../../lib/advisoryWarnings.ts';
+import { readShiftStore } from "../../../lib/exhibitionShiftStore.ts";
 import MemberLayout from "../../../layouts/MemberLayout.astro";
 import { findExhibition, readExhibitions } from "../../../lib/exhibitions.ts";
 import { participationState, requireExhibitionRecipient } from "../../../lib/exhibitionParticipation.ts";
 import { activityDate, voteLabels } from "../../../lib/activityTypes.ts";
 import "../../../styles/Exhibitions.css";
-let exhibition, state, problem = "";
+let exhibition: ReturnType<typeof findExhibition> | undefined, state: ReturnType<typeof participationState> | undefined, problem = "";
 try {
   exhibition = findExhibition(readExhibitions(), Astro.params.id ?? "");
   requireExhibitionRecipient(exhibition, Astro.locals.user!);
   state = participationState(exhibition, Astro.locals.user!);
 } catch { Astro.response.status = 404; problem = "この写真展を閲覧できません。"; }
+const shift = readShiftStore().records.find(r=>r.exhibitionId===exhibition?.id);
+const shiftResponse=shift?.responses.find(r=>r.userId===Astro.locals.user?.id);
 const dateLabel = (value?: string) => value ? activityDate(value) : "未設定";
 ---
 <MemberLayout title={exhibition?.title ?? "写真展"}>
   <section class="exhibition-page">
     <p><a class="member-back" href="/Member">メンバーページへ戻る</a></p>
-    {problem ? <p>{problem}</p> : exhibition && state && <article data-exhibition-vote={exhibition.id}>
+    {problem ? <p role="alert">{problem}</p> : exhibition && state && <article data-exhibition-vote={exhibition.id}>
       <h2>{exhibition.title}</h2>
-      <div class="exhibition-panel">
-        <h3>参加投票</h3>
-        <p>{dateLabel(state.voteOpensAt)} 〜 {dateLabel(state.voteClosesAt)}</p>
+      <p class="exhibition-muted">日時は日本時間です。</p>
+      <div class="exhibition-panel" data-vote-clock data-vote-available={String(state.invited && exhibition.participation?.state === "published")} data-vote-opens={state.voteOpensAt} data-vote-deadline={state.voteClosesAt} data-event-start={exhibition.openingSchedule?.startDate ? exhibition.openingSchedule.startDate+"T00:00:00+09:00" : undefined}>
+        <h3>参加投票</h3><div data-vote-warning>{state.voteOverdue && <Fragment set:html={overdueWarningHtml("参加投票の提出期限を過ぎています。引き続き回答できます。")} />}</div><p class="exhibition-muted" data-event-cutoff hidden={state.beforeEvent}>開催日以降は参加投票を変更できません。</p>
+        <p class="exhibition-period">
+          <span><span class="exhibition-period-label">受付開始</span><time datetime={state.voteOpensAt}>{dateLabel(state.voteOpensAt)}</time></span>
+          <span class="exhibition-period-separator"> 〜 </span>
+          <span><span class="exhibition-period-label">締切</span><time datetime={state.voteClosesAt}>{dateLabel(state.voteClosesAt)}</time></span>
+        </p>
         <p>現在の回答：<strong>{voteLabels[state.vote]}</strong></p>
         <div class="exhibition-actions">{(["attending", "absent", "undecided"] as const).map(vote => <button type="button" data-exhibition-answer={vote} disabled={!state!.canVote} aria-pressed={state!.vote === vote}>{voteLabels[vote]}</button>)}</div>
         <p class="exhibition-status" aria-live="polite"></p>
       </div>
       <div class="exhibition-panel">
-        <h3>出展フォーム入力期間</h3>
-        <p>{dateLabel(exhibition.opensAt)} 〜 {dateLabel(exhibition.closesAt)}</p>
+        <h3>出展フォーム入力期間</h3>{state.submissionOverdue && <Fragment set:html={overdueWarningHtml()} />}
+        <p class="exhibition-period">
+          <span><span class="exhibition-period-label">受付開始</span><time datetime={exhibition.opensAt}>{dateLabel(exhibition.opensAt)}</time></span>
+          <span class="exhibition-period-separator"> 〜 </span>
+          <span><span class="exhibition-period-label">締切</span><time datetime={exhibition.closesAt}>{dateLabel(exhibition.closesAt)}</time></span>
+        </p>
         <p>{state.message || "出展フォームを入力できます。"}</p>
         {state.eligible && <a class="exhibition-button" href={`/Exhibition/${exhibition.id}`}>{state.accepting ? "出展フォームを入力する" : "出展フォームの保存内容を確認する"}</a>}
       </div>
+      {shift && shift.config.state !== 'draft' && <div class="exhibition-panel"><h3>展示シフト</h3><p>{state.vote==='attending'?'出展者はレイアウトフォームの提出後、シフトフォームも提出してください。':'出展しない会員もシフト希望を提出できます。'} {shiftResponse?.submitted?'提出済み':'未提出'}</p><a class="exhibition-button" href={`/Member/exhibitions/${exhibition.id}/shifts`}>シフトフォーム・確定シフトを見る</a></div>}
     </article>}
   </section>
 </MemberLayout>
 <script>
   import { operationNotice, flashNotice } from "../../../scripts/siteNotice";
   import { readExhibitionResponse } from "../../../scripts/exhibitionResponse";
+  import {bindVoteDeadline} from "../../../scripts/advisoryDeadlineUi.ts";
+  const votePanel=document.querySelector<HTMLElement>("[data-vote-clock]"),voteClock=votePanel?bindVoteDeadline(votePanel):undefined;
   const root = document.querySelector<HTMLElement>("[data-exhibition-vote]");
   root?.querySelectorAll<HTMLButtonElement>("[data-exhibition-answer]").forEach(button => button.addEventListener("click", async () => {
     const status = root.querySelector<HTMLElement>(".exhibition-status")!;
@@ -47,6 +63,6 @@ const dateLabel = (value?: string) => value ? activityDate(value) : "未設定";
       if (!response.ok || !result.ok) throw new Error(result.message);
       flashNotice("参加の回答を保存しました。");
       location.reload();
-    } catch (error) { status.textContent = error instanceof Error ? error.message : "投票できませんでした。"; operationNotice(status.textContent,true,"exhibition-vote"); root.querySelectorAll<HTMLButtonElement>("button").forEach(b => b.disabled = false); }
+    } catch (error) { status.dataset.error = "true"; status.textContent = error instanceof Error ? error.message : "投票できませんでした。"; operationNotice(status.textContent,true,"exhibition-vote"); root.querySelectorAll<HTMLButtonElement>("button").forEach(b => b.disabled = false); voteClock?.refresh(); }
   }));
 </script>

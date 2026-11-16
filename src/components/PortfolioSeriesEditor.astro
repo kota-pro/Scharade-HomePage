@@ -1,0 +1,38 @@
+---
+import { photoFieldLabels, photoMetadataFields } from "../types/photos";
+---
+<dialog id="portfolio-series-editor" class="portfolio-photo-editor" aria-labelledby="portfolio-series-heading">
+  <form>
+    <div class="photo-editor-header">
+      <h2 id="portfolio-series-heading">組写真を編集</h2>
+      <button type="button" class="photo-editor-close" data-series-cancel aria-label="組写真の編集を閉じる">
+        <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 5 14 14M19 5 5 19" fill="none" stroke="currentColor" stroke-width="1.2" /></svg>
+      </button>
+    </div>
+    <div class="photo-editor-body portfolio-series-body">
+      <section>
+        <h3>組にする写真</h3>
+        <p>組にする写真を2〜100枚選択できます。</p>
+        <div class="portfolio-series-picks" data-portfolio-series-picks></div>
+      </section>
+      <div class="photo-editor-fields">
+        <p>組全体の情報です。空欄の項目は公開ページに表示されません。</p>
+        {photoMetadataFields.map(key => (
+          <label>
+            <span>{photoFieldLabels[key]}</span>
+            {key === "caption"
+              ? <textarea name={key} rows="4" maxlength="5000" />
+              : <input name={key} type="text" maxlength={key === "title" ? 300 : 1000} />}
+          </label>
+        ))}
+      </div>
+    </div>
+    <div class="photo-editor-footer">
+      <p data-portfolio-series-count role="status"></p>
+      <div>
+        <button type="button" data-portfolio-series-layout>配置を編集</button>
+        <button type="submit" class="photo-editor-apply">組写真を反映</button>
+      </div>
+    </div>
+  </form>
+</dialog>

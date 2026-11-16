@@ -1,10 +1,19 @@
+import {watchAdvisoryClock,paintDeadlineWarning} from './advisoryDeadlineUi.ts';
+import {deadlinePassed} from '../lib/advisoryWarnings.ts';
+import { photoExifEditor, bindPhotoExifEditor } from "./photoExifEditor";
+import {titleBoardFieldsHtml,bindTitleBoardFields} from './exhibitionTitleBoardFields.ts';
+import { exhibitionGradeOptionsHtml, normalizeExhibitionGrade } from "../lib/exhibitionGrades.ts";
+import { exhibitionNotesLimit } from "../lib/exhibitionNotes.ts";
+import { createDraftSync, DraftSaveError, type DraftSyncState } from "./exhibitionDraftSync.ts";
 import { emptyWorkDetails, metadataStrings, prefectures } from "../lib/exhibitionText.ts";
-import { bindTextValidation, ensureTextMeasurement, validateTextFields } from "./exhibitionTextValidation";
+import { bindTextValidation, ensureTextMeasurement, validateTextFields, metadataLineHint, setServerTextIssues } from "./exhibitionTextValidation";
+import { formatExhibitionError, type ExhibitionErrorCode } from '../lib/exhibitionErrors.ts';
 import { operationNotice } from "./siteNotice";
 export {};
-import { createSeriesEditor } from "./exhibitionSeriesEditor";
+import { createSeriesDialog as createSeriesEditor } from "./exhibitionSeriesDialog";
 import { paperSizes, paperSizeId } from "../lib/exhibitionEditing.ts";
 import { readExhibitionResponse } from "./exhibitionResponse";
+import {overdueWarningHtml,warningMark} from '../lib/advisoryWarnings.ts';
 import { describeSectionLimits, sectionWorkCount, submissionLimitIssues } from "../lib/exhibitionSubmissionLimits.ts";
 import type { EffectiveSubmissionLimits, Work, PhotoLayout, SubmissionContent } from "../lib/exhibitionTypes.ts";
 type AnyRecord = Record<string, any>;
@@ -13,9 +22,21 @@ const root = document.querySelector<HTMLElement>("#exhibition-submission");
 if (root) {
   const exhibitionId = root.dataset.exhibitionId ?? "";
   let payload: AnyRecord | null = null;
+  const deadlineClock=watchAdvisoryClock(()=>paintDeadlineWarning(root.querySelector('[data-submission-deadline]'),!!payload?.exhibition.accepting&&deadlinePassed(payload?.exhibition.closesAt)),()=>[payload?.exhibition.closesAt]);
   let token = location.hash.startsWith("#") ? location.hash.slice(1) : "";
-  let busy = false, savedContent = "";
-  window.addEventListener("beforeunload", event => { if (payload?.submission && !payload.preview && (busy || JSON.stringify(content()) !== savedContent)) { event.preventDefault(); event.returnValue = ""; } });
+  const ownerId = root.dataset.ownerId ?? "";
+  let busy = false, composing = false;
+  let draftSync: ReturnType<typeof createDraftSync<AnyRecord>> | undefined;
+  let syncState: DraftSyncState = { kind: "saved", local: false };
+  window.addEventListener("beforeunload", event => {
+    if (payload?.submission && !payload.preview && (busy || draftSync?.dirty() && !draftSync.persist())) { event.preventDefault(); event.returnValue = ""; }
+  });
+  window.addEventListener("pagehide", () => draftSync?.persist());
+  window.addEventListener("online", () => void draftSync?.resume());
+  window.addEventListener("pageshow", event => { if (event.persisted) void draftSync?.resume(); });
+  root.addEventListener("compositionstart", () => { composing = true; });
+  root.addEventListener("compositionend", () => { composing = false; draftSync?.touch(); });
+  for (const event of ["input", "change"]) root.addEventListener(event, () => draftSync?.touch());
   let currentStatus = { message: "", error: false };
 
   const escape = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character] ?? character));
@@ -27,7 +48,8 @@ if (root) {
     draft.fields ??= {}; draft.sections ??= []; draft.works ??= [];
     return draft;
   };
-  const status = (message: string, error = false, announce = true) => {
+  const status = (message: string, error = false, announce = true, code?: ExhibitionErrorCode) => {
+    if (error) message = formatExhibitionError(message, code);
     if(announce) operationNotice(message,error,"exhibition-submission");
     currentStatus = { message, error };
     const target = root.querySelector<HTMLElement>(".exhibition-status");
@@ -46,16 +68,13 @@ if (root) {
     return `${label}<input ${key} type="${type}" value="${escape(value ?? "")}" /></label>`;
   };
   const makePhoto = (index = 0) => ({ assetId: "", x: index * 55, y: 0, width: 120, height: 80, rotation: 0 });
-  const makeWork = (sectionId: string, kind: string, index: number) => ({ id: uuid(), sectionId, kind, title: "", caption: "", location: "", equipment: "", settings: "", photos: [makePhoto(index)], fields: {}, details: emptyWorkDetails() });
+  const makeWork = (sectionId: string, kind: string, index: number) => ({ id: uuid(), sectionId, kind, title: "", caption: "", location: "", equipment: "", settings: "", photos: [makePhoto(index)], fields: {}, details: emptyWorkDetails(), titleBoard:{quoted:false,rubyEnabled:false,ruby:[]} });
   const selectedSection = (sectionId: string) => content().sections.find((section: AnyRecord) => section.sectionId === sectionId);
   const normalizeSection = (section: AnyRecord) => {
     section.singles = Math.min(300, Math.max(0, Math.floor(number(String(section.singles)))));
     section.series = Math.min(100, Math.max(0, Math.floor(number(String(section.series)))));
     section.books = Math.min(100, Math.max(0, Math.floor(number(String(section.books)))));
-    section.seriesPhotoCounts ??= [];
     section.fields ??= {};
-    while (section.seriesPhotoCounts.length < section.series) section.seriesPhotoCounts.push(2);
-    section.seriesPhotoCounts = section.seriesPhotoCounts.slice(0, section.series).map((count: unknown) => Math.max(1, Math.min(100, Math.floor(number(String(count), 2)))));
   };
   const synchronizeWorks = () => {
     const draft = content();
@@ -68,14 +87,16 @@ if (root) {
         for (let index = 0; index < count; index++) {
           const work = current[index] ?? makeWork(section.sectionId, kind, index);
           work.fields ??= {}; work.photos ??= [];
-          const photoCount = kind === "series" ? section.seriesPhotoCounts[index] : 1;
-          while (work.photos.length < photoCount) work.photos.push(makePhoto(work.photos.length));
-          work.photos = work.photos.slice(0, photoCount);
+          if (kind !== "series") {
+            while (work.photos.length < 1) work.photos.push(makePhoto(work.photos.length));
+            work.photos = work.photos.slice(0, 1);
+          }
           desired.push(work);
         }
         draft.works = draft.works.filter((work: AnyRecord) => !(work.sectionId === section.sectionId && work.kind === kind)).concat(desired);
       }
     }
+    for (const section of draft.sections) section.seriesPhotoCounts = draft.works.filter((work: AnyRecord) => work.sectionId === section.sectionId && work.kind === "series").map((work: AnyRecord) => work.photos.length);
     draft.works = draft.works.filter((work: AnyRecord) => draft.sections.some((section: AnyRecord) => section.sectionId === work.sectionId));
   };
   const workById = (id: string) => content().works.find((work: AnyRecord) => work.id === id);
@@ -92,10 +113,12 @@ if (root) {
     root.querySelectorAll<HTMLElement>("[data-limit-errors]").forEach(target => {
       const scope = target.dataset.limitErrors!, id = target.dataset.limitId;
       const messages = issues.filter(issue => scope === "total" ? !issue.sectionId : scope === "section" ? issue.sectionId === id && !issue.workId : issue.workId === id).map(issue => issue.message);
-      target.textContent = messages.join("\n"); target.hidden = !messages.length;
+      target.innerHTML = messages.map(message => `<span class="advisory-warning">${warningMark('制限超過')}<span>${escape(message)} このまま提出できます。</span></span>`).join(""); target.hidden = !messages.length;
     });
     const submit = root.querySelector<HTMLButtonElement>("[data-submit]");
-    if (submit) submit.disabled = busy || !!payload?.preview || !payload?.exhibition?.accepting || issues.length > 0;
+    if (submit) submit.disabled = busy || !!payload?.preview || !payload?.exhibition?.accepting;
+    const preview=root.querySelector<HTMLButtonElement>("[data-preview-boards]");
+    if(preview)preview.disabled=busy||!!payload?.preview||!draft.works.length;
     return issues;
   };
   const updateCustomField = (element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement) => {
@@ -125,8 +148,8 @@ if (root) {
     const preview = asset ? `<img alt="添付済み写真" src="/api/exhibitions/${exhibitionId}/assets/${asset.id}?preview=1&token=${encodeURIComponent(token)}"/>` : "<span class=\"exhibition-muted\">未添付</span>";
     const size=(bytes:number)=>bytes<1048576?`${Math.max(1,Math.ceil(bytes/1024))} KB`:`${(bytes/1048576).toFixed(1)} MB`;
     const chooser=`<label class="exhibition-file-button">${asset?"ファイルを変更":"ファイルを選択"}<input class="exhibition-file-input" aria-label="${work.kind==="book"?"ブックの作品データ":`写真 ${index+1}`}" data-upload-work="${work.id}" data-upload-index="${index}" type="file" accept="image/jpeg,image/png"/></label><p class="exhibition-file-info" data-file-info="${work.id}:${index}">${asset?`${escape(asset.name)}（${size(asset.bytes)}）`:"ファイル未選択"}</p>`;
-    if (work.kind === "book") return `<div class="work-photo-row"><div>${preview}${chooser}</div></div>`;
-    return `<div class="work-photo-row"><div>${preview}${chooser}</div>
+    if (work.kind === "book") return `<div class="work-photo-row"><div>${preview}${chooser}${photoExifEditor(work as Work, photo as PhotoLayout, index, asset?.photoMetadata)}</div></div>`;
+    return `<div class="work-photo-row"><div>${work.kind === "series" ? `<strong>写真 ${index + 1}</strong><button type="button" class="secondary" data-remove-series-photo="${index}" data-work-id="${work.id}" aria-label="写真 ${index + 1}を削除">この写真を削除</button>` : ""}${preview}${chooser}${photoExifEditor(work as Work, photo as PhotoLayout, index, asset?.photoMetadata)}</div>
       <label>写真サイズ<select data-photo-paper="${index}" data-work-id="${work.id}"><option value="custom" ${paperSizeId(photo as PhotoLayout) === "custom" ? "selected" : ""}>自由入力</option>${paperSizes.map(size => `<option value="${size.id}" ${paperSizeId(photo as PhotoLayout) === size.id ? "selected" : ""}>${"label" in size ? size.label : size.id} (${size.width}×${size.height}mm)</option>`).join("")}</select></label><label>紙の向き<select data-photo-orientation="${index}" data-work-id="${work.id}"><option value="portrait" ${photo.width <= photo.height ? "selected" : ""}>縦</option><option value="landscape" ${photo.width > photo.height ? "selected" : ""}>横</option></select></label>
       <label>幅mm<input data-work-id="${work.id}" data-photo-index="${index}" data-photo-key="width" type="number" min=".1" step=".1" value="${escape(photo.width)}"/></label>
       <label>高mm<input data-work-id="${work.id}" data-photo-index="${index}" data-photo-key="height" type="number" min=".1" step=".1" value="${escape(photo.height)}"/></label>
@@ -134,23 +157,24 @@ if (root) {
       <label>Ymm<input data-work-id="${work.id}" data-photo-index="${index}" data-photo-key="y" type="number" step=".1" value="${escape(photo.y)}"/></label>
       <label>回転°<input data-work-id="${work.id}" data-photo-index="${index}" data-photo-key="rotation" type="number" min="-360" max="360" step=".1" value="${escape(photo.rotation)}"/></label></div>`;
   };
-  const seriesEditor = createSeriesEditor({ getWork: id => workById(id) as Work, assetUrl: id => `/api/exhibitions/${exhibitionId}/assets/${id}?preview=1`, change: () => render(), message: status, busy: () => busy || !!payload?.preview || !payload?.exhibition?.accepting, width: () => root.clientWidth });
+  const seriesEditor = createSeriesEditor({ getWork: id => workById(id) as Work, assetUrl: id => `/api/exhibitions/${exhibitionId}/assets/${id}?preview=1`, change: () => { synchronizeWorks(); draftSync?.touch(); refreshLimits(); }, closed: () => render(), message: status, busy: () => busy || !!payload?.preview || !payload?.exhibition?.accepting, width: () => root.clientWidth });
   const seriesCanvas = (work: AnyRecord) => seriesEditor.html(work as Work);
   const metadataHtml = (work:AnyRecord) => {
-    if(!work.details && [work.location,work.equipment,work.settings].some(Boolean)) return `${[["location","撮影場所"],["equipment","使用機材"],["settings","撮影設定"]].map(([key,label])=>`<label>${label}（既存の記述）<input data-work-id="${work.id}" data-work-key="${key}" value="${escape(work[key])}"/></label>`).join("")}<button type="button" class="secondary" data-split-metadata="${work.id}">撮影情報を分割入力に切り替える</button>`;
+    if(!work.details && [work.location,work.equipment,work.settings].some(Boolean)) return `${[["location","撮影場所"],["equipment","使用機材"],["settings","撮影設定"]].map(([key,label])=>`<label>${label}（既存の記述）<textarea rows="1" data-metadata-input data-work-id="${work.id}" data-work-key="${key}">${escape(work[key])}</textarea></label>`).join("")}${metadataLineHint(work.id)}<button type="button" class="secondary" data-split-metadata="${work.id}">撮影情報を分割入力に切り替える</button>`;
     work.details??=emptyWorkDetails();
-    const input=(key:string,label:string,placeholder="")=>`<label>${label}<input data-work-id="${work.id}" data-work-detail="${key}" value="${escape(work.details[key])}" placeholder="${placeholder}"/></label>`;
+    const input=(key:string,label:string,placeholder="")=>`<label>${label}<textarea rows="1" data-metadata-input data-work-id="${work.id}" data-work-detail="${key}" placeholder="${placeholder}">${escape(work.details[key])}</textarea></label>`;
     return `<fieldset class="exhibition-metadata"><legend>撮影場所（任意）</legend>${input("place","地名")}
       <label>都道府県<select data-work-id="${work.id}" data-work-detail="prefecture"><option value="">選択してください</option>${[...prefectures,"海外・その他"].map(v=>`<option ${work.details.prefecture===v?"selected":""}>${v}</option>`).join("")}</select></label><div data-region-field="${work.id}" ${work.details.prefecture==="海外・その他"?"":"hidden"}>${input("region","国・地域")}</div></fieldset>
       <fieldset class="exhibition-metadata"><legend>使用機材（任意）</legend>${input("camera","カメラ")}${input("lens","レンズ")}${input("film","フィルム（任意）")}</fieldset>
-      <fieldset class="exhibition-metadata"><legend>撮影設定（任意）</legend>${input("shutterSpeed","シャッタースピード","1/250秒")}${input("iso","ISO感度","400")}${input("fNumber","F値","2.8")}</fieldset>`;
+      <fieldset class="exhibition-metadata"><legend>撮影設定（任意）</legend>${input("shutterSpeed","シャッタースピード","1/250秒")}${input("iso","ISO感度","400")}${input("fNumber","F値","2.8")}</fieldset>${metadataLineHint(work.id)}`;
   };
   const workHtml = (work: AnyRecord, index: number) => {
     const kindName = ({ single: "単写真", series: "組写真", book: "ブック" } as AnyRecord)[work.kind];
-    const photos = `<h5 class="${work.kind === "book" ? "" : "required"}">${work.kind === "book" ? "ブックの作品データ（任意・表紙や内容の画像）" : "写真"}（JPEG・PNG、各20MB以下）</h5>${work.photos.map((photo: AnyRecord, photoIndex: number) => photoHtml(work, photo, photoIndex)).join("")}${seriesCanvas(work)}`;
+    const photos = `<h5 class="${work.kind === "book" ? "" : "required"}">${work.kind === "book" ? "ブックの作品データ（任意・表紙や内容の画像）" : "写真"}（JPEG・PNG、各20MB以下）</h5>${work.photos.map((photo: AnyRecord, photoIndex: number) => photoHtml(work, photo, photoIndex)).join("")}${work.kind === "series" ? `<div class="exhibition-actions"><span data-series-photo-count="${work.id}">${work.photos.length}枚 / 100枚まで</span><button type="button" class="secondary" data-add-series-photo="${work.id}" ${work.photos.length >= 100 ? "disabled" : ""}>＋ 写真を追加</button></div><p class="exhibition-muted">写真を1枚ずつ追加し、不要な写真は「この写真を削除」で取り除いてください。提出時は1枚以上の写真が必要です。</p>` : ""}${seriesCanvas(work)}`;
     const custom = fieldsFor("work", work.sectionId, work.kind).map((field: AnyRecord) => fieldControl(field, work.fields?.[field.id], "work", work.id)).join("");
     return `<article class="exhibition-work"><h4>${kindName} ${index + 1}</h4><p class="exhibition-limit-warning" data-limit-errors="work" data-limit-id="${work.id}" aria-live="polite" hidden></p><div class="exhibition-form">
-      <label class="required">作品タイトル<input data-work-id="${work.id}" data-work-key="title" maxlength="300" value="${escape(work.title)}" /></label>
+      <label>作品タイトル（任意）<input data-work-id="${work.id}" data-work-key="title" maxlength="300" value="${escape(work.title)}" /></label>
+      ${titleBoardFieldsHtml(work as Work)}
       <label>${escape(payload?.schema?.captionLabel ?? "キャプション")}<textarea data-work-id="${work.id}" data-work-key="caption">${escape(work.caption)}</textarea></label>
       ${metadataHtml(work)}${custom}</div>${photos}</article>`;
   };
@@ -161,10 +185,10 @@ if (root) {
     return `<fieldset data-section="${section.sectionId}"><legend>${escape(schemaSection.title)}</legend>${schemaSection.description ? `<p>${escape(schemaSection.description)}</p>` : ""}
       <p class="exhibition-limit-summary" data-limit-section="${section.sectionId}"></p><p class="exhibition-limit-warning" data-limit-errors="section" data-limit-id="${section.sectionId}" aria-live="polite" hidden></p>
       <div class="exhibition-grid"><label>単写真枚数<input data-count="singles" type="number" min="0" max="300" value="${section.singles}" /></label><label>組写真作品数<input data-count="series" type="number" min="0" max="100" value="${section.series}" /></label><label>ブック冊数<input data-count="books" type="number" min="0" max="100" value="${section.books}" /></label></div>
-      ${section.series ? `<div class="exhibition-grid">${section.seriesPhotoCounts.map((count: number, index: number) => `<label>組写真 ${index + 1} の写真枚数<input data-series-count="${index}" type="number" min="1" max="100" value="${count}" /></label>`).join("")}</div>` : ""}${sectionFields}<div class="exhibition-list">${grouped}</div></fieldset>`;
+      ${sectionFields}<div class="exhibition-list">${grouped}</div></fieldset>`;
   };
   const bind = () => {
-    root.querySelectorAll<HTMLInputElement|HTMLSelectElement>("[data-work-detail]").forEach(input=>input.addEventListener("input",()=>{
+    root.querySelectorAll<HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement>("[data-work-detail]").forEach(input=>input.addEventListener("input",()=>{
       const work=workById(input.dataset.workId!); if(!work) return;
       work.details??=emptyWorkDetails();work.details[input.dataset.workDetail!]=input.value;Object.assign(work,metadataStrings(work.details));
       const region=root.querySelector<HTMLElement>(`[data-region-field="${work.id}"]`); if(region) region.hidden=work.details.prefecture!=="海外・その他";
@@ -173,7 +197,7 @@ if (root) {
       if(!confirm("既存の記述は自動分解できません。撮影情報の各欄へ入力し直しますか？ 保存済みの提出履歴は残ります。"))return;
       const work=workById(button.dataset.splitMetadata!);work.details=emptyWorkDetails();Object.assign(work,metadataStrings(work.details));render();
     }));
-    root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>("[data-field-id]").forEach(element => element.addEventListener("change", () => updateCustomField(element)));
+    root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>("[data-field-id]").forEach(element => { for (const event of ["input", "change"]) element.addEventListener(event, () => updateCustomField(element)); });
     root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("[data-work-key]").forEach(element => element.addEventListener("input", () => { setWorkText(element); refreshLimits(); }));
     root.querySelectorAll<HTMLInputElement>("[data-photo-key]").forEach(element => {
       element.addEventListener("input", () => { setPhotoNumber(element); refreshLimits(); });
@@ -185,8 +209,28 @@ if (root) {
       else { const width = Math.min(photo.width,photo.height), height = Math.max(photo.width,photo.height); photo.width = input.value === "landscape" ? height : width; photo.height = input.value === "landscape" ? width : height; }
       render();
     }));
-    root.querySelectorAll<HTMLInputElement>("[data-count]").forEach(element => element.addEventListener("change", () => { const section = selectedSection(element.closest<HTMLElement>("[data-section]")?.dataset.section ?? ""); if (section) { section[element.dataset.count ?? "singles"] = Math.max(0, Math.floor(number(element.value))); synchronizeWorks(); render(); } }));
-    root.querySelectorAll<HTMLInputElement>("[data-series-count]").forEach(element => element.addEventListener("change", () => { const section = selectedSection(element.closest<HTMLElement>("[data-section]")?.dataset.section ?? ""); if (section) { section.seriesPhotoCounts[Number(element.dataset.seriesCount)] = Math.max(1, Math.floor(number(element.value, 1))); synchronizeWorks(); render(); } }));
+    root.querySelectorAll<HTMLInputElement>("[data-count]").forEach(element => { element.addEventListener("input", () => { const section = selectedSection(element.closest<HTMLElement>("[data-section]")?.dataset.section ?? ""); if(section) { section[element.dataset.count ?? "singles"] = Math.max(0,Math.floor(number(element.value))); synchronizeWorks(); refreshLimits(); } }); element.addEventListener("change", () => { const section = selectedSection(element.closest<HTMLElement>("[data-section]")?.dataset.section ?? ""); if (section) { section[element.dataset.count ?? "singles"] = Math.max(0, Math.floor(number(element.value))); synchronizeWorks(); render(); } }); });
+    const changeSeriesPhotos = (work: AnyRecord, index?: number) => {
+      if (busy || payload?.preview || !payload?.exhibition?.accepting || work.kind !== "series") return;
+      if (index === undefined) {
+        if (work.photos.length >= 100) return;
+        work.photos.push(makePhoto(work.photos.length));
+      } else {
+        if (!Number.isInteger(index) || index < 0 || index >= work.photos.length) return;
+        work.photos.splice(index, 1);
+      }
+      seriesEditor.reset(work.id);
+      render();
+      root.querySelector<HTMLButtonElement>(`[data-add-series-photo="${work.id}"]`)?.focus({ preventScroll: true });
+    };
+    root.querySelectorAll<HTMLButtonElement>("[data-add-series-photo]").forEach(button => button.addEventListener("click", () => {
+      const work = workById(button.dataset.addSeriesPhoto!);
+      if (work) changeSeriesPhotos(work);
+    }));
+    root.querySelectorAll<HTMLButtonElement>("[data-remove-series-photo]").forEach(button => button.addEventListener("click", () => {
+      const work = workById(button.dataset.workId!);
+      if (work) changeSeriesPhotos(work, Number(button.dataset.removeSeriesPhoto));
+    }));
     root.querySelectorAll<HTMLInputElement>("[data-upload-work]").forEach(element => element.addEventListener("change", () => uploadPhoto(element)));
     root.querySelectorAll<HTMLInputElement>("[data-section-toggle]").forEach(element => element.addEventListener("change", () => {
       const sectionId = element.dataset.sectionToggle ?? "", draft = content();
@@ -197,6 +241,9 @@ if (root) {
     root.querySelector<HTMLButtonElement>("[data-copy-link]")?.addEventListener("click", async () => { try { await navigator.clipboard.writeText(location.href); status("編集リンクをコピーしました。第三者に共有しないでください。"); } catch { status("このページのURLをコピーして保管してください。", true); } });
     root.querySelector<HTMLButtonElement>("[data-save]")?.addEventListener("click", () => save("save"));
     root.querySelector<HTMLButtonElement>("[data-submit]")?.addEventListener("click", () => save("submit"));
+    root.querySelector<HTMLButtonElement>("[data-preview-boards]")?.addEventListener("click", openBoardPreview);
+    bindTitleBoardFields(root,{work:id=>workById(id) as Work,change:()=>{draftSync?.touch();validateTextFields(root,content() as SubmissionContent);},disabled:()=>busy||!!payload?.preview||!payload?.exhibition?.accepting});
+    bindPhotoExifEditor(root, id => workById(id) as Work, () => draftSync?.touch(), () => busy || !!payload?.preview || !payload?.exhibition?.accepting, id => payload?.assets?.find((a: AnyRecord) => a.id === id)?.photoMetadata ?? {});
     seriesEditor.bind(root);
     bindTextValidation(root,()=>content() as SubmissionContent);
   };
@@ -207,7 +254,7 @@ if (root) {
     const label=root.querySelector<HTMLElement>(`[data-file-info="${work.id}:${index}"]`);
     if(label) label.textContent=`${file.name}（${(file.size/1048576).toFixed(2)} MB）・アップロード中`;
     const assetId = uuid();
-    const form = new FormData(); form.set("token", token); form.set("assetId", assetId); form.set("file", file);
+    const form = new FormData(); form.set("token", token); form.set("assetId", assetId); form.set("file", file); form.set("ownerId",ownerId); form.set("submissionId",payload!.submission.id);
     busy = true; root.querySelectorAll<HTMLInputElement | HTMLButtonElement>("input, button").forEach(control => control.disabled = true); status(`写真 ${index + 1} を保存しています…`);
     try {
       const response = await fetch(`/api/exhibitions/${exhibitionId}/upload`, { method: "POST", body: form }), data = await readExhibitionResponse(response);
@@ -222,42 +269,170 @@ if (root) {
     synchronizeWorks();
     return structuredClone(content());
   };
-  const save = async (action: "save" | "submit") => {
-    if (!payload?.submission || busy) return;
-    if(action==="submit") {
-      if (refreshLimits().length) { status("作品数・大きさの上限を超えている作品を修正してください。下書きは保存できます。", true); return; }
-      try { await ensureTextMeasurement(); } catch { status("文字の表示確認を読み込めませんでした。再度お試しください。",true);return; }
-      const issues=validateTextFields(root,content() as SubmissionContent);
-      if(issues.length) {status("文字量の警告がある項目を修正してください。",true);root.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();return;}
+  const openBoardPreview = () => {
+    if(!payload?.submission||payload.preview||busy||!content().works.length)return;
+    const snapshot=structuredClone(content()),previousFocus=root.querySelector<HTMLButtonElement>("[data-preview-boards]");
+    const dialog=document.createElement("dialog");
+    dialog.className="exhibition-confirm-dialog exhibition-page board-preview-dialog";
+    dialog.setAttribute("aria-label","自分のタイトルボードのプレビュー");
+    const options=payload.schema.sections.map((section:AnyRecord)=>{
+      const works=snapshot.works.filter((work:AnyRecord)=>work.sectionId===section.id);
+      return works.length?`<optgroup label="${escape(section.title)}">${works.map((work:AnyRecord,index:number)=>`<option value="${escape(work.id)}">${index+1}. ${escape(({single:"単写真",series:"組写真",book:"ブック"} as AnyRecord)[work.kind])}・${escape(work.title||"無題")}</option>`).join("")}</optgroup>`:"";
+    }).join("");
+    dialog.innerHTML=`<header class="exhibition-confirm-header"><h2>Title board</h2><button type="button" class="layout-close" data-board-preview-close aria-label="プレビューを閉じる"><span></span><span></span></button></header><p>現在の入力内容を表示します。この操作では保存・提出されません。</p><label class="exhibition-field">確認する作品<select data-board-preview-work>${options}</select></label><div class="exhibition-actions board-preview-navigation"><button type="button" data-board-preview-prev>前の作品</button><span data-board-preview-position></span><button type="button" data-board-preview-next>次の作品</button></div><p data-board-preview-status role="status" aria-live="polite"></p><figure class="board-preview-card"><img data-board-preview-image alt="タイトルボード" hidden/><figcaption data-board-preview-caption></figcaption></figure><ul class="board-preview-issues" data-board-preview-issues role="alert" hidden></ul><p><a data-board-preview-qr target="_blank" rel="noopener noreferrer" hidden>QRコードのリンクを確認</a></p><div class="exhibition-actions"><button type="button" data-board-preview-refresh>プレビューを更新</button><button type="button" data-board-preview-close>フォームに戻る</button></div>`;
+    document.body.append(dialog);
+    const previousOverflow=document.body.style.overflow;document.body.style.overflow="hidden";
+    const select=dialog.querySelector<HTMLSelectElement>("[data-board-preview-work]")!,image=dialog.querySelector<HTMLImageElement>("[data-board-preview-image]")!;
+    const message=dialog.querySelector<HTMLElement>("[data-board-preview-status]")!,issues=dialog.querySelector<HTMLUListElement>("[data-board-preview-issues]")!,caption=dialog.querySelector<HTMLElement>("[data-board-preview-caption]")!,qr=dialog.querySelector<HTMLAnchorElement>("[data-board-preview-qr]")!;
+    let pending:AbortController|undefined;
+    const show = async () => {
+      pending?.abort();const controller=new AbortController();pending=controller;
+      const work=snapshot.works.find((work:AnyRecord)=>work.id===select.value);if(!work)return;
+      const index=[...select.options].findIndex(option=>option.value===select.value);
+      dialog.querySelector<HTMLElement>("[data-board-preview-position]")!.textContent=`${index+1} / ${select.options.length}`;
+      dialog.querySelector<HTMLButtonElement>("[data-board-preview-prev]")!.disabled=index<=0;
+      dialog.querySelector<HTMLButtonElement>("[data-board-preview-next]")!.disabled=index>=select.options.length-1;
+      message.textContent="プレビューを作成しています…";image.hidden=true;issues.hidden=true;issues.replaceChildren();caption.textContent="";qr.hidden=true;
+      const refresh=dialog.querySelector<HTMLButtonElement>("[data-board-preview-refresh]")!;refresh.disabled=true;
+      const timeout=window.setTimeout(()=>controller.abort(),30000);
+      try {
+        const response=await fetch(`/api/exhibitions/${exhibitionId}`,{method:"POST",headers:{"Content-Type":"application/json"},signal:controller.signal,body:JSON.stringify({action:"boards.preview",token,ownerId,content:{name:snapshot.name,authorName:snapshot.authorName,grade:snapshot.grade,portfolioUrl:snapshot.portfolioUrl,work}})});
+        const result=await readExhibitionResponse(response);
+        if(!response.ok||!result.ok)throw new Error(result.message??"プレビューを作成できませんでした。");
+        if(typeof result.image!=="string"||!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(result.image))throw new Error("プレビュー画像を読み込めませんでした。");
+        if(controller.signal.aborted||!dialog.isConnected)return;
+        image.src=result.image;image.alt=`「${result.title||"無題"}」のタイトルボード`;await image.decode();
+        if(controller.signal.aborted||!dialog.isConnected)return;
+        image.hidden=false;caption.textContent=`${result.sectionTitle} ／ ${result.title||"無題"} ／ キャプション ${result.fontSize}pt`;
+        for(const warning of result.issues??[]){const item=document.createElement("li");item.textContent=formatExhibitionError(String(warning));issues.append(item);}
+        issues.hidden=!issues.childElementCount;
+        if(result.qrUrl){qr.href=result.qrUrl;qr.hidden=false;}
+        message.textContent="105 × 74.25 mm（A4の8分の1）の仕上がりイメージです。";
+      } catch(error) {
+        if(pending!==controller||!dialog.isConnected)return;
+        message.textContent=formatExhibitionError(controller.signal.aborted?"":error instanceof Error?error.message:"", 'EXH-016');
+      } finally {window.clearTimeout(timeout);if(pending===controller&&dialog.isConnected)refresh.disabled=false;}
+    };
+    select.addEventListener("change",()=>void show());
+    for(const [name,step] of [["prev",-1],["next",1]] as const)dialog.querySelector<HTMLButtonElement>(`[data-board-preview-${name}]`)!.addEventListener("click",()=>{select.selectedIndex+=step;void show();});
+    dialog.querySelector<HTMLButtonElement>("[data-board-preview-refresh]")!.addEventListener("click",()=>void show());
+    dialog.querySelectorAll<HTMLButtonElement>("[data-board-preview-close]").forEach(button=>button.addEventListener("click",()=>dialog.close()));
+    dialog.addEventListener("close",()=>{pending?.abort();dialog.remove();document.body.style.overflow=previousOverflow;previousFocus?.isConnected&&previousFocus.focus({preventScroll:true});},{once:true});
+    dialog.showModal();void show();
+  };
+  const syncDisplay = () => {
+    const box = root.querySelector<HTMLElement>("[data-draft-sync]"); if (!box) return;
+    box.hidden = !draftSync || !!payload?.preview; box.dataset.kind = syncState.kind;
+    const suffix = syncState.local ? "入力はこの端末に一時保存しています。" : "端末への一時保存ができません。保存が完了するまでこの画面を閉じないでください。";
+    const messages: Record<DraftSyncState["kind"],string> = {
+      saved: "自動保存済み", pending: "変更を保存します…", saving: "自動保存中…",
+      offline: `${formatExhibitionError('', 'EXH-013')} 接続後に再送します。${suffix}`,
+      auth: formatExhibitionError(`ログインの有効期限が切れたか、アカウントが変更されました。元のアカウントで再ログインしてください。${suffix}`, 'EXH-009'),
+      conflict: formatExhibitionError(`別の画面で下書きが変更されています。「この端末の入力を保存」か「サーバーの下書きを使う」を選んでください。${suffix}`, 'EXH-012'),
+      blocked: `${formatExhibitionError(syncState.message || "保存を再開するには入力内容・受付期間を確認してください。")} ${suffix}`,
+    };
+    box.querySelector<HTMLElement>("[data-draft-sync-status]")!.textContent = syncState.kind === "pending" && !payload?.exhibition.accepting ? formatExhibitionError(`入力期間が終了しているため、未送信の入力はサーバーに保存できません。${suffix}`, 'EXH-011') : messages[syncState.kind] + (!syncState.local ? ` ${formatExhibitionError('', 'EXH-017')}` : '');
+    box.querySelector<HTMLElement>("[data-draft-login]")!.hidden = syncState.kind !== "auth";
+    box.querySelector<HTMLElement>("[data-draft-retry]")!.hidden = !["offline","auth","blocked","conflict"].includes(syncState.kind);
+    box.querySelector<HTMLElement>("[data-draft-conflict]")!.hidden = syncState.kind !== "conflict";
+  };
+  const checkedResponse = async (response: Response) => {
+    let data: AnyRecord;
+    try { data = await readExhibitionResponse(response); }
+    catch(error) { throw new DraftSaveError(error instanceof Error ? error.message : "保存結果を確認できませんでした。",response.status >= 400 ? response.status : response.redirected ? 401 : 0); }
+    if (!response.ok || !data.ok) {
+      if (data.effectiveLimits && payload) payload.effectiveLimits = data.effectiveLimits;
+      if (Array.isArray(data.issues)) setServerTextIssues(root, content() as SubmissionContent, data.issues);
+      throw new DraftSaveError(data.message ?? "保存できませんでした。",response.status);
     }
-    busy = true; root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | HTMLButtonElement>("input, textarea, select, button").forEach(control => control.disabled = true); status(action === "submit" ? "提出内容を確認しています…" : "下書きを保存しています…");
+    return data;
+  };
+  const applyInitialGrade = () => {
+    const suggested = normalizeExhibitionGrade(payload?.initialGrade), draft = payload?.submission?.draft;
+    if (draft && !draft.grade?.trim() && suggested) { draft.grade = suggested; return true; }
+    return false;
+  };
+  const setupSync = (initialContent?: AnyRecord) => {
+    draftSync?.dispose(); draftSync = undefined;
+    if (!payload?.submission || payload.preview) return;
+    const submissionId = payload.submission.id;
+    // Each document owns its backup key, including duplicated browser tabs.
+    let storage: Storage | null = null; const tab = uuid();
+    try { storage = localStorage; } catch {}
+    const snapshot = (data: AnyRecord) => {
+      if (data.viewerId !== ownerId) throw new DraftSaveError("元のアカウントでログインし直してください。",401);
+      if (data.submission?.id !== submissionId) throw new DraftSaveError("提出先が変更されました。運営に確認してください。",403);
+      return { revision: data.submission.revision, content: data.submission.draft };
+    };
+    draftSync = createDraftSync<AnyRecord>({
+      initial: { ...snapshot(payload), ...(initialContent ? { content: initialContent } : {}) }, storage, tab, prefix: `scharade:exhibition-draft:v1:${ownerId}:${exhibitionId}:${submissionId}:${payload.schema.version}:`,
+      read: serializableContent,
+      restore: value => { payload!.submission.draft = value; render(); },
+      enabled: () => !busy && !composing && !!payload?.exhibition.accepting,
+      state: state => { syncState = state; syncDisplay(); },
+      send: async (value,revision) => {
+        const response = await fetch(`/api/exhibitions/${exhibitionId}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"save",token,ownerId,submissionId,revision,content:value}),signal:AbortSignal.timeout(20000)});
+        const data = await checkedResponse(response), result = snapshot(data);
+        payload!.submission.revision = result.revision;payload!.exhibition=data.exhibition;deadlineClock.refresh();
+        return result;
+      },
+      fetch: async () => {
+        const data = await checkedResponse(await fetch(`/api/exhibitions/${exhibitionId}`,{signal:AbortSignal.timeout(15000)})), result = snapshot(data);
+        payload!.submission.revision = result.revision; payload!.exhibition = data.exhibition;
+        payload!.assets = data.assets; payload!.effectiveLimits = data.effectiveLimits;
+        return result;
+      },
+    });
+    draftSync.restore();
+    if (applyInitialGrade()) render();
+    draftSync.touch(); syncDisplay();
+  };
+  const save = async (action: "save" | "submit") => {
+    if (!payload?.submission || busy || !draftSync) return;
+    busy = true; root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | HTMLButtonElement>("input, textarea, select, button").forEach(control => control.disabled = true);
+    let focusInvalid = false;
+    status(action === "submit" ? "提出内容を確認しています…" : "下書きを保存しています…");
     try {
-      const response = await fetch(`/api/exhibitions/${exhibitionId}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, token, revision: payload.submission.revision, content: serializableContent() }) });
-      const data = await readExhibitionResponse(response);
-      if (!response.ok || !data.ok) {
-        if (data.effectiveLimits) payload.effectiveLimits = data.effectiveLimits;
-        throw new Error(data.message ?? "保存できませんでした。");
+      if(action === "submit") {
+        refreshLimits();
+        try { await ensureTextMeasurement(); } catch { /* The server always verifies the actual print layout. */ }
+        if(validateTextFields(root,content() as SubmissionContent).length) { status("文字量の警告がある項目の文字数や改行を減らしてください。",true,true,'EXH-004');focusInvalid=true;return; }
       }
-      payload = data; synchronizeWorks(); savedContent = JSON.stringify(content()); status(action === "submit" ? "提出しました。Googleフォーム連携は運営側で同期されます。" : "下書きを保存しました。"); render();
-    } catch (error) { status(error instanceof Error ? error.message : "保存できませんでした。", true); }
-    finally { busy = false; render(); }
+      await draftSync.flush(true);
+      if (action === "submit") {
+        const response = await fetch(`/api/exhibitions/${exhibitionId}`, { method: "POST", headers: { "Content-Type": "application/json" }, signal:AbortSignal.timeout(20000), body: JSON.stringify({ action, token, ownerId, submissionId:payload.submission.id, revision: draftSync.revision(), content: serializableContent() }) });
+        const data = await checkedResponse(response);
+        draftSync.dispose(); draftSync = undefined; payload = data; synchronizeWorks(); render(); setupSync();
+        document.dispatchEvent(new CustomEvent('help:statechange'));
+        if (payload.exhibition.shiftsEnabled) operationNotice("出展フォームを提出しました。続けてシフトフォームも提出してください。",false,"exhibition-next-step");
+      }
+      status(action === "submit" ? "提出しました。Googleフォーム連携は運営側で同期されます。" : "下書きを保存しました。");
+    } catch (error) { status(error instanceof Error ? error.message : "保存できませんでした。", true); focusInvalid = true; }
+    finally { busy = false; render(); if (focusInvalid) root.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(); }
   };
   const render = () => {
     if (!payload) return;
+    queueMicrotask(()=>deadlineClock.refresh());
     synchronizeWorks();
     const draft = content(), schema = payload.schema;
     const readOnly = !payload.exhibition.accepting;
     const common = fieldsFor("common").map((field: AnyRecord) => fieldControl(field, draft.fields?.[field.id], "common")).join("");
     const sectionChoices = schema.sections.map((section: AnyRecord) => `<label><input data-section-toggle="${section.id}" type="checkbox" ${selectedSection(section.id) ? "checked" : ""}/> ${escape(section.title)}</label>`).join(" ");
-    root.innerHTML = `<header><h1>${escape(payload.exhibition.title)} 出展フォーム</h1><p>${payload.preview ? "運営用のフォームプレビューです。保存・写真添付・提出はできません。" : "下書きはログイン中のアカウントに保存します。別の端末からも再開できます。"}</p></header>
-      <p class="exhibition-status" aria-live="polite"></p>${readOnly ? '<p class="exhibition-muted">入力期間外のため、保存内容の確認のみ可能です。</p>' : ""}
+    root.innerHTML = `<header><h1>${escape(payload.exhibition.title)} 出展フォーム</h1><p>${payload.preview ? "運営用のフォームプレビューです。保存・写真添付・提出はできません。" : "入力内容は変更後に自動保存します。ログイン切れ・通信失敗時の未送信の入力はこの端末に一時保存し、再ログイン後に復元します。提出は最後の「提出する」ボタンで行ってください。"}</p></header>
+      <p class="exhibition-status" aria-live="polite"></p><div data-submission-deadline>${payload.exhibition.submissionOverdue?overdueWarningHtml():""}</div>${readOnly ? '<p class="exhibition-muted">入力期間外のため、保存内容の確認のみ可能です。</p>' : ""}
 
-      <section class="exhibition-editor"><fieldset><legend>出展者情報</legend><div class="exhibition-form"><label class="required">名前<input data-common="name" maxlength="150" value="${escape(draft.name)}"/></label><label class="required">学年<input data-common="grade" maxlength="100" value="${escape(draft.grade)}"/></label><label class="required">作者名<input data-common="authorName" maxlength="150" value="${escape(draft.authorName)}"/></label><label>外部Portfolio URL（登録済みアカウントがない場合）<input data-common="portfolioUrl" type="url" placeholder="https://…" value="${escape(draft.portfolioUrl)}"/></label>${common}</div></fieldset>
+      <section class="exhibition-editor"><fieldset><legend>出展者情報</legend><div class="exhibition-form"><label class="required">名前<input data-common="name" maxlength="150" value="${escape(draft.name)}"/></label><label class="required">学年<select data-common="grade" required>${exhibitionGradeOptionsHtml(draft.grade ?? "")}</select></label><label class="required">作者名<input data-common="authorName" maxlength="150" value="${escape(draft.authorName)}"/></label><label>外部Portfolio・SNS URL<input data-common="portfolioUrl" type="url" placeholder="https://…" value="${escape(draft.portfolioUrl)}"/><small>入力したURLをタイトルボードのQRコードに使用します。空欄の場合はアカウントのPortfolioを使用します。</small></label>${common}</div></fieldset>
       <fieldset><legend>参加する展示</legend><p>通常展示と企画展示の両方を選べます。選択した展示ごとに、少なくとも一つの作品を入力してください。</p><div class="exhibition-actions">${sectionChoices}</div></fieldset>
       <p class="exhibition-limit-summary" data-limit-total></p><p class="exhibition-limit-warning" data-limit-errors="total" aria-live="polite" hidden></p>
       ${draft.sections.map((section: AnyRecord) => sectionHtml(section, schema.sections.find((item: AnyRecord) => item.id === section.sectionId))).join("")}
-      <div class="exhibition-actions"><button class="secondary" data-save>下書きを保存</button><button data-submit>提出する</button></div></section>`;
-    root.querySelectorAll<HTMLInputElement>("[data-common]").forEach(input => input.addEventListener("input", () => { draft[input.dataset.common ?? ""] = input.value; }));
+      <fieldset class="exhibition-notes-field"><legend>その他ご意見、ご要望など</legend><label for="exhibition-notes">ご意見・ご要望（任意）</label><textarea id="exhibition-notes" data-submission-notes rows="8" maxlength="${exhibitionNotesLimit}" aria-describedby="exhibition-notes-help exhibition-notes-count">${escape(draft.notes ?? "")}</textarea><small id="exhibition-notes-help">運営への連絡事項を自由にご記入ください。タイトルボードには印刷されません。</small><small id="exhibition-notes-count" data-notes-count>${(draft.notes ?? "").length.toLocaleString("ja-JP")} / ${exhibitionNotesLimit.toLocaleString("ja-JP")}文字</small></fieldset>
+      <aside class="exhibition-draft-sync" data-draft-sync hidden><p data-draft-sync-status role="status" aria-live="polite"></p><div class="exhibition-actions"><a data-draft-login href="/Login?next=${encodeURIComponent(`/Exhibition/${exhibitionId}`)}" hidden>ログインし直す</a><button type="button" class="secondary" data-draft-retry hidden>保存状態を確認・再送</button><span class="exhibition-actions" data-draft-conflict hidden><button type="button" class="secondary" data-draft-resolve="local">この端末の入力を保存</button><button type="button" class="secondary" data-draft-resolve="server">サーバーの下書きを使う</button></span></div></aside>
+      <div class="exhibition-actions"><button class="secondary" data-save>下書きを保存</button><button data-submit>提出する</button><button type="button" class="secondary" data-preview-boards>タイトルボードをプレビュー</button>${payload.exhibition.shiftsEnabled && payload.submission?.versions?.length ? `<a class="exhibition-button" href="/Member/exhibitions/${exhibitionId}/shifts">シフトフォームへ進む</a>` : ""}</div></section>`;
+    root.querySelectorAll<HTMLInputElement | HTMLSelectElement>("[data-common]").forEach(input => { const update = () => { draft[input.dataset.common ?? ""] = input.value; }; input.addEventListener("input", update); input.addEventListener("change", update); });
+    root.querySelector<HTMLTextAreaElement>("[data-submission-notes]")?.addEventListener("input", event => {
+      draft.notes = (event.target as HTMLTextAreaElement).value;
+      root.querySelector("[data-notes-count]")!.textContent = `${draft.notes.length.toLocaleString("ja-JP")} / ${exhibitionNotesLimit.toLocaleString("ja-JP")}文字`;
+    });
     root.querySelectorAll<HTMLLabelElement>(".exhibition-form > label").forEach(label => {
       const control = label.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>("input, select, textarea");
       if (!control || control instanceof HTMLInputElement && ["checkbox", "radio"].includes(control.type)) return;
@@ -268,9 +443,12 @@ if (root) {
       label.prepend(caption); label.classList.add("exhibition-row");
     });
     bind();
+    root.querySelector<HTMLButtonElement>("[data-draft-retry]")?.addEventListener("click", () => void draftSync?.resume());
+    root.querySelectorAll<HTMLButtonElement>("[data-draft-resolve]").forEach(button => button.addEventListener("click", () => void draftSync?.resolve(button.dataset.draftResolve as "local" | "server").catch(error => status(error.message,true))));
     refreshLimits();
-    if (readOnly || payload.preview) root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | HTMLButtonElement>("input, textarea, select, button").forEach(control => control.disabled = true);
+    if (readOnly || payload.preview) root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | HTMLButtonElement>("input, textarea, select, button:not([data-preview-boards])").forEach(control => control.disabled = true);
     status(currentStatus.message, currentStatus.error, false);
+    draftSync?.touch(); syncDisplay();
   };
   const load = async () => {
     try {
@@ -279,21 +457,21 @@ if (root) {
       const response = await fetch(url), data = await readExhibitionResponse(response);
       if (!response.ok || !data.ok) throw new Error(data.message ?? "フォームを読み込めませんでした。");
       payload = data;
-      if (data.submission) { token = ""; if(location.hash) history.replaceState(null,"",location.pathname + location.search); render(); savedContent = JSON.stringify(content()); return; }
+      if (data.submission) { const saved = structuredClone(data.submission.draft); applyInitialGrade(); token = ""; if(location.hash) history.replaceState(null,"",location.pathname + location.search); render(); setupSync(saved); return; }
       root.innerHTML = `<header><h1>${escape(data.exhibition.title)} 出展フォーム</h1></header><p>${escape(data.exhibition.accepting ? "出展を開始すると、下書きが自分のアカウントに保存されます。" : data.participation?.message || "現在は受付期間外です。")}</p><div class="exhibition-actions">${data.exhibition.accepting ? '<button data-begin>出展を開始する</button>' : ""}<a class="exhibition-button secondary" href="/Member/exhibitions/${exhibitionId}">参加投票・入力期間を確認</a></div><p class="exhibition-status" aria-live="polite"></p>`;
       root.querySelector<HTMLButtonElement>("[data-begin]")?.addEventListener("click", begin);
-    } catch (error) { root.innerHTML = `<p class="exhibition-status error">${escape(error instanceof Error ? error.message : "フォームを読み込めませんでした。")}</p>`; }
+    } catch (error) { root.innerHTML = `<p class="exhibition-status error" role="alert">${escape(formatExhibitionError(error instanceof Error ? error.message : "フォームを読み込めませんでした。"))}</p>`; }
   };
   const begin = async () => {
     if (busy) return;
     busy = true;
     status("出展フォームを準備しています…");
     try {
-      const response = await fetch(`/api/exhibitions/${exhibitionId}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "begin", revision: 0 }) }), data = await readExhibitionResponse(response);
+      const response = await fetch(`/api/exhibitions/${exhibitionId}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "begin", ownerId, revision: 0 }) }), data = await readExhibitionResponse(response);
       if (!response.ok || !data.ok || !data.submission) throw new Error(data.message ?? "開始できませんでした。");
-      token = ""; history.replaceState(null, "", location.pathname); payload = data; render(); savedContent = JSON.stringify(content()); status("自分のアカウントに出展フォームを作成しました。");
+      token = ""; history.replaceState(null, "", location.pathname); payload = data; render(); setupSync(); status("自分のアカウントに出展フォームを作成しました。");
     } catch (error) { status(error instanceof Error ? error.message : "開始できませんでした。", true); }
-    finally { busy = false; refreshLimits(); }
+    finally { busy = false; refreshLimits(); draftSync?.touch(); }
   };
   void load();
 }

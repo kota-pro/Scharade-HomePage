@@ -1,0 +1,18 @@
+export type OpeningHours = { open: string; close: string };
+export type ExhibitionOpeningSchedule = { startDate: string; endDate: string; regular: OpeningHours; first?: OpeningHours; last?: OpeningHours };
+export type ShiftSlot = { id: string; date: string; start: string; end: string; minutes: number; index: number };
+export type ShiftRules = { maxTotal?: number; maxConsecutive?: number; together: [string, string][]; apart: [string, string][] };
+export type ShiftConfig = { state: 'draft' | 'open' | 'closed'; opensAt: string; closesAt: string; rules: ShiftRules };
+export type ShiftAnswer = { none: boolean; slotIds: string[] };
+export type ShiftResponse = { userId: string; revision: number; draft: ShiftAnswer; submitted?: ShiftAnswer & { at: string; scheduleKey: string }; updatedAt: string };
+export type ShiftPerson = { id: string; name: string; lineName?: string; searchNames?: string[]; grade?: string; guest?: boolean };
+export type ShiftAssignment = { id: string; slotId: string; personId: string; fixed: boolean; manual: boolean; override?: boolean };
+export type ShiftPlan = { revision: number; assignments: ShiftAssignment[]; sourceKey: string; reviewed?: true; generatedAt?: string; optimal?: boolean; stages?: number };
+export type PublishedShiftPlan = ShiftPlan & { version: number; at: string; actorId: string; slots: ShiftSlot[]; people: ShiftPerson[]; rules: ShiftRules };
+export type ShiftGenerationInput = { slots: ShiftSlot[]; people: ShiftPerson[]; availability: Record<string, string[]>; rules: ShiftRules; fixed: ShiftAssignment[] };
+export type ShiftGenerationResult = { assignments: ShiftAssignment[]; optimal: boolean; stages: number; elapsedMs: number };
+export type ShiftGenerationJob = { id: string; state: 'queued' | 'running' | 'ready' | 'stale' | 'failed'; sourceKey: string; actorId: string; createdAt: string; startedAt?: string; completedAt?: string; error?: string; token?: string; leaseUntil?: number; planRevision: number; input: ShiftGenerationInput };
+export type ShiftRecord = { exhibitionId: string; revision: number; config: ShiftConfig; responses: ShiftResponse[]; guests: ShiftPerson[]; plan: ShiftPlan; published?: PublishedShiftPlan; history: PublishedShiftPlan[]; job?: ShiftGenerationJob; sync: { revision: number; delivered: number; nextAttemptAt: number; attempts: number; error?: string; spreadsheetId?: string; url?: string; token?: string; leaseUntil?: number }; notices: { id: string; version: number; at: string; actorId: string; recipientIds: string[]; delivered?: boolean }[] };
+export type ExhibitionShiftStore = { version: 1; records: ShiftRecord[] };
+export const emptyShiftAnswer = (): ShiftAnswer => ({ none: false, slotIds: [] });
+export const defaultShiftConfig = (): ShiftConfig => ({ state: 'draft', opensAt: '', closesAt: '', rules: { together: [], apart: [] } });

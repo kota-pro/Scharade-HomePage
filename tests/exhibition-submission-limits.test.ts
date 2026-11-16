@@ -60,7 +60,7 @@ test('latest limits apply to pinned questions; removed sections retain their las
  const rules=effectiveSubmissionLimits([a,b,c]);
  assert.equal(rules.maxWorks,undefined);assert.deepEqual(rules.sections[sectionId],{title:'通常展示',maxWorks:3});assert.deepEqual(rules.sections[otherId],{title:'企画展改名'});
 });
-test('oversized drafts are preserved; final/resubmit use latest limits before creating versions or delivery work',async()=>{
+test('oversized drafts and final submissions are preserved; latest limits remain available as scoped warnings',async()=>{
  const before=process.env.DATA_DIR,dir=fs.mkdtempSync(path.join(os.tmpdir(),'exhibition-limits-'));process.env.DATA_DIR=dir;
  try{
   writeData('users.json',[{id:'staff',name:'運営',email:'staff@example.invalid',approved:true,role:'staff',providers:{},createdAt:'2026-01-01'},{id:'author',name:'作者',email:'author@example.invalid',approved:true,role:'member',providers:{},createdAt:'2026-01-01'}]);
@@ -74,11 +74,11 @@ test('oversized drafts are preserved; final/resubmit use latest limits before cr
   e=readExhibitions().exhibitions[0];e=(await exhibitionAction('staff',{action:'schema',exhibitionId:e.id,revision:e.revision,schema:{...e.schemas[0],limits:{maxWorks:1},sections:[{...e.schemas[0].sections[0],limits:{maxWorks:1,maxLongEdgeMm:250}}],fields:[{id:crypto.randomUUID(),label:'新しい必須質問',type:'text',scope:'common',required:true,options:[],description:''}]}})).exhibition;
   c.sections[0].books=3;for(let i=0;i<3;i++)c.works.push({...content([],'book').works[0],sectionId:actual,title:'本'});
   p=await publicAction(e.id,'',{action:'save',revision:p.submission.revision,content:c},'author');assert.equal(p.schema?.version,1);assert.equal(p.effectiveLimits.sections[actual].maxLongEdgeMm,250);
-  const snapshot=JSON.stringify(readExhibitions());
-  await assert.rejects(()=>publicAction(e.id,'',{action:'submit',revision:p.submission.revision,content:c},'author'),(err:unknown)=>err instanceof ExhibitionError&&err.status===400&&err.limitIssues?.[0].workId===c.works[0].id&&err.effectiveLimits?.sections[actual].maxLongEdgeMm===250);
-  assert.equal(JSON.stringify(readExhibitions()),snapshot);assert.deepEqual(readExhibitions().submissions[0].versions,original);assert.equal(readExhibitions().assets.length,1);
-  c.works[0].photos[0].width=250;p=await publicAction(e.id,'',{action:'submit',revision:p.submission.revision,content:c},'author');assert.equal(p.submission.versions.length,2);assert.equal(p.schema?.version,1);assert.equal(p.submission.draft.works.length,4);
+  p=await publicAction(e.id,'',{action:'submit',revision:p.submission.revision,content:c},'author');
+  assert.equal(p.submission.versions.length,2);assert.equal(submissionLimitIssues(p.submission.draft,p.effectiveLimits)[0].workId,c.works[0].id);
+  assert.deepEqual(readExhibitions().submissions[0].versions[0],original[0]);assert.equal(readExhibitions().assets.length,1);
+  c.works[0].photos[0].width=250;p=await publicAction(e.id,'',{action:'submit',revision:p.submission.revision,content:c},'author');assert.equal(p.submission.versions.length,3);assert.equal(p.schema?.version,1);assert.equal(p.submission.draft.works.length,4);
   e=(await exhibitionAction('staff',{action:'schema',exhibitionId:e.id,revision:e.revision,schema:{...e.schemas.at(-1),limits:{},sections:[{...e.schemas[0].sections[0],limits:{}}]}})).exhibition;
-  c.works[0].photos[0].width=999;p=await publicAction(e.id,'',{action:'submit',revision:p.submission.revision,content:c},'author');assert.equal(p.submission.versions.length,3);
+  c.works[0].photos[0].width=999;p=await publicAction(e.id,'',{action:'submit',revision:p.submission.revision,content:c},'author');assert.equal(p.submission.versions.length,4);
  }finally{if(before===undefined)delete process.env.DATA_DIR;else process.env.DATA_DIR=before;fs.rmSync(dir,{recursive:true,force:true});}
 });

@@ -7,7 +7,7 @@ if (root) {
   let busy = false;
   async function send(body: Record<string, unknown>) {
     if (busy) return;
-    busy = true;
+    busy = true; status.dataset.error = "false";
     const buttons = [...root!.querySelectorAll<HTMLButtonElement>("button")];
     const prior = buttons.map((button) => button.disabled);
     buttons.forEach((button) => (button.disabled = true));
@@ -29,7 +29,7 @@ if (root) {
         );
       location.reload();
     } catch (error) {
-      status.textContent = (error as Error).message;
+      status.textContent = (error as Error).message; status.dataset.error = "true";
       buttons.forEach((button, index) => (button.disabled = prior[index]));
     } finally {
       busy = false;

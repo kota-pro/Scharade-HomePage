@@ -8,7 +8,7 @@
   margin: 0;
   padding-right: 78px;
   color: #000;
-  font-family: "linotype-didot", serif;
+  font-family: YakuHanMP, "linotype-didot", serif;
   font-size: 96px;
   font-style: normal;
   font-weight: 400;
@@ -33,7 +33,7 @@
   min-width: 0;
   margin: 0 auto 100px;
   color: #000;
-  font-family: "Zen Kurenaido", sans-serif;
+  font-family: YakuHanRP, "Zen Kurenaido", sans-serif;
   font-size: 16px;
   font-weight: 400;
   line-height: 1.8;
@@ -44,7 +44,7 @@
 .admin-page h3,
 .admin-list legend,
 .admin-dialog h2 {
-  font-family: "Zen Old Mincho", serif;
+  font-family: YakuHanMP, "Zen Old Mincho", serif;
   font-style: normal;
   font-weight: 400;
   line-height: 1.5;
@@ -150,7 +150,7 @@
   text-decoration: none;
 }
 .admin-item-label {
-  font-family: "Zen Old Mincho", serif;
+  font-family: YakuHanMP, "Zen Old Mincho", serif;
   font-size: 18px;
   letter-spacing: 2px;
 }
@@ -279,6 +279,16 @@
   border-color: #707070;
   color: #fff;
 }
+body[data-member-area] :is(.admin-page, .admin-dialog) .admin-button.admin-button-outline {
+  background: #fff;
+  border-color: #000;
+  color: #000;
+}
+body[data-member-area] :is(.admin-page, .admin-dialog) .admin-button.admin-button-outline:not(:disabled):hover {
+  background: #e8e8e8;
+  border-color: #000;
+  color: #000;
+}
 .admin-page button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -304,7 +314,7 @@
   border: 1px solid #000;
   background: #fff;
   color: #000;
-  font-family: "Zen Kurenaido", sans-serif;
+  font-family: YakuHanRP, "Zen Kurenaido", sans-serif;
   font-size: 16px;
   line-height: 1.8;
   letter-spacing: 1px;
@@ -352,7 +362,7 @@
 }
 .admin-portfolio-identity p {
   margin: 0;
-  font-family: "Zen Old Mincho", serif;
+  font-family: YakuHanMP, "Zen Old Mincho", serif;
   font-size: 18px;
   letter-spacing: 2px;
 }
@@ -393,7 +403,7 @@
   margin-top: 24px;
   padding: 0 9px;
   color: #000;
-  font-family: "Grandiflora One", serif;
+  font-family: YakuHanMP, "Grandiflora One", serif;
   font-size: 20px;
   font-style: normal;
   font-weight: 400;
@@ -572,3 +582,31 @@ body:has(#account-delete-dialog[open]) { overflow: hidden; }
     grid-column: 2;
   }
 }
+
+/* Keep registration approval controls legible in mobile dialogs and during transitions. */
+.admin-page [data-approval-open],
+.admin-dialog [data-approval-confirm] {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: #000;
+  background-image: none;
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  border: 1px solid #000;
+  opacity: 1;
+  visibility: visible;
+}
+.admin-dialog[data-approval-dialog] {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  box-sizing: border-box;
+  width: min(540px, calc(100% - 32px));
+  background: #fff;
+  color: #000;
+  opacity: 1;
+  transition: none;
+}
+.admin-dialog[data-approval-dialog]::backdrop { background: rgb(0 0 0 / 45%); }
+.admin-dialog [data-approval-confirm]:disabled { background-color: #555; border-color: #555; cursor: wait; }
+body:has([data-approval-dialog][open]) { overflow: hidden; }

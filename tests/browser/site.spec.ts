@@ -123,18 +123,18 @@ test("member and anonymous access are separated, including private image URLs", 
   await page.goto("/Gallery/private-album");
   await expect(page.locator(".justified-grid a")).toHaveCount(35);
   const photo = await page
-    .locator(".justified-grid img")
+    .locator(".justified-grid img.gallery-image")
     .first()
     .getAttribute("src");
   expect((await request.get(photo!)).status()).toBe(404);
   await expect(page.locator(".justified-grid a")).toHaveCount(35);
   await page.locator(".justified-grid a").first().click();
-  await expect(page.locator("#lightbox")).toBeVisible();
-  await expect(page.locator(".lb-image")).toBeVisible();
+  await expect(page.locator("#photo-dialog")).toBeVisible();
+  await expect(page.locator("[data-photo-image]")).toBeVisible();
   await page.keyboard.press("ArrowRight");
-  await expect(page.locator(".lb-number")).toHaveText("Image 2 of 35");
+  await expect(page.locator("[data-photo-position]")).toHaveText("2 / 35");
   await page.keyboard.press("Escape");
-  await expect(page.locator("#lightbox")).not.toBeVisible();
+  await expect(page.locator("#photo-dialog")).not.toBeVisible();
   expect((await page.goto("/Admin"))?.status()).toBe(403);
 });
 test("admin edits drafts, previews, publishes, restores and reaches every Portfolio", async ({
@@ -212,6 +212,11 @@ test("contact confirmation is keyboard accessible and validates without sending 
   await page.getByLabel("見学・体験希望", { exact: true }).check();
   await page.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(page.locator("#contact-preview")).toBeVisible();
+  const close = page.getByRole("button", { name: "戻って編集", exact: true });
+  await expect(close.locator("span")).toHaveCount(2);
+  await close.click();
+  await expect(page.locator("#contact-preview")).not.toBeVisible();
+  await page.getByRole("button", { name: "Confirm", exact: true }).click();
   await page.keyboard.press("Escape");
   await expect(page.locator("#contact-preview")).not.toBeVisible();
 });

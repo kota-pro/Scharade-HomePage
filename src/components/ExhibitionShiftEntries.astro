@@ -1,0 +1,10 @@
+---
+import { readExhibitions } from '../lib/exhibitions.ts';
+import { readShiftStore } from '../lib/exhibitionShiftStore.ts';
+import { exhibitionHasEnded } from '../lib/memberActivityVisibility.ts';
+const {userId}=Astro.props;
+const store=readShiftStore();
+const now=Date.now();
+const items=readExhibitions().exhibitions.flatMap(e=>{const r=store.records.find(r=>r.exhibitionId===e.id);if(exhibitionHasEnded(e,now)||!r||e.participation?.state!=='published'||r.config.state==='draft'&&!r.published)return [];const own=r.responses.find(r=>r.userId===userId);return [{e,r,own,required:e.participation.votes[userId]?.value==='attending'}];});
+---
+{items.length>0&&<section class="admin-section"><h2>展示シフト</h2><ul class="admin-link-list">{items.map(({e,r,own,required})=><li><a href={`/Member/exhibitions/${e.id}/shifts`}><span class="admin-item-label">{e.title}</span><span class="admin-item-description">{required?'提出必須':'出展しない会員も回答できます'} · {own?.submitted?'提出済み':'未提出'}{r.published?' · 確定シフト公開中':''}</span></a></li>)}</ul></section>}

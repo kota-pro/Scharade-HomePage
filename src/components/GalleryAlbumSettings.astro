@@ -1,0 +1,133 @@
+---
+import MemberIcon from "./MemberIcon.astro";
+import type { GalleryAlbum } from "../lib/galleryCatalog";
+interface Props { album: GalleryAlbum; photosOnly?: boolean }
+const { album, photosOnly = false } = Astro.props;
+const heading = photosOnly ? "カバー・掲載写真" : "アルバム設定";
+---
+<div class="gallery-album-actions" data-gallery-settings data-album-id={album.id} data-revision={album.revision} data-cover-id={album.coverPhotoId ?? ""}>
+  <button type="button" class={photosOnly ? "admin-button" : "gallery-settings-trigger"} data-open-gallery-settings aria-label={heading} title={heading} aria-haspopup="dialog">
+    {photosOnly ? heading : <MemberIcon kind="settings" class="gallery-settings-icon" />}
+  </button>
+  <dialog class="gallery-settings-dialog" aria-labelledby="gallery-settings-heading">
+    <form>
+      <div class="gallery-settings-head"><h2 id="gallery-settings-heading">{heading}</h2><button type="button" data-close-gallery-settings aria-label="閉じる"><span></span><span></span></button></div>
+      <div class="gallery-settings-scroll" data-gallery-settings-scroll>
+        <fieldset class="gallery-settings-fields">
+          <div class="gallery-settings-modes" role="group" aria-label="編集する設定">
+            <button type="button" data-gallery-settings-mode="album" aria-pressed="true" aria-controls="gallery-album-fields">{photosOnly ? "カバー写真" : "公開範囲・カバー"}</button>
+            <button type="button" data-gallery-settings-mode="exclusions" aria-pressed="false" aria-controls="gallery-exclusion-fields">公開しない写真</button>
+          </div>
+          <div id="gallery-album-fields" class="gallery-settings-content">
+            {photosOnly ? <input type="hidden" name="visibility" value={album.visibility} /> : <label class="gallery-settings-visibility">公開範囲
+              <select name="visibility">
+                <option value="public" selected={album.visibility === "public"}>一般公開</option>
+                <option value="members" selected={album.visibility === "members"}>会員限定</option>
+                <option value="staff" selected={album.visibility === "staff"}>運営限定</option>
+              </select>
+            </label>}
+            <div class="gallery-settings-cover">
+              <div class="gallery-settings-cover-head">
+                <h3>カバー写真</h3>
+                <button type="button" class="gallery-settings-secondary" data-cover-id="" aria-pressed={album.coverPhotoId === null}>先頭の写真を使う</button>
+              </div>
+              <p class="gallery-settings-help">Gallery一覧に表示する写真を選択できます。</p>
+              <div class="gallery-settings-photos" data-gallery-cover-photos></div>
+              <p data-gallery-photo-status role="status"></p>
+              <button type="button" class="gallery-settings-secondary" data-gallery-cover-more hidden>写真をさらに表示</button>
+            </div>
+          </div>
+          <section id="gallery-exclusion-fields" class="gallery-settings-cover" aria-labelledby="gallery-exclusion-heading" hidden>
+            <div class="gallery-settings-cover-head">
+              <h3 id="gallery-exclusion-heading">公開しない写真</h3>
+              <p class="gallery-settings-help" data-gallery-exclusion-count aria-live="polite"></p>
+            </div>
+            <p class="gallery-settings-help">写真を押すたびに、Galleryへの掲載と非公開を切り替えます。</p>
+            <div class="gallery-settings-photos" data-gallery-exclusion-photos></div>
+            <p data-gallery-exclusion-status role="status"></p>
+            <button type="button" class="gallery-settings-secondary" data-gallery-exclusion-more hidden>写真をさらに表示</button>
+          </section>
+        </fieldset>
+      </div>
+      <div class="gallery-settings-footer"><p data-gallery-save-status role="status"></p><button type="submit">設定を保存</button></div>
+    </form>
+  </dialog>
+</div>
+
+<script>
+  import "../scripts/galleryAlbumSettings";
+</script>
+
+<style>
+  .gallery-album-actions { flex: none; }
+  .gallery-settings-trigger {
+    display: grid; place-items: center; width: 44px; height: 44px; color: #505655;
+    border: 1px solid #e1e5e4; border-radius: 50%; background: #f6f7f7; cursor: pointer;
+  }
+  .gallery-settings-trigger:hover { color: #007e70; background: #edf7f4; }
+  :global(body:has(.gallery-settings-dialog[open])) { overflow: hidden; }
+  .gallery-settings-dialog {
+    --settings-inline-padding: clamp(14px, 4vw, 20px);
+    --settings-block-padding: 10px;
+    position: fixed; inset: 0;
+    width: min(640px, calc(100% - 24px)); max-width: none;
+    max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow: hidden;
+    box-sizing: border-box; padding: 0; margin: auto; color: #202525;
+    border: 1px solid #d9e0de; border-radius: 12px; background: white;
+  }
+  .gallery-settings-dialog::backdrop { background: #0008; }
+  .gallery-settings-dialog form { display: flex; flex-direction: column; max-height: calc(100vh - 26px); max-height: calc(100dvh - 26px); }
+  .gallery-settings-head,
+  .gallery-settings-footer { flex: none; display: grid; align-items: center; gap: 8px; padding: var(--settings-block-padding) var(--settings-inline-padding); }
+  .gallery-settings-head { grid-template-columns: minmax(0, 1fr) 44px 44px; border-bottom: 1px solid #e1e5e4; }
+  .gallery-settings-footer { grid-template-columns: minmax(0, 1fr) auto; border-top: 1px solid #e1e5e4; }
+  .gallery-settings-dialog h2, .gallery-settings-dialog h3 { margin: 0; font-family: "Zen Old Mincho", serif; }
+  .gallery-settings-dialog h2 { font-size: clamp(20px, 5vw, 24px); line-height: 1.4; }
+  .gallery-settings-dialog h3 { font-size: 19px; }
+  [data-close-gallery-settings] { grid-column: 3; position: relative; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; color: #333; cursor: pointer; }
+  [data-close-gallery-settings] span { position: absolute; top: calc(50% - .5px); left: 10px; right: 10px; height: 1px; background: currentColor; transform: rotate(45deg); }
+  [data-close-gallery-settings] span:last-child { transform: rotate(-45deg); }
+  .gallery-settings-dialog :global(button.help-launcher[data-help-open]) {
+    position: absolute; inset: var(--settings-block-padding) calc(var(--settings-inline-padding) + 52px) auto auto;
+    width: 44px; height: 44px; min-width: 44px; min-height: 44px;
+    border-color: transparent; background: transparent; box-shadow: none;
+  }
+  .gallery-settings-dialog :global(button.help-launcher[data-help-open]:hover) { background: #f0f5f3; }
+  .gallery-settings-dialog :global(button.help-launcher[data-help-open] > svg) { width: 25px; height: 25px; }
+  .gallery-settings-scroll { min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 14px var(--settings-inline-padding); }
+  .gallery-settings-fields { min-width: 0; border: 0; padding: 0; margin: 0; }
+  .gallery-settings-modes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #e1e5e4; }
+  .gallery-settings-modes button { min-height: 40px; padding: 6px 10px; border: 1px solid transparent; border-radius: 6px; background: white; color: #43534f; cursor: pointer; font: inherit; font-size: 14px; }
+  .gallery-settings-modes button[aria-pressed="true"] { border-color: #a3c9c1; background: #e8f6f1; color: #005c50; }
+  .gallery-settings-content { display: grid; gap: 16px; }
+  .gallery-settings-visibility { display: grid; align-self: start; gap: 6px; font-weight: 600; min-width: 0; }
+  .gallery-settings-visibility select { grid-area: 2 / 1; appearance: none; width: 100%; min-width: 0; min-height: 44px; padding: 8px 32px 8px 12px; color: inherit; background: white; border: 1px solid #c5cecb; border-radius: 6px; font: inherit; }
+  .gallery-settings-visibility::after { content: ""; grid-area: 2 / 1; place-self: center end; width: 7px; height: 7px; margin-inline-end: 15px; border: solid currentColor; border-width: 0 1px 1px 0; transform: translateY(-2px) rotate(45deg); pointer-events: none; }
+  .gallery-settings-cover { display: grid; gap: 8px; min-width: 0; }
+  .gallery-settings-cover-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; }
+  .gallery-settings-help, [data-gallery-photo-status], [data-gallery-exclusion-status], [data-gallery-save-status] { margin: 0; color: #555; font-size: 13px; }
+  [data-gallery-photo-status]:empty, [data-gallery-exclusion-status]:empty, [data-gallery-save-status]:empty, .gallery-settings-photos:empty { display: none; }
+  [data-gallery-save-status] { overflow-wrap: anywhere; max-height: 4.5em; overflow-y: auto; }
+  .gallery-settings-secondary, .gallery-settings-dialog button[type="submit"] { min-height: 44px; padding: 7px 12px; border-radius: 6px; cursor: pointer; font: inherit; }
+  .gallery-settings-secondary { justify-self: start; border: 1px solid #b9c7c4; background: white; color: #334440; font-size: 14px; }
+  .gallery-settings-secondary[aria-pressed="true"] { border-color: #0a8576; background: #e8f6f1; color: #005c50; }
+  .gallery-settings-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 84px), 1fr)); gap: 8px; padding: 3px; }
+  .gallery-settings-photos :global(button) { position: relative; aspect-ratio: 1; display: block; width: 100%; min-width: 0; padding: 0; overflow: hidden; border: 2px solid transparent; border-radius: 6px; background: #eff1f1; cursor: pointer; }
+  .gallery-settings-photos :global(button[aria-pressed="true"]) { border-color: #0a8576; box-shadow: 0 0 0 2px #0a8576; }
+  .gallery-settings-photos :global(button[aria-pressed="true"]::after) { content: "✓"; position: absolute; right: 4px; top: 4px; padding: 2px 6px; border-radius: 4px; color: white; background: #006b5d; }
+  [data-gallery-exclusion-photos] :global(button[aria-pressed="true"]) { border-color: #384746; box-shadow: 0 0 0 2px #384746; }
+  [data-gallery-exclusion-photos] :global(button[aria-pressed="true"] img) { filter: brightness(.65); }
+  [data-gallery-exclusion-photos] :global(button[aria-pressed="true"]::after) { content: "非公開"; background: #384746; font-size: 12px; }
+  .gallery-settings-photos :global(img) { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
+  .gallery-settings-dialog button[type="submit"] { grid-column: 2; border: 0; background: #087e70; color: white; }
+  .gallery-settings-dialog button:disabled { opacity: .55; cursor: wait; }
+  [data-gallery-cover-more][hidden] { display: none; }
+  @media (max-width: 380px) {
+    .gallery-settings-footer { grid-template-columns: minmax(0, 1fr); }
+    .gallery-settings-dialog button[type="submit"] { grid-column: 1; justify-self: end; }
+  }
+  @media (max-height: 450px) and (min-width: 520px) {
+    .gallery-settings-dialog { --settings-block-padding: 6px; }
+    .gallery-settings-content { grid-template-columns: minmax(0, 155px) minmax(0, 1fr); }
+  }
+</style>

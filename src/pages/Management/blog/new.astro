@@ -1,0 +1,13 @@
+---
+import { randomUUID } from "node:crypto";
+import BlogEditor from "../../../components/BlogEditor.astro";
+import StaffLayout from "../../../layouts/StaffLayout.astro";
+import { emptyBlogOptions, getBlogEditorOptions } from "../../../lib/blogManagement";
+import "../../../styles/ContentManagement.css";
+
+const options = await getBlogEditorOptions().catch(() => emptyBlogOptions);
+---
+<StaffLayout title="ブログを作成" wideContent>
+  <h2>ブログを作成</h2>
+  <BlogEditor options={options} requestId={randomUUID()} />
+</StaffLayout>

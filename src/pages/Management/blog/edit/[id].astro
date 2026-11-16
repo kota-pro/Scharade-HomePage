@@ -1,0 +1,32 @@
+---
+import BlogEditor from "../../../../components/BlogEditor.astro";
+import ManagementDelete from "../../../../components/ManagementDelete.astro";
+import StaffLayout from "../../../../layouts/StaffLayout.astro";
+import { emptyBlogOptions, getBlogEditorOptions, getEditableBlog } from "../../../../lib/blogManagement";
+import { ContentManagementError } from "../../../../lib/contentManagement";
+import "../../../../styles/ContentManagement.css";
+
+const id = Astro.params.id ?? "";
+const [result, options] = await Promise.all([
+  getEditableBlog(id).then(item => ({ item, unavailable: false })).catch(error => ({ item: null, unavailable: !(error instanceof ContentManagementError && error.status === 404) })),
+  getBlogEditorOptions().catch(() => emptyBlogOptions),
+]);
+if (!result.item && !result.unavailable) return Astro.rewrite("/404");
+const item = result.item;
+const title = item?.post?.title ?? (item ? `記事 ${item.id}` : "ブログ管理");
+const statusLabels = { draft: "下書き", published: "公開中", "published-with-draft": "公開中・下書きあり", closed: "公開終了" };
+---
+<StaffLayout title={title} wideContent={Boolean(item?.post)}>
+  <div class="content-management-heading"><h2>{title}</h2>{item && <span>{statusLabels[item.status]}</span>}</div>
+  {Astro.url.searchParams.get("saved") === "1" && <p role="status">記事を保存しました。</p>}
+  {Astro.url.searchParams.get("saved") === "publish" && <p role="status">記事を公開しました。</p>}
+  {Astro.url.searchParams.get("saved") === "unpublish" && <p role="status">公開を取り下げ、下書きに戻しました。</p>}
+  {item?.post ? <BlogEditor item={item} options={options} /> : <>
+    {item ? <p>公開終了した記事の編集や再公開はmicroCMSで行えます。</p> : <p role="alert">記事を取得できませんでした。microCMSの接続と権限を確認してください。</p>}
+    {item && <section class="content-management-danger">
+      <button type="button" data-management-delete data-delete-endpoint={`/api/member/blog/articles/${encodeURIComponent(id)}`} data-delete-updated-at={item.updatedAt} data-delete-title="記事を削除" data-delete-name={title} data-delete-description="記事をmicroCMSから完全に削除します。この操作は取り消せません。添付画像・ファイルはメディアに残ります。" data-delete-redirect="/Management/blog?deleted=1">記事を削除</button>
+    </section>}
+    <div class="content-management-actions"><a class="member-back" href="/Management/blog">一覧へ戻る</a></div>
+    {item && <ManagementDelete />}
+  </>}
+</StaffLayout>

@@ -1,4 +1,5 @@
 ---
+import {beforeEventDay,overdueWarningHtml} from '../../../lib/advisoryWarnings.ts';
 import ActivityShareButton from "../../../components/ActivityShareButton.astro";
 import MemberLayout from "../../../layouts/MemberLayout.astro";
 import ActivityHeaderImage from "../../../components/ActivityHeaderImage.astro";
@@ -20,7 +21,7 @@ try {
     const users = readUsers();
     detail = user?.approved && (isStaff(user) || event.recipientIds.includes(user.id))
       ? memberEvent(data, event, user, users)
-      : { ...publicEvent(event, users), vote: "unanswered", canVote: false, groups: null, groupsNeedReview: false };
+      : { ...publicEvent(event, users), vote: "unanswered", canVote: false, voteOverdue:false, groups: null, groupsNeedReview: false };
   }
 } catch (error) {
   if (!(error instanceof ActivityError)) throw error;
@@ -47,28 +48,28 @@ if (!detail) Astro.response.status = 404;
         <dl class="activity-details">
           {[
             ["種類", eventCategoryLabels[detail.category]],
-            ["企画内容", detail.description],
+            ["企画内容", detail.description, detail.descriptionHtml],
             [
               "日時",
               `${activityDate(detail.startsAt)}〜${activityDate(detail.endsAt)}`,
             ],
             ["集合場所", detail.meeting],
-            ["行程", detail.itinerary],
+            ["行程", detail.itinerary, detail.itineraryHtml],
             ["徴収費", detail.fee],
             ["参加投票期日", activityDate(detail.deadline)],
             ["テーマ", detail.theme],
             ["担当者", detail.ownerName],
-          ].map(([label, value]) => (
+          ].map(([label, value, html]) => (
             <>
               <dt>{label}</dt>
               <dd class="activity-prose">
-                <ActivityText text={value || "未定"} />
+                <ActivityText text={value || "未定"} html={html} />
               </dd>
             </>
           ))}
         </dl>
-        <section class="admin-section">
-          <h3>参加投票</h3>
+        <section class="admin-section" data-vote-clock data-vote-available={String(detail.status === "published" && !!user?.approved && !!event?.recipientIds.includes(user.id))} data-vote-deadline={detail.deadline} data-event-start={detail.startsAt}>
+          <h3>参加投票</h3><div data-vote-warning>{detail.voteOverdue && <Fragment set:html={overdueWarningHtml("参加投票の提出期限を過ぎています。開催日前日までは回答できます。")} />}</div><p data-event-cutoff hidden={beforeEventDay(detail.startsAt)}>開催日以降は参加投票を変更できません。変更は運営へご連絡ください。</p>
           {user?.approved && event?.recipientIds.includes(user.id) && <p>
             あなたの回答：<strong>{voteLabels[detail.vote]}</strong>
           </p>}
@@ -102,8 +103,8 @@ if (!detail) Astro.response.status = 404;
                 ? "中止された企画です。"
                 : user?.approved && !event?.recipientIds.includes(user.id)
                   ? "通知先のメンバーのみ投票できます。"
-                  : Date.now() >= Date.parse(detail.deadline)
-                    ? "投票を締め切りました。参加の変更は運営へご連絡ください。" : ""}
+                  : !beforeEventDay(detail.startsAt)
+                    ? "開催日以降は参加投票を変更できません。変更は運営へご連絡ください。" : ""}
             </p>
           )}
           <ul class="activity-counts">
@@ -149,8 +150,13 @@ if (!detail) Astro.response.status = 404;
         )}
       </>
     ) : (
-      <h2>企画が見つかりません。</h2>
+      <h2 data-error="true">企画が見つかりません。</h2>
     )
   }
   <a class="member-back" href="/Member">メンバーページへ戻る</a>
 </MemberLayout>
+
+<script>
+  import {bindVoteDeadline} from "../../../scripts/advisoryDeadlineUi.ts";
+  document.querySelectorAll<HTMLElement>("[data-vote-clock]").forEach(bindVoteDeadline);
+</script>

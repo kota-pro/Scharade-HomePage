@@ -1,0 +1,17 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+function harness(){
+  const props:Record<string,string>={'FORM_MAIN_11111111-1111-4111-8111-111111111111':JSON.stringify({formId:'photo_form',spreadsheetId:'photo_sheet'})},files:any[]=[],sheets:Record<string,any[][]>={};let crash=false;
+  const cfg={getProperty:(key:string)=>props[key],setProperty:(key:string,v:string)=>props[key]=v};
+  const ctx:any={console:{log(){}},PropertiesService:{getScriptProperties:()=>cfg},SpreadsheetApp:{openById:()=>({getSheetByName:(name:string)=>sheets[name]?sheet(name):null,insertSheet:(name:string)=>{sheets[name]=[];return sheet(name);}}),flush(){}},DriveApp:{getFileById:()=>({setName(){return this;},moveTo(){return this;}}),getFolderById:()=>({})}};
+  function sheet(name:string){return {clearContents(){sheets[name]=[];},setFrozenRows(){},getRange:()=>({setNumberFormat(){return this;},setValues(values:any[][]){if(crash&&name==='確定シフト'){crash=false;throw new Error('interrupted');}sheets[name]=values;}})};}
+  vm.createContext(ctx);vm.runInContext(fs.readFileSync('gas/exhibition/Code.gs','utf8'),ctx);
+  ctx.driveOwner_=()=> 'sharadeshashinten@gmail.com';ctx.withDriveLock_=(f:any)=>f();ctx.ensureFolders_=(p:any)=>{assert.equal(p.year,2026);return {folderId:'owned_folder_2026'};};ctx.driveJson_=(path:string,method:string,body:any)=>{if(method==='get')return {files};const file={...body,id:'shift_sheet_123456789'};files.push(file);return file;};
+  return {ctx,props,files,sheets,crash:()=>crash=true};
+}
+const payload={exhibitionId:'11111111-1111-4111-8111-111111111111',exhibitionTitle:'展示',year:2026,revision:1,people:[{id:'a',name:'=HYPERLINK("bad")',lineName:'+line'}],slots:[{id:'2026-11-05/10:00-11:00',date:'2026-11-05',start:'10:00',end:'11:00'}],scheduleKey:'current',responses:[{userId:'a',revision:1,submitted:{none:false,slotIds:['2026-11-05/10:00-11:00'],scheduleKey:'current',at:'2026-11-04'}}],published:{version:1,people:[{id:'a',name:'@name'}],slots:[{id:'2026-11-05/10:00-11:00',date:'2026-11-05',start:'10:00',end:'11:00'}],assignments:[{slotId:'2026-11-05/10:00-11:00',personId:'a'}]}};
+test('shift synchronization reuses a dedicated sheet and cannot modify photo form state',()=>{const h=harness(),before=h.props['FORM_MAIN_'+payload.exhibitionId];h.ctx.syncShiftSheet_(payload);h.ctx.syncShiftSheet_(payload);assert.equal(h.files.length,1);assert.equal(h.props['FORM_MAIN_'+payload.exhibitionId],before);assert.equal(h.files[0].parents[0],'owned_folder_2026');assert.equal(h.files[0].appProperties.exhibitionShiftId,payload.exhibitionId);assert.deepEqual(Object.keys(h.sheets).sort(),['希望回答','確定シフト'].sort());});
+test('cell values are text, including spreadsheet formula prefixes',()=>{const h=harness();h.ctx.syncShiftSheet_(payload);assert.equal(h.sheets['希望回答'][1][1].startsWith("'="),true);assert.equal(h.sheets['希望回答'][1][2],"'+line");assert.equal(h.sheets['確定シフト'][1][4],"'@name");assert.equal(h.sheets['確定シフト'][1][6],'1');});
+test('interrupted update repairs both tabs with one file, rejects stale revisions and deleted exhibitions',()=>{const h=harness();h.crash();assert.throws(()=>h.ctx.syncShiftSheet_(payload));h.ctx.syncShiftSheet_(payload);assert.equal(h.files.length,1);assert.equal(h.sheets['確定シフト'].length,2);h.ctx.syncShiftSheet_({...payload,revision:2});assert.throws(()=>h.ctx.syncShiftSheet_(payload),/stale/);h.props['DELETED_'+payload.exhibitionId]='true';assert.throws(()=>h.ctx.syncShiftSheet_({...payload,revision:3}),/deleted/);});

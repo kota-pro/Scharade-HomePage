@@ -1,0 +1,38 @@
+.welcome-notification-group { position: relative; display: inline-flex; align-items: baseline; flex: none; padding-right: 12px; }
+.photo-notification-bell { position: relative; display: inline-flex; align-items: center; justify-content: center; padding: 6px; min-width: 44px; min-height: 44px; border: 0; background: transparent; color: #111; cursor: pointer; }
+.photo-notification-bell svg { width: 28px; height: 28px; stroke: currentColor; fill: none; stroke-width: 1.2; }
+.photo-unread-dot { position: absolute; top: 4px; right: 5px; width: 8px; height: 8px; border-radius: 50%; background: #b82c48; border: 1px solid #fff; }
+.photo-notification-welcome { position: absolute; right: -14px; top: -17px; min-width: 30px; min-height: 30px; padding: 4px; }
+.photo-notification-welcome svg { width: 19px; height: 19px; }
+.photo-notification-welcome .photo-unread-dot { width: 6px; height: 6px; top: 1px; right: 2px; }
+.member-title { position: relative; }
+.member-title .photo-notification-member { display: none; }
+@media(min-width:769px) {
+  .member-home-intro { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+  .member-home-intro .admin-intro { min-width: 0; margin: 0; }
+  .member-home-intro .photo-notification-member { flex: none; padding: 6px; border: 0; background: transparent; color: #111; }
+  .member-home-intro .photo-notification-member:not(:disabled):hover { border-color: transparent; background: transparent; color: #111; }
+}
+.photo-notifications { box-sizing: border-box; width: min(560px, calc(100vw - 24px)); max-height: min(700px, calc(100dvh - 32px)); padding: 20px; border: 1px solid #111; border-radius: 12px; background: #fff; color: #111; overflow: auto; box-shadow: 0 8px 32px #0003; }
+.photo-notifications::backdrop { background: #0005; }
+.photo-notifications-heading { position: sticky; top: -20px; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fff; }
+.photo-notifications h2 { font-family: YakuHanMP, "Zen Old Mincho", serif; font-size: 22px; font-weight: 400; margin: 0; letter-spacing: .08em; }
+.photo-notifications-controls { display: flex; align-items: center; gap: 6px; }
+.photo-notifications-controls button { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; border: 0; background: none; color: #111; font-size: 28px; cursor: pointer; }
+.photo-notifications-controls svg { display: block; flex: none; width: 32px; height: 32px; }
+.photo-notifications-controls button:disabled { opacity: .35; cursor: default; }
+.photo-notifications [data-photo-notifications-list] { list-style: none; padding: 0; margin: 0; }
+.photo-notifications [data-photo-notifications-list] > li { border-bottom: 1px solid #ddd; padding-bottom: 12px; }
+.photo-notification-photo { display: flex; align-items: center; gap: 14px; padding: 16px 0; color: inherit; text-decoration: none; }
+.photo-notifications li a:hover { background: #f4f4f4; }
+.photo-notifications li img { flex: none; width: 64px; height: 64px; object-fit: contain; }
+.photo-notifications li span { overflow-wrap: anywhere; line-height: 1.7; }
+[data-photo-notifications-status] { margin: 12px 0; font-size: 14px; }
+@media(max-width:768px) {
+  .member-title .photo-notification-member { display: inline-flex; position: relative; right: auto; bottom: auto; margin-left: auto; align-self: center; }
+  .member-home-intro .photo-notification-member { display: none; }
+  body[data-member-area] .welcome-notification-group { display: none; }
+  .photo-notifications { padding: 16px; }
+  .photo-notifications-heading { top: -16px; }
+}
+@media(prefers-reduced-motion:reduce) { .photo-notifications,.photo-notifications::backdrop { transition: none; } }

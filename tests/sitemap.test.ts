@@ -147,6 +147,7 @@ test("robots allows all sitemap pages and public noindex event shares while bloc
   ])
     assert.ok(!allowed(pathname), pathname);
   assert.ok(allowed("/Member/events/shared-event"));
+  assert.ok(allowed("/Member/tools/shared-tool"));
   assert.ok(allowed("/.well-known/assetlinks.json"));
 });
 

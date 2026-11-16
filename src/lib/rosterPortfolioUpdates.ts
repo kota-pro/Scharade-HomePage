@@ -5,6 +5,7 @@ import { env } from "./config.ts";
 import { fetchWithTimeout } from "./http.ts";
 import { invalidateCache } from "./cache.ts";
 import { normalizePortfolioGrade } from "./microcms.ts";
+import { linkedPortfolioGrade } from "./portfolioRosterGrade.ts";
 
 /** Durable outbox: roster exclusion is immediate; a CMS outage cannot re-include a departed person. */
 export async function drainRosterPortfolioUpdates(
@@ -24,13 +25,18 @@ export async function drainRosterPortfolioUpdates(
           if (!job) return false;
           const users = readUsers(),
             user = users.find((u) => u.id === job.userId);
+          const validRoster = job.targetGrade && user
+            ? data.roster?.fetchedAt === job.rosterFetchedAt &&
+              !!data.roster?.records.some(r => r.key === job.rosterKey && r.active) &&
+              linkedPortfolioGrade(job.portfolioId, [user], data.roster) === job.targetGrade
+            : data.roster?.retiredRecords?.some(
+                r => r.key === job.rosterKey && r.withdrawnAt === job.createdAt,
+              );
           if (
             !user ||
             user.portfolioId !== job.portfolioId ||
             data.roster?.bindings[job.userId] !== job.rosterKey ||
-            !data.roster.retiredRecords?.some(
-              (r) => r.key === job.rosterKey && r.withdrawnAt === job.createdAt,
-            )
+            !validRoster
           ) {
             job.status = "cancelled";
             job.message =
@@ -67,7 +73,9 @@ export async function drainRosterPortfolioUpdates(
                 job.previousGrade = content[field] ?? null;
                 writeData("member-activities.json", data);
               }
-              if (normalizePortfolioGrade(content[field]) !== "OB/OG") {
+              const targetGrade = job.targetGrade || "OB/OG";
+              const preserveSaved = job.initialOnly && !!normalizePortfolioGrade(content[field]);
+              if (!preserveSaved && normalizePortfolioGrade(content[field]) !== targetGrade) {
                 const patch = (grade: string | string[]) =>
                   fetchWithTimeout(
                     url,
@@ -79,7 +87,7 @@ export async function drainRosterPortfolioUpdates(
                     2500,
                   );
                 let result = await patch(
-                  Array.isArray(content[field]) ? ["OB/OG"] : "OB/OG",
+                  Array.isArray(content[field]) ? [targetGrade] : targetGrade,
                 );
                 if (result.status === 400) {
                   const message = await result.text();
@@ -87,7 +95,7 @@ export async function drainRosterPortfolioUpdates(
                     message.includes(field) &&
                     message.includes("unexpected data type")
                   )
-                    result = await patch(["OB/OG"]);
+                    result = await patch([targetGrade]);
                 }
                 if (!result.ok)
                   throw new Error(
@@ -95,7 +103,7 @@ export async function drainRosterPortfolioUpdates(
                   );
               }
               job.status = "done";
-              job.message = undefined;
+              job.message = preserveSaved ? "保存済みの学年を保持しました。" : undefined;
               completed++;
             } catch (error) {
               job.status = "error";

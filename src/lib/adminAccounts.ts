@@ -1,3 +1,4 @@
+import { accountRole, roleLabels } from "./roles.ts";
 import type { User } from "./auth.ts";
 import {
   genderLabels,
@@ -49,7 +50,7 @@ export function toAdminAccountRoster(
     title: roster?.title || "",
     fetchedAt: roster?.fetchedAt || "",
     source: roster
-      ? { spreadsheetId: roster.spreadsheetId, sheetId: roster.sheetId }
+      ? { spreadsheetId: roster.spreadsheetId, sheetId: roster.sheetId, ...(roster.term ? { term: roster.term } : {}) }
       : undefined,
   };
 }
@@ -62,16 +63,19 @@ export function toAdminAccount(user: User) {
     email: user.email,
     portfolioName: user.portfolioName || "記録なし",
     portfolioId: user.portfolioId || null,
-    role:
-      user.role === "admin"
-        ? "管理者"
-        : user.role === "staff"
-          ? "運営"
-          : "一般会員",
+    role: roleLabels[accountRole(user)],
     status: user.approved ? "承認済み" : "未承認",
     approved: Boolean(user.approved),
     createdAt: user.createdAt || "",
     approvalNotifiedAt: user.approvalNotifiedAt || "",
+    approvalSetupStatus: !user.approvalSetup
+      ? ""
+      : !user.approvalSetup.recipientsCompletedAt ||
+          user.approvalSetup.rosterStatus === "pending"
+        ? "初期設定を再試行待ちです。Google名簿の連携設定・変更内容と再送ワーカーを確認してください。"
+        : user.approvalSetup.rosterStatus === "unlinked"
+          ? "通知先への追加は完了しました。名簿との対応は下の連携状況で確認してください。"
+          : "名簿連携・通知先への追加は完了しました。",
     credentials: Boolean(user.providers?.credentials),
     instagramLinked: Boolean(user.providers?.instagram),
     instagramUsername: user.providers?.instagram?.username || "",

@@ -9,7 +9,7 @@ function syntheticEmail(email: string) {
   if (!directory.startsWith(path.join(os.tmpdir(), "scharade-browser-"))) throw new Error("Invalid synthetic fixture directory");
   return JSON.parse(fs.readFileSync(path.join(directory, "synthetic-mail.json"), "utf8"))[email] as string;
 }
-test("privileged login requires email codes on every login and members do not require MFA", async ({ page }, info) => {
+test("privileged login requires email codes for new browsers and after logout; members do not require MFA", async ({ page }, info) => {
   const email = `mfa-enroll-${info.project.name}@example.invalid`;
   await page.route("**/*", route => new URL(route.request().url()).hostname === "127.0.0.1" ? route.continue() : route.abort());
   const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
@@ -40,7 +40,7 @@ test("privileged login requires email codes on every login and members do not re
   if (info.project.name === "chromium") await page.screenshot({ path: "/private/tmp/scharade-email-mfa-preview.png", fullPage: true });
   await page.locator("#mfa-code").fill(latestCode); await page.locator('#mfa-form button[type="submit"]').click();
   await expect(page).toHaveURL(/\/Member\/security$/);
-  await expect(page.getByText("ログインごとに登録済みメールへの確認が必要", { exact: false })).toBeVisible();
+  await expect(page.getByText("同じブラウザーで7日間利用がない場合", { exact: false })).toBeVisible();
   expect((await page.request.get("/api/member/activities")).status()).toBe(200);
   await page.request.post("/api/auth/logout", { headers: { Origin: origin } });
   const begin = await page.request.post("/api/auth/login", { headers: { Origin: origin }, data: { email, password: "fixture-password-123" } });

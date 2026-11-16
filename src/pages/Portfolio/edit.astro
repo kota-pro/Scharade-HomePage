@@ -1,5 +1,13 @@
 ---
+import { cmsPhotoId } from "../../lib/photoIdentity";
+import { photoMetadata } from "../../lib/photoState";
 import PageTopNav from "../../components/PageTopNav.astro";
+import PortfolioIntroductionEditor from "../../components/PortfolioIntroductionEditor.astro";
+import PortfolioPhotoEditor from "../../components/PortfolioPhotoEditor.astro";
+import PortfolioSeriesEditor from "../../components/PortfolioSeriesEditor.astro";
+import PortfolioBookEditor from "../../components/PortfolioBookEditor.astro";
+import { listPortfolioBooks, readPortfolioBooks } from "../../lib/portfolioBooks";
+import { portfolioSeriesForPictures } from "../../lib/portfolioSeries";
 import "../../styles/Auth.css";
 import "../../styles/PortfolioEdit.css";
 import Layout from "../../layouts/Layout.astro";
@@ -33,8 +41,8 @@ let statusInfo = !user
       }
     : !user.portfolioId
       ? {
-          title: "ポートフォリオが紐づいていません",
-          detail: "管理者にPortfolioとの紐づけをご依頼ください。",
+          title: "プロフィールが準備されていません",
+          detail: "運営へプロフィールの準備を依頼してください。",
         }
       : null;
 
@@ -49,7 +57,7 @@ if (canEdit && targetId) {
       ? {
           title: "Portfolioが見つかりません",
           detail:
-            "紐づいているPortfolioが削除または非公開になっている可能性があります。管理担当者に、microCMSの公開状態とアカウントの紐づけをご確認ください。",
+            "プロフィールが削除されたか、非公開になっている可能性があります。運営へプロフィールの表示状態の確認を依頼してください。",
         }
       : {
           title: "Portfolioを取得できません",
@@ -59,6 +67,8 @@ if (canEdit && targetId) {
   }
 }
 
+const pictureUrls = new Map((portfolio?.pictures ?? []).map(pic => [cmsPhotoId(pic.url), pic.url]));
+const bookState = portfolio ? readPortfolioBooks(targetId) : { revision: "", books: [] };
 const initialFormData = {
   name: portfolio?.name ?? "",
   iconUrl: portfolio?.icon?.url ?? "",
@@ -71,6 +81,14 @@ const initialFormData = {
   self_introduction: portfolio?.self_introduction ?? "",
   pictures: (portfolio?.pictures ?? []).map((pic) => pic.url).filter(Boolean),
   grade: normalizePortfolioGrade(portfolio?.grade),
+  photoIds: Object.fromEntries((portfolio?.pictures ?? []).map(pic => [pic.url, cmsPhotoId(pic.url)])),
+  photoSizes: Object.fromEntries((portfolio?.pictures ?? []).map(pic => [pic.url, { width: pic.width, height: pic.height }])),
+  photoSeries: portfolio ? portfolioSeriesForPictures(targetId, portfolio.pictures).map(work => ({
+    ...work, photos: work.photos.map(photo => ({ ...photo, assetId: pictureUrls.get(photo.assetId)! })),
+  })) : [],
+  photoMetadata: Object.fromEntries((portfolio?.pictures ?? []).map(pic => [pic.url, photoMetadata({ source: "portfolio", containerId: targetId, imageId: cmsPhotoId(pic.url) })])),
+  portfolioBookRevision: bookState.revision,
+  portfolioBooks: portfolio ? listPortfolioBooks(targetId, bookState) : [],
 };
 
 const HASHTAG_OPTIONS: Array<{ value: string; label: string }> = [
@@ -102,6 +120,7 @@ const GRADE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "4th Grade", label: "4th Grade（4年）" },
   { value: "International", label: "International（留学生）" },
   { value: "Master's Program", label: "Master's Program（修士）" },
+  { value: "Doctor's Program", label: "Doctor's Program（博士）" },
   { value: "OB/OG", label: "OB/OG（卒業生）" },
 ];
 
@@ -143,7 +162,7 @@ const portfolioViewUrlSerialized = inlineSerialize(portfolioViewUrl ?? "");
   <Fragment slot="body-slot">
     <section class="portfolio-edit-page">
       <div class="auth-heading">
-        <p class="auth-pill">{admin ? "Administrator" : "Member Only"}</p>
+        <p class="auth-pill">Member</p>
         <h1>Edit Portfolio</h1>
         <p>
           登録済みのプロフィールを編集して、最新の活動内容や写真を届けましょう。
@@ -160,51 +179,6 @@ const portfolioViewUrlSerialized = inlineSerialize(portfolioViewUrl ?? "");
               action="#"
             >
               <input type="hidden" id="field-target-id" value={targetId} />
-              {admin && (
-                <fieldset class="admin-portfolio-fields">
-                  <legend>管理者用の項目</legend>
-                  <div class="form-field">
-                    <label for="field-generation">期</label>
-                    <input
-                      id="field-generation"
-                      type="number"
-                      min="0"
-                      value={portfolio?.generation ?? ""}
-                    />
-                  </div>
-                  <div class="form-field">
-                    <label for="field-role">役職</label>
-                    <input
-                      id="field-role"
-                      type="text"
-                      maxlength="100"
-                      value={portfolio?.role ?? ""}
-                    />
-                  </div>
-                  <div class="form-field">
-                    <label for="field-display-order">
-                      表示順（小さい値が先）
-                    </label>
-                    <input
-                      id="field-display-order"
-                      type="number"
-                      min="0"
-                      value={portfolio?.displayOrder ?? ""}
-                    />
-                  </div>
-                  <div class="form-field">
-                    <label class="admin-executive-option" for="field-executive">
-                      <span>幹部として表示</span>
-                      <input
-                        id="field-executive"
-                        type="checkbox"
-                        checked={portfolio?.isExecutive}
-                      />
-                    </label>
-                  </div>
-                </fieldset>
-              )}
-
               <div class="form-field">
                 <label for="field-name">Name</label>
                 <input
@@ -223,7 +197,7 @@ const portfolioViewUrlSerialized = inlineSerialize(portfolioViewUrl ?? "");
                 <small class="helper">
                   アイコン画像をアップロードして設定します。
                 </small>
-                <div class="picture-list" id="icon-preview" />
+                <div class="portfolio-icon-preview" id="icon-preview" />
               </div>
 
               <div class="form-field">
@@ -257,7 +231,7 @@ const portfolioViewUrlSerialized = inlineSerialize(portfolioViewUrl ?? "");
                     </option>
                   ))}
                 </select>
-                <small class="helper">あなたの学年を選択してください。</small>
+                <small class="helper">あなたの学年を選択してください。保存した学年は、管理者が名簿の参照先を変更し、確認画面で適用するまで保持されます。</small>
               </div>
 
               <div class="form-field">
@@ -290,32 +264,51 @@ const portfolioViewUrlSerialized = inlineSerialize(portfolioViewUrl ?? "");
                 />
               </div>
 
-              <div class="form-field">
-                <label for="field-self-intro">Self introduction</label>
-                <textarea
-                  id="field-self-intro"
-                  name="self_introduction"
-                  set:text={initialFormData.self_introduction}
-                />
-              </div>
+              <PortfolioIntroductionEditor value={initialFormData.self_introduction} />
 
-              <div class="upload-area">
-                <label>Pictures</label>
-
-                <div class="form-field">
+              <section class="upload-area" aria-labelledby="portfolio-pictures-heading">
+                <div class="portfolio-pictures-heading">
+                  <h2 id="portfolio-pictures-heading">Pictures</h2>
+                  <span data-picture-count aria-live="polite" />
+                </div>
+                <p class="helper">作品ごとに写真情報を編集できます。前へ・後へで掲載順を変更します。写真は1枚5MB以内に自動で圧縮します。</p>
+                <div class="portfolio-work-tools">
+                  <div class="portfolio-upload-control">
                   <input
                     id="picture-files"
+                    class="portfolio-file-input"
                     type="file"
                     accept="image/*"
                     multiple
+                    aria-label="作品画像を追加"
+                    aria-describedby="picture-upload-help"
                   />
-                  <small class="helper">
-                    複数選択してまとめてアップロードできます。
-                  </small>
+                  <label class="portfolio-upload-target" for="picture-files">
+                    <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.2" /></svg>
+                    <span>単写真を追加</span>
+                    <small id="picture-upload-help">複数選択すると別々の作品になります</small>
+                  </label>
+                  </div>
+                  <div class="portfolio-upload-control">
+                    <input id="series-files" class="portfolio-file-input" type="file" accept="image/*" multiple aria-label="組写真を追加" />
+                    <label class="portfolio-upload-target" for="series-files">
+                      <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h10v8H3zM15 4h6v8h-6zM3 14h6v6H3zM11 14h10v6H11z" fill="none" stroke="currentColor" stroke-width="1.2" /></svg>
+                      <span>組写真を追加</span><small>2枚以上を配置して1作品にします</small>
+                    </label>
+                  </div>
+                  <button type="button" class="portfolio-upload-target" data-portfolio-book-create aria-haspopup="dialog" aria-controls="portfolio-book-editor">
+                    <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6C8 3 5 3 2 4v14c4-1 7 0 10 2c3-2 6-3 10-2V4c-3-1-6-1-10 2v14" fill="none" stroke="currentColor" stroke-width="1.2" /></svg>
+                    <span>ブックを追加</span><small>PDFと表紙を選んで投稿します</small>
+                  </button>
                 </div>
-
+                <p class="portfolio-upload-status" data-picture-upload-status role="status" aria-live="polite" hidden />
+                <div class="portfolio-series-tools">
+                  <button type="button" data-portfolio-series-create>登録済みの写真から組写真を作る</button>
+                  <div data-portfolio-series-list></div>
+                  <div data-portfolio-book-list></div>
+                </div>
                 <div class="picture-list" id="picture-list" />
-              </div>
+              </section>
 
               <div
                 class="status-message"
@@ -335,7 +328,7 @@ const portfolioViewUrlSerialized = inlineSerialize(portfolioViewUrl ?? "");
           ) : (
             <div class="auth-card">
               <h2>{statusInfo?.title ?? "編集できません"}</h2>
-              <small class="auth-note">
+              <small class="auth-note" role="alert">
                 {statusInfo?.detail ?? "編集ステータスを確認してください。"}
               </small>
               {user?.email && (
@@ -370,6 +363,9 @@ const portfolioViewUrlSerialized = inlineSerialize(portfolioViewUrl ?? "");
         )
       }
     </section>
+    {hasPortfolio && <PortfolioPhotoEditor />}
+    {hasPortfolio && <PortfolioSeriesEditor />}
+    {hasPortfolio && <PortfolioBookEditor />}
   </Fragment>
 </Layout>
 

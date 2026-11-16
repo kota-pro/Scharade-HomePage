@@ -22,6 +22,7 @@ function doPost(e) {
     if (payload.action === 'folders.ensure') return reply(withDriveLock_(function() { return ensureFolders_(payload); }));
     if (payload.action === 'file.begin') return reply(withDriveLock_(function() { return beginFile_(payload); }));
     if (payload.action === 'file.chunk') return reply(withDriveLock_(function() { return chunkFile_(payload); }));
+    if (payload.action === 'shift.sheet.sync') return reply(syncShiftSheet_(payload));
     if (payload.action === 'sheet.read') return reply(readSheet_(payload));
     return reply({ ok: false, code: 'INVALID' });
   } catch (error) {
@@ -46,7 +47,7 @@ function health_() {
   if ([400, 404].indexOf(response.getResponseCode()) < 0) throw new Error('forms-health-' + response.getResponseCode());
   DriveApp.getRootFolder().getId();
   var about = driveJson_('about?fields=user(emailAddress)', 'get');
-  return { ok: true, gatewayVersion: 3, envelopeVersion: 2, formsApi: true, driveApi: true, owner: about.user.emailAddress, yearFolderSuffix: '年' };
+  return { ok: true, gatewayVersion: 3, envelopeVersion: 2, formsApi: true, driveApi: true, owner: about.user.emailAddress, shiftSheets: true, yearFolderSuffix: '年' };
 }
 // Read-only editor check; this also opens Google's authorization flow if needed.
 function checkConnection() {
@@ -156,7 +157,7 @@ function deleteExhibition_(p) {
   return withDriveLock_(function() {
     var cfg = PropertiesService.getScriptProperties(), props = cfg.getProperties(), forms = [], sheets = [], folderState = JSON.parse(cfg.getProperty('FOLDERS_' + p.exhibitionId) || '{}');
     Object.keys(props).forEach(function(key) {
-      if (key.indexOf('EXHIBITION_' + p.exhibitionId + '_') === 0 || key === 'FORM_MAIN_' + p.exhibitionId) {
+      if (key.indexOf('EXHIBITION_' + p.exhibitionId + '_') === 0 || key === 'FORM_MAIN_' + p.exhibitionId || key === 'SHIFT_SHEET_' + p.exhibitionId) {
         var state = JSON.parse(props[key]), record = state.complete || state;
         if (record.formId) forms.push(record.formId); if (record.spreadsheetId) sheets.push(record.spreadsheetId);
       }
@@ -371,4 +372,37 @@ function reserveSecurityNonce_(nonce) {
     config.setProperty(key, String(now + 600000));
     return true;
   } finally { lock.releaseLock(); }
+}
+
+/** Separate from FORM_MAIN_: reuses one shift spreadsheet and never touches photo form answers. */
+function syncShiftSheet_(p) {
+  assertExhibitionActive_(p.exhibitionId);
+  if (!Number.isSafeInteger(p.revision) || p.revision < 1 || !Array.isArray(p.people) || !Array.isArray(p.responses) || !Array.isArray(p.slots) || p.people.length > 20000 || p.slots.length > 9000) throw new Error('shift-input');
+  return withDriveLock_(function() {
+    assertExhibitionActive_(p.exhibitionId);
+    var owner = driveOwner_(), cfg = PropertiesService.getScriptProperties(), key = 'SHIFT_SHEET_' + p.exhibitionId, state = JSON.parse(cfg.getProperty(key) || '{}'), folders = ensureFolders_(p);
+    if (!state.spreadsheetId) {
+      // Drive appProperties make a crash between create and property-save recoverable.
+      var q = "trashed = false and appProperties has { key='exhibitionShiftId' and value='" + p.exhibitionId + "' }";
+      var found = driveJson_('files?q=' + encodeURIComponent(q) + '&fields=files(id)&pageSize=2', 'get').files || [];
+      if (found.length > 1) throw new Error('shift-duplicate');
+      state.spreadsheetId = found.length ? found[0].id : driveJson_('files?fields=id', 'post', { name: text_(p.exhibitionTitle, 150, true) + '（展示シフト）', mimeType: 'application/vnd.google-apps.spreadsheet', parents: [folders.folderId], appProperties: { exhibitionId: p.exhibitionId, exhibitionShiftId: p.exhibitionId } }).id;
+      cfg.setProperty(key, JSON.stringify(state));
+    }
+    if ((state.revision || 0) > p.revision) throw new Error('shift-stale');
+    if (state.revision === p.revision) return { ok: true, owner: owner, spreadsheetId: state.spreadsheetId, revision: p.revision };
+    DriveApp.getFileById(state.spreadsheetId).setName(p.exhibitionTitle + '（展示シフト）').moveTo(DriveApp.getFolderById(folders.folderId));
+    var book = SpreadsheetApp.openById(state.spreadsheetId), people = {}, slots = {};
+    p.people.forEach(function(person) { people[person.id] = person; }); p.slots.forEach(function(slot) { slots[slot.id] = slot; });
+    function literal(value) { var s = String(value == null ? '' : value); if (s.length > 49000) throw new Error('shift-cell'); return /^[=+\-@\t\r]/.test(s) ? "'" + s : s; }
+    function write(name, values) { var sheet = book.getSheetByName(name) || book.insertSheet(name); sheet.clearContents(); sheet.getRange(1, 1, values.length, values[0].length).setNumberFormat('@').setValues(values.map(function(row) { return row.map(literal); })); sheet.setFrozenRows(1); }
+    var answers = [['会員ID', '名前', 'LINE名', '提出状況', '希望時間', '提出日時', '回答版']];
+    p.responses.forEach(function(response) { var person = people[response.userId]; if (!person) return; var s = response.submitted; answers.push([person.id, person.name, person.lineName || '', !s ? '下書き' : s.scheduleKey !== p.scheduleKey ? '要再確認' : s.none ? '提出済み・入れる時間はない' : '提出済み', s ? (s.slotIds || []).map(function(id) { return id.replace('/', ' '); }).join(' / ') : '', s ? s.at : '', response.revision]); });
+    write('希望回答', answers);
+    var table = [['公開版', '日付', '開始', '終了', '担当者1', '担当者2', '不足人数']];
+    if (p.published) { var names = {}; p.published.people.forEach(function(person) { names[person.id] = person.name; }); p.published.slots.forEach(function(slot) { var own = p.published.assignments.filter(function(a) { return a.slotId === slot.id; }); table.push([p.published.version, slot.date, slot.start, slot.end, own[0] ? names[own[0].personId] || '担当者' : '', own[1] ? names[own[1].personId] || '担当者' : '', 2 - own.length]); }); }
+    write('確定シフト', table); SpreadsheetApp.flush();
+    state.revision = p.revision; cfg.setProperty(key, JSON.stringify(state));
+    return { ok: true, owner: owner, spreadsheetId: state.spreadsheetId, revision: p.revision };
+  });
 }

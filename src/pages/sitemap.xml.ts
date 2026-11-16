@@ -1,7 +1,7 @@
 export const prerender = false;
 
 import { getPortfolios, microcmsClient } from "../lib/microcms.ts";
-import { getAlbums } from "../lib/lightroom.ts";
+import { getGalleryAlbums } from "../lib/galleryCatalog.ts";
 import type { Blog } from "../types/microcms.ts";
 import { buildSitemapEntries, renderSitemap } from "../lib/sitemap.ts";
 
@@ -72,7 +72,7 @@ export async function GET() {
   const entries = await buildSitemapEntries({
     blogs: fetchAllBlogs,
     portfolios: fetchAllPortfolioIds,
-    albums: getAlbums,
+    albums: getGalleryAlbums,
   });
   const xml = renderSitemap(entries);
 

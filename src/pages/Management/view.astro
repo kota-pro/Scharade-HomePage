@@ -1,0 +1,9 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import RoleViewPanel from "../../components/RoleViewPanel.astro";
+import { isExecutive } from "../../lib/roles.ts";
+if (isExecutive(Astro.locals.actor)) return Astro.redirect(`/Admin/view${Astro.url.search}`, 302);
+---
+<AdminLayout title="ロールの表示確認" heading="Management" memberArea="staff" breadcrumbs={[{label:"Home",href:"/"},{label:"Management",href:"/Management"},{label:"ロールの表示確認"}]}>
+  <RoleViewPanel />
+</AdminLayout>

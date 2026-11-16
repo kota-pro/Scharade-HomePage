@@ -11,7 +11,7 @@ document.querySelectorAll<HTMLElement>("[data-group-export]").forEach(root => {
   const textArea = textFallback.querySelector<HTMLTextAreaElement>("textarea")!;
   const images = new Map<number | undefined, Promise<Blob>>();
   let busy = false, failedIndex: number | undefined;
-  const message = (text: string, error = false) => { status.textContent = text; operationNotice(text, error, "group-export"); };
+  const message = (text: string, error = false) => { status.textContent = text; status.dataset.error = String(error); operationNotice(text, error, "group-export"); };
   function setBusy(value: boolean) {
     busy = value; root.setAttribute("aria-busy", String(value));
     root.querySelectorAll<HTMLButtonElement>("button").forEach(button => button.disabled = value);

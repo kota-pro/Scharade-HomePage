@@ -1,0 +1,29 @@
+---
+import "../styles/HomePhotoPicker.css";
+---
+<dialog id="home-photo-picker" class="home-photo-picker admin-dialog" aria-labelledby="home-photo-picker-title" aria-describedby="home-photo-picker-help">
+  <div class="home-photo-picker-shell">
+    <header class="home-photo-picker-heading">
+      <h2 id="home-photo-picker-title">写真の除外設定</h2>
+      <button type="button" data-home-photo-cancel aria-label="写真の除外設定を閉じる">閉じる</button>
+      <p id="home-photo-picker-help">写真を押すと除外・解除できます。Portfolioの写真は削除されません。</p>
+    </header>
+    <div class="home-photo-picker-tools">
+      <label>Portfolio名で検索<input type="search" id="home-photo-search" autocomplete="off" placeholder="Portfolio名を入力" /></label>
+      <label>表示する写真<select id="home-photo-filter"><option value="all">すべて</option><option value="included">表示候補</option><option value="excluded">除外中</option></select></label>
+    </div>
+    <div class="home-photo-picker-scroll">
+      <p id="home-photo-picker-status" role="status" aria-live="polite"></p>
+      <button type="button" id="home-photo-retry" hidden>写真一覧を再読み込み</button>
+      <p id="home-photo-picker-count"></p>
+      <div id="home-photo-picker-grid" class="home-photo-picker-grid"></div>
+      <nav class="home-photo-picker-pages" aria-label="写真一覧のページ送り">
+        <button type="button" id="home-photo-prev">前へ</button><span id="home-photo-page"></span><button type="button" id="home-photo-next">次へ</button>
+      </nav>
+    </div>
+    <div class="home-photo-picker-footer">
+      <p>選択を反映した後、編集画面で保存・公開してください。</p>
+      <div><button type="button" data-home-photo-cancel>キャンセル</button><button type="button" id="home-photo-apply" class="admin-button">選択を反映</button></div>
+    </div>
+  </div>
+</dialog>

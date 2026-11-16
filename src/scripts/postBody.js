@@ -20,25 +20,3 @@ const container = document.getElementById("post-back-link");
       console.error("Failed to render back link", error);
     }
   }
-
-  const postBody = document.querySelector(".post-body");
-  if (postBody instanceof HTMLElement) {
-    const images = Array.from(postBody.querySelectorAll("img"));
-
-    images.forEach((img) => {
-      const wrapper = img.closest("figure") || img.parentElement;
-
-      if (!(wrapper instanceof HTMLElement)) return;
-      if (wrapper.classList.contains("taped-image")) return;
-
-      const tapeNum = Math.floor(Math.random() * 70) + 1;
-      const rotateDeg = Math.floor(Math.random() * 41) * 0.5 - 10;
-
-      wrapper.classList.add("taped-image");
-      wrapper.style.setProperty(
-        "--tape-url",
-        `url(/images/tapes/asset${tapeNum}.svg)`,
-      );
-      wrapper.style.setProperty("--tape-rotate", `${rotateDeg}deg`);
-    });
-  }

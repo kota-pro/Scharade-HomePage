@@ -6,6 +6,7 @@ import {
   pageDefinitions,
 } from "../../../lib/siteContent";
 import { siteDefaults } from "../../../data/siteDefaults";
+import HomePhotoPicker from "../../../components/HomePhotoPicker.astro";
 const key = Astro.params.key ?? "";
 if (!isPageKey(key)) return Astro.redirect("/404");
 const page = pageDefinitions[key];
@@ -46,7 +47,7 @@ const initial = JSON.stringify({
     {
       key === "home" && (
         <p>
-          メイン写真・フィルム写真のコレクションはmicroCMSの「card_image」で管理します。活動紹介カードの写真はこの画面で変更できます。
+          メイン写真・フィルム写真は公開Portfolioの横長写真からランダムに選びます。「写真の除外設定を開く」で表示しない写真を指定できます。活動紹介カードの写真はこの画面で変更できます。
         </p>
       )
     }
@@ -69,6 +70,7 @@ const initial = JSON.stringify({
     </div>
     <p id="editor-status" role="status" aria-live="polite"></p>
   </form>
+  {key === "home" && <HomePhotoPicker />}
   <dialog id="publish-confirm" class="admin-dialog">
     <h2>この内容を公開しますか？</h2><p>
       下書きを確認してから公開してください。

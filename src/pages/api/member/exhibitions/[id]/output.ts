@@ -3,13 +3,13 @@ import {roomSurfaces} from "../../../../../lib/exhibitionSurface.ts";
 import {layoutImageDataUrl} from '../../../../../lib/exhibitionLayoutAssets.ts';
 import type { APIRoute } from "astro";
 import { findExhibition, readExhibitions } from "../../../../../lib/exhibitions.ts";
-import { ExhibitionError } from "../../../../../lib/exhibitionValidation.ts";
+import { ExhibitionError, exhibitionErrorBody } from "../../../../../lib/exhibitionValidation.ts";
 import { isStaff } from "../../../../../lib/auth.ts";
 import { allWorks, titleBoardWorks, layoutOutputViews,layoutOutputPages,exhibitionLayoutPdf, exhibitionLayoutPng, exhibitionLayoutSvgFiles,layoutSvgFilesZip, generateTitleBoards } from "../../../../../lib/exhibitionOutputs.ts";
 import { titleBoardPreview, withTitleBoardImages } from "../../../../../lib/exhibitionTitleBoardPreview.ts";
 import { siteOrigin } from "../../../../../lib/config.ts";
 import { archiveExhibitionOutput } from "../../../../../lib/exhibitionDrive.ts";
-import { json } from "../../../../../lib/http.ts";
+import { json,boundedBody,isSameOrigin,HttpInputError } from "../../../../../lib/http.ts";
 const file = (data: Uint8Array, type: string, name: string,headers:Record<string,string>={}) => new Response(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer, { headers: { "Content-Type": type, "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(name)}`, "Cache-Control": "private, no-store",...headers } });
 const output: APIRoute = async ({ locals, params, request, url }) => {
   if (!isStaff(locals.user)) return json({ ok: false, message: "運営以上の権限が必要です。" }, locals.user ? 403 : 401);
@@ -28,7 +28,15 @@ const output: APIRoute = async ({ locals, params, request, url }) => {
       return file(bytes, type, name,headers);
     };
     if (kind === "boards") {
-      const result = await generateTitleBoards(data, exhibition, siteOrigin(request));
+      if(request.method!=="POST")return json({ok:false,message:"印刷する作品を選択してからPDFを生成してください。"},405);
+      if(!isSameOrigin(request))return json({ok:false,message:"画面を再読み込みしてください。"},403);
+      const body=JSON.parse((await boundedBody(request,512*1024)).toString('utf8'));
+      if(!body||typeof body!=='object'||Array.isArray(body))return json({ok:false,message:'入力形式を確認してください。'},400);
+      if(body.revision!==exhibition.revision)return json({ok:false,message:"設定が変更されました。印刷する作品を選び直してください。"},409);
+      const catalog=titleBoardWorks(data,exhibition,siteOrigin(request));
+      if(!Array.isArray(body.workIds)||!body.workIds.length||body.workIds.length>10000||new Set(body.workIds).size!==body.workIds.length||body.workIds.some((id:unknown)=>typeof id!=="string"||!catalog.some(w=>w.work.id===id)))return json({ok:false,message:"印刷する作品を1つ以上選んでください。"},400);
+      if(body.workIds.some((id:string)=>body.submissionRevisions?.[id]!==catalog.find(w=>w.work.id===id)!.submission.revision))return json({ok:false,message:"提出内容が変更されました。印刷する作品を選び直してください。"},409);
+      const result = await generateTitleBoards(data, exhibition, siteOrigin(request),body.workIds);
       if (!result.pdf) return json({ ok: false, message: "修正が必要なタイトルボードがあります。", issues: result.issues }, 422);
       return deliver(result.pdf, "application/pdf", `${exhibition.title}-タイトルボード.pdf`);
     }
@@ -54,9 +62,11 @@ const output: APIRoute = async ({ locals, params, request, url }) => {
     }
     return json({ ok: false, message: "出力形式を確認してください。" }, 400);
   } catch (error) {
-    if (error instanceof ExhibitionError) return json({ ok: false, message: error.message }, error.status);
+    if(error instanceof HttpInputError)return json({ok:false,message:error.message},error.status);
+    if(error instanceof SyntaxError)return json({ok:false,message:"入力形式を確認してください。"},400);
+    if (error instanceof ExhibitionError && error.status < 500) return json(exhibitionErrorBody(error), error.status);
     console.error("[exhibition-output] request failed");
-    return json({ ok: false, message: "出力を生成できませんでした。" }, 503);
+    return json(exhibitionErrorBody(undefined, url.searchParams.get('kind') === 'board-preview' ? 'EXH-016' : 'EXH-015'), error instanceof ExhibitionError ? error.status : 503);
   }
 };
 

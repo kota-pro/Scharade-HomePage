@@ -1,0 +1,24 @@
+import {test,expect,type Page} from '@playwright/test';
+import {fixtureLogin} from './fixture-auth';
+const headers={Origin:'http://127.0.0.1:4329'},choices=['1年','2年','3年','4年','修士1年','修士2年'];
+async function login(page:Page,email='member@example.invalid'){expect((await fixtureLogin(page.request,'/api/auth/login',{headers,data:{email,password:'fixture-password-123'}})).ok()).toBe(true);}
+async function prepare(page:Page,title:string){
+ await login(page,'planner@example.invalid');const command=async(data:any)=>{const r=await page.request.post('/api/member/exhibitions',{headers,data});expect(r.status(),await r.text()).toBe(200);return(await r.json()).exhibition;};let e=await command({action:'create',title});const id=e.id,iso=(n:number)=>new Date(Date.now()+n).toISOString();
+ e=await command({action:'settings',exhibitionId:id,revision:e.revision,title,status:'open',gallery:'staff',voteOpensAt:iso(-60000),voteClosesAt:iso(3600000),opensAt:iso(-60000),closesAt:iso(3600000),recipientIds:['member']});await command({action:'participation.publish',exhibitionId:id,revision:e.revision});const current=async()=>(await(await page.request.get(`/api/member/exhibitions/${id}`)).json()).exhibition;await expect.poll(async()=>(await current()).participation.state).toBe('published');e=await current();await command({action:'participation.attendance.set',exhibitionId:id,revision:e.revision,userId:'member',vote:'attending'});
+ await login(page);const endpoint=`/api/exhibitions/${id}`,r=await page.request.post(endpoint,{headers,data:{action:'begin'}});expect(r.status(),await r.text()).toBe(200);return{id,endpoint,submission:(await r.json()).submission};
+}
+const settled=async(page:Page)=>expect(page.locator('[data-draft-sync-status]')).toHaveText('自動保存済み');
+test('account grade is preselected, all six choices autosave and survive reload and submission',async({page},info)=>{
+ test.setTimeout(90000);const{id,endpoint,submission}=await prepare(page,`学年の選択 ${info.project.name}`);expect(submission.draft.grade).toBe('1年');await page.goto(`/Exhibition/${id}`);const grade=page.locator('select[data-common="grade"]');await expect(grade).toHaveValue('1年');await expect(grade.locator('option:enabled')).toHaveText(choices);
+ for(const choice of choices){await grade.selectOption(choice);await settled(page);expect((await(await page.request.get(endpoint)).json()).submission.draft.grade).toBe(choice);}
+ await page.reload();await expect(grade).toHaveValue('修士2年');await settled(page);
+ for(const width of [1440,375]){await page.setViewportSize({width,height:950});await grade.scrollIntoViewIfNeeded();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true);await page.screenshot({path:info.outputPath(`grade-select-${width}.png`)});}
+ await page.locator('[data-common="name"]').fill('作者');await page.locator('[data-common="authorName"]').fill('作者');await page.locator('[data-section-toggle]').first().check();await page.locator('[data-count="books"]').fill('1');await page.locator('[data-count="books"]').press('Tab');await page.locator('[data-work-key="title"]').fill('本');await page.locator('[data-submit]').click();await expect(page.locator('.exhibition-status')).toContainText('提出しました');await page.reload();await expect(grade).toHaveValue('修士2年');expect((await(await page.request.get(endpoint)).json()).submission.draft.grade).toBe('修士2年');
+});
+test('old labels and unsupported saved grades are retained; a blank legacy draft gets a saved account default',async({page},info)=>{
+ test.setTimeout(90000);const{id,endpoint,submission}=await prepare(page,`既存の学年 ${info.project.name}`);let s=submission;
+ const save=async(grade:string)=>{const r=await page.request.post(endpoint,{headers,data:{action:'save',revision:s.revision,content:{...s.draft,grade}}});expect(r.status(),await r.text()).toBe(200);s=(await r.json()).submission;};
+ await save('２年生');await page.goto(`/Exhibition/${id}`);const grade=page.locator('select[data-common="grade"]');await expect(grade).toHaveValue('2年');await settled(page);await page.locator('[data-save]').click();await settled(page);s=(await(await page.request.get(endpoint)).json()).submission;expect(s.draft.grade).toBe('２年生');
+ await save('5年');await page.reload();await expect(grade).toHaveValue('5年');await expect(grade.locator('option:checked')).toHaveAttribute('disabled','');await expect(grade.locator('option:enabled')).toHaveText(choices);await settled(page);s=(await(await page.request.get(endpoint)).json()).submission;expect(s.draft.grade).toBe('5年');
+ await save('');const before=s.revision;await page.reload();await expect(grade).toHaveValue('1年');await settled(page);s=(await(await page.request.get(endpoint)).json()).submission;expect(s.draft.grade).toBe('1年');expect(s.revision).toBeGreaterThan(before);const revision=s.revision;await page.reload();await settled(page);expect((await(await page.request.get(endpoint)).json()).submission.revision).toBe(revision);
+});

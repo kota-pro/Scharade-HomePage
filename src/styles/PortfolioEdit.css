@@ -1,5 +1,5 @@
 .portfolio-edit-page h1 {
-  font-family: "Zen Old Mincho";
+  font-family: YakuHanMP, "Zen Old Mincho";
   font-size: 72px;
   letter-spacing: 18px;
   margin: 0;
@@ -20,57 +20,14 @@
 .portfolio-form .form-field select,
 .portfolio-form textarea {
   width: 100%;
-  font-family: "Zen Kurenaido";
+  font-family: YakuHanRP, "Zen Kurenaido";
   letter-spacing: 1px;
   font-size: 16px;
   border: 1px solid #000;
   border-radius: 6px;
   padding: 0.85rem 1rem;
-}
-
-.admin-portfolio-fields {
-  display: grid;
-  gap: 16px;
-  min-width: 0;
-  margin: 0;
-  padding: 16px;
-  border: 1px solid #909090;
-  border-radius: 6px;
-  background: #fafafa;
-  color: #000;
-  font-family: "Zen Kurenaido";
-}
-
-.admin-portfolio-fields legend {
-  padding: 0 8px;
-  font-size: 16px;
-  letter-spacing: 2px;
-}
-
-.admin-portfolio-fields input:not([type="checkbox"]) {
   box-sizing: border-box;
   min-width: 0;
-  background: #fff;
-  color: #000;
-}
-
-.admin-portfolio-fields .admin-executive-option {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 44px;
-  width: fit-content;
-  cursor: pointer;
-}
-
-.admin-portfolio-fields #field-executive {
-  flex: none;
-  width: 20px;
-  height: 20px;
-  margin: 0;
-  padding: 0;
-  accent-color: #000;
-  color-scheme: light;
 }
 
 .portfolio-form textarea {
@@ -88,40 +45,94 @@
 }
 
 .picture-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 18px;
   margin: 0;
   padding: 0;
 }
 
 .picture-chip {
-  background: #f5f5f5;
-  padding: 0.4rem 0.8rem;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+  min-width: 0;
   font-size: 14px;
   letter-spacing: 1px;
 }
 
 .picture-chip button {
-  border: none;
-  background: transparent;
-  font-size: 14px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #d5d5d5;
+  border-radius: 6px;
+  background: #fff;
+  color: #222;
+  font: inherit;
   cursor: pointer;
 }
 
+.picture-chip button:disabled { opacity: .35; cursor: default; }
+.picture-chip button:not(:disabled):hover { background: #f0f0f0; border-color: #888; }
+.picture-chip button:focus-visible, .portfolio-upload-target:focus-within { outline: 2px solid #222; outline-offset: 3px; }
+.portfolio-picture-card { display: flex; flex-direction: column; gap: 12px; padding: 12px; border: 1px solid #d7d7d7; border-radius: 10px; background: #fff; }
+.portfolio-picture-card > img { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: contain !important; border-radius: 5px; background: #f3f3f1; }
+.picture-card-heading { display: grid; gap: 5px; min-width: 0; }
+.picture-card-heading span { font-size: 12px; color: #666; }
+.picture-card-heading strong { font-weight: 400; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.picture-chip .picture-edit-button { width: 100%; border-color: #444; }
+.picture-card-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.picture-card-actions button { min-width: 0; padding-inline: 6px; font-size: 13px; }
+.picture-chip .picture-remove-button { color: #8d3434; }
+.portfolio-icon-preview .picture-chip { display: flex; align-items: center; gap: 18px; }
+.portfolio-icon-preview img { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; }
+.picture-list-empty { grid-column: 1 / -1; margin: 0; padding: 24px; border: 1px solid #e2e2e2; border-radius: 8px; color: #666; font-family: YakuHanRP, "Zen Kurenaido", sans-serif; font-size: 14px; line-height: 1.8; }
+
 .upload-area {
   display: grid;
-  gap: 0.75rem;
+  gap: 16px;
+  min-width: 0;
+  margin-top: 12px;
+  font-family: YakuHanRP, "Zen Kurenaido", sans-serif;
 }
+.portfolio-pictures-heading { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.portfolio-pictures-heading h2 { margin: 0; font-family: YakuHanMP, "Zen Old Mincho", serif; font-weight: 400; font-size: 28px; letter-spacing: 3px; }
+.portfolio-pictures-heading > span { font-size: 13px; color: #666; white-space: nowrap; }
+.portfolio-series-tools { display: grid; gap: 8px; margin-block: 12px; }
+.portfolio-series-tools p { margin: 0; }
+.portfolio-series-tools button { justify-self: start; min-height: 44px; padding: 7px 12px; border: 1px solid #aaa; border-radius: 6px; background: #fff; color: #242424; cursor: pointer; font: inherit; }
+.portfolio-series-tools button:disabled, :is(#portfolio-series-editor,#portfolio-book-editor) button:disabled { opacity: .5; cursor: default; }
+:is([data-portfolio-series-list],[data-portfolio-book-list]) { display: grid; gap: 6px; }
+:is([data-portfolio-series-list],[data-portfolio-book-list]) > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px; background: #f3f7f6; border-radius: 6px; }
+:is([data-portfolio-series-list],[data-portfolio-book-list]) > div > span { flex: 1 1 150px; overflow-wrap: anywhere; }
+[data-portfolio-book-list] img { width: 46px; height: 60px; object-fit: contain; }
+.portfolio-series-body > section { min-width: 0; }
+.portfolio-series-body > section :is(h3,p) { margin: 0 0 8px; }
+.portfolio-series-picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 8px; }
+.portfolio-series-picks label { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 4px 6px; padding: 6px; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; }
+.portfolio-series-picks label:has(input:checked) { border-color: #087c6d; background: #eaf6f3; }
+.portfolio-series-picks label:has(input:disabled) { opacity: .55; cursor: default; }
+.portfolio-series-picks img { width: 100%; aspect-ratio: 1; object-fit: cover; }
+.portfolio-series-picks span { grid-column: 1 / -1; font-size: 12px; overflow-wrap: anywhere; }
+.upload-area > .helper { margin: 0; line-height: 1.8; }
+.portfolio-upload-control { position: relative; }
+.portfolio-work-tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.portfolio-work-tools .portfolio-upload-target { box-sizing: border-box; min-width: 0; height: 100%; width: 100%; font-family: inherit; color: inherit; }
+@media (max-width: 560px) {
+  .portfolio-work-tools .portfolio-upload-target { padding: 12px 4px; gap: 4px; }
+  .portfolio-work-tools .portfolio-upload-target > span { font-size: 13px; letter-spacing: 0; }
+  .portfolio-work-tools .portfolio-upload-target > small { font-size: 10px; line-height: 1.5; }
+}
+.portfolio-file-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.portfolio-upload-target { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 24px 16px; border: 1px dashed #999; border-radius: 10px; background: #fafafa; cursor: pointer; text-align: center; }
+.portfolio-upload-target > span { font-size: 18px; letter-spacing: 2px; }
+.portfolio-upload-target > small { font-size: 12px; color: #666; line-height: 1.8; }
+.portfolio-file-input:focus-visible + .portfolio-upload-target { outline: 2px solid #222; outline-offset: 3px; }
+.portfolio-file-input:disabled + .portfolio-upload-target { cursor: wait; opacity: .5; }
+.portfolio-upload-target:hover { background: #f1f1ef; border-color: #333; }
+.portfolio-upload-status { margin: 0; padding: 12px 16px; border-radius: 6px; background: #f3f3f1; font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; white-space: pre-line; }
 
 .status-message {
   border-radius: 6px;
   padding: 0.85rem 1rem;
-  font-family: "Zen Kurenaido";
+  font-family: YakuHanRP, "Zen Kurenaido";
   letter-spacing: 1px;
   font-size: 14px;
 }
@@ -151,7 +162,7 @@
 .form-actions button {
   border-radius: 6px;
   padding: 0.9rem 1.5rem;
-  font-family: "Zen Kurenaido";
+  font-family: YakuHanRP, "Zen Kurenaido";
   letter-spacing: 2px;
   font-size: 16px;
   border: none;
@@ -174,7 +185,7 @@
 }
 
 .helper {
-  font-family: "Zen Kurenaido";
+  font-family: YakuHanRP, "Zen Kurenaido";
   letter-spacing: 1px;
   font-size: 14px;
 }
@@ -190,4 +201,60 @@
     align-items: -webkit-fill-available;
     align-items: stretch;
   }
+}
+
+.portfolio-photo-editing { overflow: hidden; }
+.portfolio-photo-editor { box-sizing: border-box; width: min(1040px, calc(100vw - 40px)); height: min(800px, calc(100dvh - 48px)); max-width: none; max-height: none; margin: auto; padding: 0; border: 1px solid #555; border-radius: 12px; background: #fff; color: #111; font-family: YakuHanRP, "Zen Kurenaido", sans-serif; letter-spacing: 1px; overflow: hidden; }
+.portfolio-photo-editor::backdrop { background: rgb(0 0 0 / .55); }
+.portfolio-photo-editor > form { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.photo-editor-header { display: flex; flex: none; justify-content: space-between; align-items: center; gap: 16px; padding: 20px 24px; border-bottom: 1px solid #e4e4e4; }
+.photo-editor-header p { margin: 0 0 6px; color: #666; font-size: 12px; }
+.photo-editor-header h2 { margin: 0; font-family: YakuHanMP, "Zen Old Mincho", serif; font-size: 25px; font-weight: 400; letter-spacing: 3px; }
+.photo-editor-header h2:focus { outline: none; }
+.portfolio-photo-editor button { min-height: 44px; border: 1px solid #bbb; border-radius: 6px; padding: 10px 16px; background: #fff; color: #111; font: inherit; cursor: pointer; }
+.portfolio-photo-editor .photo-editor-close { display: grid; place-items: center; flex: none; width: 44px; padding: 0; border-color: transparent; }
+.portfolio-photo-editor button:hover { background: #eee; }
+.portfolio-photo-editor :is(button,input,textarea):focus-visible { outline: 2px solid #333; outline-offset: 3px; }
+.photo-editor-body { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1fr); gap: 28px; flex: 1; min-height: 0; padding: 24px; overflow-y: auto; overscroll-behavior: contain; }
+.photo-editor-preview { position: sticky; top: 0; align-self: start; min-width: 0; }
+.photo-editor-preview > img { display: block; width: 100%; max-height: 440px; aspect-ratio: 4 / 3; object-fit: contain; border-radius: 6px; background: #f3f3f1; }
+.photo-editor-inspection { --loading-indicator-width: 80px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; color: #666; font-size: 12px; line-height: 1.8; }
+.photo-editor-inspection p { flex: 1; min-width: 0; margin: 0; }
+.photo-editor-fields { display: grid; align-content: start; min-width: 0; gap: 20px; }
+.photo-editor-fields > p { margin: 0; font-size: 13px; line-height: 1.8; color: #666; }
+.photo-editor-fields label { display: grid; align-content: start; min-width: 0; gap: 7px; font-size: 14px; }
+.photo-editor-fields :is(input,textarea) { box-sizing: border-box; width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid #aaa; border-radius: 5px; background: #fff; color: #111; font: inherit; font-size: 16px; letter-spacing: .5px; line-height: 1.6; }
+.photo-editor-fields textarea { min-height: 126px; resize: vertical; }
+#portfolio-book-editor .photo-editor-fields select { min-height: 44px; width: 100%; background: #fff; color: #111; border: 1px solid #aaa; border-radius: 5px; font: inherit; padding: 6px 12px; }
+#portfolio-book-editor [hidden] { display: none; }
+#portfolio-book-editor [data-book-cover-preview] { width: 100%; height: 190px; object-fit: contain; background: #f3f3f1; }
+#book-layout-preview:not([hidden]) { display: grid; gap: 12px; min-width: 0; }
+.book-layout-navigation { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto auto; align-items: center; gap: 4px; text-align: center; }
+#portfolio-book-editor .book-layout-navigation button { padding-inline: 5px; }
+.book-layout-stage { height: clamp(180px, 30dvh, 360px); background: #f3f3f1; }
+.book-layout-artwork { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
+.book-layout-artwork canvas { display: block; flex: none; border: 0; background: #fff; }
+.book-layout-pages { display: flex; justify-content: center; gap: 8px; }
+.book-layout-pages > div { display: grid; justify-items: center; flex: 1 1 0; max-width: 260px; min-width: 0; gap: 6px; text-align: center; }
+.book-layout-pages p { margin: 0; }
+#portfolio-book-editor .book-layout-pages button { max-width: 100%; padding-inline: 6px; font-size: 13px; }
+#portfolio-book-editor [data-book-filename] { overflow-wrap: anywhere; }
+.photo-editor-equipment { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-width: 0; padding: 20px 0 0; margin: 0; border: 0; border-top: 1px solid #e4e4e4; }
+.photo-editor-equipment legend { padding: 0 12px 0 0; font-size: 14px; }
+.photo-editor-equipment label:nth-of-type(-n+3) { grid-column: 1 / -1; }
+.photo-editor-footer { display: flex; flex: none; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 24px; border-top: 1px solid #e4e4e4; background: #fafafa; }
+.photo-editor-footer p { flex: 1; min-width: min(220px, 100%); margin: 0; color: #666; font-size: 12px; line-height: 1.8; }
+.photo-editor-footer > div { display: flex; flex-wrap: wrap; gap: 10px; }
+.photo-editor-footer .photo-editor-apply { background: #222; border-color: #222; color: #fff; }
+.photo-editor-footer .photo-editor-apply:hover { background: #444; }
+@media (max-width: 640px) {
+  .portfolio-photo-editor { width: calc(100vw - 24px); height: calc(100dvh - 24px); border-radius: 10px; }
+  .photo-editor-header { padding: 14px 16px; }
+  .photo-editor-header h2 { font-size: 21px; letter-spacing: 1px; }
+  .photo-editor-body { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 16px; }
+  .photo-editor-preview { position: static; }
+  .photo-editor-preview > img { max-height: 180px; aspect-ratio: auto; }
+  .photo-editor-footer { padding: 12px 16px; }
+  .photo-editor-footer > div { width: 100%; }
+  .photo-editor-footer button { flex: 1; padding-inline: 10px; font-size: 14px; }
 }

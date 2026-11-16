@@ -1,0 +1,211 @@
+/* The approved mobile layout uses the public site's existing logo, colors and three type families. */
+.private-mobile-nav,
+.member-menu-icon,
+.admin-mobile-more { display: none; }
+
+@media (max-width: 768px) {
+  body[data-member-area] {
+    --private-body-font: YakuHanRP, "Zen Kurenaido", "zen-krenaido-regular", sans-serif;
+    --private-heading-font: YakuHanMP, "Zen Old Mincho", "zen-old-mincho-regular", serif;
+    --private-display-font: YakuHanMP, "linotype-didot", "Didot", serif;
+    --private-nav-height: calc(64px + env(safe-area-inset-bottom, 0px));
+    --private-border: #ddd;
+    --private-muted: #555;
+    padding-bottom: calc(var(--private-nav-height) + 16px);
+    background: #fdfdfd;
+    color: #000;
+  }
+  body[data-member-area][data-app-client] { --private-nav-height: 0px; padding-bottom: 0; }
+  body[data-member-area] main > .container { display: block; padding-inline: 16px; }
+  body[data-member-area] main > .container > .for-padding { display: none; }
+  body[data-member-area] main > .container > .body-contents { min-width: 0; }
+  body[data-member-area] .breadcrumb-bar { padding: 12px 16px; font-family: var(--private-body-font); }
+  body[data-member-area] .breadcrumb-bar .user-welcome { display: none; }
+  body[data-member-area] .admin-title { margin: 16px 16px 24px; }
+  body[data-member-area] .admin-title h1 { font-family: var(--private-display-font); font-size: 44px; letter-spacing: .08em; line-height: 1.2; padding: 0; }
+  body[data-member-area] .admin-title-line { display: none; }
+  body[data-member-area]:not([data-member-home]) .admin-title { margin: 8px 16px 12px; }
+  body[data-member-area]:not([data-member-home]) .admin-title h1 { font-size: 16px; letter-spacing: .08em; }
+  body[data-member-area] .admin-page { margin: 0 0 32px; font-family: var(--private-body-font); font-size: 16px; line-height: 1.8; letter-spacing: .04em; overflow-wrap: anywhere; }
+  body[data-member-area] .admin-page :is(form, fieldset, section, article, label, dl, dt, dd) { min-inline-size: 0; }
+  body[data-member-area] :is(.admin-page, dialog) :is(h2, h3, h4, legend) { font-family: var(--private-heading-font); font-weight: 400; letter-spacing: .06em; text-wrap: pretty; }
+  body[data-member-area] .admin-page h2 { font-size: 24px; line-height: 1.5; margin: 0 0 16px; }
+  body[data-member-area] .admin-page h3 { font-size: 20px; line-height: 1.5; margin: 0 0 12px; }
+  body[data-member-area] .admin-page h4 { font-size: 18px; }
+  body[data-member-area] .admin-intro { padding: 0; margin: 0 0 24px; }
+  body[data-member-area] .admin-section,
+  body[data-member-area] .member-dashboard > .admin-section { padding-left: 0; margin: 0 0 32px; }
+  body[data-member-area] .admin-section::before { display: none; }
+  body[data-member-area] .staff-dashboard-heading { display: none; }
+  body[data-member-area] .admin-page :is(small, .admin-help, .exhibition-muted, .member-field-hint, .advance-hint) { font-size: 14px; line-height: 1.7; letter-spacing: .02em; }
+  body[data-member-area] .admin-page [id] { scroll-margin-top: calc(max(8.3vw, 60px) + 16px); }
+
+  /* A shared, left-aligned row for all three landing pages. */
+  body[data-member-area] .admin-link-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; border: 1px solid var(--private-border); border-radius: 12px; background: #fff; }
+  body[data-member-area] .admin-link-list > li { padding: 0; border: 0; min-width: 0; }
+  body[data-member-area] .admin-link-list > li + li { border-top: 1px solid var(--private-border); }
+  body[data-member-area] .admin-link-list :is(a, button) { position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr); grid-template-rows: auto auto; align-content: center; align-items: center; gap: 4px 12px; width: 100%; min-height: 80px; padding: 16px 36px 16px 16px; border: 0; border-radius: 0; box-sizing: border-box; background: transparent; color: #000; text-align: left; text-decoration: none; }
+  body[data-member-area] .admin-link-list > li:first-child > :is(a, button) { border-radius: 11px 11px 0 0; }
+  body[data-member-area] .admin-link-list > li:last-child > :is(a, button) { border-radius: 0 0 11px 11px; }
+  body[data-member-area] .admin-link-list > li:only-child > :is(a, button) { border-radius: 11px; }
+  body[data-member-area] .member-menu-icon { display: block; grid-column: 1; grid-row: 1 / 3; width: 28px; height: 28px; }
+  body[data-member-area] .admin-item-label { grid-column: 2; font-family: var(--private-heading-font); font-size: 18px; letter-spacing: .03em; line-height: 1.5; }
+  body[data-member-area] .admin-item-description { grid-column: 2; font-size: 14px; letter-spacing: .02em; line-height: 1.6; color: var(--private-muted); }
+  body[data-member-area] .private-link-arrow { display: none; }
+  body[data-member-area] .admin-link-list :is(a, button)::after { content: ""; position: absolute; right: 16px; top: calc(50% - 4px); width: 7px; height: 7px; border-top: 1px solid currentColor; border-right: 1px solid currentColor; background: transparent; transform: rotate(45deg); transition: none; }
+  body[data-member-area] .admin-link-list :is(a, button):not(:disabled):is(:hover, :focus-visible) { background: #f6f6f6; color: #000; }
+  body[data-member-area] .admin-mobile-more { display: block; }
+  body[data-member-area] .admin-mobile-more > summary { padding: 16px; min-height: 48px; cursor: pointer; font: inherit; }
+  body[data-member-area] .admin-mobile-more .admin-link-list { margin: 0 12px 12px; }
+  body[data-member-area] .admin-desktop-extra { display: none; }
+
+  /* Lists, data summaries and forms keep the same gutters and readable input sizes. */
+  body[data-member-area] .activity-list { border: 1px solid var(--private-border); border-radius: 12px; background: #fff; }
+  body[data-member-area] .activity-list > li { padding: 16px; border: 0; }
+  body[data-member-area] .activity-list > li + li { border-top: 1px solid var(--private-border); }
+  body[data-member-area] .activity-list small { color: var(--private-muted); }
+  body[data-member-area] .activity-title-row { align-items: flex-start; gap: 8px; }
+  body[data-member-area] .activity-title-row > a { flex: 1; min-width: 0; }
+  body[data-member-area] .activity-badge { font-family: var(--private-body-font); font-size: 14px; letter-spacing: 0; border-radius: 999px; padding: 1px 8px; }
+  body[data-member-area] .activity-actions { gap: 8px; margin: 16px 0; }
+  body[data-member-area] .activity-actions[aria-label="企画の表示形式"] { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--private-border); border-radius: 8px; padding: 3px; background: #fff; }
+  body[data-member-area] .activity-actions[aria-label="企画の表示形式"] a { display: grid; place-items: center; min-height: 44px; padding: 4px 8px; border-radius: 6px; text-decoration: none; }
+  body[data-member-area] .activity-actions[aria-label="企画の表示形式"] [aria-current="page"] { background: #000; color: #fff; }
+  body[data-member-area] .activity-subsection { margin: 24px 0; }
+  body[data-member-area] .activity-details { display: block; margin: 24px 0; padding: 0 16px; background: #fff; border: 1px solid var(--private-border); border-radius: 12px; }
+  body[data-member-area] .activity-details dt { padding-top: 16px; color: var(--private-muted); font-family: var(--private-heading-font); font-size: 14px; }
+  body[data-member-area] .activity-details dd { margin: 4px 0 0; padding-bottom: 16px; border-bottom: 1px solid var(--private-border); }
+  body[data-member-area] .activity-details dd:last-child { border-bottom: 0; }
+  body[data-member-area] .admin-page :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="color"]) { box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; min-height: 48px; padding: 10px 12px; border: 1px solid #909090; border-radius: 8px; background: #fff; color: #000; font-family: var(--private-body-font); font-size: 16px; line-height: 1.6; letter-spacing: .02em; }
+  body[data-member-area] .admin-page textarea { min-height: 120px; }
+  /* iOS date controls must shrink with their label, including their native value box. */
+  body[data-member-area] .admin-page input:is([type="date"], [type="time"], [type="datetime-local"]) { -webkit-appearance: none; appearance: none; min-inline-size: 0; max-inline-size: 100%; }
+  body[data-member-area] .admin-page input::-webkit-date-and-time-value { min-width: 0; text-align: left; }
+  body[data-member-area] .admin-page input::-webkit-datetime-edit { min-width: 0; padding: 0; }
+  body[data-member-area] .admin-page :is(input[type="checkbox"], input[type="radio"]) { width: 20px; height: 20px; min-height: 20px; flex-shrink: 0; accent-color: #000; }
+  body[data-member-area] :is(.admin-page, dialog) button,
+  body[data-member-area] .admin-page .admin-button { min-height: 48px; min-width: 44px; max-width: 100%; border-radius: 8px; font-family: var(--private-body-font); font-size: 16px; line-height: 1.5; letter-spacing: .02em; }
+  body[data-member-area] .admin-page :is(.member-submit, .advance-button, .admin-button, button[type="submit"]) { background: #000; border: 1px solid #000; color: #fff; padding: 12px 16px; }
+  body[data-member-area] .admin-page :is(.admin-link-list button, .group-person, .group-move) { color: #000; }
+  body[data-member-area] .admin-page :is(button, .admin-button):not(:disabled):hover { background-color: #707070; border-color: #707070; color: #fff; }
+  body[data-member-area] .admin-page .admin-link-list :is(a, button):not(:disabled):hover { background: #f6f6f6; color: #000; }
+  body[data-member-area] .admin-page .activity-share-trigger { width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 8px; border: 0; }
+  body[data-member-area] .admin-page .activity-share-trigger[hidden] { display: none; }
+  body[data-member-area] :is(.activity-form, .member-form, .exhibition-form) { gap: 20px; margin-block: 20px 28px; }
+  body[data-member-area] :is(.activity-fields, .activity-pair-people, .member-field-pair, .advance-row, .exhibition-public .exhibition-row) { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  body[data-member-area] .activity-form > label,
+  body[data-member-area] .member-form > label { gap: 8px; }
+  body[data-member-area] .member-form label { font-family: var(--private-body-font); }
+  body[data-member-area] :is(.admin-list, .activity-form fieldset, .advance-group, .exhibition-panel, .exhibition-card, .exhibition-work) { min-width: 0; margin-block: 20px; padding: 16px; border: 1px solid var(--private-border); border-radius: 12px; background: #fff; }
+  body[data-member-area] .admin-list legend,
+  body[data-member-area] .advance-group legend { font-family: var(--private-heading-font); font-size: 20px; padding: 0 6px; border: 0; margin: 0; width: auto; }
+  body[data-member-area] .admin-actions { gap: 12px; margin-top: 24px; padding-top: 20px; }
+  body[data-member-area] .admin-actions > * { flex: 1 1 140px; }
+  body[data-member-area] #publish-content { background: #fff; color: #000; }
+  body[data-member-area] .member-back { display: inline-flex; align-items: center; min-height: 48px; margin-top: 16px; }
+  body[data-member-area] .advance-form { gap: 20px; }
+  body[data-member-area] .advance-account-row { padding: 16px; border: 1px solid var(--private-border); border-radius: 12px; background: #fff; }
+  body[data-member-area] .advance-intro > p:first-of-type { font-size: 14px; line-height: 1.7; }
+  body[data-member-area] .advance-intro br { display: none; }
+  body[data-member-area] .advance-page .advance-account-row { grid-template-columns: auto minmax(0, 1fr); gap: 8px 12px; align-items: baseline; }
+  body[data-member-area] .advance-account-row > div:last-child { display: contents; }
+  body[data-member-area] .advance-account-row .advance-hint { grid-column: 1 / -1; margin: 0; }
+  body[data-member-area] .advance-page .advance-label { margin: 0; font-family: var(--private-body-font); font-size: 16px; letter-spacing: .02em; }
+  body[data-member-area] .advance-group .advance-row { margin-top: 20px; }
+  body[data-member-area] .advance-confirm-action { display: block; }
+  body[data-member-area] .advance-confirm-action::before,
+  body[data-member-area] .advance-confirm-action::after { display: none; }
+  body[data-member-area] .advance-confirm-action > button { width: 100%; min-width: 0; }
+  body[data-member-area] .exhibition-page { font-family: var(--private-body-font); font-size: 16px; letter-spacing: .02em; }
+  body[data-member-area] .exhibition-period { display: grid; gap: 12px; margin-block: 16px 24px; }
+  body[data-member-area] .exhibition-period > span:not(.exhibition-period-separator) { display: grid; grid-template-columns: 4em minmax(0, 1fr); gap: 12px; align-items: baseline; }
+  body[data-member-area] .exhibition-period-label { display: block; color: var(--private-muted); font-size: 14px; }
+  body[data-member-area] .exhibition-period time { min-width: 0; overflow-wrap: anywhere; }
+  body[data-member-area] .exhibition-period-separator { display: none; }
+  body[data-member-area] [data-exhibition-vote] .exhibition-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  body[data-member-area] [data-exhibition-vote] .exhibition-actions button { min-width: 0; padding-inline: 8px; }
+  body[data-member-area] .exhibition-date-fields { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  body[data-member-area] .exhibition-date-group { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; min-width: 0; padding-top: 16px; border-top: 1px solid var(--private-border); }
+  body[data-member-area] .exhibition-date-group-title { display: block; margin: 0; font-family: var(--private-heading-font); font-size: 18px; }
+  body[data-member-area] .exhibition-date-group > label { display: grid; gap: 8px; min-width: 0; }
+  body[data-member-area] .exhibition-actions > :is(a, button) { min-width: 0; white-space: normal; text-align: center; }
+  body[data-member-area] .exhibition-admin-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  body[data-member-area] .exhibition-admin-nav a { display: flex; align-items: center; justify-content: center; min-height: 48px; font-family: var(--private-body-font); font-size: 16px; padding: 8px; }
+  body[data-member-area] .exhibition-table { font-size: 14px; }
+  body[data-member-area] .admin-search { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  body[data-member-area] .admin-search label { font-size: 14px; }
+  body[data-member-area] .admin-account-list { display: grid; gap: 12px; }
+  body[data-member-area] .admin-account-row { padding: 16px; gap: 12px; border: 1px solid var(--private-border); border-radius: 12px; background: #fff; }
+  body[data-member-area] .admin-account-meta { font-size: 14px; gap: 8px; }
+  body[data-member-area] .admin-account-status { border-radius: 999px; }
+  body[data-member-area] .admin-account-links { gap: 8px; }
+  body[data-member-area] .admin-account-links > a { flex: 1 1 120px; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+  body[data-member-area] .admin-account-details { padding: 0 16px; border: 1px solid var(--private-border); border-radius: 12px; background: #fff; }
+  body[data-member-area] .admin-account-details > div { padding: 16px 0; gap: 6px; }
+  body[data-member-area] .admin-account-details > div:last-child { border-bottom: 0; }
+  body[data-member-area] .admin-account-pagination { margin-top: 20px; font-family: var(--private-body-font); font-size: 16px; }
+  body[data-member-area] .admin-account-page-numbers > * { display: grid; place-items: center; min-width: 24px; min-height: 44px; }
+  body[data-member-area] .admin-account-page-arrow { width: 44px; height: 44px; display: grid; place-items: center; }
+  body[data-member-area] .admin-toc { padding: 16px; border: 1px solid var(--private-border); border-radius: 12px; background: #fff; }
+  body[data-member-area] .admin-toc-list { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  body[data-member-area] .admin-toc a { font-size: 16px; }
+
+  /* Keep the seven-day calendar intact and make group cards vertical. */
+  body[data-member-area] .activity-calendar-shell { grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 4px; }
+  body[data-member-area] .activity-calendar-arrow { width: 44px; min-height: 44px; }
+  body[data-member-area] .activity-calendar-week > div { font-family: var(--private-body-font); }
+  body[data-member-area] .group-board-grid { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: minmax(0, 1fr); gap: 12px; overflow-x: visible; padding: 4px; }
+  body[data-member-area] .group-board-card { padding: 16px; border: 1px solid var(--private-border); border-radius: 12px; }
+  body[data-member-area] .group-board-card ul { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  body[data-member-area] .group-board-card .group-person { width: 100%; min-height: 64px; padding: 8px; border-radius: 8px; font-family: var(--private-body-font); font-size: 16px; }
+  body[data-member-area] .group-scroll-help { display: none; }
+
+  /* Modals belong to the same type system; artwork inside SVG/canvas keeps its own font. */
+  body[data-member-area] dialog { box-sizing: border-box; font-family: var(--private-body-font); font-size: 16px; line-height: 1.8; letter-spacing: .02em; }
+  body[data-member-area] dialog:not(.room-edit-dialog) { max-width: calc(100vw - 24px); border-radius: 12px; }
+  body[data-member-area] dialog :is(input, textarea, select) { font-family: var(--private-body-font); font-size: 16px; }
+  body[data-member-area] :is(.advance-preview-header h2, .portfolio-share-dialog > h2, .exhibition-confirm-header h2) { font-family: var(--private-display-font); font-weight: 400; }
+  body[data-member-area] .room-edit-dialog > header h2 { font-family: var(--private-heading-font); font-size: 20px; }
+  body[data-member-area] .room-edit-dialog { padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom)) !important; }
+  body[data-member-area] .room-edit-dialog .layout-workspace { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 48px minmax(140px, 1fr) minmax(120px, 32%) auto; gap: 8px; }
+  body[data-member-area] .room-edit-dialog .layout-workspace.panel-collapsed { grid-template-rows: auto 48px minmax(140px, 1fr) 44px auto; }
+  body[data-member-area] .room-edit-dialog .layout-panel-toggle { min-height: 44px; font-size: 14px !important; }
+  body[data-member-area] .room-edit-dialog .layout-top { grid-column: 1; grid-row: 1; padding: 0 0 8px; gap: 8px; }
+  body[data-member-area] .room-edit-dialog .layout-top label { font-size: 14px; }
+  body[data-member-area] .room-edit-dialog .layout-top select { max-width: 150px; min-height: 44px; padding: 6px; }
+  body[data-member-area] .room-edit-dialog .layout-tools { grid-column: 1; grid-row: 2; flex-direction: row; overflow-x: auto; overflow-y: hidden; gap: 8px; }
+  body[data-member-area] .room-edit-dialog .layout-tools button { flex: 0 0 44px; min-width: 44px; min-height: 44px; height: 44px; border-radius: 8px; }
+  body[data-member-area] .room-edit-dialog .layout-tools svg { width: 28px; height: 28px; }
+  body[data-member-area] .room-edit-dialog .layout-stage { grid-column: 1; grid-row: 3; }
+  body[data-member-area] .room-edit-dialog .layout-sidebar { grid-column: 1; grid-row: 4; padding: 0; }
+  body[data-member-area] .room-edit-dialog .layout-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  body[data-member-area] .room-edit-dialog .layout-tabs button { min-height: 44px; font-family: var(--private-heading-font); font-size: 14px; }
+  body[data-member-area] .room-edit-dialog [data-layout-inspector] { padding: 10px 4px; }
+  body[data-member-area] .room-edit-dialog [data-layout-inspector] label { font-family: var(--private-body-font); font-size: 14px; }
+  body[data-member-area] .room-edit-dialog [data-layout-inspector] :is(input, select, textarea):not([type="checkbox"]):not([type="color"]) { min-height: 44px; padding: 8px; font-family: var(--private-body-font); font-size: 16px; }
+  body[data-member-area] .room-edit-dialog .layout-bottom { grid-column: 1; grid-row: 5; padding: 4px 0 !important; gap: 6px; }
+  body[data-member-area] .room-edit-dialog .layout-bottom [data-layout-stage-status] { font-family: var(--private-body-font); font-size: 13px; }
+  body[data-member-area] .room-edit-dialog .layout-bottom [data-layout-save] { width: 100%; min-height: 48px; font-family: var(--private-body-font); font-size: 16px; }
+  body[data-member-area] .submission-editor :is(.se-header, .se-subheading, .se-footer) { gap: 12px; flex-wrap: wrap; }
+  body[data-member-area] .submission-editor .se-count-inputs { grid-template-columns: minmax(0, 1fr); }
+
+  .private-mobile-nav { position: fixed; inset: auto 0 0; z-index: 10; display: grid; grid-template-columns: repeat(var(--private-nav-count), minmax(0, 1fr)); min-height: var(--private-nav-height); padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); border-top: 1px solid #ddd; background: #fff; color: #555; font-family: var(--private-body-font); box-sizing: border-box; }
+  .private-mobile-nav > a { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 0; min-height: 64px; padding: 6px 2px; color: inherit; font-size: 12px; line-height: 1.4; letter-spacing: 0; text-decoration: none; white-space: nowrap; }
+  .private-mobile-nav > a[aria-current="page"] { color: #000; }
+  .private-mobile-nav > a[aria-current="page"]::before { content: ""; position: absolute; top: 0; width: 32px; height: 2px; background: currentColor; }
+  .private-mobile-nav > a:is(:hover, :focus-visible) { color: #0db49b; }
+  .private-mobile-nav > a:focus-visible { outline: 2px solid #0db49b; outline-offset: -4px; }
+  .private-nav-icon { width: 24px; height: 24px; flex-shrink: 0; }
+  body[data-member-area] .page-top-nav[data-page-top] { width: 44px; height: 44px; bottom: calc(var(--private-nav-height) + 16px); }
+  body[data-member-area] .site-notices { bottom: calc(var(--private-nav-height) + 16px); }
+  body[data-member-area] .site-notices .site-notice > button { flex-basis: 44px; width: 44px; height: 44px; min-width: 44px; min-height: 44px; max-width: 44px; max-height: 44px; }
+  body[data-member-area]:is([data-private-keyboard], [data-app-client], .open) .private-mobile-nav,
+  body[data-member-area]:has(dialog[open]) .private-mobile-nav,
+  body[data-member-area]:has(dialog[open]) .page-top-nav { display: none; }
+}
+
+@media (max-width: 360px) {
+  body[data-member-area][data-member-home] .admin-title h1 { font-size: 38px; }
+  body[data-member-area] .admin-link-list :is(a, button) { padding-left: 12px; gap: 4px 8px; }
+  body[data-member-area] .admin-account-page-numbers { gap: 4px; margin-inline: 4px; }
+}

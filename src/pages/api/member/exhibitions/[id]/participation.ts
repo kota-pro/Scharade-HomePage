@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { findExhibition, readExhibitions, voteExhibition } from "../../../../../lib/exhibitions.ts";
 import { exhibitionMember, participationState, requireExhibitionRecipient } from "../../../../../lib/exhibitionParticipation.ts";
-import { ExhibitionError } from "../../../../../lib/exhibitionValidation.ts";
+import { ExhibitionError, exhibitionErrorBody } from "../../../../../lib/exhibitionValidation.ts";
 import { json } from "../../../../../lib/http.ts";
 
 export const GET: APIRoute = ({ params, locals }) => {
@@ -18,5 +18,5 @@ export const POST: APIRoute = async ({ params, locals, request }) => {
   } catch (error) { return problem(error); }
 };
 function problem(error: unknown) {
-  return json({ ok: false, message: error instanceof ExhibitionError ? error.message : "参加投票を処理できませんでした。" }, error instanceof ExhibitionError ? error.status : 503);
+  return json(exhibitionErrorBody(error), error instanceof ExhibitionError ? error.status : 503);
 }

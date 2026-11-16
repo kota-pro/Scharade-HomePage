@@ -1,0 +1,36 @@
+---
+import StaffLayout from '../../../../layouts/StaffLayout.astro';
+import MemberIcon from '../../../../components/MemberIcon.astro';
+import ManagementDelete from '../../../../components/ManagementDelete.astro';
+import { listTools, receptionOpen } from '../../../../lib/memberTools.ts';
+import { toolLabels } from '../../../../lib/memberToolTypes.ts';
+import '../../../../styles/MemberTools.css';
+const tools = listTools().sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
+const types = [
+ {kind:'poll', label:'投票', icon:'file' as const, description:'画像と選択肢で、みんなの意見を集める'},
+ {kind:'schedule', label:'日程調整', icon:'calendar' as const, description:'候補日を並べて、集まりやすい日を探す'},
+ {kind:'box', label:'目安箱', icon:'bell' as const, description:'文章や写真、ファイルで声を集める'},
+];
+---
+<StaffLayout title="通知ツール">
+ <div class="member-tools tool-index">
+  <a class="member-back tool-back" href="/Management">管理・運営へ戻る</a>
+  <header class="tool-page-header"><h2>通知ツール</h2><p class="tool-lead">投票・日程調整・目安箱を作成し、メンバーの回答をまとめて確認できます。</p></header>
+  <section class="admin-section tool-section" aria-labelledby="tool-create-title">
+   <div class="tool-section-heading"><span class="tool-section-number" aria-hidden="true">01</span><h3 id="tool-create-title">新しく作成する</h3></div>
+   <ul class="admin-link-list tool-create-list">{types.map(t=><li><button type="button" data-create-tool={t.kind} aria-label={`${t.label}を作成`}><MemberIcon kind={t.icon}/><span class="admin-item-label">{t.label}</span><span class="admin-item-description">{t.description}<span class="private-link-arrow" aria-hidden="true"> →</span></span></button></li>)}</ul>
+   <p class="tool-help tool-create-help">質問と通知先を保存 → 内容を確認 → 公開、の順に進みます。</p>
+  </section>
+  <p data-tool-status role="status" aria-live="polite">{Astro.url.searchParams.has("deleted") ? "ツールと関連する通知を削除しました。" : ""}</p>
+  <section class="admin-section tool-section" aria-labelledby="tool-list-title">
+   <div class="tool-section-heading"><span class="tool-section-number" aria-hidden="true">02</span><h3 id="tool-list-title">作成したツール</h3><span class="tool-count">{tools.length}件</span></div>
+   {tools.length>0?<>
+    <div class="admin-search tool-list-search"><label>質問を検索<input type="search" data-tool-search placeholder="質問内容を入力"/></label><label>種類<select data-tool-filter><option value="">すべて</option>{Object.entries(toolLabels).map(([value,label])=><option value={value}>{label}</option>)}</select></label></div>
+    <ul class="activity-list tool-saved-list">{tools.map(t=><li data-tool-list-item data-tool-kind={t.kind} data-tool-question={t.question}><div class="tool-list-meta"><span class="tool-kind-label">{toolLabels[t.kind]}</span><span class="activity-badge">{t.status==='draft'?'下書き':receptionOpen(t)?'受付中':'受付終了'}</span></div><a class="tool-saved-title" href={`/Member/manage/tools/${t.id}`}><span class="tool-saved-question">{t.question||'質問を入力してください'}</span><span aria-hidden="true"> →</span></a><div class="tool-list-footer"><small>更新 {new Date(t.updatedAt).toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo'})}</small><button class="admin-button tool-secondary" type="button" disabled data-delete-item={t.id} data-delete-kind="tool" data-delete-label={toolLabels[t.kind]} data-delete-question={t.question} data-delete-revision={t.revision}>{toolLabels[t.kind]}を削除</button></div></li>)}</ul>
+    <p class="tool-empty" data-tool-no-match hidden>条件に合うツールがありません。</p>
+   </>:<p class="tool-empty">まだ作成されていません。上からツールを選んで始めましょう。</p>}
+  </section>
+  <ManagementDelete/>
+ </div>
+</StaffLayout>
+<script>import '../../../../scripts/memberTools';</script>

@@ -43,10 +43,12 @@ test("role promotion and demotion enforce real access, revoke sessions and keep 
     );
   await login(page, "admin");
   await login(other, "other");
-  // The shared fixture also contains a dedicated management administrator.
-  // Temporarily demote it through the real API to exercise the last-admin guard.
-  await editRole(page, "site-manager", "staff");
-  await expect(page).toHaveURL(/saved=1$/);
+  // Every synthetic administrator must be included when exercising the last-admin guard.
+  const extraAdmins = ["site-manager", ...["chromium", "firefox", "webkit"].map(engine => `session-admin-${engine}`)];
+  for (const id of extraAdmins) {
+    await editRole(page, id, "staff");
+    await expect(page).toHaveURL(/saved=1$/);
+  }
   await page.goto("/Admin/accounts/other");
   const initial = await payload(page);
   expect(
@@ -93,7 +95,9 @@ test("role promotion and demotion enforce real access, revoke sessions and keep 
   await login(other, "other");
   expect((await other.request.get("/Admin")).status()).toBe(403);
   expect((await other.request.get("/Portfolio/edit")).status()).toBe(200);
-  await editRole(page, "site-manager", "admin");
-  await expect(page).toHaveURL(/saved=1$/);
+  for (const id of extraAdmins) {
+    await editRole(page, id, "admin");
+    await expect(page).toHaveURL(/saved=1$/);
+  }
   await context.close();
 });

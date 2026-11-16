@@ -1,0 +1,30 @@
+---
+import StaffLayout from "../../../layouts/StaffLayout.astro";
+import { BLOG_MANAGEMENT_PAGE_SIZE, getManageableBlogs } from "../../../lib/blogManagement";
+import "../../../styles/ContentManagement.css";
+
+const page = Number(Astro.url.searchParams.get("page"));
+const current = Number.isSafeInteger(page) && page > 0 && page < 10001 ? page : 1;
+const listing = await getManageableBlogs(current).catch(() => null);
+const statusLabels = { draft: "下書き", published: "公開中", "published-with-draft": "公開中・下書きあり", closed: "公開終了" };
+---
+<StaffLayout title="Activityのブログ管理">
+  <div class="content-management-heading">
+    <h2>Activityのブログ管理</h2>
+    <a class="admin-button admin-button-outline" href="/Management/blog/new">新規作成</a>
+  </div>
+  {Astro.url.searchParams.has("deleted") && <p role="status">記事を削除しました。</p>}
+  {listing ? (
+    listing.items.length ? <ul class="content-management-list">
+      {listing.items.map(item => <li class="content-management-row">
+        <div><a href={`/Management/blog/edit/${encodeURIComponent(item.id)}`}>{item.title}</a><p><small>{statusLabels[item.status]}</small></p></div>
+        <a class="admin-button admin-button-outline" href={`/Management/blog/edit/${encodeURIComponent(item.id)}`} aria-label={`${item.title}を管理`}>管理</a>
+      </li>)}
+    </ul> : <p>このページに記事はありません。</p>
+  ) : <p role="alert">記事一覧を取得できませんでした。microCMSの接続と権限を確認してください。</p>}
+  {listing && (current > 1 || current * BLOG_MANAGEMENT_PAGE_SIZE < listing.total) && <nav aria-label="記事一覧のページ" class="content-management-actions">
+    {current > 1 && <a href={`/Management/blog?page=${current - 1}`}>前のページ</a>}
+    {current * BLOG_MANAGEMENT_PAGE_SIZE < listing.total && <a href={`/Management/blog?page=${current + 1}`}>次のページ</a>}
+  </nav>}
+  <div class="content-management-actions"><a class="member-back" href="/Management">Managementへ戻る</a></div>
+</StaffLayout>

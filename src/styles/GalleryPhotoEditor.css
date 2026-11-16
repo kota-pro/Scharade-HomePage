@@ -1,0 +1,32 @@
+.gallery-photo-editor {
+  width: min(1100px, calc(100% - 40px)); padding: 0; text-align: left;
+  max-height: calc(100dvh - 40px); overflow: hidden;
+  font-family: YakuHanJP, "Zen Kaku Gothic New", sans-serif;
+}
+.gallery-photo-editor [hidden] { display: none; }
+.gallery-photo-editor form { display: flex; flex-direction: column; max-height: inherit; }
+.gallery-editor-heading { position: relative; padding: 16px 60px 14px 24px; border-bottom: 1px solid #eee; }
+.gallery-editor-body { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); min-height: 0; overflow: auto; }
+.gallery-editor-preview { min-width: 0; min-height: 240px; padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; background: #f7f7f7; }
+.gallery-editor-preview:has(.gallery-editor-series:not([hidden])) { justify-content: flex-start; }
+.gallery-editor-preview > img { width: 100%; height: min(46dvh, 470px); object-fit: contain; }
+.gallery-editor-book-controls { display: flex; align-items: center; justify-content: center; gap: 8px; text-align: center; }
+.gallery-editor-book-controls button { min-width: 44px; min-height: 44px; }
+.gallery-editor-series { width: 100%; min-width: 0; }
+.gallery-editor-series > .series-editor { margin: 0; padding: 0; border: 0; }
+.gallery-editor-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 12px; border: 0; margin: 0; min-width: 0; padding: 20px 24px; }
+.gallery-editor-fields label { display: grid; gap: 4px; min-width: 0; }
+.gallery-editor-wide-field { grid-column: 1 / -1; }
+.gallery-editor-fields :is(input, textarea) { box-sizing: border-box; width: 100%; min-width: 0; min-height: 42px; border: 1px solid #ccc; border-radius: 6px; padding: 8px 10px; color: #222; background: #fff; font: inherit; font-size: 16px; }
+.gallery-editor-fields textarea { resize: vertical; }
+.gallery-editor-footer { display: flex; justify-content: flex-end; align-items: center; gap: 12px; padding: 12px 24px; border-top: 1px solid #eee; }
+.gallery-editor-footer p { margin: 0 auto 0 0; overflow-wrap: anywhere; }
+.gallery-photo-editor .gallery-editor-save { min-width: 90px; min-height: 44px; padding: 6px 14px; border-radius: 6px; background: #067a6a; color: #fff; }
+@media (max-width: 768px) {
+  .gallery-photo-editor { width: 100%; max-height: calc(100dvh - 12px); }
+  .gallery-editor-body { grid-template-columns: minmax(0, 1fr); }
+  .gallery-editor-preview { min-height: 0; padding: 14px; }
+  .gallery-editor-preview > img { height: min(28dvh, 260px); }
+  .gallery-editor-fields { padding: 16px; }
+  .gallery-editor-footer { padding: 10px 16px max(10px, env(safe-area-inset-bottom)); }
+}

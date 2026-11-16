@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { readUsers } from "./auth.ts";
+import { isMemberAccount } from "./accountVisibility.ts";
 import { readActivities } from "./activities.ts";
 import { readExhibitions } from "./exhibitions.ts";
 import { readPushDevices, writePushDevices } from "./pushDeviceState.ts";
@@ -62,7 +63,7 @@ async function claimJobs(now: number): Promise<Claim[]> {
             users.find(
               (u) =>
                 u.id === device.userId &&
-                u.approved &&
+                isMemberAccount(u) &&
                 !u.mustResetPassword &&
                 (u.authVersion ?? 0) === device.authVersion,
             );

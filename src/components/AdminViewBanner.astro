@@ -1,0 +1,21 @@
+---
+import { adminViewPath, adminViewReturnLabel } from "../lib/adminViewPolicy.ts";
+const view = Astro.locals.adminView;
+---
+{view && <aside class="admin-view-banner" data-admin-view-banner role="region" aria-label="ログイン・ロールの表示確認">
+  <div><strong>{view.mode === "account" ? `${view.label} として代理ログイン中` : `${view.label}として表示確認中`}</strong>
+  <span>{view.unavailable ? "この表示モード・アカウントは現在利用できません。元の権限へ戻って確認してください。" : view.readOnly ? "閲覧専用・登録内容は変更されません" : "編集・登録はこのアカウントに反映されます"}</span></div>
+  <nav aria-label="表示確認の操作"><a href={adminViewPath(Astro.locals.actor)}>表示の切り替え</a><button type="button" data-admin-view-stop>{adminViewReturnLabel(Astro.locals.actor)}</button></nav>
+  <p data-admin-view-status role="status" aria-live="polite"></p>
+</aside>}
+<style>
+  .admin-view-banner {position:sticky;top:max(8.3vw,60px);z-index:90;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px 20px;padding:12px clamp(16px,4vw,64px);padding-right:max(72px,4vw);border-block:1px solid #666;background:#262626;color:#fff;font:400 14px/1.6 "Zen Kurenaido",sans-serif;}
+  .admin-view-banner strong,.admin-view-banner span {display:block;overflow-wrap:anywhere;}
+  .admin-view-banner span {font-size:12px;color:#ddd;}
+  nav {display:flex;gap:16px;align-items:center;flex-wrap:wrap;}
+  a {color:inherit;} a:hover {text-decoration:underline;} a:active {color:#bbb;}
+  button {border:1px solid #ddd;background:#fff;color:#222;padding:8px 14px;font:inherit;cursor:pointer;}
+  p:empty {display:none;} p {flex-basis:100%;margin:0;}
+  :global(body[data-app-shell="1"]) .admin-view-banner {top:0;}
+  @media(max-width:768px) {.admin-view-banner {font-size:13px;} nav {gap:12px;}}
+</style>

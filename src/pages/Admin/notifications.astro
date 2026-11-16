@@ -3,6 +3,14 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 import { readActivities } from "../../lib/activities";
 import { pushDiagnostics } from "../../lib/pushDelivery";
 import { env } from "../../lib/config";
+import { formatSiteError } from '../../lib/siteErrors.ts';
+const deliveryErrors: Record<string, string> = {
+  DeviceNotRegistered: '通知先の端末登録を確認できません。本人がアプリを開くと再登録されます。',
+  MessageTooBig: '通知の内容が長すぎます。通知本文を短くしてもう一度お試しください。',
+  MessageRateExceeded: '通知の送信が集中しています。時間をおいて再度お試しください。',
+  InvalidCredentials: 'アプリ通知の配信設定を確認できません。運営担当者に配信設定の確認を依頼してください。',
+  MismatchSenderId: 'アプリ通知の送信元を確認できません。運営担当者に配信設定の確認を依頼してください。',
+};
 const jobs = readActivities().push?.jobs ?? [],
   summary = pushDiagnostics(jobs);
 const errors = Object.entries(
@@ -42,7 +50,7 @@ const errors = Object.entries(
           <ul>
             {errors.map(([code, count]) => (
               <li>
-                {code}：{count}件
+                {formatSiteError(deliveryErrors[code] ?? '通知を配信できませんでした。時間をおいて再度お試しください。', 'SITE-014')}（{count}件）
               </li>
             ))}
           </ul>

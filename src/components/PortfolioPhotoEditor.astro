@@ -1,0 +1,55 @@
+---
+import LoadingIndicator from "./LoadingIndicator.astro";
+import { photoFieldLabels, photoMetadataFields } from "../types/photos";
+---
+
+<dialog id="portfolio-photo-editor" class="portfolio-photo-editor" aria-labelledby="portfolio-photo-editor-title" aria-describedby="portfolio-photo-editor-help">
+  <form data-photo-editor-form>
+    <div class="photo-editor-header">
+      <div>
+        <p data-photo-editor-index />
+        <h2 id="portfolio-photo-editor-title" tabindex="-1">写真情報の編集</h2>
+      </div>
+      <button type="button" class="photo-editor-close" data-photo-editor-cancel aria-label="写真情報の編集を閉じる">
+        <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 5 14 14M19 5 5 19" fill="none" stroke="currentColor" stroke-width="1.2" /></svg>
+      </button>
+    </div>
+    <div class="photo-editor-body">
+      <aside class="photo-editor-preview">
+        <img data-photo-editor-preview alt="編集中の写真" />
+        <div class="photo-editor-inspection" role="status" aria-live="polite">
+          <span data-photo-editor-loading hidden><LoadingIndicator /></span>
+          <p data-photo-editor-status />
+          <button type="button" data-photo-editor-retry hidden>もう一度読み込む</button>
+        </div>
+      </aside>
+      <div class="photo-editor-fields">
+        <p id="portfolio-photo-editor-help">すべて任意です。空欄の項目は公開ページに表示されません。</p>
+        {photoMetadataFields.slice(0, 2).map(key => (
+          <label for={`portfolio-photo-${key}`}>
+            <span>{photoFieldLabels[key]}</span>
+            {key === "caption"
+              ? <textarea id={`portfolio-photo-${key}`} name={key} rows="5" maxlength="5000" />
+              : <input id={`portfolio-photo-${key}`} name={key} type="text" maxlength="300" />}
+          </label>
+        ))}
+        <fieldset class="photo-editor-equipment">
+          <legend>機材・撮影設定</legend>
+          {photoMetadataFields.slice(2).map(key => (
+            <label for={`portfolio-photo-${key}`}>
+              <span>{photoFieldLabels[key]}</span>
+              <input id={`portfolio-photo-${key}`} name={key} type="text" maxlength="1000" />
+            </label>
+          ))}
+        </fieldset>
+      </div>
+    </div>
+    <div class="photo-editor-footer">
+      <p>反映後、編集画面下部の「Save changes」で公開します。</p>
+      <div>
+        <button type="button" data-photo-editor-cancel>キャンセル</button>
+        <button type="submit" class="photo-editor-apply">編集内容を反映</button>
+      </div>
+    </div>
+  </form>
+</dialog>

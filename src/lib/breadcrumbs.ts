@@ -22,12 +22,19 @@ export function breadcrumbsFor(
     "/404": "ページが見つかりません",
     "/Admin": "管理画面",
     "/Member": "メンバーページ",
+    "/Management": "Management",
+    "/Dashboard": "Dashboard",
   };
   if (routes[path]) return [home, { label: routes[path] }];
-  if (path.startsWith("/Admin/grouping-roster")) return [home, { label: "管理画面", href: "/Admin" }, ...(path === "/Admin/grouping-roster" ? [] : [{ label: "班分け用名簿", href: "/Admin/grouping-roster" }]), { label: title || "班分け用名簿" }];
+  for (const [section, label] of [["gallery", "Galleryのアルバム管理"], ["blog", "Activityのブログ管理"]]) {
+    const href = `/Management/${section}`;
+    if (path === href) return [home, { label: "Management", href: "/Management" }, { label }];
+    if (path.startsWith(`${href}/`)) return [home, { label: "Management", href: "/Management" }, { label, href }, { label: title || "編集" }];
+  }
+  if (path.startsWith("/Admin/grouping-roster")) return [home, { label: "管理画面", href: "/Admin" }, ...(path === "/Admin/grouping-roster" ? [] : [{ label: "名簿", href: "/Admin/grouping-roster" }]), { label: title || "名簿" }];
+  if (path.startsWith("/Member/manage/")) return [home, { label: "Management", href: "/Management" }, { label: title || "企画・通知" }];
   if (path.startsWith("/Member/") && path !== "/Member/advance") {
     const trail: BreadcrumbItem[] = [home, { label: "メンバーページ", href: "/Member" }];
-    if (path.startsWith("/Member/manage/") && path !== "/Member/manage/") trail.push({ label: "運営", href: "/Member/manage" });
     trail.push({ label: title || "企画・通知" });
     return trail;
   }

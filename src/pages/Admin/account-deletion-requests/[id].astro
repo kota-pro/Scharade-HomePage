@@ -1,4 +1,5 @@
 ---
+import { readUsers, canManageAccount, isExecutive } from "../../../lib/auth";
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { readDeletionRequests } from "../../../lib/accountDeletionRequests";
 import { deletionChecks } from "../../../lib/deletionPrivacy";
@@ -8,6 +9,8 @@ const request = readDeletionRequests().requests.find(
 if (!request) Astro.response.status = 404;
 const date = (time: number) =>
   new Date(time).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+const target = readUsers().find(u => u.id === request?.userId);
+const editable = target ? canManageAccount(Astro.locals.user, target) : isExecutive(Astro.locals.user);
 const ready =
   request?.status === "processing" &&
   (request.notBefore ?? Infinity) <= Date.now();
@@ -33,7 +36,7 @@ const ready =
             削除済みです。完了メール：
             {request.mailSentAt ? "送信済み" : "送信待ち・再試行中"}
           </p>
-        ) : (
+        ) : !editable ? (<p>このアカウントの削除は管理者が処理します。</p>) : (
           <>
             <h3>1. ログイン・通知を停止し、ローカルの個人データを削除</h3>
             <p>
@@ -114,7 +117,7 @@ const ready =
         <p data-deletion-admin-status role="status" aria-live="polite" />
       </section>
     ) : (
-      <p>申請が見つかりません。</p>
+      <p role="alert">申請が見つかりません。案内されたページを開き直してください。</p>
     )
   }
   <p><a href="/Admin/account-deletion-requests">削除申請の一覧へ戻る</a></p>

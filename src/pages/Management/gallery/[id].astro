@@ -1,0 +1,66 @@
+---
+import StaffLayout from "../../../layouts/StaffLayout.astro";
+import GalleryManagementFields from "../../../components/GalleryManagementFields.astro";
+import GalleryAlbumSettings from "../../../components/GalleryAlbumSettings.astro";
+import ManagementDelete from "../../../components/ManagementDelete.astro";
+import { accessibleAlbum } from "../../../lib/galleryAccess";
+import { exhibitionPhotoEntries } from "../../../lib/galleryCatalog";
+import { galleryAlbumSettings } from "../../../lib/gallerySettings";
+import "../../../styles/ContentManagement.css";
+
+const id = Astro.params.id ?? "";
+const stored = galleryAlbumSettings(id);
+const pending = stored?.deletePending;
+const album = pending ? null : await accessibleAlbum(id, Astro.locals.user);
+if (!pending && !album) return Astro.rewrite("/404");
+const title = album?.payload.name ?? stored?.name ?? "アルバム";
+const exhibition = album && exhibitionPhotoEntries(id)?.exhibition;
+const removesProject = !!stored?.project && !stored.project.supplement && !exhibition;
+const deleteDescription = removesProject
+  ? "Galleryへの掲載とLightroom上のアルバムを削除します。"
+  : "Galleryへの掲載を削除します。写真と元のアルバムは保存先に残ります。";
+---
+<StaffLayout title={title}>
+  <div class="content-management-heading">
+    <h2>{title}</h2>
+    {album && <a class="admin-button" href={`/Gallery/${encodeURIComponent(id)}`}>Galleryで表示</a>}
+  </div>
+  <div data-gallery-editor data-id={id} data-revision={album?.revision ?? stored?.revision} data-cover={album?.coverPhotoId ?? ""}>
+    {album && <div class="content-management-columns">
+      <section class="content-management-panel">
+        <h3>写真</h3>
+        {exhibition ? <p><a href={`/Member/manage/exhibitions/${encodeURIComponent(exhibition.id)}`}>写真展管理で写真を追加</a></p> :
+          <form data-gallery-upload>
+            <label>写真を追加<input type="file" name="photos" accept="image/jpeg,image/png,.jpg,.jpeg,.png" multiple required /></label>
+            <p>JPEG・PNG、1枚20MBまで</p>
+            <button class="admin-button" type="submit">Lightroomにアップロード</button>
+            <ul class="content-management-list" data-upload-results aria-live="polite"></ul>
+          </form>}
+        <div class="content-management-photos" data-album-photos></div>
+        <p data-album-photo-status class="content-management-status" role="status"></p>
+        <button type="button" class="content-management-secondary" data-more-photos hidden>写真をさらに表示</button>
+      </section>
+      <section class="content-management-panel">
+        <div class="content-management-heading">
+          <h3>アルバム設定</h3>
+          <GalleryAlbumSettings album={album} photosOnly />
+        </div>
+        <form data-album-settings id="album-management-settings">
+          <GalleryManagementFields album={album} />
+          <p data-status class="content-management-status" role="status"></p>
+        </form>
+        <div class="content-management-danger">
+          <button type="button" data-management-delete data-delete-endpoint={`/api/member/gallery/${encodeURIComponent(id)}`} data-delete-revision={album.revision} data-delete-title="アルバムを削除" data-delete-name={title} data-delete-description={deleteDescription} data-delete-redirect="/Management/gallery?deleted=1">アルバムを削除</button>
+        </div>
+      </section>
+    </div>}
+    {pending && <p>Galleryへの掲載は削除済みです。Lightroomでの削除を再試行できます。</p>}
+    <div class="content-management-actions">
+      <a class="member-back" href="/Management/gallery">一覧へ戻る</a>
+      {album && <button type="submit" class="admin-button" form="album-management-settings">設定を保存</button>}
+      {pending && <button class="admin-button" type="button" data-management-delete data-delete-endpoint={`/api/member/gallery/${encodeURIComponent(id)}`} data-delete-revision={stored?.revision} data-delete-title="Lightroomでの削除を再試行" data-delete-name={title} data-delete-description={deleteDescription} data-delete-redirect="/Management/gallery?deleted=1">削除を再試行</button>}
+    </div>
+  </div>
+  <ManagementDelete />
+</StaffLayout>
+<script>import "../../../scripts/galleryManagement";</script>

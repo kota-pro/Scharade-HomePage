@@ -1,0 +1,80 @@
+---
+import { isMemberAccount } from "../../../../lib/accountVisibility.ts";
+import ManagementDelete from '../../../../components/ManagementDelete.astro';
+import StaffLayout from '../../../../layouts/StaffLayout.astro';
+import ActivityRecipients from '../../../../components/ActivityRecipients.astro';
+import MemberToolResults from '../../../../components/MemberToolResults.astro';
+import ActivityShareButton from '../../../../components/ActivityShareButton.astro';
+import {readTool,questionFor,ToolError} from '../../../../lib/memberTools.ts';
+import {readUsers} from '../../../../lib/auth.ts';
+import {toolLabels} from '../../../../lib/memberToolTypes.ts';
+import '../../../../styles/ActivityEventEditor.css';
+import '../../../../styles/MemberTools.css';
+let t;try{t=readTool(Astro.params.id!);}catch(e){if(e instanceof ToolError)return Astro.redirect('/Member/manage/tools');throw e;}
+const dto=questionFor(t,Astro.locals.user),users=readUsers().filter(isMemberAccount);
+const jst=(d:string)=>d?new Date(Date.parse(d)+9*3600000).toISOString().slice(0,16):'';
+const audiences=[['recipients','通知先のメンバー'],['staff','運営以上'],['executive','幹部以上'],['admin','管理者'],...(t.kind==='box'?[['all','承認済みメンバー全員'],['selected','選択したメンバー']]:[])];
+const starts=[['always','常に公開'],['answered','閲覧者が回答したあと'],['closed','受付終了後'],['date','日時を指定']];
+---
+<StaffLayout title={`${toolLabels[t.kind]}の管理`}>
+ <div class="member-tools" data-tool-root data-tool-id={t.id} data-tool-state={JSON.stringify(dto)} data-tool-mode="manage">
+  <a class="member-back tool-back" href="/Member/manage/tools">通知ツールの一覧へ戻る</a>
+  <header class="tool-page-header"><div class="activity-title-row"><h2>{toolLabels[t.kind]}の管理</h2>{t.status==='published'&&<ActivityShareButton kind="tools" id={t.id} title={t.question}/>}</div><p class="tool-lead">質問を準備し、内容を確認してからメンバーに公開します。公開後も編集できます。</p><span class="activity-badge" data-tool-state-badge>{t.status==='draft'?'下書き':dto.open?'受付中':'受付終了'}</span></header>
+  <nav class="admin-toc tool-toc" aria-label="ツール内の移動"><ul class="admin-toc-list"><li><a href="#tool-compose">01 質問・通知先</a></li><li><a href="#tool-controls">02 受付・公開設定</a></li><li><a href="#tool-results">03 回答・結果</a></li></ul></nav>
+  <p data-tool-status role="status" aria-live="polite"></p>
+  <section class="tool-section" id="tool-compose" aria-labelledby="tool-compose-title">
+   <div class="tool-section-heading"><span class="tool-section-number" aria-hidden="true">01</span><h3 id="tool-compose-title">質問・通知先</h3></div>
+   <form data-tool-editor class="activity-form tool-editor">
+    <div class="tool-editor-grid">
+     <div class="tool-editor-main">
+      <label class="tool-question-field">質問内容<textarea name="question" rows="5" maxlength="10000" required placeholder="メンバーに聞きたいことを入力してください">{t.question}</textarea></label>
+      {t.kind!=='box'&&<section class="tool-candidates" aria-labelledby="tool-options-title"><div class="tool-subheading"><h4 id="tool-options-title">{t.kind==='poll'?'選択肢':'日程の候補'}</h4><span class="tool-help" data-option-count></span></div>
+       {t.kind==='schedule'&&<div class="tool-calendar" data-tool-calendar><div class="tool-calendar-nav"><button type="button" data-calendar-prev aria-label="前の月">‹</button><strong data-calendar-month></strong><button type="button" data-calendar-next aria-label="次の月">›</button></div><div class="tool-calendar-grid" data-calendar-days></div><p class="tool-help">日付を選んで候補を追加。同じ日を選ぶと時間帯を分けられます。</p></div>}
+       <div class="tool-options" data-tool-options></div>{t.kind==='poll'&&<button type="button" data-add-option class="tool-add-option">＋ 選択肢を追加</button>}
+       {t.kind==='schedule'&&<p class="tool-help">時間帯・開始時刻・終了時刻は省略できます。時刻は日本時間です。</p>}
+      </section>}
+      {t.kind==='box'&&<aside class="tool-note"><h4>メンバーの回答形式</h4><p>長文、URL、画像、PDF・Officeファイルなどで回答できます。</p><p class="tool-help">文章は20,000文字、添付は1件20 MB・5件まで。</p></aside>}
+     </div>
+     <aside class="tool-editor-side">
+      <div class="tool-recipient-panel"><ActivityRecipients users={users} selected={t.recipientIds}/></div>
+      <details class="tool-settings"><summary><span>回答の設定（省略できます）</span></summary><div class="tool-settings-body">
+       <label>受付終了日時（日本時間）<input type="datetime-local" name="endsAt" value={jst(t.settings.endsAt)}/><small class="tool-help">空欄のままなら、手動で終了するまで受け付けます。</small></label>
+       <div class="tool-check-list">
+        {t.kind!=='schedule'&&<label class="tool-check"><input type="checkbox" name="multiple" checked={t.settings.multiple}/><span>{t.kind==='box'?'複数投稿を許可':'複数選択を許可'}</span></label>}
+        <label class="tool-check"><input type="checkbox" name="anonymous" checked={t.settings.anonymous}/><span>{t.kind==='box'?'匿名投稿':'匿名投票'}</span></label>
+        {t.kind!=='box'&&<label class="tool-check"><input type="checkbox" name="allowOptions" checked={t.settings.allowOptions}/><span>回答者による選択肢の追加を許可</span></label>}
+        <label class="tool-check"><input type="checkbox" name="publicQuestion" checked={t.settings.publicQuestion}/><span>質問・選択肢をログインなしで公開</span></label>
+       </div>
+       <p class="tool-help">回答には通知先メンバーのログインが必要です。匿名でも、許可された担当者は名前を確認できます。送信済みの匿名回答は、設定を解除しても通常の結果では匿名のままです。</p>
+      </div></details>
+     </aside>
+    </div>
+    <div class="tool-save-bar"><p class="tool-help">保存すると確認画面が開きます。</p><div class="activity-confirm-trigger"><button type="submit" class="activity-confirm-button">保存して内容を確認</button></div></div>
+   </form>
+  </section>
+  <section class="tool-section" id="tool-controls" aria-labelledby="tool-controls-title">
+   <div class="tool-section-heading"><span class="tool-section-number" aria-hidden="true">02</span><h3 id="tool-controls-title">受付・公開設定</h3></div>
+   <div class="tool-reception-panel"><div><h4>回答の受付</h4><p data-reception-status></p></div><div class="activity-actions"><button type="button" data-toggle-reception disabled={t.status==='draft'}>{t.closed?'受付を再開':'受付を終了'}</button><a class="admin-button tool-secondary" href={`/Member/tools/${t.id}`}>回答画面を見る</a></div></div>
+   {dto.canManageResults&&<details class="tool-settings" data-publication-settings><summary><span>結果の公開設定</span><small class="tool-summary-meta" data-publication-summary>{t.publication.paused?'公開停止中':'公開設定あり'}</small></summary><div class="tool-settings-body">
+    <p class="tool-help">回答の受付とは別に、結果を見られる人と期間を設定できます。</p>
+    <form data-tool-publication class="activity-form tool-publication-form">
+     <div class="activity-fields tool-publication-fields"><label>公開先<select name="audience">{audiences.map(([value,label])=><option value={value} selected={t.publication.audience===value}>{label}</option>)}</select></label><label>公開開始<select name="start">{starts.map(([value,label])=><option value={value} selected={t.publication.start===value}>{label}</option>)}</select></label></div>
+     {t.kind==='box'&&<><div data-publication-members hidden={t.publication.audience!=='selected'}><ActivityRecipients users={users} selected={t.publication.memberIds} fieldName="memberIds" legend="結果を公開するメンバー"/></div><label>公開する投稿<select name="boxMode">{[['selected','選択した投稿のみ'],['all','すべての投稿（今後の投稿も自動公開）']].map(([value,label])=><option value={value} selected={t.publication.boxMode===value}>{label}</option>)}</select></label><div data-publication-posts hidden={t.publication.boxMode!=='selected'}><p class="tool-help">公開する投稿を選んで保存してください。投稿者が編集した場合は再公開が必要です。</p><div class="tool-publish-responses" data-publish-responses></div></div></>}
+     <div class="activity-fields"><label data-publication-date hidden={t.publication.start!=='date'}>公開開始日時（日本時間）<input type="datetime-local" name="startsAt" value={jst(t.publication.startsAt)}/></label><label>公開終了日時（省略可・日本時間）<input type="datetime-local" name="endsAt" value={jst(t.publication.endsAt)}/></label></div>
+     <label class="tool-check"><input type="checkbox" name="paused" checked={t.publication.paused}/><span>結果の公開を一時停止</span></label>
+     <div class="tool-form-actions"><button type="submit" class="admin-button">結果の公開設定を保存</button></div>
+    </form>
+   </div></details>}
+   {dto.canSetManagement&&<details class="tool-settings"><summary><span>運営の結果・匿名確認権限</span><small class="tool-summary-meta">幹部以上が設定</small></summary><div class="tool-settings-body"><form data-tool-permissions class="activity-form">
+    <label class="tool-check"><input type="checkbox" name="staffResults" checked={t.settings.staffResults}/><span>幹部・管理者が作成したツールの結果を運営にも管理させる</span></label>
+    <label class="tool-check"><input type="checkbox" name="staffIdentity" checked={t.settings.staffIdentity}/><span>結果を管理できる運営に、匿名回答の名前の確認を許可</span></label>
+    <p class="tool-help">運営が作成したツールの結果は運営以上が管理できます。作成時のロールを基準にします。</p><div class="tool-form-actions"><button type="submit" class="admin-button">権限を保存</button></div>
+   </form></div></details>}
+  </section>
+  <MemberToolResults management/>
+  <section class="tool-section tool-delete-section"><button type="button" class="admin-button tool-secondary" disabled data-delete-item={t.id} data-delete-kind="tool" data-delete-label={toolLabels[t.kind]} data-delete-question={t.question} data-delete-revision={t.revision}>{toolLabels[t.kind]}を削除</button><p class="tool-help">下書き・公開中・受付終了のいずれも削除できます。</p></section>
+  <ManagementDelete/>
+  <dialog class="activity-confirm tool-dialog" data-tool-preview aria-labelledby="tool-preview-title"><header class="activity-confirm-header"><h2 id="tool-preview-title">Confirm</h2><button type="button" class="activity-confirm-close" data-close-dialog aria-label="確認画面を閉じる"><span></span><span></span></button></header><h3>保存した内容を確認</h3><div class="tool-preview-content" data-preview-content></div><div class="activity-confirm-footer"><p class="tool-help" data-preview-help>公開すると通知先に通知が届き、回答受付が始まります。</p><button type="button" data-close-dialog>編集に戻る</button><button type="button" class="admin-button" data-publish-tool>公開する</button></div></dialog>
+ </div>
+</StaffLayout>
+<script>import '../../../../scripts/memberTools';</script>

@@ -6,7 +6,7 @@ const json = canonicalLayoutJson;
 export const sameLayoutValue = (a:unknown,b:unknown) => json(a)===json(b);
 const clone = <T>(value:T):T => structuredClone(value);
 const itemId = (collection:string,value:any) => ['placements','books','boardPlacements'].includes(collection)?value.workId:value.id;
-const geometry = (r:RoomLayout) => ({vertices:r.vertices,wallHeights:r.wallHeights,...r.wallIds?{wallIds:r.wallIds}:{},...r.geometryVersion?{geometryVersion:r.geometryVersion}:{}});
+const geometry = (r:RoomLayout) => ({vertices:r.vertices,wallHeights:r.wallHeights,...r.wallIds?{wallIds:r.wallIds}:{},...r.wallNames?{wallNames:r.wallNames}:{},...r.geometryVersion?{geometryVersion:r.geometryVersion}:{}});
 const metadata = (r:RoomLayout) => r.editor??{order:[],hidden:[],locked:[],groups:[]};
 export function diffLayoutRooms(before:RoomLayout[],after:RoomLayout[]):LayoutChange[] {
   const changes:LayoutChange[]=[];
@@ -14,7 +14,7 @@ export function diffLayoutRooms(before:RoomLayout[],after:RoomLayout[]):LayoutCh
   for(const roomId of new Set([...before,...after].map(r=>r.id))) {
     const a=before.find(r=>r.id===roomId),b=after.find(r=>r.id===roomId);
     if(!a||!b){add(roomId,'room',a,b);continue;}
-    add(roomId,'geometry',geometry(a),geometry(b));add(roomId,'name',a.name,b.name);add(roomId,'showExhibitorNames',a.showExhibitorNames??true,b.showExhibitorNames??true);
+    add(roomId,'geometry',geometry(a),geometry(b));add(roomId,'name',a.name,b.name);add(roomId,'showExhibitorNames',a.showExhibitorNames??true,b.showExhibitorNames??true);add(roomId,'showWorkTitles',a.showWorkTitles??true,b.showWorkTitles??true);
     for(const collection of arrays){const aa=a[collection]??[],bb=b[collection]??[];for(const id of new Set([...aa,...bb].map(v=>itemId(collection,v))))add(roomId,collection,aa.find(v=>itemId(collection,v)===id),bb.find(v=>itemId(collection,v)===id),id);}
     const am=metadata(a),bm=metadata(b);add(roomId,'order',am.order,bm.order);
     for(const collection of ['hidden','locked'] as const)for(const id of new Set([...am[collection],...bm[collection]]))add(roomId,collection,am[collection].includes(id),bm[collection].includes(id),id);
@@ -25,7 +25,7 @@ export function diffLayoutRooms(before:RoomLayout[],after:RoomLayout[]):LayoutCh
 export function layoutChangeValue(rooms:RoomLayout[],change:LayoutChange):unknown {
   const r=rooms.find(r=>r.id===change.roomId);if(change.collection==='room')return r??null;if(!r)throw new Error('展示室が削除されています。');
   const c=change.collection;
-  if(c==='geometry')return geometry(r);if(c==='name')return r.name;if(c==='showExhibitorNames')return r.showExhibitorNames??true;
+  if(c==='geometry')return geometry(r);if(c==='name')return r.name;if(c==='showExhibitorNames')return r.showExhibitorNames??true;if(c==='showWorkTitles')return r.showWorkTitles??true;
   if(c==='order')return metadata(r).order;if(c==='hidden'||c==='locked')return metadata(r)[c].includes(change.id!);if(c==='groups')return metadata(r).groups.find(g=>g.id===change.id)??null;
   return (r[c]??[]).find((v:any)=>itemId(c,v)===change.id)??null;
 }
@@ -35,8 +35,8 @@ export function applyLayoutChanges(source:RoomLayout[],changes:LayoutChange[],ch
   for(const c of changes){const value=clone(c.after),index=rooms.findIndex(r=>r.id===c.roomId);
     if(c.collection==='room'){if(index>=0)rooms.splice(index,1);if(value)rooms.splice(index<0?rooms.length:index,0,value as RoomLayout);continue;}
     const r=rooms[index];if(!r)throw new Error('展示室が削除されています。');
-    if(c.collection==='geometry'){const g=value as any;r.vertices=g.vertices;r.wallHeights=g.wallHeights;r.wallIds=g.wallIds;r.geometryVersion=g.geometryVersion;continue;}
-    if(c.collection==='name'){r.name=value as string;continue;}if(c.collection==='showExhibitorNames'){r.showExhibitorNames=value as boolean;continue;}
+    if(c.collection==='geometry'){const g=value as any;r.vertices=g.vertices;r.wallHeights=g.wallHeights;r.wallIds=g.wallIds;r.wallNames=g.wallNames;r.geometryVersion=g.geometryVersion;continue;}
+    if(c.collection==='name'){r.name=value as string;continue;}if(c.collection==='showExhibitorNames'){r.showExhibitorNames=value as boolean;continue;}if(c.collection==='showWorkTitles'){r.showWorkTitles=value as boolean;continue;}
     if(['order','hidden','locked','groups'].includes(c.collection)){const m=r.editor??={order:[],hidden:[],locked:[],groups:[]};if(c.collection==='order')m.order=value as string[];else if(c.collection==='hidden'||c.collection==='locked'){m[c.collection]=m[c.collection].filter(id=>id!==c.id);if(value)m[c.collection].push(c.id!);}else{m.groups=m.groups.filter(g=>g.id!==c.id);if(value)m.groups.push(value as any);}continue;}
     const list=(r as any)[c.collection]??=[];const at=list.findIndex((v:any)=>itemId(c.collection,v)===c.id);if(at>=0)list.splice(at,1);if(value)list.splice(at<0?list.length:at,0,value);
   }

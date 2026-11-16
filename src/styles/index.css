@@ -22,6 +22,14 @@
   position: relative;
 }
 
+.main-visual-logo .home-logo {
+  position: relative;
+  width: min(479px, 100%);
+  aspect-ratio: 479 / 116.33;
+  flex: none;
+  pointer-events: none;
+}
+
 .main-visual-photos {
   width: 60%;
   height: 60%;
@@ -30,14 +38,29 @@
   position: relative;
 }
 
-.main-visual-photos img {
+.main-visual-photos > .photo-open {
   width: 400px;
   height: auto;
-  object-fit: contain;
-  top: 0;
-  left: 0;
   border: 20px solid #fff;
   box-shadow: 5px 5px 4px 0px rgba(0, 0, 0, 0.25);
+}
+
+.home-photo-frame {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+}
+
+.home-photo-frame > img {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
 
 .main-visual-photo1 {
@@ -46,7 +69,6 @@
   top: -50px;
   left: 0;
   z-index: 1;
-  object-fit: cover;
 }
 
 .main-visual-photo2 {
@@ -55,7 +77,6 @@
   top: 50px;
   left: 150px;
   z-index: 2;
-  object-fit: cover;
 }
 
 .main-visual-photo3 {
@@ -64,7 +85,6 @@
   top: 150px;
   left: 0px;
   z-index: 3;
-  object-fit: cover;
 }
 
 .click-popup {
@@ -113,7 +133,7 @@
 }
 
 .slogan-text {
-  font-family: "Zen Kurenaido", sans-serif;
+  font-family: YakuHanRP, "Zen Kurenaido", sans-serif;
   font-size: 24px;
   font-weight: 400;
   font-style: normal;
@@ -129,7 +149,7 @@
 }
 
 .slogan-subtext {
-  font-family: "Zen Kurenaido", sans-serif;
+  font-family: YakuHanRP, "Zen Kurenaido", sans-serif;
   font-size: 20px;
   font-weight: 400;
   font-style: normal;
@@ -212,10 +232,6 @@
 
 .tab > label:hover {
   color: #0db49b;
-}
-
-.tab > input {
-  display: none;
 }
 
 .tab-panel {
@@ -302,7 +318,7 @@
 
 .Activity-tag {
   color: #000;
-  font-family: "Grandiflora One";
+  font-family: YakuHanMP, "Grandiflora One";
   font-size: 15px;
   font-style: normal;
   font-weight: 400;
@@ -333,7 +349,7 @@
 
 .Activity-title {
   color: #000;
-  font-family: "Zen Old Mincho";
+  font-family: YakuHanMP, "Zen Old Mincho";
   font-size: 25px;
   font-style: normal;
   font-weight: 400;
@@ -350,7 +366,7 @@
 
 .Activity-excerpt {
   margin: 0px;
-  font-family: "Zen Kurenaido";
+  font-family: YakuHanRP, "Zen Kurenaido";
   font-size: 15px;
   line-height: 1.7;
   letter-spacing: 0.5px;
@@ -503,6 +519,9 @@
   aspect-ratio: 145/207;
   border-radius: 10px;
   background-color: #707070;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   display: flex;
   flex-direction: column;
   flex-wrap: wrap;
@@ -554,7 +573,7 @@
 
 .activity-card h1 {
   color: #ffffff;
-  font-family: "Zen Old Mincho";
+  font-family: YakuHanMP, "Zen Old Mincho";
   font-size: 40px;
   font-style: normal;
   font-weight: 400;
@@ -572,7 +591,7 @@
 
 .activity-card p {
   color: #ffffff;
-  font-family: "Zen Old Mincho";
+  font-family: YakuHanMP, "Zen Old Mincho";
   font-size: 16px;
   font-style: normal;
   font-weight: 400;
@@ -593,7 +612,7 @@
 
 .activity-card-meta {
   color: #ffffff;
-  font-family: "Zen Old Mincho";
+  font-family: YakuHanMP, "Zen Old Mincho";
   font-size: 14px;
   letter-spacing: 1.5px;
   margin: 12px 0 8px;
@@ -622,54 +641,6 @@
   transition: 0.3s ease-in-out;
 }
 
-#card-1 {
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-#card-2 {
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-#card-3 {
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-#card-4 {
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-#card-5 {
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-#card-6 {
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-#card-7 {
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-#card-8 {
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
 .advertising {
   width: 100%;
   height: 100%;
@@ -682,7 +653,7 @@
 
 .advertising-title {
   color: #000;
-  font-family: "Zen Kurenaido";
+  font-family: YakuHanRP, "Zen Kurenaido";
   font-size: 36px;
   font-style: normal;
   font-weight: 400;
@@ -695,6 +666,19 @@
 .photo-carousel {
   width: 100%;
   position: relative;
+}
+
+.photo-carousel-contents,
+.upper-film-hole,
+.lower-film-hole {
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.photo-carousel[data-dragging],
+.photo-carousel[data-dragging] * {
+  cursor: grabbing !important;
 }
 
 .click-popup-3 {
@@ -737,6 +721,7 @@
 }
 
 .upper-film-hole img {
+  flex: 0 0 auto;
   width: 100%;
   min-width: 1440px;
   height: auto;
@@ -769,6 +754,7 @@
 }
 
 .lower-film-hole img {
+  flex: 0 0 auto;
   width: 100%;
   min-width: 1440px;
   height: auto;
@@ -812,15 +798,13 @@
 .photo-carousel-list {
   width: 240px;
   height: 160px;
+  flex: none;
   position: relative;
   list-style: none;
 }
 
-.photo-carousel-list img {
-  width: 100%;
+.photo-carousel-list .home-photo-frame {
   height: 100%;
-  object-fit: cover;
-  display: block;
 }
 
 .photo-carousel-list a::before {
@@ -882,10 +866,8 @@
     width: -webkit-fill-available;
   }
 
-  .main-visual-logo img {
-    height: 11vw;
-    aspect-ratio: 220/54.44;
-    object-fit: contain;
+  .main-visual-logo .home-logo {
+    width: min(45.3vw, 100%);
   }
 
   .main-visual-photos {
@@ -893,9 +875,8 @@
     display: flex;
   }
 
-  .main-visual-photos img {
+  .main-visual-photos > .photo-open {
     width: 300px;
-    object-fit: scale-down;
     border: 10px solid #fff;
   }
 
@@ -969,15 +950,11 @@
     align-items: flex-end;
   }
 
-  .main-visual-logo img {
-    width: 55vw !important;
-    height: 13.6vw;
-    aspect-ratio: 220/54.44;
+  .main-visual-logo .home-logo {
+    width: 55vw;
     position: absolute;
     right: 20px;
     top: 370px;
-    flex-shrink: 0;
-    flex-basis: auto;
   }
 
   .main-visual-photos {
@@ -986,9 +963,8 @@
     display: flex;
   }
 
-  .main-visual-photos img {
+  .main-visual-photos > .photo-open {
     width: 250px;
-    object-fit: scale-down;
     border: 10px solid #fff;
   }
 
@@ -1289,7 +1265,7 @@
 
   .how-to-join h1 {
     color: #cfcfcf;
-    font-family: Didot;
+    font-family: YakuHanMP, Didot;
     font-size: 64px;
     font-style: normal;
     font-weight: 400;
@@ -1307,7 +1283,7 @@
 
   .how-to-join h2 {
     color: #000;
-    font-family: "Zen Old Mincho";
+    font-family: YakuHanMP, "Zen Old Mincho";
     font-size: 14px;
     font-style: normal;
     font-weight: 400;
@@ -1318,7 +1294,7 @@
 
   .how-to-join p {
     color: #000;
-    font-family: "Zen Kurenaido";
+    font-family: YakuHanRP, "Zen Kurenaido";
     font-size: 10px;
     font-style: normal;
     font-weight: 400;

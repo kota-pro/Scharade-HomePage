@@ -1,6 +1,8 @@
 ---
 import ActivityRecipients from "./ActivityRecipients.astro";
 import ActivityHeaderImage from "./ActivityHeaderImage.astro";
+import PortfolioIntroductionEditor from "./PortfolioIntroductionEditor.astro";
+import { activityEditorHtml } from "../lib/activityRichText";
 import "../styles/ActivityEventEditor.css";
 import { localDateTime, eventCategoryLabels, type ActivityEvent } from "../lib/activityTypes";
 interface Props {
@@ -10,6 +12,8 @@ interface Props {
 }
 const { event, users, staffUsers } = Astro.props;
 const published = event?.status === "published";
+const released = !!event && event.status !== "draft";
+const canNotify = published && Date.parse(event.endsAt) > Date.now();
 const previewFields = [
   ["category", "種類"],
   ["title", "企画名"],
@@ -31,8 +35,8 @@ const previewFields = [
   data-event-id={event?.id}
   data-revision={event?.revision}
   data-redirect="/Member/manage/events/{eventId}"
-  data-published={String(published)}
-  data-recipient-names={published
+  data-released={String(released)}
+  data-recipient-names={released
     ? users
         .filter((u) => event!.recipientIds.includes(u.id))
         .map((u) => u.name)
@@ -69,11 +73,7 @@ const previewFields = [
   <p class="activity-field-hint">
     企画内容・集合場所・行程などに入力したURL（https://…）は、詳細画面でリンクとして開けます。
   </p>
-  <label
-    >企画内容<textarea name="description" required maxlength="10000" rows="5"
-      >{event?.description}</textarea
-    ></label
-  >
+  <PortfolioIntroductionEditor name="description" label="企画内容" html={activityEditorHtml(event?.description, event?.descriptionHtml)} required />
   <div class="activity-fields">
     <label
       >開始日時（日本時間）<input
@@ -121,11 +121,7 @@ const previewFields = [
       maxlength="1000"
     /></label
   >
-  <label
-    >行程<textarea name="itinerary" maxlength="10000" rows="5"
-      >{event?.itinerary}</textarea
-    ></label
-  >
+  <PortfolioIntroductionEditor name="itinerary" label="行程" html={activityEditorHtml(event?.itinerary, event?.itineraryHtml)} />
   <label
     >徴収費<input
       name="fee"
@@ -142,18 +138,18 @@ const previewFields = [
     /></label
   >
   {
-    event?.status === "published" ? (
+    released ? (
       <p>
         通知先：{event.recipientIds.length}
-        人（公開後の参加追加は参加者一覧で操作します）
+        人{published && "（公開後の参加追加は参加者一覧で操作します）"}
       </p>
     ) : (
       <ActivityRecipients users={users} selected={event?.recipientIds} />
     )
   }
   <div class="activity-confirm-trigger">
-    <button class="activity-confirm-button" type="submit"
-      >{published ? "変更内容を確認" : "下書きを保存して確認"}</button
+    <button class:list={["activity-confirm-button", released ? "admin-button admin-button-outline" : "activity-primary-action"]} type="submit"
+      >{released ? "変更内容を確認" : "下書きを保存して確認"}</button
     >
   </div>
   <p data-status role="status" aria-live="polite"></p>
@@ -163,7 +159,7 @@ const previewFields = [
   class="activity-confirm"
   aria-labelledby="activity-confirm-title"
   data-event-confirm
-  data-auto-preview={!published && Astro.url.searchParams.get("preview") === "1"
+  data-auto-preview={!released && Astro.url.searchParams.get("preview") === "1"
     ? "true"
     : undefined}
 >
@@ -179,8 +175,8 @@ const previewFields = [
   </header>
   <p class="activity-confirm-note">
     {
-      published
-        ? "変更内容をご確認ください。公開するとメンバーに変更を通知します。"
+      released
+        ? "変更内容をご確認ください。保存すると、企画の詳細ページに反映されます。"
         : "下書きを保存しました。内容をご確認のうえ、公開してください。"
     } 内容を押すと編集に戻れます。
   </p>
@@ -194,14 +190,14 @@ const previewFields = [
               <dd
                 data-preview-value={key}
                 data-edit-field={
-                  published && key === "recipientIds" ? undefined : key
+                  released && key === "recipientIds" ? undefined : key
                 }
                 role={
-                  published && key === "recipientIds" ? undefined : "button"
+                  released && key === "recipientIds" ? undefined : "button"
                 }
-                tabindex={published && key === "recipientIds" ? undefined : "0"}
+                tabindex={released && key === "recipientIds" ? undefined : "0"}
                 aria-label={
-                  published && key === "recipientIds"
+                  released && key === "recipientIds"
                     ? undefined
                     : `${label}を編集`
                 }
@@ -232,7 +228,7 @@ const previewFields = [
             <>
               <h3>{label}</h3>
               <div
-                class="activity-confirm-message"
+                class="activity-confirm-message portfolio-introduction-content"
                 data-preview-value={key}
                 data-edit-field={key}
                 role="button"
@@ -246,15 +242,19 @@ const previewFields = [
     </div>
   </div>
   {
-    published ? (
+    released ? (
       <div class="activity-confirm-footer">
         <>
+          {canNotify && <label class="activity-check">
+            <input type="checkbox" data-confirm-notify checked />
+            メンバーに変更を通知する
+          </label>}
           <button
-            class="activity-confirm-button"
+            class="activity-confirm-button activity-primary-action"
             type="button"
             data-confirm-update
           >
-            変更を公開して通知
+            {canNotify ? "変更を公開して通知" : "変更を保存"}
           </button>
           <p data-confirm-status role="status" aria-live="polite" />
         </>
@@ -269,7 +269,7 @@ const previewFields = [
           data-redirect={`/Member/manage/events/${event.id}`}
         >
           <>
-            <button class="activity-confirm-button" type="submit">
+            <button class="activity-confirm-button activity-primary-action" type="submit">
               企画を公開して通知
             </button>
             <p data-status role="status" aria-live="polite" />

@@ -32,7 +32,7 @@ if (root) {
   emailForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (busy) return;
-    disabled(true);
+    disabled(true); status.dataset.error = "false";
     status.textContent = "確認メールを送信しています…";
     try {
       const data = await send({
@@ -45,7 +45,7 @@ if (root) {
       status.textContent = "確認コードを送信しました。有効期限は10分です。";
       confirmForm!.querySelector<HTMLInputElement>("[name=code]")?.focus();
     } catch (error) {
-      status.textContent = (error as Error).message;
+      status.textContent = (error as Error).message; status.dataset.error = "true";
     } finally {
       disabled(false);
     }
@@ -53,7 +53,7 @@ if (root) {
   confirmForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (busy) return;
-    disabled(true);
+    disabled(true); status.dataset.error = "false";
     status.textContent = "削除申請を送信しています…";
     try {
       const data = await send({
@@ -65,7 +65,7 @@ if (root) {
       confirmForm.hidden = true;
       status.textContent = `削除申請を受け付けました。${new Date(data.request.dueAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}（日本時間）までに運営が処理し、完了をメールでお知らせします。`;
     } catch (error) {
-      status.textContent = (error as Error).message;
+      status.textContent = (error as Error).message; status.dataset.error = "true";
     } finally {
       disabled(false);
     }

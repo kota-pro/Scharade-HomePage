@@ -1,0 +1,24 @@
+---
+import animated from "../assets/brand/loading-camera.svg?url";
+import still from "../assets/brand/loading-camera-still.svg?url";
+---
+
+<picture class="loading-symbol" aria-hidden="true">
+  <source media="(prefers-reduced-motion: reduce)" srcset={still} />
+  <img src={animated} alt="" width="146" height="99" />
+</picture>
+
+<style>
+  .loading-symbol {
+    display: block;
+    flex: none;
+    width: var(--loading-indicator-width, 146px);
+    max-width: 100%;
+  }
+
+  img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+</style>

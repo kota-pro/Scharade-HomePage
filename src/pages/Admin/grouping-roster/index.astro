@@ -1,8 +1,9 @@
 ---
+import { isMemberAccount } from "../../../lib/accountVisibility.ts";
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import "../../../styles/Member.css";
 import "../../../styles/Activities.css";
-import { readUsers, isAdmin } from "../../../lib/auth";
+import { readUsers, isExecutive } from "../../../lib/auth";
 import GroupPersonPicker from "../../../components/GroupPersonPicker.astro";
 import { displayName } from "../../../lib/groupPresentation";
 import { readActivities } from "../../../lib/activities";
@@ -16,43 +17,223 @@ import {
   rosterSourceUrl,
   rosterSuggestions,
 } from "../../../lib/activityRoster";
-if (!isAdmin(Astro.locals.user)) return new Response("管理者のみ閲覧できます。", { status: 403 });
+import { rosterSourceLinks } from "../../../lib/termRoster";
+import { readClubForms } from "../../../lib/clubForms";
+import { clubSeasonLabels } from "../../../lib/clubFormsTypes";
+if (!isExecutive(Astro.locals.user))
+  return new Response("幹部以上のみ閲覧できます。", { status: 403 });
 const data = readActivities(),
   roster = data.roster;
-const admin = isAdmin(Astro.locals.user);
-const users = readUsers().filter((u) => u.approved);
+const admin = isExecutive(Astro.locals.user);
+const users = readUsers().filter(isMemberAccount);
 const suggestions = admin ? rosterSuggestions(data, users) : {};
 const records = roster?.records.filter((r) => r.active) ?? [];
 const jobs = data.rosterPortfolioUpdates || [];
+const exports = data.rosterExports ?? [];
+const generated = readClubForms().forms.filter(
+  (form) =>
+    form.delivery === "done" &&
+    form.remote &&
+    !form.deleteRequestedAt &&
+    !form.deletedAt,
+);
+const gradeJobs = jobs.filter(
+  (job, index) =>
+    job.targetGrade &&
+    !jobs.slice(index + 1).some((next) => next.portfolioId === job.portfolioId),
+);
 const label = (r: (typeof records)[number]) =>
   `${displayName(r)} · ${r.university || "大学未記入"} · ${r.gender ? genderLabels[r.gender] : "性別要確認"} · ${r.grade ? gradeLabels[r.grade] : "学年要確認"}`;
 ---
 
-<AdminLayout pageClass="admin-roster-page" title="班分け用名簿">
-  <h2>班分け用名簿</h2>
+<AdminLayout pageClass="admin-roster-page" title="名簿">
+  <h2>名簿</h2>
   <p>
-    性別・学年はGoogleスプレッドシートの名簿から取得します。名簿の更新とアカウントの連携は管理者のみ行えます。閲覧も管理者に限定しています。
+    性別・学年はGoogleスプレッドシートの名簿から取得します。名簿の更新とアカウントの連携は幹部以上のみ行えます。閲覧も幹部以上に限定しています。
   </p>
   {
     admin && (
       <section class="admin-section">
-        <h3>Google名簿</h3>
+        <h3>春秋の入会・継続名簿</h3>
         <p>
-          <a
-            href={rosterSourceUrl(roster)}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {roster?.title || activityRosterSource.title}
-          </a>
+          同じ年・春秋の入会回答と継続回答を統合します。退会・学年変更を確認してから適用します。募集期間中に新しい参照先を入力しても、確認・適用するまで現在の名簿は変わりません。
         </p>
         <p>
-          「継続しますか？」が「はい」の回答を班分けに使用します。性別・学年の訂正は元のシートで行い、その後に更新してください。
+          <a href="/Admin/club-forms">
+            入会・継続・新歓フォームを作成・管理する
+          </a>
+        </p>
+        <form
+          class="activity-form"
+          data-activity-action="roster.preview"
+          data-revision={roster?.revision ?? 0}
+          data-redirect="/Admin/grouping-roster/preview?id={previewId}"
+        >
+          <input type="hidden" name="mode" value="term" />
+          <label>
+            対象の西暦
+            <input
+              type="number"
+              name="year"
+              min="2000"
+              max="9999"
+              required
+              value={
+                roster?.term?.year ??
+                Number(
+                  new Intl.DateTimeFormat("en", {
+                    timeZone: "Asia/Tokyo",
+                    year: "numeric",
+                  }).format(new Date()),
+                )
+              }
+            />
+          </label>
+          <label>
+            春・秋
+            <select name="season" required>
+              {Object.entries(clubSeasonLabels).map(([key, label]) => (
+                <option
+                  value={key}
+                  selected={key === (roster?.term?.season ?? "spring")}
+                >
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            入会フォームの編集用URL・回答シートURL
+            <input
+              type="url"
+              name="admissionUrl"
+              list="admission-sources"
+              maxlength="1000"
+              required
+              value={roster?.term ? rosterSourceLinks(roster)[0].url : ""}
+            />
+          </label>
+          <datalist id="admission-sources">
+            {generated
+              .filter((form) => form.kind === "admission")
+              .map((form) => (
+                <option value={form.remote!.editUrl}>
+                  {form.year}年{clubSeasonLabels[form.season]} 入会
+                </option>
+              ))}
+          </datalist>
+          <label>
+            継続フォームの編集用URL・回答シートURL
+            <input
+              type="url"
+              name="continuationUrl"
+              list="continuation-sources"
+              maxlength="1000"
+              required
+              value={roster?.term ? rosterSourceLinks(roster)[1].url : ""}
+            />
+          </label>
+          <datalist id="continuation-sources">
+            {generated
+              .filter((form) => form.kind === "continuation")
+              .map((form) => (
+                <option value={form.remote!.editUrl}>
+                  {form.year}年{clubSeasonLabels[form.season]} 継続
+                </option>
+              ))}
+          </datalist>
+          <small>
+            回答シートの場合はgid付きのURLを指定してください。継続フォームの最新回答を優先し、「いいえ」は退会対象になります。
+          </small>
+          <button type="submit" class="member-submit">
+            入会・継続の変更内容を確認
+          </button>
+          <p data-status role="status" aria-live="polite" />
+        </form>
+        {roster?.mergedSpreadsheetUrl && (
+          <p>
+            <a
+              href={roster.mergedSpreadsheetUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              確定した統合名簿をGoogleで開く
+            </a>
+          </p>
+        )}
+        {exports.length > 0 && (
+          <details>
+            <summary>統合名簿のGoogle保存状況</summary>
+            <ul class="activity-list">
+              {exports
+                .filter((job) => job.status !== "cancelled")
+                .slice(-10)
+                .reverse()
+                .map((job) => (
+                  <li>
+                    <strong>
+                      {job.term.year}年 {clubSeasonLabels[job.term.season]}
+                    </strong>
+                    <span>
+                      {job.status === "done"
+                        ? "保存済み"
+                        : job.status === "error"
+                          ? `再試行が必要です：${job.error}`
+                          : `Googleへの反映待ち${job.error ? `：${job.error}` : ""}`}
+                    </span>
+                    {job.spreadsheetUrl && (
+                      <a
+                        href={job.spreadsheetUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        統合名簿
+                      </a>
+                    )}
+                  </li>
+                ))}
+            </ul>
+            {exports.some((job) => job.status === "error") && (
+              <form class="activity-form" data-activity-action="roster.retry">
+                <button type="submit">統合名簿の保存を再試行</button>
+                <p data-status role="status" aria-live="polite" />
+              </form>
+            )}
+          </details>
+        )}
+      </section>
+    )
+  }
+  {
+    admin && (
+      <section class="admin-section">
+        <h3>Google名簿</h3>
+        <p>{roster?.title || activityRosterSource.title}</p>
+        <ul>
+          {rosterSourceLinks(roster ?? activityRosterSource).map((source) => (
+            <li>
+              <a href={source.url} target="_blank" rel="noopener noreferrer">
+                {roster?.term
+                  ? source.label
+                  : roster?.title || activityRosterSource.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+        <p>
+          {roster?.term
+            ? "入会・継続の両回答を取得し、退会・学年変更を確認してから反映します。名簿上の学年が変わった会員はPortfolioも更新します。"
+            : "旧形式の単一シートを使用中です。性別・学年の訂正は元のシートで行い、その後に更新してください。旧形式の通常更新ではPortfolioの学年は変更しません。"}
         </p>
         <form
           class="activity-form"
           data-activity-action="roster.sync"
           data-revision={roster?.revision ?? 0}
+          data-redirect={
+            roster?.term
+              ? "/Admin/grouping-roster/preview?id={previewId}"
+              : undefined
+          }
         >
           <button class="member-submit" type="submit">
             Google名簿から更新
@@ -60,9 +241,9 @@ const label = (r: (typeof records)[number]) =>
           <p data-status role="status" aria-live="polite" />
         </form>
         <details>
-          <summary>名簿の参照先を変更・退会対象を確認</summary>
+          <summary>旧形式の名簿の参照先を変更・退会対象を確認</summary>
           <p>
-            新しい名簿に氏名がない人は退会扱いとし、旧名簿を残して班分けから除外します。連携済みのPortfolioの学年はOB/OGに更新します。確定前に対象者を確認できます。
+            参照先のURLを変更し、確認画面で適用すると、継続メンバーのPortfolioの学年を新しい名簿の学年に再設定します。新しい名簿に氏名がない人は退会扱いとし、旧名簿を残して班分けから除外します。連携済みのPortfolioの学年はOB/OGに更新します。確定前に対象者を確認できます。
           </p>
           <p>
             連携用Googleアカウントから閲覧できるスプレッドシートを指定してください。氏名・性別・学年・継続しますか・タイムスタンプ（または回答日時）の列が必要です。
@@ -95,56 +276,7 @@ const label = (r: (typeof records)[number]) =>
       </section>
     )
   }
-  {
-    admin && (roster?.retiredRecords?.length || jobs.length) ? (
-      <section class="admin-section">
-        <h3>退会・Portfolioの更新状況</h3>
-        <p>
-          退会扱いのメンバーは班分けの候補から除外しています。Portfolioは順次更新されます。過去に公開した班分けは履歴として残ります。
-        </p>
-        <ul class="activity-list">
-          {(roster?.retiredRecords || []).map((r) => {
-            const updates = jobs.filter(
-              (j) =>
-                j.rosterKey === r.key &&
-                j.createdAt === r.withdrawnAt &&
-                j.status !== "cancelled",
-            );
-            return (
-              <li>
-                <strong>
-                  {r.name}
-                  {r.lineName ? `（${r.lineName}）` : ""}
-                </strong>
-                <span>
-                  退会 ·{" "}
-                  {updates.length
-                    ? updates
-                        .map((j) =>
-                          j.status === "done"
-                            ? "Portfolio：OB/OGに更新済み"
-                            : j.status === "pending"
-                              ? "Portfolio：更新待ち"
-                              : `Portfolio：${j.message || "再試行が必要です"}`,
-                        )
-                        .join(" / ")
-                    : "連携済みのPortfolioなし"}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-        {jobs.some((j) => j.status === "error") && (
-          <form class="activity-form" data-activity-action="roster.retry">
-            <button type="submit" class="member-submit">
-              Portfolioの更新を再試行
-            </button>
-            <p data-status role="status" aria-live="polite" />
-          </form>
-        )}
-      </section>
-    ) : null
-  }
+
   <p>
     {
       roster
@@ -165,10 +297,24 @@ const label = (r: (typeof records)[number]) =>
           氏名が一致する人物は候補として選択されています。本人であることを確認してから保存してください。同姓同名・未回答・表示名が異なる場合は自動で連携しません。
         </p>
         <p>
-          性別・学年は選んだ名簿の回答を使います。連携後は「Google名簿から更新」で変更を一括反映できます。
+          性別・学年は選んだ名簿の回答を使います。アカウントの初回連携ではPortfolioの学年も設定します。
+          {roster.term
+            ? "入会・継続の回答で学年が変わった場合は、変更内容を確認して適用するとPortfolioも更新します。名簿の学年に変更がなければ、Portfolioで編集した学年を保持します。"
+            : "その後の学年の再設定は、参照先のURLを変更し、確認画面で適用した時だけ行います。"}
+          Portfolioの編集画面を開いても、保存済みの学年は変更されません。
         </p>
-        <label>連携するアカウントを名前で検索<input type="search" data-roster-account-search placeholder="サイトのアカウント名で検索" autocomplete="off" /></label>
-        <p data-roster-account-count aria-live="polite">{users.length}人のアカウントを表示</p>
+        <label>
+          連携するアカウントを名前で検索
+          <input
+            type="search"
+            data-roster-account-search
+            placeholder="サイトのアカウント名で検索"
+            autocomplete="off"
+          />
+        </label>
+        <p data-roster-account-count aria-live="polite">
+          {users.length}人のアカウントを表示
+        </p>
         <form
           class="activity-form"
           data-activity-action="roster.link"
@@ -179,7 +325,10 @@ const label = (r: (typeof records)[number]) =>
               const key = roster.bindings[u.id] || suggestions[u.id] || "";
               const valid = records.some((r) => r.key === key);
               return (
-                <div class="activity-roster-row" data-roster-account-name={u.name}>
+                <div
+                  class="activity-roster-row"
+                  data-roster-account-name={u.name}
+                >
                   <span>{u.name}</span>
                   <small>
                     {roster.bindings[u.id]
@@ -195,7 +344,12 @@ const label = (r: (typeof records)[number]) =>
                         : "未連携"}
                   </small>
                   <GroupPersonPicker
-                    people={[...(!valid && roster.bindings[u.id] ? [{ id: key, name: "以前の連携を保持" }] : []), ...records.map(r => ({ id: r.key, name: label(r) }))]}
+                    people={[
+                      ...(!valid && roster.bindings[u.id]
+                        ? [{ id: key, name: "以前の連携を保持" }]
+                        : []),
+                      ...records.map((r) => ({ id: r.key, name: label(r) })),
+                    ]}
                     label={`${u.name}の名簿上の人物`}
                     current={key}
                     required={false}
@@ -233,6 +387,78 @@ const label = (r: (typeof records)[number]) =>
         <p>更新が必要な場合は管理者へ連絡してください。</p>
       </section>
     )
+  }
+  {
+    admin && (roster?.retiredRecords?.length || jobs.length) ? (
+      <details class="admin-section roster-update-status">
+        <summary>退会・Portfolioの更新状況</summary>
+        <p>
+          退会扱いのメンバーは班分けの候補から除外しています。Portfolioは順次更新されます。過去に公開した班分けは履歴として残ります。
+        </p>
+        <ul class="activity-list">
+          {(roster?.retiredRecords || []).map((r) => {
+            const updates = jobs.filter(
+              (j) =>
+                j.rosterKey === r.key &&
+                j.createdAt === r.withdrawnAt &&
+                j.status !== "cancelled",
+            );
+            return (
+              <li>
+                <strong>
+                  {r.name}
+                  {r.lineName ? `（${r.lineName}）` : ""}
+                </strong>
+                <span
+                  data-error={
+                    updates.some((j) => j.status === "error")
+                      ? "true"
+                      : undefined
+                  }
+                >
+                  退会 ·{" "}
+                  {updates.length
+                    ? updates
+                        .map((j) =>
+                          j.status === "done"
+                            ? "Portfolio：OB/OGに更新済み"
+                            : j.status === "pending"
+                              ? "Portfolio：更新待ち"
+                              : `Portfolio：${j.message || "再試行が必要です"}`,
+                        )
+                        .join(" / ")
+                    : "連携済みのPortfolioなし"}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        {gradeJobs.length > 0 && (
+          <ul class="activity-list">
+            {gradeJobs.map((job) => (
+              <li>
+                <strong>{job.name}</strong>
+                <span data-error={job.status === "error" ? "true" : undefined}>
+                  {job.status === "done"
+                    ? `Portfolio：${job.message || `${job.targetGrade}に更新済み`}`
+                    : job.status === "pending"
+                      ? `Portfolio：${job.targetGrade}に更新待ち`
+                      : `Portfolio：${job.message || "新しい更新に切り替えました"}`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {jobs.some((j) => j.status === "error") && (
+          <form class="activity-form" data-activity-action="roster.retry">
+            <button type="submit" class="member-submit">
+              Portfolioの更新を再試行
+            </button>
+            <p data-status role="status" aria-live="polite" />
+          </form>
+        )}
+      </details>
+    ) : null
   }
   <a class="member-back" href="/Admin">運営画面へ戻る</a>
 </AdminLayout>

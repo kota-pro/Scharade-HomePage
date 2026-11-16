@@ -18,7 +18,8 @@ export function sanitizeArticleHtml(value: string) {
   return sanitizeHtml(value, {
     allowedTags: ["p", "br", "hr", "h1", "h2", "h3", "h4", "h5", "h6", "div", "span", "strong", "b", "em", "i", "u", "s", "del", "sub", "sup", "blockquote", "pre", "code", "ul", "ol", "li", "a", "img", "figure", "figcaption", "table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption", "colgroup", "col"],
     allowedAttributes: {
-      "*": ["class", "style"], a: ["href", "title", "target", "rel"],
+      "*": ["class", "style"], a: ["href", "title", "target", "rel", "data-embed-type"],
+      div: ["data-filename"],
       img: ["src", "alt", "title", "width", "height", "loading", "decoding"],
       th: ["colspan", "rowspan", "scope"], td: ["colspan", "rowspan"], ol: ["start"], col: ["span"],
     },
@@ -28,7 +29,7 @@ export function sanitizeArticleHtml(value: string) {
       color: [/^#[a-f0-9]{3,8}$/i, /^(?:black|white|red|blue|green|gray|grey)$/i],
       "background-color": [/^#[a-f0-9]{3,8}$/i],
       "font-weight": [/^(?:normal|bold|[1-9]00)$/],
-      "font-size": [/^(?:[1-9]|[1-9][0-9])(?:px|pt)$/],
+      "font-size": [/^(?:[1-9][0-9]{0,2})(?:px|pt|%)$/],
       "text-decoration": [/^(?:none|underline|line-through)$/],
       width: [/^(?:[1-9][0-9]{0,3}px|(?:[1-9][0-9]?|100)%)$/],
     } },

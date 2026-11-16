@@ -1,0 +1,398 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import ClubFormFields from "../../components/ClubFormFields.astro";
+import { isExecutive } from "../../lib/auth";
+import { clubFormsView } from "../../lib/clubForms";
+import {
+  clubFormLabels,
+  clubSeasonLabels,
+  welcomeFeeOnDayMessage,
+} from "../../lib/clubFormsTypes";
+import { activityDate, localDateTime } from "../../lib/activityTypes";
+import "../../styles/ClubForms.css";
+if (!isExecutive(Astro.locals.user))
+  return new Response("幹部以上の権限が必要です。", { status: 403 });
+let data: ReturnType<typeof clubFormsView> | null = null;
+try {
+  data = clubFormsView(Astro.locals.user!.id);
+} catch {
+  Astro.response.status = 503;
+}
+const year = Astro.url.searchParams.get("year") ?? "";
+const season = Astro.url.searchParams.get("season") ?? "";
+const kind = Astro.url.searchParams.get("kind") ?? "";
+const forms =
+  data?.forms.filter(
+    (form) =>
+      (!year || String(form.year) === year) &&
+      (!season || form.season === season) &&
+      (!kind || form.kind === kind),
+  ) ?? [];
+const cards = forms.map((form) => ({
+  form,
+  busy: form.delivery !== "done",
+  expired: form.state === "open" && Date.parse(form.deadline) <= Date.now(),
+  state:
+    form.state === "open" && Date.parse(form.deadline) <= Date.now()
+      ? "closed"
+      : form.state,
+  job: data!.operations.find((job) => job.formId === form.id),
+}));
+const fingerprint = data
+  ? JSON.stringify(
+      data.forms.map((form) => [
+        form.id,
+        form.revision,
+        form.state,
+        form.delivery,
+        form.statusError,
+        form.remote?.formId,
+        form.remote?.uploadReady,
+        form.remote?.responseCount,
+        form.remote?.closedReason,
+        form.deleteRequestedAt,
+        form.deleteBlockedReason,
+        data!.operations.find((job) => job.formId === form.id)?.error,
+      ]),
+    )
+  : "";
+---
+
+<AdminLayout title="入会・継続・新歓フォーム" pageClass="admin-club-forms-page">
+  <div class="admin-intro">
+    <h2>入会・継続・新歓フォーム</h2><p>
+      春秋のフォームを作成し、回答リンクと受付期限を管理します。新しいフォームは下書きで作成されます。
+    </p>
+  </div>
+  {
+    !data ? (
+      <p role="alert">
+        フォームの保存データを読み込めません。時間をおいて再読み込みしてください。
+      </p>
+    ) : (
+      <div data-club-root data-fingerprint={fingerprint}>
+        {!data.configured && (
+          <p class="club-warning" role="status">
+            Googleフォーム連携は未設定です。管理者が専用GASと保存先を設定すると、作成と受付管理を利用できます。
+          </p>
+        )}
+        {data.configured && (
+          <button type="button" data-club-health>
+            Google連携を確認
+          </button>
+        )}
+        <p data-club-global-status role="status" aria-live="polite" />
+        <p data-club-updated hidden>
+          別の画面またはGoogleで状態が更新されています。入力内容を確認してから
+          <button type="button" data-club-reload>
+            一覧を更新
+          </button>
+          してください。
+        </p>
+        <section class="admin-section">
+          <h3>新しいフォームを作成</h3>
+          <div class="club-kind-buttons">
+            {Object.entries(clubFormLabels).map(([kind, label]) => (
+              <button
+                type="button"
+                data-create-club-kind={kind}
+                disabled={!data!.configured}
+              >
+                {label}フォームを作成
+              </button>
+            ))}
+          </div>
+          <form data-club-action="create" class="club-form">
+            <ClubFormFields disabled={!data.configured} />
+            <p>
+              質問・画像アップロードは参照フォームの構成を引き継ぎます。回答スプレッドシートも同じ保存先に新しく作成します。
+              画像アップロードがある場合は、生成後にGoogleの編集画面で保存先の「復元」を1回行います。
+            </p>
+            <button
+              class="member-submit"
+              type="submit"
+              disabled={!data.configured}
+            >
+              下書きフォームを生成
+            </button>
+            <p data-status role="status" aria-live="polite" />
+          </form>
+        </section>
+        <section class="admin-section">
+          <h3>作成済みフォーム</h3>
+          <form method="get" class="club-filter">
+            <label>
+              西暦
+              <input
+                type="number"
+                name="year"
+                min="2000"
+                max="9999"
+                value={year}
+                placeholder="すべて"
+              />
+            </label>
+            <label>
+              春・秋
+              <select name="season">
+                <option value="">すべて</option>
+                {Object.entries(clubSeasonLabels).map(([key, label]) => (
+                  <option value={key} selected={key === season}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              種類
+              <select name="kind">
+                <option value="">すべて</option>
+                {Object.entries(clubFormLabels).map(([key, label]) => (
+                  <option value={key} selected={key === kind}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="submit">絞り込む</button>
+          </form>
+          {forms.length ? (
+            <ul class="club-form-list">
+              {cards.map(({ form, busy, expired, state, job }) => (
+                <li
+                  data-club-card
+                  data-club-id={form.id}
+                  data-revision={form.revision}
+                >
+                  <div class="club-form-heading">
+                    <h4>
+                      {form.year}年 {clubSeasonLabels[form.season]}{" "}
+                      {clubFormLabels[form.kind]}
+                      {form.eventName ? `：${form.eventName}` : ""}
+                    </h4>
+                    <span class="club-state">
+                      {form.deleteRequestedAt
+                        ? form.delivery === "error"
+                          ? "削除エラー"
+                          : "削除中"
+                        : busy
+                          ? form.delivery === "error"
+                            ? "連携エラー"
+                            : "連携中"
+                          : state === "draft"
+                            ? form.remote?.uploadReady === false
+                              ? "画像保存先の準備待ち"
+                              : "下書き"
+                            : state === "open"
+                              ? "受付中"
+                              : form.remote?.closedReason === "capacity"
+                                ? "定員到達で受付終了"
+                                : "受付終了"}
+                    </span>
+                  </div>
+                  <p>
+                    提出期限：{activityDate(form.deadline)} ·{" "}
+                    {form.kind.startsWith("welcome_") && form.feeOnDay
+                      ? welcomeFeeOnDayMessage
+                      : form.fee === 0
+                        ? "無料"
+                        : `${form.fee.toLocaleString("ja-JP")}円`}
+                  </p>
+                  {form.remote && (
+                    <p hidden={form.kind === "continuation"}>
+                      定員：
+                      {form.capacity
+                        ? `${form.capacity.toLocaleString("ja-JP")}人`
+                        : "制限なし"}
+                      {form.capacity &&
+                        ` · 回答数：${form.remote.responseCount === undefined ? "確認待ち" : `${form.remote.responseCount.toLocaleString("ja-JP")}件`}`}
+                    </p>
+                  )}
+                  {form.remote && (
+                    <div class="club-links">
+                      <a
+                        href={form.remote.responseUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        回答用フォーム
+                      </a>
+                      <a
+                        href={form.remote.editUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        編集
+                      </a>
+                      <a
+                        href={form.remote.spreadsheetUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        回答シート
+                      </a>
+                      {form.remote.mergedSpreadsheetUrl && (
+                        <a
+                          href={form.remote.mergedSpreadsheetUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          統合名簿
+                        </a>
+                      )}
+                      <a
+                        href={form.remote.folderUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        保存先
+                      </a>
+                    </div>
+                  )}
+                  {busy && (
+                    <p role="status">
+                      {job?.error ||
+                        (form.deleteRequestedAt
+                          ? "Googleフォームと回答シートをゴミ箱へ移動しています。完了すると一覧から消えます。"
+                          : "Googleに保存しています。完了するとリンクが表示されます。")}
+                    </p>
+                  )}
+                  {expired && !busy && (
+                    <p>
+                      提出期限を過ぎています。Google側の受付終了を確認中です。
+                    </p>
+                  )}
+                  {form.statusError && <p role="status">{form.statusError}</p>}
+                  {form.remote &&
+                    (form.remote.uploadReady !== true || form.statusError) &&
+                    !busy && (
+                      <div class="club-warning">
+                        <p>
+                          {form.remote.uploadReady === false
+                            ? "画像保存先の準備が必要です。「編集」を開き、「ファイルのアップロード先のフォルダが見つかりません」の「復元」を1回押してください。"
+                            : "受付開始前にGoogleの準備状態を確認してください。"}
+                        </p>
+                        <form data-club-action="refresh">
+                          <button type="submit">画像保存先の準備を確認</button>
+                          <p data-status role="status" aria-live="polite" />
+                        </form>
+                      </div>
+                    )}
+                  {form.delivery === "error" && (
+                    <form data-club-action="retry">
+                      <button type="submit">Google連携を再試行</button>
+                      <p data-status role="status" aria-live="polite" />
+                    </form>
+                  )}
+                  <details>
+                    <summary>案内・料金・期限を変更</summary>
+                    <form data-club-action="update" class="club-form">
+                      <ClubFormFields value={form} disabled={busy} />
+                      <p>
+                        西暦・春秋・種類を変える場合は新しいフォームを作成してください。終了済みフォームは保存だけでは再開しません。
+                      </p>
+                      <button type="submit" disabled={busy}>
+                        変更を保存
+                      </button>
+                      <p data-status role="status" aria-live="polite" />
+                    </form>
+                  </details>
+                  <div class="club-reception">
+                    {state !== "open" && (
+                      <form data-club-action="open">
+                        <label>
+                          {state === "draft"
+                            ? "受付開始時の提出期限"
+                            : "再開後の提出期限"}
+                          <input
+                            type="datetime-local"
+                            name="deadline"
+                            value={localDateTime(form.deadline)}
+                            required
+                            disabled={busy}
+                          />
+                        </label>
+                        <button
+                          type="submit"
+                          disabled={
+                            busy ||
+                            form.remote?.uploadReady !== true ||
+                            Boolean(form.statusError)
+                          }
+                        >
+                          {state === "draft" ? "受付開始" : "受付を再開"}
+                        </button>
+                        <p data-status role="status" aria-live="polite" />
+                      </form>
+                    )}
+                    {state === "open" && (
+                      <form data-club-action="close">
+                        <button type="submit" disabled={busy}>
+                          今すぐ受付終了
+                        </button>
+                        <p data-status role="status" aria-live="polite" />
+                      </form>
+                    )}
+                  </div>
+                  <div class="club-card-footer">
+                    {form.deleteBlockedReason && (
+                      <small>{form.deleteBlockedReason}</small>
+                    )}
+                    <form data-club-action="delete">
+                      <button
+                        type="submit"
+                        class="club-delete-button"
+                        disabled={
+                          !data!.configured ||
+                          Boolean(form.deleteRequestedAt) ||
+                          Boolean(form.deleteBlockedReason)
+                        }
+                      >
+                        フォームを削除
+                      </button>
+                      <p data-status role="status" aria-live="polite" />
+                    </form>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>該当するフォームはありません。</p>
+          )}
+        </section>
+        <p>
+          入会・継続フォームの回答は、
+          <a href="/Admin/grouping-roster">名簿</a>
+          で両方の参照先を選び、変更内容を確認してから適用します。新歓の回答は会員名簿へ自動追加しません。
+        </p>
+        <dialog
+          class="club-delete-dialog"
+          data-club-delete-dialog
+          aria-labelledby="club-delete-title"
+        >
+          <h3 id="club-delete-title">フォームを削除しますか？</h3>
+          <p class="club-delete-target" data-club-delete-target />
+          <p>
+            Googleフォームと回答シートをGoogle
+            Driveのゴミ箱へ移し、この一覧から削除します。受付中の場合は回答の受付も終了します。
+          </p>
+          <div class="club-delete-dialog-actions">
+            <button type="button" data-club-delete-cancel autofocus>
+              キャンセル
+            </button>
+            <button
+              type="button"
+              data-club-delete-confirm
+              class="club-delete-button"
+            >
+              削除する
+            </button>
+          </div>
+        </dialog>
+      </div>
+    )
+  }
+</AdminLayout>
+<script>
+  import "../../scripts/clubForms";
+</script>

@@ -1,0 +1,68 @@
+<dialog
+  class="admin-dialog tool-delete-dialog"
+  data-management-delete-dialog
+  aria-labelledby="management-delete-title"
+  aria-describedby="management-delete-description"
+>
+  <h2 id="management-delete-title" data-management-delete-title>
+    ツールを削除
+  </h2>
+  <p class="tool-delete-question" data-management-delete-question></p>
+  <p id="management-delete-description" data-management-delete-description>
+    質問・選択肢・回答・添付ファイル・関連するサイト内通知を削除します。共有リンクからも閲覧できなくなります。この操作は取り消せません。
+  </p>
+  <form data-management-delete-form>
+    <label class="tool-check"
+      ><input
+        type="checkbox"
+        name="confirmation"
+        value="delete"
+        required
+      />削除する内容を確認しました</label
+    >
+    <div class="activity-actions">
+      <button type="button" data-management-delete-cancel autofocus>戻る</button
+      >
+      <button class="admin-button" type="submit">削除を確定</button>
+    </div>
+    <p data-management-delete-status role="status" aria-live="polite"></p>
+  </form>
+</dialog>
+<script>
+  import "../scripts/managementDelete";
+</script>
+<style>
+  .tool-delete-dialog {
+    opacity: 1;
+    transition: none;
+    box-sizing: border-box;
+    width: min(640px, calc(100vw - 32px));
+    max-height: 88dvh;
+    overflow: auto;
+  }
+  .tool-delete-dialog::backdrop { opacity: 1; transition: none; }
+  .tool-delete-dialog h2 {
+    font-size: 24px;
+  }
+  .tool-delete-question {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-height: 24dvh;
+    overflow: auto;
+    border-block: 1px solid #d5d0ca;
+    padding: 16px 0;
+  }
+  .tool-delete-dialog .tool-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    line-height: 1.8;
+  }
+  .tool-delete-dialog form {
+    display: grid;
+    gap: 20px;
+  }
+  .tool-delete-dialog [data-management-delete-status]:empty {
+    display: none;
+  }
+</style>

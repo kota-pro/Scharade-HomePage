@@ -68,3 +68,20 @@ test('Lightroom deletion refuses unrelated albums and tolerates an already delet
   globalThis.fetch=async(_,init)=>{const method=init?.method??'GET';methods.push(method);if(method==='DELETE'){gone=true;return new Response(null,{status:204});}if(gone)return new Response(null,{status:404});return new Response('while (1) {} '+JSON.stringify({serviceId:'fixture-client',payload:{publishInfo:{remoteId:related?id:crypto.randomUUID()}}}));};
   await assert.rejects(()=>deleteExhibitionAlbum('a'.repeat(32),id,true),/紐付け/);assert.deepEqual(methods,['GET']);related=true;await deleteExhibitionAlbum('a'.repeat(32),id,true);await deleteExhibitionAlbum('a'.repeat(32),id,true);assert.deepEqual(methods,['GET','GET','DELETE','GET']);
 }));
+
+test('notification LINE names use only confirmed active roster bindings, preserving account names and grades',()=>{
+  const data=emptyActivities();
+  data.roster={revision:1,spreadsheetId:'fixture',sheetId:0,title:'名簿',sheetTitle:'名簿',fetchedAt:'2026-10-23',fetchedBy:'staff',bindings:{a:'roster-a',b:'inactive'},records:[
+    {key:'roster-a',name:'名簿の山田',lineName:'  やまだLINE  ',university:'',gender:null,grade:'2',active:true},
+    {key:'inactive',name:'退会',lineName:'退会LINE',university:'',gender:null,grade:'2',active:false},
+    {key:'unbound',name:'佐藤',lineName:'未確認LINE',university:'',gender:null,grade:'1',active:true},
+  ]};
+  data.profiles.a={gender:'undisclosed',grade:'2',revision:1,rosterKey:'roster-a'};
+  data.profiles.c={gender:'undisclosed',grade:'1',revision:1,rosterKey:'unbound'};
+  assert.deepEqual(notificationRecipient({id:'a',name:'山田'},data),{id:'a',name:'山田',lineName:'やまだLINE',grade:'2',gradeLabel:'2年生'});
+  assert.equal(notificationRecipient({id:'b',name:'退会'},data).lineName,'');
+  assert.equal(notificationRecipient({id:'c',name:'佐藤'},data).lineName,'');
+  assert.equal(notificationRecipient({id:'missing',name:'山田'},data).lineName,'');
+  delete data.roster;
+  assert.equal(notificationRecipient({id:'a',name:'山田'},data).lineName,'');
+});

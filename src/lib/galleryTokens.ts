@@ -6,6 +6,7 @@ type Claim = {
   album: string;
   id?: string;
   url?: string;
+  staffPreview?: true;
   exp?: number;
 };
 function signature(body: string) {
@@ -41,9 +42,9 @@ export function verifyGalleryValue(token: string, kind: Claim["kind"]): Claim {
     throw new Error("Expired gallery token");
   return value;
 }
-export function photoLinks(album: string, photo: { id: string; name: string }) {
+export function photoLinks<T extends { id: string; name: string }>(album: string, photo: T, staffPreview?: true) {
   const proof = encodeURIComponent(
-    signGalleryValue({ kind: "photo", album, id: photo.id }),
+    signGalleryValue({ kind: "photo", album, id: photo.id, staffPreview }),
   );
   return {
     ...photo,

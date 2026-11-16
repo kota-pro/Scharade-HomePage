@@ -1,7 +1,11 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import AdminAccountRoster from "../../../components/AdminAccountRoster.astro";
-import { readUsers } from "../../../lib/auth";
+import AccountApproval from '../../../components/AccountApproval.astro';
+import { canProxyAccount } from '../../../lib/adminViewPolicy.ts';
+import { PORTFOLIO_OFFICES, portfolioOffice } from "../../../data/portfolioOffices";
+import { getPortfolioDetail, type Portfolio } from "../../../lib/microcms";
+import { readUsers, isAdmin, canManageAccount, type User } from "../../../lib/auth";
 import { accountDeletionRevision } from "../../../lib/accountDeletion";
 import {
   accountRegistration,
@@ -18,9 +22,14 @@ let unavailable = false;
 let registration: ReturnType<typeof accountRegistration> | null = null;
 let revision = "";
 let deletionRevision = "";
+let editable = false;
+const administrator = isAdmin(Astro.locals.user);
+let approvalTarget: User | undefined;
 try {
   const user = readUsers().find((user) => user.id === Astro.params.id);
   if (user) {
+    approvalTarget = user;
+    editable = canManageAccount(Astro.locals.user, user);
     account = toAdminAccount(user);
     registration = accountRegistration(user);
     revision = accountRevision(user);
@@ -30,6 +39,17 @@ try {
   unavailable = true;
   Astro.response.status = 503;
 }
+const portfolioId = administrator ? account?.portfolioId : null;
+let currentOffice: string | null = null;
+if (portfolioId) {
+  try {
+    const { role } = await getPortfolioDetail<Pick<Portfolio, "role">>(portfolioId, { fields: "role" });
+    currentOffice = role ?? "";
+  } catch {
+    // The account details remain usable when the linked Portfolio is unavailable.
+  }
+}
+const selectedOffice = portfolioOffice(currentOffice);
 ---
 
 <AdminLayout
@@ -42,6 +62,7 @@ try {
   ]}
 >
   <div class="admin-intro"><h2>アカウントの登録内容</h2></div>
+  {approvalTarget && <AccountApproval target={approvalTarget} />}
   <section class="admin-section" aria-label="登録内容">
     {
       !account ? (
@@ -53,10 +74,34 @@ try {
       ) : (
         <>
           <h3>{account.name}</h3>
+          {canProxyAccount(Astro.locals.actor) && !Astro.locals.adminView && <div class="admin-actions"><button class="admin-button" type="button" data-admin-view-account={account.id}>このアカウントでログイン</button><p data-admin-view-status role="status" aria-live="polite"></p></div>}
           {Astro.url.searchParams.get("saved") === "1" && (
             <p role="status">登録内容を保存しました。</p>
           )}
-          <details class="admin-account-editor">
+          {portfolioId && (
+            <section id="portfolio-office" class="admin-editor-target" aria-labelledby="portfolio-office-title" tabindex="-1">
+              <h4 id="portfolio-office-title">Portfolioの役職</h4>
+              {currentOffice === null ? (
+                <p>連携先のPortfolioから役職を取得できませんでした。</p>
+              ) : (
+                <form id="portfolio-office-form" data-account-id={account.id} data-portfolio-id={portfolioId} data-current-office={currentOffice}>
+                  <div class="admin-field">
+                    <label for="portfolio-office-select">掲載する役職</label>
+                    <select id="portfolio-office-select" name="office" aria-describedby="portfolio-office-help">
+                      <option value="" selected={!selectedOffice}>設定なし</option>
+                      {PORTFOLIO_OFFICES.map((office) => (
+                        <option value={office} selected={office === selectedOffice}>{office}</option>
+                      ))}
+                    </select>
+                    <small id="portfolio-office-help">役職を設定すると、Portfolioの幹部欄に役職順で掲載されます。ログイン権限は別に設定できます。</small>
+                  </div>
+                  <button type="submit" class="admin-button" disabled>役職を保存</button>
+                  <p role="status" aria-live="polite"></p>
+                </form>
+              )}
+            </section>
+          )}
+          {editable && <details class="admin-account-editor">
             <summary>登録内容を編集</summary>
             <form
               id="account-editor"
@@ -115,15 +160,16 @@ try {
                     >
                       運営
                     </option>
-                    <option
+                    {administrator && <option value="executive" selected={registration!.role === "executive"}>幹部</option>}
+                    {administrator && <option
                       value="admin"
                       selected={registration!.role === "admin"}
                     >
                       管理者
-                    </option>
+                    </option>}
                   </select>
                   <small id="account-role-help">
-                    運営は通知・企画・参加者・班分けを管理できます。管理者は加えてサイト情報・全Portfolio・アカウントを管理できます。権限変更後は本人の再ログインが必要です。最後の承認済み管理者は降格できません。
+                    運営は通知・企画・参加者・班分けを管理できます。幹部は加えて一般会員・運営のアカウント、名簿と全写真のいいね数を管理できます。幹部・管理者への権限変更は管理者が行います。権限変更後は本人の再ログインが必要です。最後の承認済み管理者は降格できません。
                   </small>
                 </div>
                 <div class="admin-field">
@@ -139,7 +185,7 @@ try {
                     aria-describedby="account-portfolio-help"
                   />
                   <small id="account-portfolio-help">
-                    登録情報の記録を修正します。公開ページの名前は、アカウント一覧の「Portfolioを編集」から変更してください。記録がない場合は空欄にできます。
+                    登録情報の記録を修正します。{administrator ? "公開ページの名前は、アカウント一覧の「Portfolioを編集」から変更してください。" : "公開ページの名前の変更は管理者が行います。"}記録がない場合は空欄にできます。
                   </small>
                 </div>
               </fieldset>
@@ -151,7 +197,7 @@ try {
                 <p>編集にはJavaScriptを有効にしてください。</p>
               </noscript>
             </form>
-          </details>
+          </details>}
           <dl class="admin-account-details">
             <div>
               <>
@@ -174,8 +220,8 @@ try {
             <div>
               <>
                 <dt>承認状態</dt>
-                <dd>
-                  {account.status}
+                <dd data-account-approval-state>
+                  <span data-account-approval-label>{account.status}</span>
                   {!account.approved && (
                     <small>未承認には承認待ち・承認の取消を含みます。</small>
                   )}
@@ -191,9 +237,15 @@ try {
             <div>
               <>
                 <dt>承認通知日時（日本時間）</dt>
-                <dd>{accountDate(account.approvalNotifiedAt)}</dd>
+                <dd data-account-approval-notified>{accountDate(account.approvalNotifiedAt)}</dd>
               </>
             </div>
+            {account.approvalSetupStatus && (
+              <div>
+                <dt>承認後の初期設定</dt>
+                <dd>{account.approvalSetupStatus}</dd>
+              </div>
+            )}
             <div>
               <>
                 <dt>登録時のPortfolio名</dt>
@@ -236,7 +288,7 @@ try {
             </div>
             <AdminAccountRoster accountId={account.id} />
           </dl>
-          <div class="admin-account-delete">
+          {editable && <div class="admin-account-delete">
             <h3>アカウントの削除</h3>
             {account.id === Astro.locals.user?.id ? (
               <p>ログイン中の管理者自身は削除できません。</p>
@@ -328,7 +380,7 @@ try {
                 </dialog>
               </>
             )}
-          </div>
+          </div>}
         </>
       )
     }
@@ -341,4 +393,47 @@ try {
 <script>
   import "../../../scripts/accountEditor";
   import "../../../scripts/accountDeletion";
+  import { apiErrorMessage, readApiResponse } from "../../../scripts/apiResponse";
+  import { operationNotice } from "../../../scripts/siteNotice";
+
+  const form = document.querySelector<HTMLFormElement>("#portfolio-office-form");
+  if (form) {
+    const select = form.querySelector("select")!;
+    const button = form.querySelector("button")!;
+    const status = form.querySelector('[role="status"]')!;
+    const notify = (message: string, error = false) => {
+      status.textContent = message;
+      operationNotice(message, error, "portfolio-office");
+    };
+    button.disabled = false;
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (button.disabled) return;
+      const office = select.value;
+      select.disabled = button.disabled = true;
+      notify("保存しています…");
+      try {
+        const response = await fetch(
+          `/api/admin/accounts/${encodeURIComponent(form.dataset.accountId!)}/portfolio-office`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              portfolioId: form.dataset.portfolioId,
+              previousOffice: form.dataset.currentOffice,
+              office,
+            }),
+          },
+        );
+        const result = await readApiResponse(response);
+        if (!response.ok || !result.ok) throw new Error(result.message);
+        form.dataset.currentOffice = office;
+        notify("Portfolioの役職を保存しました。");
+      } catch (error) {
+        notify(apiErrorMessage(error, "役職を保存できませんでした。"), true);
+      } finally {
+        select.disabled = button.disabled = false;
+      }
+    });
+  }
 </script>

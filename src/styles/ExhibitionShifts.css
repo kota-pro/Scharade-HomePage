@@ -1,0 +1,240 @@
+/* Reuse the exhibition management typography, navigation and teal selection color. */
+.shift-page { --shift-accent:#0b8978; --shift-soft:#effaf7; }
+.shift-page [hidden],.shift-dialog [hidden] { display:none!important; }
+.shift-page-heading { margin:28px 0 20px; }
+.shift-page .shift-page-heading h2 { margin:0 0 8px; }
+.shift-page-heading > p { margin:0;color:#666; }
+.shift-page .exhibition-admin-nav { margin:24px 0 28px; }
+.shift-page .exhibition-admin-nav a { font-size:16px; }
+.shift-page .shift-tabs { display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid #aaa;margin:28px 0 24px; }
+.shift-page .shift-tabs button { min-height:46px;padding:12px 18px;border:0;border-bottom:3px solid transparent;border-radius:0;background:transparent;color:#666;font-family:YakuHanRP, "Zen Kurenaido",sans-serif;letter-spacing:0; }
+.shift-page .shift-tabs button[aria-selected=true] { color:#087a6b;border-bottom-color:#0db49b;background:#effaf7; }
+.shift-page .shift-tabs button:hover { color:#087a6b;background:#effaf7; }
+.shift-page .shift-content { padding:0;background:transparent;border:0; }
+.shift-page .exhibition-button,.shift-dialog .exhibition-button { min-height:44px;font-size:16px;font-family:YakuHanMP, "Zen Old Mincho",serif; }
+.shift-page button.shift-primary,.shift-dialog button.shift-primary { color:#fff;background:#0b8978;border-color:#0b8978; }
+.shift-page button.shift-primary:not(:disabled):hover,.shift-dialog button.shift-primary:hover { background:#086c5f;border-color:#086c5f; }
+.shift-page input[type=checkbox],.shift-dialog input[type=checkbox] { width:18px!important;height:18px;min-height:0!important;margin:0;accent-color:#0b8978;flex-shrink:0; }
+.shift-section { margin:32px 0; }
+.shift-section-heading { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin:0 0 16px; }
+.shift-section-heading h3,.shift-section-heading p { margin:0; }
+.shift-badge { border-radius:20px;padding:4px 12px;color:#086b5e;background:#e3f6f0;font-size:15px;white-space:nowrap; }
+.shift-info { padding:14px 18px;border-left:3px solid #0b8978;background:#f4faf7; }
+.shift-page .shift-stats { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:24px 0; }
+.shift-stat { border:1px solid #ddd;border-radius:5px;background:#fff;padding:18px;display:flex;flex-direction:column-reverse;gap:8px; }
+.shift-stat strong { font:32px/1.3 YakuHanMP, "Zen Old Mincho",serif;color:#0b7567; }
+.shift-stat span { font-size:15px;color:#555; }
+.shift-page details { border-top:1px solid #ccc;padding:18px 0;margin:20px 0; }
+.shift-page details.exhibition-panel { border:1px solid #ddd;padding:18px 22px; }
+.shift-page summary { cursor:pointer; }
+.shift-page details > summary { margin-bottom:14px; }
+.shift-page summary label { display:inline-flex;align-items:center;gap:8px; }
+.shift-hours { display:flex;align-items:end;gap:18px;flex-wrap:wrap;margin:16px 0; }
+.shift-hours strong { min-width:140px;font-weight:400; }
+.shift-hours label { flex:1;min-width:120px;max-width:220px; }
+.shift-page .shift-inline { display:flex;align-items:end;gap:12px;flex-wrap:wrap; }
+.shift-page .shift-inline label { flex:1;min-width:160px; }
+.shift-pair-list { display:flex;gap:8px;flex-wrap:wrap;margin:14px 0; }
+.shift-page .shift-pair-list button { border-color:#c9ded7;background:#f4faf7;border-radius:20px;padding:6px 12px;min-height:36px;font-size:15px; }
+.shift-page .shift-pair-list button:hover { color:#086b5e;background:#e3f6f0; }
+.shift-muted { color:#666;font-size:14px; }
+.shift-warning { white-space:pre-wrap;line-height:1.9; }
+.shift-empty { border:1px dashed #bbb;padding:28px;color:#666;text-align:center; }
+.shift-page .shift-board-toolbar,.shift-submit-bar { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin:24px 0; }
+.shift-search-toolbar { display:flex;align-items:end;flex-wrap:wrap;gap:12px;margin:20px 0 10px; }
+.shift-search-toolbar > label { display:grid;gap:6px;flex:1;min-width:190px;max-width:460px; }
+.shift-page .shift-search-toolbar button,.shift-dialog .shift-search-toolbar button { min-height:44px;padding:8px 12px;font-size:15px; }
+.shift-filter { display:grid;grid-template-columns:minmax(0,2fr) minmax(160px,1fr);gap:16px;margin:24px 0; }
+.shift-filter label { min-width:0; }
+.shift-board-help { background:#f7f8f7;padding:12px 18px;margin:18px 0;border-radius:4px; }
+.shift-board-help p { margin:4px 0;font-size:15px;line-height:1.8; }
+.shift-page .shift-board-help button { padding:2px 10px;min-height:32px;font-size:14px;margin:0 8px; }
+.shift-table-wrap { overflow:auto;max-width:100%;min-width:0; }
+.shift-table { width:100%;border-collapse:collapse;font-size:16px; }
+.shift-table:not(.shift-matrix-table) { min-width:560px; }
+.shift-table th,.shift-table td { padding:12px 10px;border-bottom:1px solid #ddd;text-align:left;vertical-align:top; }
+.shift-table th { font-weight:400; }
+.shift-matrix { margin:20px 0;min-width:0; }
+.shift-matrix-toolbar { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:10px; }
+.shift-matrix-toolbar > span { font-size:17px; }
+.shift-matrix-pager { display:flex;gap:8px; }
+.shift-page .shift-matrix-pager button,.shift-dialog .shift-matrix-pager button { min-height:40px;padding:6px 10px;gap:8px;font-size:22px;border:1px solid #bbb;border-radius:4px;background:#fff;color:#333; }
+.shift-matrix-pager button > span { font-size:14px; }
+.shift-matrix-pager button:disabled { opacity:.4;cursor:default; }
+.shift-matrix-help { font-size:13px;color:#666;margin:6px 0 12px; }
+.shift-matrix-scroll { border:1px solid #ccc;border-radius:5px;background:#fff;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain; }
+.shift-matrix-table { border-collapse:separate;border-spacing:0;table-layout:auto; }
+.shift-matrix-table th,.shift-matrix-table td { border-right:1px solid #e0e4e1;border-bottom:1px solid #e0e4e1;padding:10px;min-width:185px;vertical-align:top; }
+.shift-matrix-table tr:last-child > * { border-bottom:0; }
+.shift-matrix-table thead th { position:sticky;top:0;z-index:3;background:#f6f8f7;text-align:center;font-size:17px; }
+.shift-matrix-table thead th small { display:block;color:#777;font-size:12px; }
+.shift-matrix-table .shift-time-heading { position:sticky;left:0;z-index:2;min-width:90px;width:90px;max-width:90px;background:#f6f8f7;white-space:nowrap;font-size:15px; }
+.shift-matrix-table thead .shift-time-heading { z-index:4;text-align:left; }
+.shift-time-heading span { display:block;color:#777;font-size:12px; }
+.shift-matrix-table tbody tr { height:96px; }
+.shift-page .shift-day-actions { display:flex;gap:4px;justify-content:center;margin-top:8px; }
+.shift-page .shift-day-actions button { min-height:34px;padding:4px 7px;font-size:12px;font-family:YakuHanRP, "Zen Kurenaido",sans-serif;border-color:#ccd8d3;color:#426359;letter-spacing:0; }
+.shift-day-actions button:hover { background:#e3f6f0;color:#086b5e; }
+.shift-page .shift-choice { display:flex;align-items:center;gap:12px;min-height:72px;height:100%;padding:10px;border:1px solid #dce4df;border-radius:4px;cursor:pointer; }
+.shift-choice strong,.shift-choice small { display:block;font-weight:400; }
+.shift-choice strong { font-size:16px; }
+.shift-choice small { font-size:13px;color:#666; }
+.shift-choice.is-selected,.shift-readonly-choice.is-selected { border-color:#0b8978;background:#effaf7;color:#086b5e; }
+.shift-page .shift-answer-toolbar { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px; }
+.shift-answer-toolbar strong { font-size:16px;color:#086b5e;font-weight:400; }
+.shift-page .shift-none { display:flex;align-items:center;gap:12px;border:1px solid #ddd;border-radius:4px;padding:16px;margin-top:8px;cursor:pointer; }
+.shift-submit-bar { border-top:1px solid #ddd;padding-top:20px; }
+.shift-submit-bar p { margin:0;font-size:15px;color:#086b5e; }
+.shift-submit-bar small { display:block;font-size:13px;color:#666; }
+.shift-cell-time { display:flex;justify-content:space-between;align-items:center;gap:8px;color:#666;font-size:12px;margin:0 0 8px;white-space:nowrap; }
+.shift-count { font-size:12px;border-radius:12px;padding:1px 7px;background:#e3f6f0;color:#086b5e; }
+.shift-count.is-short { background:#fbe3e3;color:#8e4040; }
+.shift-shortage { background:#fce5e5!important;color:#874343!important; }
+.shift-outside { background:repeating-linear-gradient(135deg,#f5f5f5,#f5f5f5 5px,#f0f0f0 5px,#f0f0f0 6px);text-align:center!important;color:#999;font-size:12px; }
+.shift-outside span { display:block;margin-top:14px; }
+.shift-seats { display:grid;gap:8px; }
+.shift-seat-row { display:grid;grid-template-columns:minmax(0,1fr) 32px;gap:4px; }
+.shift-seat-row.is-empty { grid-template-columns:minmax(0,1fr); }
+.shift-page .shift-seat { width:100%;min-height:62px;display:flex;align-items:center;justify-content:flex-start;border:1px solid #cfd9d3;border-radius:4px;padding:8px;background:#fff;color:#333;text-align:left;font:16px/1.5 YakuHanRP, "Zen Kurenaido",sans-serif;letter-spacing:0; }
+.shift-page .shift-seat:not(:disabled):hover { border-color:#0b8978;background:#effaf7;color:#086b5e; }
+.shift-page .shift-seat[aria-pressed=true] { border:2px solid #0b8978;background:#e3f6f0; }
+.shift-seat-name { overflow-wrap:anywhere;min-width:0; }
+.shift-seat-name small { display:block;font-size:11px;color:#777; }
+.shift-seat-controls { display:grid;gap:3px;align-content:start; }
+.shift-page .shift-seat-controls button { display:flex;min-height:30px;width:32px;padding:5px;border:1px solid #e0e6e2;background:#fff;border-radius:3px;color:#777; }
+.shift-page .shift-seat-controls button[aria-pressed=true] { color:#0b8978;background:#effaf7; }
+.shift-seat-controls svg { width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round; }
+.shift-seat-controls .shift-change-person svg { fill:currentColor;stroke:none; }
+.shift-seat[data-seat]:not([data-seat=""]) { -webkit-touch-callout:none;user-select:none;-webkit-user-select:none; }
+.shift-page .shift-summary-cell { display:grid;gap:4px;width:100%;min-height:80px;text-align:left;padding:10px;border-color:#dce4df;font-family:YakuHanRP, "Zen Kurenaido",sans-serif;font-size:15px;letter-spacing:0; }
+.shift-summary-cell strong { font-weight:400;font-size:19px; }
+.shift-published-people { display:grid;gap:8px; }
+.shift-person { border:1px solid #dce4df;border-radius:4px;padding:10px;font-size:16px;line-height:1.6;overflow-wrap:anywhere; }
+.shift-person small { display:block;color:#087a6b;font-size:12px; }
+.shift-own { border-color:#0b8978;background:#effaf7; }
+.shift-search-match { outline:2px solid #0b8978!important;outline-offset:-2px;background:#e3f6f0!important; }
+.shift-search-dim { opacity:.4; }
+.shift-readonly-choice { display:grid;gap:8px;border:1px solid #ddd;border-radius:4px;padding:12px;font-size:15px;min-height:72px; }
+.shift-readonly-choice strong { font-weight:400; }
+.shift-sr-only { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0; }
+.shift-page button:focus-visible,.shift-dialog button:focus-visible,.shift-matrix-scroll:focus-visible { outline:2px solid #0b8978;outline-offset:3px; }
+.shift-page .exhibition-status:empty { display:none; }
+.shift-dialog.exhibition-confirm-dialog { width:min(1120px,calc(100vw - 40px));max-height:88dvh;padding:0;border:1px solid #000;border-radius:0;background:#fff;color:#171717; }
+.shift-dialog::backdrop { background:#0006; }
+.shift-dialog-head { position:relative;padding:24px 120px 20px 32px;border-bottom:1px solid #bbb; }
+.shift-dialog-label { font:36px/1.2 YakuHanMP, "linotype-didot",serif;letter-spacing:4px;margin:0 0 10px; }
+.shift-dialog-head h3 { font-size:21px;line-height:1.6;letter-spacing:1px;margin:0;font-weight:400; }
+.shift-dialog-body { padding:24px 32px;overflow:auto;max-height:calc(88dvh - 160px); }
+.shift-dialog .shift-close { position:absolute;right:22px;top:24px;width:36px;height:36px;min-height:36px;background:transparent;border:0;padding:0;cursor:pointer; }
+/* The help launcher moves into open dialogs; keep it beside the close control. */
+.shift-dialog > button.help-launcher[data-help-open] { position:absolute;top:20px;right:68px; }
+.shift-close span { position:absolute;top:17px;left:5px;width:26px;height:1px;background:#555;transform:rotate(45deg); }
+.shift-close span+span { transform:rotate(-45deg); }
+.shift-dialog label { display:grid;gap:7px;font-size:16px;margin-bottom:16px; }
+.shift-dialog .shift-picker-results { max-height:320px;overflow:auto;display:grid;gap:8px;margin:16px 0; }
+.shift-dialog .shift-picker-results button { width:100%;text-align:left;display:block;font:16px/1.6 YakuHanRP, "Zen Kurenaido",sans-serif;border:1px solid #dce4df;border-radius:4px;background:#fff;padding:12px;cursor:pointer; }
+.shift-dialog .shift-picker-results button:hover { color:#086b5e;background:#effaf7;border-color:#0b8978; }
+.shift-dialog .shift-picker-results button:disabled { color:#888;background:#f5f5f5;border-color:#ddd;cursor:not-allowed; }
+.shift-dialog .shift-picker-results button:disabled .shift-search-alias { color:#888; }
+.shift-search-alias { display:block;color:#666;font-size:13px; }
+.shift-dialog .shift-matrix-scroll { max-height:none; }
+@media(max-width:720px) {
+  .shift-page .exhibition-admin-nav { gap:8px; }
+  .shift-page .exhibition-admin-nav a { font-size:14px;padding:9px 11px; }
+  .shift-page .shift-tabs { gap:0; }
+  .shift-page .shift-tabs button { padding:10px 11px;font-size:16px; }
+  .shift-page .shift-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .shift-stat { padding:14px; }.shift-stat strong { font-size:28px; }
+  .shift-filter { grid-template-columns:minmax(0,1fr); }
+  .shift-page .shift-board-toolbar { align-items:stretch; }.shift-board-toolbar > .exhibition-actions { flex:1; }
+  .shift-board-toolbar .exhibition-button { flex:1;min-width:130px; }
+  .shift-matrix-table th,.shift-matrix-table td { min-width:188px;padding:8px; }
+  .shift-matrix-table .shift-time-heading { min-width:76px;width:76px;max-width:76px;padding:8px;font-size:14px; }
+  .shift-page .shift-seat-controls button { min-height:38px;width:38px; }
+  .shift-seat-row { grid-template-columns:minmax(0,1fr) 38px; }
+  .shift-page .shift-seat { min-height:80px; }
+  .shift-dialog.exhibition-confirm-dialog { width:calc(100vw - 24px);max-height:90dvh; }
+  .shift-dialog-head { padding:20px 108px 16px 20px; }
+  .shift-dialog-head h3 { font-size:18px; }.shift-dialog-label { font-size:30px; }
+  .shift-dialog .shift-close { right:12px;top:18px; }
+  .shift-dialog > button.help-launcher[data-help-open] { top:16px;right:58px; }
+  .shift-dialog-body { padding:20px;max-height:calc(90dvh - 145px); }
+  .shift-search-toolbar { gap:8px; }.shift-search-toolbar > label { flex-basis:100%;max-width:none; }
+  .shift-search-toolbar > button { flex:1; }
+  .shift-submit-bar { align-items:stretch; }.shift-submit-bar > .exhibition-actions { width:100%; }.shift-submit-bar button { flex:1; }
+}
+
+/* Equal navigation cells and one consistently aligned row of plan actions. */
+body[data-member-area] .admin-page .shift-page .exhibition-admin-nav { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px; }
+body[data-member-area] .admin-page .shift-page .exhibition-admin-nav a { display:flex;align-items:center;justify-content:center;min-width:0;min-height:54px;box-sizing:border-box;padding:10px 12px;text-align:center;line-height:1.6; }
+.shift-page .exhibition-admin-nav a:last-child { grid-column:1/-1; }
+.shift-page .shift-board-toolbar { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:stretch; }
+.shift-page .shift-board-toolbar > button { min-width:0;min-height:50px;line-height:1.6;padding:10px 12px; }
+.shift-image-actions { display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin:0 0 18px; }
+.shift-image-actions p { margin:0; }
+.shift-image-actions p:empty,.shift-image-actions button[hidden] { display:none; }
+.shift-response-list .submission-stage[data-stage=review] { background:#fff3d2;color:#795b00; }
+.shift-auto-mark { display:inline-flex;align-items:center;justify-content:center;flex:0 0 18px;width:18px;height:18px;margin-left:auto;color:#0b8978; }
+.shift-auto-mark svg { width:16px;height:16px;display:block; }
+/* Two names share a time row. The full timeline expands naturally without an inner vertical scrollbar. */
+.shift-matrix-compact .shift-matrix-table { table-layout:fixed;width:calc(82px + var(--shift-visible-days,7)*460px);min-width:100%; }
+.shift-matrix-compact .shift-matrix-table th,.shift-matrix-compact .shift-matrix-table td { min-width:0;width:460px;padding:5px 6px;vertical-align:middle; }
+.shift-matrix-compact .shift-matrix-table .shift-time-heading { min-width:82px;width:82px;max-width:82px;box-sizing:border-box;padding:5px 8px; }
+.shift-matrix-compact .shift-matrix-table td { position:relative; }
+.shift-matrix-compact .shift-matrix-table tbody tr { height:48px; }
+.shift-matrix-compact tbody .shift-time-heading { font-size:13px;line-height:1.25; }
+.shift-matrix-compact tbody .shift-time-heading span { display:none; }
+.shift-matrix-compact tbody tr:last-child .shift-time-heading span { display:block; }
+.shift-matrix-compact .shift-matrix-table thead th { height:50px;box-sizing:border-box; }
+.shift-matrix-compact .shift-cell-time { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap; }
+.shift-matrix-compact .shift-seats,.shift-matrix-compact .shift-published-people { grid-template-columns:repeat(2,minmax(0,1fr));gap:8px; }
+.shift-matrix-compact .shift-seat-row { grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:3px;min-width:0; }
+.shift-matrix-compact .shift-seat-row.is-empty { grid-template-columns:minmax(0,1fr); }
+.shift-page .shift-matrix-compact .shift-seat { min-height:36px;height:36px;padding:6px;gap:5px;font-size:14px;line-height:1.4;min-width:0; }
+.shift-matrix-compact .shift-seat-name,.shift-matrix-compact .shift-person-name { flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0; }
+.shift-matrix-compact .shift-seat-controls { display:flex;gap:2px; }
+.shift-page .shift-matrix-compact .shift-seat-controls button { width:26px;min-height:30px;height:30px;padding:4px;align-items:center;justify-content:center; }
+.shift-matrix-compact .shift-seat-controls svg { width:15px;height:15px; }
+.shift-matrix-compact .shift-person { display:flex;align-items:center;gap:6px;min-width:0;min-height:36px;box-sizing:border-box;padding:6px 8px;font-size:14px;line-height:1.4; }
+.shift-matrix-compact .shift-outside span { margin:0; }
+@media(max-width:720px) {
+ body[data-member-area] .admin-page .shift-page .exhibition-admin-nav { grid-template-columns:repeat(2,minmax(0,1fr));gap:8px; }
+ body[data-member-area] .admin-page .shift-page .exhibition-admin-nav a { min-height:68px;padding:10px 8px;font-size:14px; }
+ .shift-page .shift-board-toolbar { grid-template-columns:repeat(2,minmax(0,1fr));gap:8px; }
+ .shift-page .shift-board-toolbar > button { width:100%;min-height:58px;padding:10px 8px;font-size:14px; }
+ .shift-page .shift-board-toolbar > [data-action=publish] { grid-column:1/-1; }
+ .shift-page .shift-response-list > li { gap:12px; }
+ .shift-page .shift-response-list .submission-detail-button { justify-self:stretch;width:100%;min-height:44px; }
+}
+/* A dashboard panel owns its spacing; the generic exhibition editor grid adds gaps twice. */
+.shift-page .shift-content { display:block; }
+body[data-member-area] .admin-page .shift-page button.shift-primary { background:#0b8978;border-color:#0b8978;color:#fff; }
+body[data-member-area] .admin-page .shift-page button.shift-primary:not(:disabled):hover { background:#086c5f;border-color:#086c5f;color:#fff; }
+body[data-member-area] .admin-page .shift-page .shift-tabs button { border-radius:0; }
+body[data-member-area] .admin-page .shift-page input[type="checkbox"] { accent-color:#0b8978; }
+
+/* Shared by exhibition creation and the shift settings editor. */
+.shift-schedule [hidden] { display:none!important; }
+.shift-schedule h4 { font-size:18px;font-weight:400;margin:0;letter-spacing:0; }
+.shift-schedule .exhibition-grid { grid-template-columns:repeat(2,minmax(0,1fr));gap:16px; }
+.shift-schedule .exhibition-grid label { min-width:0; }
+.shift-regular-hours { margin:24px 0;padding:20px;background:#f6f8f7;border:1px solid #ddd;border-radius:5px; }
+.shift-regular-hours > p { font-size:14px;color:#666;margin:8px 0 16px; }
+.shift-special-days { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px; }
+.shift-hours-card { padding:20px;border:1px solid #ccc;border-radius:5px;background:#fff;min-width:0; }
+.shift-hours-card.is-custom { border-color:#0b8978;background:#f4faf7; }
+.shift-hours-heading { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px; }
+.shift-hours-heading > span { font-size:14px;color:#666; }
+.exhibition-page .shift-schedule label.shift-special-toggle { display:flex;align-items:center;gap:10px;margin:0;cursor:pointer;line-height:1.6;font-size:16px; }
+.shift-schedule .shift-special-toggle input[type=checkbox] { flex:0 0 18px;width:18px!important;height:18px;min-height:0!important;margin:0;accent-color:#0b8978; }
+.shift-hours-status { font-size:14px;color:#666;line-height:1.8;margin:12px 0 0; }
+.is-custom .shift-hours-status { color:#086b5e; }
+.shift-schedule .shift-hours-inputs { margin-top:16px; }
+.shift-hours-card.is-unavailable { background:#f7f7f7; }
+.shift-hours-card.is-unavailable .shift-special-toggle { color:#888;cursor:default; }
+.shift-schedule-note { color:#666;font-size:14px;margin:12px 0 0; }
+@media(max-width:720px) {
+  .shift-special-days { grid-template-columns:minmax(0,1fr); }
+  .shift-hours-card,.shift-regular-hours { padding:16px; }
+  .shift-schedule .exhibition-grid { gap:12px; }
+}

@@ -5,17 +5,19 @@ import { calendarWeeks, calendarCategory, calendarCategoryLabel } from "../lib/a
 import { eventCategoryLabels, activityDate } from "../lib/activityTypes";
 import { readExhibitions } from "../lib/exhibitions.ts";
 import { exhibitionCalendarEntries } from "../lib/exhibitionCalendar.ts";
+import { eventHasEnded, exhibitionHasEnded, visibleMemberNotifications } from "../lib/memberActivityVisibility.ts";
 const user = Astro.locals.user!;
+const view = Astro.url.searchParams.get("view") === "calendar" ? "calendar" : "list";
+const now = Date.now();
 const data = readActivities();
-const notifications = data.notifications
-  .filter((n) => n.recipientIds.includes(user.id))
-  .reverse();
+const exhibitions = readExhibitions().exhibitions;
+const notifications = visibleMemberNotifications(data, exhibitions, user.id, now).reverse();
 const unread = notifications.filter((n) => !n.readBy[user.id]).length;
-const page = Math.max(1, Number(Astro.url.searchParams.get("notices")) || 1);
+const page = Math.min(Math.max(1, Math.ceil(notifications.length / 10)), Math.max(1, Math.floor(Number(Astro.url.searchParams.get("notices")) || 1)));
 const events = data.events
-  .filter((e) => e.status !== "draft" && e.recipientIds.includes(user.id))
+  .filter((e) => e.status !== "draft" && e.recipientIds.includes(user.id) && (view === "calendar" || !eventHasEnded(e, now)))
   .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
-const exhibitionEntries = exhibitionCalendarEntries(readExhibitions().exhibitions, user.id);
+const exhibitionEntries = exhibitionCalendarEntries(exhibitions.filter(e => view === "calendar" || !exhibitionHasEnded(e, now)), user.id);
 const calendarEntries = [...events.map(e => ({ ...e, href: `/Member/events/${e.id}`, kind: "event" as const })), ...exhibitionEntries];
 const requestedMonth = Astro.url.searchParams.get("month") || "";
 const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth)
@@ -33,8 +35,6 @@ const monthHref = (value: string) => {
   params.set('view', 'calendar'); params.set('month', value);
   return `?${params}`;
 };
-const view =
-  Astro.url.searchParams.get("view") === "calendar" ? "calendar" : "list";
 ---
 
 <section
@@ -46,7 +46,7 @@ const view =
   </h2>
   {
     notifications.length === 0 ? (
-      <p>通知はまだありません。</p>
+      <p>表示できる通知はありません。</p>
     ) : (
       <ul class="activity-list">
         {notifications.slice((page - 1) * 10, page * 10).map((n) => (
@@ -98,22 +98,13 @@ const view =
   {
     view === "list" ? (
       <>
-        {exhibitionEntries.length > 0 && <div class="activity-subsection"><h3>写真展の参加投票・フォーム入力</h3><ul class="activity-list">{exhibitionEntries.map(entry => <li><a href={entry.href}>{entry.title}</a><small>{activityDate(entry.startsAt)}〜{activityDate(entry.endsAt)}</small></li>)}</ul></div>}
-        {events.length === 0 && <p>企画はまだありません。</p>}
-        {[
-          [
-            "これからの企画",
-            events.filter((e) => Date.parse(e.endsAt) >= Date.now()),
-          ],
-          [
-            "過去の企画",
-            events.filter((e) => Date.parse(e.endsAt) < Date.now()).reverse(),
-          ],
-        ].map(([label, items]) => (
+        {exhibitionEntries.length > 0 && <div class="activity-subsection"><h3>写真展の参加投票・フォーム入力</h3><ul class="activity-list">{exhibitionEntries.map(entry => <li><div class="activity-title-row"><a href={entry.href}>{entry.title}</a><ActivityShareButton kind="exhibitions" id={entry.id} href={entry.href} title={entry.title} /></div><small>{activityDate(entry.startsAt)}〜{activityDate(entry.endsAt)}</small></li>)}</ul></div>}
+        {events.length === 0 && exhibitionEntries.length === 0 && <p>現在表示できる企画はありません。</p>}
+        {events.length > 0 && (
           <div class="activity-subsection">
-            <h3>{label as string}</h3>
+            <h3>開催中・これからの企画</h3>
             <ul class="activity-list">
-              {(items as typeof events).map((e) => (
+              {events.map((e) => (
                 <li>
                   <div class="activity-title-row"><a href={`/Member/events/${e.id}`}>
                     {e.status === "cancelled" ? "【中止】" : ""}
@@ -134,7 +125,7 @@ const view =
               ))}
             </ul>
           </div>
-        ))}
+        )}
       </>
     ) : (
       <>
@@ -167,7 +158,7 @@ const view =
                   <div class="activity-title-row"><a href={e.href}>
                     {e.status === "cancelled" && "【中止】"}
                     {e.title}
-                  </a>{e.kind === "event" && <ActivityShareButton kind="events" id={e.id} title={e.title} />}</div>
+                  </a><ActivityShareButton kind={e.kind === "event" ? "events" : "exhibitions"} id={e.id} href={e.href} title={e.title} /></div>
                   <small>{calendarCategoryLabel(e)}</small>
                   <small>
                     {activityDate(e.startsAt)}〜{activityDate(e.endsAt)}

@@ -1,0 +1,104 @@
+---
+import MemberLayout from "../../../layouts/MemberLayout.astro";
+import MemberToolResults from "../../../components/MemberToolResults.astro";
+import ActivityShareButton from "../../../components/ActivityShareButton.astro";
+import ActivityText from "../../../components/ActivityText.astro";
+import { readTool, questionFor, ToolError } from "../../../lib/memberTools.ts";
+import { toolAssetDTO } from "../../../lib/memberToolAssets.ts";
+import { toolLabels } from "../../../lib/memberToolTypes.ts";
+import "../../../styles/MemberTools.css";
+let t,
+  dto,
+  error = "";
+try {
+  t = readTool(Astro.params.id!);
+  dto = questionFor(t, Astro.locals.user);
+} catch (e) {
+  if (!(e instanceof ToolError)) throw e;
+  Astro.response.status = e.status;
+  error = e.message;
+}
+const login = `/Login?next=${encodeURIComponent(Astro.url.pathname)}`;
+---
+
+<MemberLayout title={t && dto ? toolLabels[t.kind] : "質問を表示できません"}>
+  {
+    t && dto ? (
+      <div
+        class="member-tools"
+        data-tool-root
+        data-tool-id={t.id}
+        data-tool-state={JSON.stringify(dto)}
+        data-tool-assets={JSON.stringify(
+          toolAssetDTO(
+            t,
+            dto.own.flatMap((r) => r.assetIds),
+          ),
+        )}
+        data-tool-mode="answer"
+      >
+        <a class="member-back tool-back" href="/Member">メンバーページへ戻る</a>
+        <header class="tool-page-header">
+          <div class="activity-title-row"><h2>{toolLabels[t.kind]}</h2><ActivityShareButton kind="tools" id={t.id} title={t.question}/></div>
+          <div class="tool-answer-meta"><span class="activity-badge" data-tool-state-badge>{t.status==='draft'?'下書き':dto.open?'受付中':'受付終了'}</span><p data-reception-status></p></div>
+        </header>
+        <section class="tool-question-panel" aria-label="質問"><span class="tool-kind-label">質問</span><div class="activity-prose tool-question"><ActivityText text={t.question}/></div>
+          {dto.canEdit&&<a class="tool-text-link" href={`/Member/manage/tools/${t.id}`}>質問・設定を編集 →</a>}
+        </section>
+        <p data-tool-status role="status" aria-live="polite"/>
+        {!Astro.locals.user?.approved&&<div class="tool-note"><p>回答・投票には通知先メンバーのログインが必要です。</p><a class="admin-button" href={login}>ログインして回答</a></div>}
+        <section class="tool-section tool-answer-section" aria-labelledby="tool-answer-title"><div class="tool-section-heading"><span class="tool-section-number" aria-hidden="true">01</span><h3 id="tool-answer-title">{t.kind==='box'?'回答を投稿':'回答する'}</h3></div><p class="tool-help tool-answer-notice" data-anonymous-notice/><div data-tool-answer/></section>
+        {dto.canAnswer && dto.settings.allowOptions && t.kind !== "box" && (
+          <details class="tool-settings">
+            <summary><span>選択肢を追加する</span></summary>
+            <form data-participant-option class="activity-form tool-settings-body">
+              <label>
+                {t.kind === "poll" ? "選択肢" : "時間帯など（省略可）"}
+                <input
+                  name="text"
+                  maxlength="300"
+                  required={t.kind === "poll"}
+                />
+              </label>
+              {t.kind === "schedule" ? (
+                <>
+                  <label>
+                    日付
+                    <input type="date" name="date" required />
+                  </label>
+                  <label>
+                    開始時刻
+                    <input type="time" name="start" />
+                  </label>
+                  <label>
+                    終了時刻
+                    <input type="time" name="end" />
+                  </label>
+                </>
+              ) : (
+                <label>
+                  画像（省略可）
+                  <input type="file" name="image" accept="image/*" />
+                </label>
+              )}
+              <button type="submit">追加</button>
+            </form>
+          </details>
+        )}
+        <MemberToolResults />
+      </div>
+    ) : (
+      <>
+        <p>{error}</p>
+        {!Astro.locals.user && (
+          <a class="admin-button" href={login}>
+            ログイン
+          </a>
+        )}
+      </>
+    )
+  }
+</MemberLayout>
+<script>
+  import "../../../scripts/memberTools";
+</script>

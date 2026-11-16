@@ -1,3 +1,4 @@
+import { isMemberAccount } from "./accountVisibility.ts";
 import {
   advanceIntegrationConfigured,
   postAccountingPayload,
@@ -22,7 +23,7 @@ export const activityRosterUrl = `https://docs.google.com/spreadsheets/d/${activ
 export type RosterSource = Pick<
   typeof activityRosterSource,
   "spreadsheetId" | "sheetId"
->;
+> & { term?: import("./clubFormsTypes.ts").TermRosterSource };
 export function rosterSourceUrl(source: RosterSource = activityRosterSource) {
   return `https://docs.google.com/spreadsheets/d/${source.spreadsheetId}/edit#gid=${source.sheetId}`;
 }
@@ -101,6 +102,10 @@ export async function fetchActivityRoster(
   sheetTitle: string;
   records: RosterRecord[];
 }> {
+  if (source.term) {
+    const { fetchTermRoster } = await import("./termRoster.ts");
+    return fetchTermRoster(source.term);
+  }
   if (!advanceIntegrationConfigured())
     throw new Error(
       "Google名簿との連携が未設定です。管理者に連絡してください。",
@@ -173,7 +178,7 @@ export async function fetchActivityRoster(
 export function applyRosterProfiles(data: ActivityStore, users: User[]) {
   const roster = data.roster;
   if (!roster) return;
-  const approved = new Set(users.filter((u) => u.approved).map((u) => u.id));
+  const approved = new Set(users.filter(isMemberAccount).map((u) => u.id));
   for (const id of Object.keys(roster.bindings))
     if (!approved.has(id)) delete roster.bindings[id];
   for (const id of Object.keys(data.profiles)) {
@@ -200,7 +205,7 @@ export function applyRosterProfiles(data: ActivityStore, users: User[]) {
     };
   }
 }
-/** Exact unique names are suggestions, never an automatic identity decision. */
+/** Unique, unclaimed name matches; approval may confirm the new account's suggestion. */
 export function rosterSuggestions(
   data: ActivityStore,
   users: User[],
@@ -209,13 +214,13 @@ export function rosterSuggestions(
   if (!roster) return {};
   const used = new Set(Object.values(roster.bindings));
   const candidates = users
-    .filter((u) => u.approved && !roster.bindings[u.id])
+    .filter((u) => isMemberAccount(u) && !roster.bindings[u.id])
     .map((u) => {
       const names = new Set(
         [u.name, u.portfolioName || ""].filter(Boolean).map(normalize),
       );
       const matches = roster.records.filter(
-        (r) => r.active && !used.has(r.key) && names.has(normalize(r.name)),
+        (r) => r.active && !r.identityUncertain && !r.membershipUncertain && !used.has(r.key) && names.has(normalize(r.name)),
       );
       return { id: u.id, key: matches.length === 1 ? matches[0].key : "" };
     });

@@ -10,7 +10,7 @@ footer {
 
 footer h1 {
     color: #FFF;
-    font-family: "Zen Kurenaido";
+    font-family: YakuHanRP, "Zen Kurenaido";
     font-size: 40px;
     font-style: normal;
     font-weight: 400;
@@ -21,7 +21,7 @@ footer h1 {
 
 footer h2 {
     color: #FFF;
-    font-family: "Zen Kurenaido";
+    font-family: YakuHanRP, "Zen Kurenaido";
     font-size: 20px;
     font-style: normal;
     font-weight: 400;
@@ -358,7 +358,7 @@ footer.footer--signed-in {
 #footer-logout-status:empty {
     display: none;
 }
-@media (max-width: 1024px) {
+@media (max-width: 1280px) {
     footer.footer--signed-in {
         padding-bottom: 160px;
     }
@@ -367,12 +367,38 @@ footer.footer--signed-in {
     footer.footer--signed-in {
         min-height: 626px;
     }
+    .footer--signed-in .links-lower-tier {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        width: 100%;
+    }
+    .footer--signed-in .links-lower-tier > a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        align-self: stretch;
+        min-width: 0;
+        padding-inline: 6px;
+        box-sizing: border-box;
+    }
+    .footer--signed-in .links-lower-tier > a:first-child {
+        grid-column: 1 / -1;
+    }
+    .footer--signed-in .links-lower-tier > a:last-child {
+        border-left: 0;
+    }
     .footer--signed-in .member-links {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 0;
         text-align: center;
     }
+    .footer--signed-in .member-links > a {
+        min-width: 0; min-height: 44px; display: grid; place-items: center; padding-inline: 6px; box-sizing: border-box;
+    }
+    .footer--signed-in .member-links > a:nth-child(even) { border-left: 1px solid rgba(255,255,255,.6); }
+    .footer--signed-in .member-links > a:nth-child(n+3) { border-top: 1px solid rgba(255,255,255,.6); }
+    .footer--signed-in .member-links > a:last-child:nth-child(odd) { grid-column: 1 / -1; }
     .footer--signed-in .member-links::after {
         display: none;
     }

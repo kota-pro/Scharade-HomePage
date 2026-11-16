@@ -130,7 +130,7 @@ test("processing revokes access, preserves unrelated group drafts and revisions,
   });
   await assert.rejects(
     startDeletionProcessing("member", r.id, now),
-    /管理者権限/,
+    /幹部以上の権限/,
   );
   await startDeletionProcessing("admin", r.id, now);
   assert.equal(getUserFromSession(s.token).user, null);

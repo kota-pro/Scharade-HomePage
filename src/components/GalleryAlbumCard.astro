@@ -1,0 +1,29 @@
+---
+import type { GalleryAlbum } from "../lib/galleryCatalog.ts";
+import MemberIcon from "./MemberIcon.astro";
+
+interface Props { album: GalleryAlbum }
+const { album } = Astro.props;
+const year = album.created ? new Date(album.created).getFullYear() : new Date().getFullYear();
+const cover = `/api/gallery/${encodeURIComponent(album.id)}/cover`;
+const smallCoverMedia = "(max-width: 320px) and (max-resolution: 2dppx), (max-width: 640px) and (max-resolution: 1dppx), (min-width: 769px) and (max-width: 1600px) and (max-resolution: 1dppx)";
+const audience = album.visibility === "staff" ? "運営限定" : "会員限定";
+---
+
+<div class="gallery-item" data-year={year}>
+  <a href={`/Gallery/${album.id}`} class="gallery-link">
+    <div class="image-wrapper">
+      <img alt={album.payload.name} loading="lazy" decoding="async" data-gallery-cover={cover} data-gallery-cover-media={smallCoverMedia} />
+      <noscript>
+        <picture>
+          <source media={smallCoverMedia} srcset={`${cover}?size=320`} />
+          <img src={cover} alt={album.payload.name} loading="lazy" />
+        </picture>
+      </noscript>
+      <p class="image-title">
+        {album.payload.name}
+        {album.hidden && <span class="gallery-audience-icon" role="img" aria-label={audience} title={audience}><MemberIcon kind="membersOnly" class="gallery-audience-svg" /></span>}
+      </p>
+    </div>
+  </a>
+</div>

@@ -7,6 +7,8 @@ import {
 } from "../../../lib/activities.ts";
 import { readUsers } from "../../../lib/auth.ts";
 import { json } from "../../../lib/http.ts";
+import { readExhibitions } from "../../../lib/exhibitions.ts";
+import { visibleMemberNotifications } from "../../../lib/memberActivityVisibility.ts";
 export const GET: APIRoute = async ({ locals, url }) => {
   if (!locals.user?.approved)
     return json({ ok: false, message: "ログインが必要です。" }, 401);
@@ -23,9 +25,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
         event: memberEvent(data, event, user, readUsers()),
       });
     }
-    const notices = data.notifications.filter((n) =>
-      n.recipientIds.includes(user.id),
-    );
+    const notices = visibleMemberNotifications(data, readExhibitions().exhibitions, user.id);
     const offset = Math.max(
       0,
       Math.floor(Number(url.searchParams.get("offset")) || 0),
@@ -44,6 +44,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
           senderName: n.senderName,
           eventId: n.eventId,
           exhibitionId: n.exhibitionId,
+          toolId: n.toolId,
           createdAt: n.createdAt,
           readAt: n.readBy[user.id] || null,
         })),

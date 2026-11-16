@@ -16,14 +16,11 @@ export type Portfolio = {
   name: string;
   self_introduction?: string;
   instagram?: string;
-  generation?: number;
   hashtags?: string[];
   x_url?: string;
   camera?: string;
   grade?: string | string[];
   role?: string;
-  isExecutive?: boolean;
-  displayOrder?: number;
   icon?: {
     url: string;
     height: number;
@@ -44,6 +41,11 @@ const PORTFOLIO_GRADE_ALIASES: Record<string, string> = {
   international: "International",
   "master's program": "Master's Program",
   "masters program": "Master's Program",
+  "doctor's program": "Doctor's Program",
+  "doctors program": "Doctor's Program",
+  doctorate: "Doctor's Program",
+  博士: "Doctor's Program",
+  博士課程: "Doctor's Program",
   ob: "OB/OG",
   og: "OB/OG",
   "ob/og": "OB/OG",

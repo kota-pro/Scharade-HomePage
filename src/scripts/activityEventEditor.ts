@@ -2,8 +2,39 @@ import { readApiResponse, apiErrorMessage } from "./apiResponse";
 import { operationNotice } from "./siteNotice";
 import { activityTextParts } from "../lib/activityPresentation";
 import { activityDate, eventCategoryLabels, type EventCategory } from "../lib/activityTypes";
+import { INTRODUCTION_NON_TEXT_TAGS, INTRODUCTION_TAGS, introductionTag } from "../utils/portfolioIntroduction";
+import type { createPortfolioIntroductionEditor } from "./portfolioIntroductionEditor";
 
-export function setupEventEditor(form: HTMLFormElement) {
+function linkifiedText(value: string) {
+  return activityTextParts(value).map(part => {
+    if (!part.href) return document.createTextNode(part.text);
+    const link = document.createElement("a");
+    link.href = part.href;
+    link.textContent = part.text;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    return link;
+  });
+}
+
+function previewText(node: Node, inLink = false): Node[] {
+  if (node.nodeType === Node.TEXT_NODE)
+    return inLink ? [document.createTextNode(node.textContent ?? "")] : linkifiedText(node.textContent ?? "");
+  if (!(node instanceof HTMLElement) || INTRODUCTION_NON_TEXT_TAGS.includes(node.localName)) return [];
+  const attributes = Object.fromEntries([...node.attributes].map(attribute => [attribute.name, attribute.value]));
+  const { tagName, attribs } = introductionTag(node.localName, attributes, true);
+  const children = [...node.childNodes].flatMap(child => previewText(child, inLink || tagName === "a"));
+  if (!INTRODUCTION_TAGS.includes(tagName)) return children;
+  const element = document.createElement(tagName);
+  for (const [name, value] of Object.entries(attribs)) element.setAttribute(name, value);
+  element.append(...children);
+  return [element];
+}
+
+export function setupEventEditor(
+  form: HTMLFormElement,
+  richFields: ReadonlyMap<string, ReturnType<typeof createPortfolioIntroductionEditor>>,
+) {
   const dialog = document.querySelector<HTMLDialogElement>(
     "[data-event-confirm]",
   )!;
@@ -14,12 +45,16 @@ export function setupEventEditor(form: HTMLFormElement) {
   const confirmStatus = dialog.querySelector<HTMLElement>(
     "[data-confirm-status]",
   );
+  const notify = dialog.querySelector<HTMLInputElement>("[data-confirm-notify]");
+  notify?.addEventListener("change", () => {
+    if (confirm) confirm.textContent = notify.checked ? "変更を公開して通知" : "変更を保存";
+  });
   const file = form.elements.namedItem("headerFile") as HTMLInputElement;
   const imageValue = form.elements.namedItem("headerImage") as HTMLInputElement;
   const imageStatus = form.querySelector<HTMLElement>("[data-image-status]")!;
   const remove = form.querySelector<HTMLButtonElement>("[data-remove-header]")!;
   const image = form.querySelector<HTMLElement>("[data-header-preview]")!;
-  const published = form.dataset.published === "true";
+  const released = form.dataset.released === "true";
   let uploading = false,
     approved = false,
     saving = false;
@@ -59,7 +94,7 @@ export function setupEventEditor(form: HTMLFormElement) {
   function edit(target: HTMLElement) {
     if (saving || dialog.dataset.busy === "true") return;
     const name = target.dataset.editField!;
-    const field = form.querySelector<HTMLElement>(`[name="${name}"]`);
+    const field = richFields.get(name)?.element ?? form.querySelector<HTMLElement>(`[name="${name}"]`);
     close();
     if (field)
       requestAnimationFrame(() => {
@@ -91,6 +126,14 @@ export function setupEventEditor(form: HTMLFormElement) {
       .querySelectorAll<HTMLElement>("[data-preview-value]")
       .forEach((element) => {
         const key = element.dataset.previewValue!;
+        const editor = richFields.get(key)?.element;
+        if (editor) {
+          const children = editor.textContent?.trim()
+            ? [...editor.childNodes].flatMap(node => previewText(node))
+            : ["（なし）"];
+          element.replaceChildren(...children);
+          return;
+        }
         let value = String(fd.get(key) || "");
         if (key === "category") value = eventCategoryLabels[value as EventCategory] || "その他イベント";
         if (["startsAt", "endsAt", "deadline"].includes(key))
@@ -101,7 +144,7 @@ export function setupEventEditor(form: HTMLFormElement) {
               form.elements.namedItem(key) as HTMLSelectElement
             ).selectedOptions[0]?.textContent?.trim() || "";
         if (key === "recipientIds") {
-          const names = published
+          const names = released
             ? form.dataset.recipientNames || ""
             : [
                 ...form.querySelectorAll<HTMLInputElement>(
@@ -112,17 +155,7 @@ export function setupEventEditor(form: HTMLFormElement) {
                 .join("、");
           value = names || "（なし）";
         }
-        element.replaceChildren(
-          ...activityTextParts(value || "（なし）").map((part) => {
-            if (!part.href) return document.createTextNode(part.text);
-            const link = document.createElement("a");
-            link.href = part.href;
-            link.textContent = part.text;
-            link.target = "_blank";
-            link.rel = "noopener noreferrer";
-            return link;
-          }),
-        );
+        element.replaceChildren(...linkifiedText(value || "（なし）"));
       });
     updateImage(
       dialog.querySelector<HTMLElement>("[data-header-preview]")!,
@@ -204,9 +237,10 @@ export function setupEventEditor(form: HTMLFormElement) {
     history.replaceState(null, "", url);
   }
   return {
+    notifyMembers: () => notify?.checked ?? false,
     beforeSave() {
       if (uploading) return false;
-      if (published && !approved) {
+      if (released && !approved) {
         open();
         return false;
       }
@@ -216,6 +250,7 @@ export function setupEventEditor(form: HTMLFormElement) {
     setBusy(value: boolean, message = "") {
       saving = value;
       if (confirm) confirm.disabled = value;
+      if (notify) notify.disabled = value;
       back.disabled = value;
       if (confirmStatus) confirmStatus.textContent = message;
       if(message) operationNotice(message,!value,"activity-save");

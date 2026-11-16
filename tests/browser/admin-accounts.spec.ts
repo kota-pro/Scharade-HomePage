@@ -57,7 +57,8 @@ test("admin can search, page and inspect registration details without secret dat
   expect((await page.request.post("/api/portfolio/update", { headers: { Origin: "http://127.0.0.1:4329" }, data: { portfolioId: "other", name: "別の会員" } })).status()).toBe(200);
   const writes: string[] = [];
   page.on("request", (request) => {
-    if (request.method() !== "GET") writes.push(request.url());
+    // The deliberate 404 below may report its error; it must not change any account data.
+    if (request.method() !== "GET" && !request.url().endsWith("/api/error-reports")) writes.push(request.url());
   });
   await page.goto("/Admin");
   await expect(page.locator('a[href="/Admin/portfolios"]')).toHaveCount(0);
@@ -72,7 +73,7 @@ test("admin can search, page and inspect registration details without secret dat
   await expect(page.locator('.admin-account-pagination [aria-current="page"]')).toHaveText("1");
   await expect(page.getByRole("link", { name: "前へ", exact: true })).toHaveAttribute("aria-disabled", "true");
   await page.getByRole("link", { name: "次へ", exact: true }).click();
-  await expect(page.locator(".admin-account-row")).toHaveCount(total - 30);
+  await expect(page.locator(".admin-account-row")).toHaveCount(Math.min(30, total - 30));
   await expect(page.locator('.admin-account-pagination [aria-current="page"]')).toHaveText("2");
   await page.getByRole("link", { name: "1ページ目", exact: true }).click();
   await expect(page.locator(".admin-account-row")).toHaveCount(30);
@@ -164,56 +165,90 @@ test("admin can search, page and inspect registration details without secret dat
   expect(writes).toEqual([]);
 });
 
-test("executive checkbox stays beside its label and persists using the existing save flow", async ({
-  page,
-}, testInfo) => {
+test("account administrators set Portfolio offices in a fixed order and can clear them", async ({ page, browser }) => {
+  const headers = { Origin: "http://127.0.0.1:4329" };
+  const saveOffice = (id: string, office: string, previousOffice = "", portfolioId = id) =>
+    page.request.post(`/api/admin/accounts/${id}/portfolio-office`, {
+      headers,
+      data: { portfolioId, office, previousOffice },
+    });
+
+  expect((await saveOffice("other", "会計")).status()).toBe(401);
+  const executivePage = await browser.newPage({ baseURL: headers.Origin });
+  try {
+    await login(executivePage, "photo-executive-chromium");
+    await executivePage.goto("/Admin/accounts?q=other%40example.invalid");
+    await expect(executivePage.getByRole("link", { name: /Portfolioの役職を設定/ })).toHaveCount(0);
+    await executivePage.goto("/Admin/accounts/other");
+    await expect(executivePage.locator("#portfolio-office")).toHaveCount(0);
+    const denied = await executivePage.request.post("/api/admin/accounts/other/portfolio-office", {
+      headers,
+      data: { portfolioId: "other", office: "幹事長", previousOffice: "" },
+    });
+    expect(denied.status()).toBe(403);
+  } finally {
+    await executivePage.close();
+  }
+
   await login(page);
-  await page.goto("/Portfolio/edit?id=other");
-  const checkbox = page.getByRole("checkbox", {
-    name: "幹部として表示",
-    exact: true,
-  });
-  const original = await checkbox.isChecked();
+  await page.goto("/Admin/accounts?q=other%40example.invalid");
+  await expect(page.getByRole("link", { name: /Portfolioの役職を設定/ })).toHaveCount(0);
+  await page.getByRole("link", { name: "別の会員の登録内容を確認" }).click();
+  await expect(page).toHaveURL(/\/Admin\/accounts\/other$/);
+  const form = page.locator("#portfolio-office-form");
+  const select = form.getByLabel("掲載する役職");
+  await expect(select.locator("option")).toHaveText(["設定なし", "幹事長", "副幹事長", "会計"]);
+  await expect(select).toHaveValue("");
   for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    await expect(checkbox).toBeVisible();
-    const geometry = await checkbox.evaluate((input) => {
-      const box = input.getBoundingClientRect();
-      const text = document
-        .querySelector(".admin-executive-option span")!
-        .getBoundingClientRect();
-      return {
-        right: box.left >= text.right,
-        aligned:
-          Math.abs(box.top + box.height / 2 - text.top - text.height / 2) < 1,
-        width: box.width,
-        color: getComputedStyle(input).accentColor,
-      };
-    });
-    expect(geometry).toEqual({
-      right: true,
-      aligned: true,
-      width: 20,
-      color: "rgb(0, 0, 0)",
-    });
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth + 1,
-      ),
-    ).toBe(true);
+    await expect(select).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   }
-  await page.locator(".admin-executive-option span").click();
-  expect(await checkbox.isChecked()).toBe(!original);
-  await page
-    .locator(".admin-portfolio-fields")
-    .screenshot({ path: testInfo.outputPath("executive-fields.png") });
-  page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "Save changes", exact: true }).click();
-  await expect(page).toHaveURL(/\/Portfolio\/other$/);
-  await page.goto("/Portfolio/edit?id=other");
-  expect(await checkbox.isChecked()).toBe(!original);
-  await checkbox.setChecked(original);
-  page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "Save changes", exact: true }).click();
-  await expect(page).toHaveURL(/\/Portfolio\/other$/);
+  expect((await saveOffice("other", "旧副幹事長")).status()).toBe(400);
+  expect((await saveOffice("legacy", "会計")).status()).toBe(404);
+  expect((await saveOffice("other", "会計", "", "member")).status()).toBe(409);
+  try {
+    await select.selectOption("会計");
+    await form.getByRole("button", { name: "役職を保存" }).click();
+    await expect(form.getByRole("status")).toHaveText("Portfolioの役職を保存しました。");
+    expect((await saveOffice("other", "幹事長")).status()).toBe(409);
+    expect((await saveOffice("other", "会計")).status()).toBe(200);
+    expect((await saveOffice("admin", "副幹事長")).status()).toBe(200);
+    expect((await saveOffice("member", "幹事長")).status()).toBe(200);
+
+    await page.reload();
+    await expect(select).toHaveValue("会計");
+    await expect(page.locator(".admin-account-details")).toContainText("一般会員");
+    await page.goto("/Portfolio/edit?id=other");
+    await expect(page.locator("#field-name")).toBeVisible();
+    await expect(page.locator("#field-generation, #field-role, #field-display-order, #field-executive")).toHaveCount(0);
+    const legacy = await page.request.post("/api/portfolio/update", {
+      headers,
+      data: { portfolioId: "other", name: "別の会員", generation: 98, role: "幹事長", displayOrder: 0, isExecutive: true },
+    });
+    expect(legacy.status()).toBe(200);
+    await page.goto("/Portfolio/other");
+    await expect(page.locator(".profile-icon")).toBeVisible();
+    await expect(page.getByText(/期生/)).toHaveCount(0);
+
+    await page.goto("/Portfolio");
+    const cards = page.locator(".executive-section .member-card");
+    await expect(cards.locator(".member-grade")).toHaveText(["幹事長", "副幹事長", "会計"]);
+    const all = page.locator('details[data-portfolio-grade="All"] .member-card');
+    for (const [i, id] of ["member", "admin", "other"].entries()) {
+      await expect(cards.nth(i)).toHaveAttribute("href", `/Portfolio/${id}`);
+      await expect(all.nth(i)).toHaveAttribute("href", `/Portfolio/${id}`);
+    }
+
+    await page.goto("/Admin/accounts/other#portfolio-office");
+    await select.selectOption("");
+    await form.getByRole("button", { name: "役職を保存" }).click();
+    await expect(form.getByRole("status")).toHaveText("Portfolioの役職を保存しました。");
+    await page.goto("/Portfolio");
+    await expect(cards.locator(".member-grade")).toHaveText(["幹事長", "副幹事長"]);
+  } finally {
+    await saveOffice("member", "", "幹事長");
+    await saveOffice("admin", "", "副幹事長");
+    await saveOffice("other", "", "会計");
+  }
 });

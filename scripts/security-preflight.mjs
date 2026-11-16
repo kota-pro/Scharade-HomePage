@@ -2,9 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { signedEnvelope } from "../src/lib/signedEnvelope.ts";
+import { runtimeSecurityFailure } from "./runtime-policy.mjs";
 
 // Run from the release with --env-file=.env. Output names/statuses, never values.
 const failures = [];
+const runtimeFailure = runtimeSecurityFailure();
+if (runtimeFailure) failures.push(runtimeFailure);
 const requireValue = name => { if (!process.env[name]) failures.push(`${name}: missing`); return process.env[name] ?? ""; };
 for (const name of ["MICROCMS_SERVICE_DOMAIN", "MICROCMS_SERVER_API_KEY", "GMAIL_PASS", "SIGNUP_REVIEW_SECRET"]) requireValue(name);
 if ((process.env.SIGNUP_REVIEW_SECRET ?? "").length < 32) failures.push("SIGNUP_REVIEW_SECRET: too short");
@@ -29,7 +32,7 @@ for (const [file, expected] of [[".env", 0o600], [data, 0o700]]) {
 const historicalKeyFingerprint = process.argv.find(arg => arg.startsWith("--old-cms-fingerprint="))?.slice(22);
 if (historicalKeyFingerprint && (!/^[a-f0-9]{64}$/.test(historicalKeyFingerprint) || cms.some(key => key && crypto.createHash("sha256").update(key).digest("hex") === historicalKeyFingerprint))) failures.push("microCMS: historical key fingerprint still matches");
 if (!failures.length && !process.argv.includes("--offline")) {
-  for (const name of ["ACCOUNTING_GAS_URL", "EXHIBITION_GAS_URL", "EXHIBITION_DRIVE_GAS_URL"]) {
+  for (const name of ["ACCOUNTING_GAS_URL", "ACCOUNTING_ADMIN_GAS_URL", "EXHIBITION_GAS_URL", "EXHIBITION_DRIVE_GAS_URL"]) {
     const value = process.env[name]; if (!value) continue;
     try {
       const url = new URL(value);

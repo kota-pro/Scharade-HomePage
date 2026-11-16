@@ -2,8 +2,9 @@ import test,{beforeEach,after} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import crypto from 'node:crypto';
 import {writeData} from '../src/lib/store.ts';
+import {readUsers} from '../src/lib/auth.ts';
 import {exhibitionAction,readExhibitions} from '../src/lib/exhibitions.ts';
-import {joinLayout,acquireLayoutLeases,commitLayoutOperation,readLayoutHistory,restoreLayoutVersion,layoutPresence,releaseLayout,readLayoutSnapshot} from '../src/lib/exhibitionCollaboration.ts';
+import {joinLayout,updateLayoutPresence,acquireLayoutLeases,commitLayoutOperation,readLayoutHistory,restoreLayoutVersion,layoutPresence,releaseLayout,readLayoutSnapshot} from '../src/lib/exhibitionCollaboration.ts';
 import {diffLayoutRooms,layoutChangeLeaseKeys,invertLayoutChanges,applyLayoutChanges,layoutDependencyChecks} from '../src/lib/exhibitionLayoutChanges.ts';
 import type {RoomLayout} from '../src/lib/exhibitionTypes.ts';
 const directory=fs.mkdtempSync(path.join(os.tmpdir(),'scharade-collaboration-'));
@@ -18,3 +19,28 @@ test('ten prior snapshots restore as a new version; stale restoration cannot ove
 test('stale same-object changes, missing locks, old clients and member access leave saved data intact',async()=>{const f=await fixture(),next=structuredClone(f.rooms);next[0].tables[0].x+=40;await commit('one',f.id,f.one,f.rooms,next);const other=structuredClone(f.rooms);other[0].tables[0].x+=50;await assert.rejects(commit('two',f.id,f.two,f.rooms,other),(e:any)=>e.status===409);const latest=readLayoutSnapshot('one',f.id);assert.equal(latest.rooms[0].tables[0].x,next[0].tables[0].x);assert.throws(()=>readLayoutSnapshot('member',f.id),(e:any)=>e.status===403);await assert.rejects(exhibitionAction('one',{action:'rooms',exhibitionId:f.id,revision:latest.exhibitionRevision,rooms:[]}),/旧画面/);const baseline=JSON.stringify(readExhibitions());await assert.rejects(commitLayoutOperation('one',f.id,{operationId:crypto.randomUUID(),clientId:f.one,changes:diffLayoutRooms(f.rooms,next),leases:[]}));assert.equal(JSON.stringify(readExhibitions()),baseline);});
 
 test('stale geometry read dependencies reject a positional edit after reconnect without serializing unrelated objects',async()=>{const f=await fixture(),next=structuredClone(f.rooms);next[0].tables[0].x+=30;const changes=diffLayoutRooms(f.rooms,next),checks=layoutDependencyChecks(f.rooms,changes);const geometry=structuredClone(f.rooms);geometry[0].wallHeights[0]+=100;await commit('two',f.id,f.two,f.rooms,geometry);const leases=acquireLayoutLeases('one',f.id,{clientId:f.one,keys:changes.flatMap(c=>layoutChangeLeaseKeys(c,next))}).leases;await assert.rejects(commitLayoutOperation('one',f.id,{clientId:f.one,operationId:crypto.randomUUID(),changes,checks,leases}),(e:any)=>e.status===409);assert.equal(readLayoutSnapshot('one',f.id).rooms[0].tables[0].x,f.rooms[0].tables[0].x);});
+
+test('presence colors distinguish accounts, stay stable across tabs and reconnects, and use authenticated names',async()=>{
+ const f=await fixture(),first=layoutPresence(f.id).peers.find(p=>p.clientId===f.one)!,second=layoutPresence(f.id).peers.find(p=>p.clientId===f.two)!;
+ assert.notEqual(first.color,second.color);assert.match(first.color,/^#[a-f0-9]{6}$/i);
+ for(const c of [first.color,second.color])assert.ok([1,3,5].every(i=>parseInt(c.slice(i,i+2),16)>=145));
+ const tab=crypto.randomUUID();await joinLayout('one',f.id,tab);assert.equal(layoutPresence(f.id).peers.find(p=>p.clientId===tab)!.color,first.color);
+ releaseLayout('one',f.id,f.one,true);await joinLayout('one',f.id,f.one);assert.equal(layoutPresence(f.id).peers.find(p=>p.clientId===f.one)!.color,first.color);
+ const presence=updateLayoutPresence('one',f.id,{clientId:f.one,roomId:f.rooms[0].id,view:'floor',selected:[`table:${f.rooms[0].tables[0].id}`],name:'偽の名前',color:'#000000'});
+ assert.equal(presence.peers.find(p=>p.clientId===f.one)!.name,'運営一');assert.equal(presence.peers.find(p=>p.clientId===f.one)!.color,first.color);
+ assert.equal(presence.peers.find(p=>p.clientId===f.one)!.selected.length,1);
+});
+
+test('every collaboration color stays pastel and distinct when the preset palette is exhausted',async()=>{
+ const f=await fixture(),users=readUsers();
+ const actors=Array.from({length:18},(_,index)=>({...users[0],id:`color-${index}`,name:`色確認${index}`,email:`color-${index}@example.invalid`}));
+ writeData('users.json',[...users,...actors]);
+ for(const actor of actors)await joinLayout(actor.id,f.id,crypto.randomUUID());
+ const peers=layoutPresence(f.id).peers;
+ assert.equal(peers.length,20);
+ assert.equal(new Set(peers.map(peer=>peer.color)).size,20);
+ for(const peer of peers){
+  assert.match(peer.color,/^#[a-f0-9]{6}$/i);
+  assert.ok([1,3,5].every(index=>parseInt(peer.color.slice(index,index+2),16)>=145),`Expected a pastel collaboration color, received ${peer.color}`);
+ }
+});

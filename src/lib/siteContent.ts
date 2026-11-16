@@ -6,6 +6,7 @@ import {
 import { readData, writeData, withStoreLock } from "./store.ts";
 import { invalidateCache } from "./cache.ts";
 import { audit } from "./audit.ts";
+import { parseHomePhotoExclusions } from "./homePhotos.ts";
 
 export const pageDefinitions: Record<PageKey, { title: string; path: string }> =
   {
@@ -43,7 +44,18 @@ export function contentDocument<K extends PageKey>(
   if (state.schemaVersion !== 1 || !state.pages)
     throw new Error("サイト情報の保存形式が正しくありません。");
   const saved = state.pages[key];
-  if (saved) return saved as ContentDocument<SiteDefaults[K]>;
+  if (saved) {
+    // Older saved Home drafts and restore points predate the photo picker.
+    // Normalize in memory; never overwrite the other saved page fields.
+    if (key === "home") {
+      const home = (value: unknown): SiteDefaults[K] => ({ excludedPhotoIds: [], ...(value as SiteDefaults[K]) });
+      return {
+        ...saved, draft: home(saved.draft), published: home(saved.published),
+        previous: saved.previous ? home(saved.previous) : null,
+      } as ContentDocument<SiteDefaults[K]>;
+    }
+    return saved as ContentDocument<SiteDefaults[K]>;
+  }
   return {
     revision: 0,
     draft: structuredClone(siteDefaults[key]),
@@ -74,6 +86,7 @@ export function validateContent(
   input: unknown,
 ): SiteDefaults[PageKey] {
   function visit(template: unknown, value: unknown, field = ""): unknown {
+    if (key === "home" && field === "excludedPhotoIds") return parseHomePhotoExclusions(value);
     if (Array.isArray(template)) {
       if (!Array.isArray(value) || value.length > 100)
         throw new Error("項目数は100件以内にしてください。");

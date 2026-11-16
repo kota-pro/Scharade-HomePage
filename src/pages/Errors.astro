@@ -1,0 +1,118 @@
+---
+import PageTopNav from '../components/PageTopNav.astro';
+import '../styles/UA+reset.css';
+import Layout from '../layouts/Layout.astro';
+import { siteErrors, credentialMismatchMessage } from '../lib/siteErrors.ts';
+import { exhibitionErrors } from '../lib/exhibitionErrors.ts';
+
+const groups = [
+  { id: 'site', title: 'サイト共通', description: '', entries: Object.entries(siteErrors) },
+  { id: 'exhibition', title: '写真展フォーム', description: '作品名や写真番号、各項目の上限などは、実際の画面に詳しく表示されます。', entries: Object.entries(exhibitionErrors) },
+];
+const total = groups.reduce((count, group) => count + group.entries.length, 0);
+---
+
+<Layout title="Error Code" description="エラーコードや障害の内容から、写団シャレード公式サイトのエラー番号と対処方法を検索できます。">
+  <Fragment slot="main-slot">
+    <div class="section-title">
+      <h1>Error Code</h1>
+      <div class="section-title-line" aria-hidden="true"></div>
+    </div>
+  </Fragment>
+  <Fragment slot="menu-slot">
+    <div class="menu-contents-inner"><PageTopNav /></div>
+  </Fragment>
+  <div slot="body-slot" class="error-code-guide" data-error-code-guide>
+    <section class="guide-section" aria-labelledby="error-guide-heading">
+      <h2 id="error-guide-heading">エラー番号の案内</h2>
+      <p>エラーコード、または表示された説明の言葉から、エラーの内容と対処方法を探せます。</p>
+      <div class="error-code-search" role="search" aria-labelledby="error-search-label" data-error-search-controls hidden>
+        <label id="error-search-label" for="error-code-query">エラーコード・障害の内容で検索</label>
+        <div class="search-controls">
+          <div class="search-field">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 5 5" /></svg>
+            <input id="error-code-query" type="search" placeholder="例：SITE-001、通信、写真の添付" autocomplete="off" aria-describedby="error-search-hint" aria-controls="error-code-results" data-error-code-search />
+          </div>
+          <button type="button" class="search-clear" data-error-search-clear disabled>クリア</button>
+        </div>
+        <p id="error-search-hint" class="search-hint">複数の言葉をスペースで区切って検索できます。</p>
+        <p class="search-count" role="status" aria-live="polite" aria-atomic="true" data-error-search-count>全{total}件</p>
+      </div>
+    </section>
+    <div id="error-code-results">
+      <p class="error-code-empty" data-error-search-empty hidden>検索条件に一致するエラーはありません。別の言葉で検索してください。</p>
+      {groups.map(group => (
+        <section class="guide-section error-code-group" data-error-code-group aria-labelledby={`error-group-${group.id}`}>
+          <h2 id={`error-group-${group.id}`}>{group.title}</h2>
+          {group.description && <p>{group.description}</p>}
+          <dl>
+            {group.entries.map(([code, message]) => (
+              <div class="error-code-entry" id={code} data-error-code-entry data-error-code={code} data-error-search-text={[code, message, code === 'SITE-016' ? credentialMismatchMessage : ''].join(' ')}>
+                <dt>{code}</dt><dd>{message}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ))}
+    </div>
+    <section class="guide-section" aria-labelledby="error-support-heading">
+      <h2 id="error-support-heading">解決しないときは</h2>
+      <p>エラーが出た場合は、番号の下に表示されている説明に沿って操作してください。解決しない場合は、エラー番号と操作していたページを添えて<a class="href-anchor" href="/Contact">お問い合わせ</a>ください。パスワードやメールの確認コードは送らないでください。</p>
+      <p>サイト側の不具合や一時的な障害を検出した場合に、エラー番号・発生日時・ページの種類・ブラウザーの種類などを運営へ自動報告します。入力間違い、認証情報の不一致、権限不足、受付期間外、操作回数の制限、端末のオフライン状態は報告しません。入力した文章・氏名・メールアドレス・写真・パスワード・確認コードは報告に含めません。同じエラーの連続通知は抑制します。</p>
+    </section>
+  </div>
+</Layout>
+
+<script>
+  import { setupErrorCodeSearch } from '../scripts/errorCodeSearch';
+  setupErrorCodeSearch();
+</script>
+
+<style>
+  [hidden] { display: none !important; }
+  .section-title { display: flex; align-items: center; justify-content: center; margin: 25px 0 55px; }
+  .section-title h1 { flex-shrink: 0; color: #000; font: 400 96px/normal "linotype-didot", serif; letter-spacing: 14.4px; padding-right: 78px; white-space: nowrap; }
+  .section-title-line { flex: 1; min-width: 0; height: 1px; background: #000; }
+  .menu-contents-inner { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+  .error-code-guide { width: 100%; min-width: 0; }
+  .guide-section { display: flex; width: 100%; box-sizing: border-box; min-width: 0; padding-left: 20px; flex-direction: column; align-items: flex-start; position: relative; margin: 15px 0 60px; }
+  .guide-section::before { content: ''; position: absolute; top: -15px; left: 0; width: 1px; height: calc(100% + 30px); background: #000; }
+  .guide-section h2 { color: #000; font: 400 32px/1.6 "Zen Old Mincho", serif; letter-spacing: 4.8px; margin-bottom: 40px; }
+  .guide-section p, .error-code-empty { color: #000; font: 400 16px/1.9 "Zen Kurenaido", sans-serif; letter-spacing: 2.4px; overflow-wrap: anywhere; }
+  .guide-section > p + p { margin-top: 15px; }
+  .error-code-search { width: 100%; margin-top: 32px; }
+  .error-code-search label { display: block; margin-bottom: 12px; font: 400 18px/1.8 "Zen Kurenaido", sans-serif; letter-spacing: 2px; }
+  .search-controls { display: flex; align-items: stretch; gap: 12px; }
+  .search-field { position: relative; flex: 1; min-width: 0; }
+  .search-field svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+  .search-field input { width: 100%; min-width: 0; min-height: 52px; box-sizing: border-box; border: 1px solid #222; border-radius: 0; padding: 12px 14px 12px 46px; background: transparent; color: #000; font: 400 16px/1.6 "Zen Kurenaido", sans-serif; letter-spacing: 1px; }
+  .search-field input::placeholder { color: #777; opacity: 1; }
+  .search-clear { flex-shrink: 0; min-height: 52px; border: 1px solid #777; border-radius: 0; padding: 10px 18px; background: transparent; color: #000; font: 400 16px/1.6 "Zen Kurenaido", sans-serif; letter-spacing: 1px; cursor: pointer; }
+  .search-clear:hover:not(:disabled) { background: #eee; }
+  .search-clear:disabled { color: #888; border-color: #ccc; cursor: default; }
+  .search-field input:focus-visible, .search-clear:focus-visible { outline: 2px solid #222; outline-offset: 3px; }
+  .error-code-search .search-hint, .error-code-search .search-count { font-size: 14px; letter-spacing: 1px; color: #555; margin-top: 10px; }
+  .error-code-search .search-count { color: #000; }
+  .error-code-group > p { margin-bottom: 24px; }
+  dl { width: 100%; min-width: 0; }
+  .error-code-entry { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 24px; padding: 22px 0; border-top: 1px solid #d1d1d1; scroll-margin-top: 140px; }
+  .error-code-entry:last-child { border-bottom: 1px solid #d1d1d1; }
+  dt { font: 400 18px/1.9 "Zen Old Mincho", serif; letter-spacing: 1.5px; }
+  dd { margin: 0; min-width: 0; font: 400 16px/1.9 "Zen Kurenaido", sans-serif; letter-spacing: 2px; overflow-wrap: anywhere; }
+  .error-code-empty { margin: 0 0 40px; }
+  @media (max-width: 768px) {
+    .section-title { margin-bottom: 35px; }
+    .section-title h1 { font-size: clamp(36px, 12vw, 48px); letter-spacing: 7.2px; padding-right: 16px; }
+    .guide-section { padding-left: 15px; margin-top: 12px; margin-bottom: 44px; }
+    .guide-section::before { top: -12px; height: calc(100% + 24px); }
+    .guide-section h2 { font-size: 25px; letter-spacing: 3px; margin-bottom: 24px; }
+    .guide-section p, dd, .error-code-empty { font-size: 14px; letter-spacing: 1.6px; }
+    .error-code-search { margin-top: 24px; }
+    .error-code-search label { font-size: 16px; letter-spacing: 1px; }
+    .search-controls { gap: 8px; }
+    .search-clear { padding-inline: 12px; }
+    .error-code-search .search-hint, .error-code-search .search-count { font-size: 13px; }
+    .error-code-entry { grid-template-columns: minmax(0, 1fr); gap: 7px; padding: 18px 0; }
+    dt { font-size: 16px; }
+  }
+</style>

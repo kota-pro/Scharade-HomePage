@@ -8,10 +8,13 @@ import { spawn } from "node:child_process";
 for (const duringDelivery of [false, true]) {
   test(`exhibition worker closes PM2 IPC ${duringDelivery ? "after in-flight delivery" : "while idle"}`, async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "exhibition-worker-"));
+    for (const file of ["require-secure-runtime.mjs", "runtime-policy.mjs"]) {
+      fs.copyFileSync(path.join("scripts", file), path.join(dir, file));
+    }
     // Keep PM2's message listener present: an open IPC channel otherwise prevents exit.
     fs.writeFileSync(path.join(dir, "wrapper.mjs"), 'process.on("message", () => {}); await import("./worker.mjs");');
-    fs.writeFileSync(path.join(dir, "fixture.mjs"), 'export const siteOrigin = () => "https://example.invalid"; export async function drainExhibitionQueues() { console.log("started"); await new Promise(resolve => setTimeout(resolve, 150)); console.log("finished"); return {attempted:1,uploads:0,delivered:1}; }');
-    fs.writeFileSync(path.join(dir, "worker.mjs"), fs.readFileSync("scripts/exhibition-worker.mjs", "utf8").replace('"../src/lib/exhibitionIntegrations.ts"', '"./fixture.mjs"').replace('"../src/lib/config.ts"', '"./fixture.mjs"'));
+    fs.writeFileSync(path.join(dir, "fixture.mjs"), 'export async function drainShiftGeneration() { return false; } export const siteOrigin = () => "https://example.invalid"; export async function drainExhibitionQueues() { console.log("started"); await new Promise(resolve => setTimeout(resolve, 150)); console.log("finished"); return {attempted:1,uploads:0,delivered:1}; }');
+    fs.writeFileSync(path.join(dir, "worker.mjs"), fs.readFileSync("scripts/exhibition-worker.mjs", "utf8").replace('"../src/lib/exhibitionIntegrations.ts"', '"./fixture.mjs"').replace('"../src/lib/config.ts"', '"./fixture.mjs"').replace('"../src/lib/exhibitionShiftJobs.ts"', '"./fixture.mjs"'));
     const child = spawn(process.execPath, [path.join(dir, "wrapper.mjs")], { stdio: ["ignore", "pipe", "pipe", "ipc"] });
     let output = "", errors = "", sent = false;
     child.stdout!.on("data", chunk => {

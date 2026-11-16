@@ -14,6 +14,6 @@ export const GET:APIRoute=({locals,params,request,url})=>{
    const presence=layoutPresence(exhibitionId);if(!presence.peers.some(p=>p.clientId===clientId&&p.actorId===locals.user!.id)){send('ended',{message:'共同編集へ再接続しています。未送信の変更は保持しています。'});finish();return;}const presenceKey=JSON.stringify(presence);if(presenceKey!==lastPresence){send('presence',presence);lastPresence=presenceKey;}
    if(now-lastBeat>=10000){send('heartbeat',{epoch:collaborationEpoch});lastBeat=now;}
   }catch{send('ended',{message:'写真展が削除されたか、共同編集の接続を確認できません。未送信の内容を控えてください。'});finish();}};
-  controller.enqueue(encoder.encode('retry: 1500\n\n'));tick();if(!closed)interval=setInterval(tick,150);request.signal.addEventListener('abort',finish,{once:true});},cancel(){closed=true;clearInterval(interval);}});
+  controller.enqueue(encoder.encode('retry: 1500\n\n'));tick();if(!closed)interval=setInterval(tick,250);request.signal.addEventListener('abort',finish,{once:true});},cancel(){closed=true;clearInterval(interval);}});
  return new Response(stream,{headers:{'Content-Type':'text/event-stream; charset=utf-8','Cache-Control':'private, no-store','X-Accel-Buffering':'no','X-Robots-Tag':'noindex, nofollow'}});
 };

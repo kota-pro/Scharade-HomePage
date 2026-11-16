@@ -45,7 +45,7 @@ test("staff can review and delete an event and its notices; member access and st
     await login(member.request, "activity-0");
     await page.goto("/Member/manage");
     await expect(
-      page.getByRole("heading", { name: "Staff", exact: true }),
+      page.getByRole("heading", { name: "Management", exact: true }),
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "管理・運営", exact: true }),
@@ -135,7 +135,7 @@ test("staff can review and delete an event and its notices; member access and st
     }
     await dialog.getByLabel("この企画を削除します").check();
     await submit(page, "event.delete", "削除を確定");
-    await expect(page).toHaveURL(/\/Member\/manage\?deleted=1/);
+    await expect(page).toHaveURL(/\/Management\?deleted=1/);
     await expect(page.getByRole("status").filter({ hasText: "企画と関連する通知を削除しました。" })).toBeVisible();
     expect((await member.request.get(`/Member/events/${id}`)).status()).toBe(
       404,

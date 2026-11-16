@@ -9,11 +9,12 @@ import { ExhibitionError, id } from "./exhibitionValidation.ts";
 import { exhibitionOutputPath } from "./exhibitionDrive.ts";
 import { exhibitionGoogleConfigured, postExhibitionGas, type ExhibitionGoogleConnection } from "./exhibitionGoogleGateway.ts";
 import { deleteExhibitionAlbum } from "./exhibitionIntegrations.ts";
+import { readShiftStore, updateShiftStore } from "./exhibitionShiftStore.ts";
 import { removeExhibitionNotices } from "./activities.ts";
 
 export async function deleteExhibition(actorId: string, exhibitionId: string, revision: unknown, confirmation: unknown) {
   requireStaff(actorId); id(exhibitionId);
-  const result = await updateExhibitionStore(data => {
+  const result = await updateExhibitionStore(async data => {
     requireStaff(actorId);
     const queued = data.deletions?.find(d => d.id === exhibitionId);
     if (queued) { if (confirmation !== queued.title) throw new ExhibitionError("写真展名を入力して削除を確認してください。"); return {ok:true,deletion:queued}; }
@@ -21,6 +22,7 @@ export async function deleteExhibition(actorId: string, exhibitionId: string, re
     if (e.revision !== revision) throw new ExhibitionError("写真展が変更されています。再読み込みしてください。",409);
     if (confirmation !== e.title) throw new ExhibitionError("写真展名を入力して削除を確認してください。");
     const submissions=data.submissions.filter(s=>s.exhibitionId===e.id),assets=data.assets.filter(a=>a.exhibitionId===e.id),outputs=(data.outputs??[]).filter(o=>o.exhibitionId===e.id),layoutAssets=(data.layoutAssets??[]).filter(a=>a.exhibitionId===e.id);
+    const shifts = readShiftStore().records.find(r => r.exhibitionId === e.id);
     const backupDir=path.join(path.dirname(dataPath("exhibitions.json")),"exhibition-backups",`${e.id}-${Date.now()}`);
     fs.mkdirSync(backupDir,{recursive:true,mode:0o700});
     const files = [...assets.flatMap(a=>[exhibitionAssetPath(a.id),exhibitionAssetPath(a.id,true)]),...outputs.map(o=>exhibitionOutputPath(o.id)),...layoutAssets.flatMap(a=>[layoutAssetPath(a.id),layoutAssetPath(a.id,true)])];
@@ -30,13 +32,14 @@ export async function deleteExhibition(actorId: string, exhibitionId: string, re
       const digest=(file: string)=>crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
       const expected=digest(source);if(digest(target)!==expected)throw new Error("backup-checksum");hashes[path.basename(source)]=expected;
     }
-    fs.writeFileSync(path.join(backupDir,"exhibition.json"),JSON.stringify({exhibition:e,submissions,assets,layoutAssets,outputs,hashes},null,2),{mode:0o600,flag:"wx"});
+    fs.writeFileSync(path.join(backupDir,"exhibition.json"),JSON.stringify({exhibition:e,submissions,assets,layoutAssets,outputs,shifts,hashes},null,2),{mode:0o600,flag:"wx"});
     const now=Date.now();
     const deletion={id:e.id,title:e.title,actorId,createdAt:new Date(now).toISOString(),backupDir,status:"pending" as const,nextAttemptAt:0,attempts:0,
-      notBefore:Math.max(now+30000,e.googleSync?.leaseUntil??0,e.albumSync?.leaseUntil??0,...submissions.flatMap(s=>s.versions.map(v=>v.leaseUntil??0)),...assets.map(a=>a.drive?.leaseUntil??0),...outputs.map(o=>o.drive.leaseUntil??0),...layoutAssets.map(a=>a.drive?.leaseUntil??0)),
-      googleForms:structuredClone(e.googleForms),folderId:e.driveFolders?.folderId,fileIds:[...assets.map(a=>a.drive?.fileId),...outputs.map(o=>o.drive.fileId),...layoutAssets.map(a=>a.drive?.fileId)].filter((v):v is string=>!!v),uploadKeys:[...assets.map(a=>a.id),...outputs.map(o=>o.id),...layoutAssets.map(a=>a.id)],albumId:e.albumId,albumCreated:!!e.albumCreated || !!e.albumSync,assetIds:assets.map(a=>a.id),outputIds:outputs.map(o=>o.id),layoutAssetIds:layoutAssets.map(a=>a.id)};
+      notBefore:Math.max(now+30000,shifts?.sync.leaseUntil??0,e.googleSync?.leaseUntil??0,e.albumSync?.leaseUntil??0,...submissions.flatMap(s=>s.versions.map(v=>v.leaseUntil??0)),...assets.map(a=>a.drive?.leaseUntil??0),...outputs.map(o=>o.drive.leaseUntil??0),...layoutAssets.map(a=>a.drive?.leaseUntil??0)),
+      googleForms:structuredClone(e.googleForms),folderId:e.driveFolders?.folderId,fileIds:[shifts?.sync.spreadsheetId,...assets.map(a=>a.drive?.fileId),...outputs.map(o=>o.drive.fileId),...layoutAssets.map(a=>a.drive?.fileId)].filter((v):v is string=>!!v),uploadKeys:[...assets.map(a=>a.id),...outputs.map(o=>o.id),...layoutAssets.map(a=>a.id)],albumId:e.albumId,albumCreated:!!e.albumCreated || !!e.albumSync,assetIds:assets.map(a=>a.id),outputIds:outputs.map(o=>o.id),layoutAssetIds:layoutAssets.map(a=>a.id)};
     (data.deletions??=[]).push(deletion);
     data.exhibitions=data.exhibitions.filter(e=>e.id!==exhibitionId);data.submissions=data.submissions.filter(s=>s.exhibitionId!==exhibitionId);data.assets=data.assets.filter(a=>a.exhibitionId!==exhibitionId);data.layoutAssets=(data.layoutAssets??[]).filter(a=>a.exhibitionId!==exhibitionId);data.outputs=(data.outputs??[]).filter(o=>o.exhibitionId!==exhibitionId);
+    await updateShiftStore(store => { store.records = store.records.filter(r => r.exhibitionId !== exhibitionId); });
     return {ok:true,deletion};
   });
   await audit(actorId,"exhibition.delete",exhibitionId);

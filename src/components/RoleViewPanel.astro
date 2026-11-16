@@ -1,0 +1,30 @@
+---
+import { readUsers } from "../lib/auth.ts";
+import { isSiteManagement } from "../lib/accountVisibility.ts";
+import { adminViewReturnLabel, canProxyAccount, previewRoles } from "../lib/adminViewPolicy.ts";
+import { roleLabels } from "../lib/roles.ts";
+const actor = Astro.locals.actor;
+const proxy = canProxyAccount(actor);
+const returnLabel = adminViewReturnLabel(actor);
+const dedicated = proxy && !Astro.locals.adminView ? readUsers().filter(isSiteManagement) : [];
+---
+<div class="admin-intro"><h2>{proxy ? "ログイン・ロールの表示確認" : "ロールの表示確認"}</h2>
+  {Astro.url.searchParams.get("notice") === "security" && <p role="status">パスワードなどのアカウント保護の操作は、代理ログインを終了して行ってください。</p>}
+  {Astro.url.searchParams.get("notice") === "permission" && <p role="status">選択したアカウント・ロールには、そのページを表示する権限がありません。</p>}
+</div>
+{proxy && <section class="admin-section"><h3>アカウントへの代理ログイン</h3>
+  <p>アカウント一覧の「登録内容を見る」を開き、「このアカウントでログイン」を押してください。対象アカウントの権限で閲覧・編集・登録ができます。</p>
+  <p>画面上部の「{returnLabel}」で終了できます。切り替え前から開いていた画面は、操作前に再読み込みしてください。</p>
+  {Astro.locals.adminView ? <button class="admin-button" type="button" data-admin-view-stop>{returnLabel}・アカウントを選ぶ</button> : <a class="admin-button" href="/Admin/accounts">アカウント一覧へ</a>}
+  {dedicated.length > 0 && <details><summary>管理専用アカウント</summary><ul>{dedicated.map(account => <li><a href={`/Admin/accounts/${encodeURIComponent(account.id)}`}>{account.name}の登録内容を確認</a></li>)}</ul></details>}
+</section>}
+<section class="admin-section"><h3>ロール別の表示確認</h3>
+  <p>選択したロールで画面を表示します。閲覧専用で、保存・送信はできません。実在する会員の登録内容や権限は変更しません。</p>
+  <div class="admin-view-options">{previewRoles(actor).map(role => <button class="admin-button" type="button" data-admin-view-role={role}>{role === "guest" ? "未ログイン" : roleLabels[role]}として表示</button>)}</div>
+  <p data-admin-view-status role="status" aria-live="polite"></p>
+</section>
+<style>
+  .admin-view-options {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:12px;}
+  .admin-view-options button {font:inherit;cursor:pointer;}
+  details {margin-top:20px;} summary {cursor:pointer;} li {margin-block:8px;}
+</style>

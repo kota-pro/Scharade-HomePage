@@ -1,16 +1,23 @@
+import {parseBoardDesign} from './exhibitionBoardDesign.ts';
+import { isMemberAccount, isSiteManagement } from "./accountVisibility.ts";
+import { parseOpeningSchedule } from "./exhibitionShiftSchedule.ts";
 import { recordLayoutVersion, publicExhibition } from "./exhibitionLayoutHistory.ts";
-import { effectiveSubmissionLimits, submissionLimitIssues } from './exhibitionSubmissionLimits.ts';
+import { effectiveSubmissionLimits } from './exhibitionSubmissionLimits.ts';
 import { boardPlacementProblems } from "./exhibitionBoards.ts";
-import { validateBoardText } from "./exhibitionTextMetrics.ts";
+import { contentTextIssues } from "./exhibitionText.ts";
+import { extractPhotoExif } from "./photoExif.ts";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import sharp from "sharp";
 import { boundedFormData, HttpInputError } from "./http.ts";
 import { imageSignature, withImageSlot, ImageBusyError } from "./imageSecurity.ts";
 import { readData, writeData, withStoreLock, dataPath } from "./store.ts";
-import { readUsers, isStaff, type User } from "./auth.ts";
+import { readUsers, actorUser, isStaff, type User } from "./auth.ts";
 import { audit } from "./audit.ts";
 import { exhibitionMember, ownSubmission, participationState, requireExhibitionInput, requireExhibitionRecipient } from "./exhibitionParticipation.ts";
+import { exhibitionAccountGrade } from "./exhibitionAccountGrade.ts";
+import { preserveSubmissionNotes } from "./exhibitionNotes.ts";
+import { resetSubmissionQr } from "./exhibitionQrTarget.ts";
 import { currentSchema, emptySubmission, latestContent, type Exhibition, type ExhibitionStore, type Submission, type SubmissionContent } from "./exhibitionTypes.ts";
 import { ExhibitionError, id, object, text, parseSchema, parseContent, parseRooms } from "./exhibitionValidation.ts";
 
@@ -21,7 +28,7 @@ export function readExhibitions(): ExhibitionStore {
   return data;
 }
 export function requireStaff(actorId: string): User {
-  const user = readUsers().find(u => u.id === actorId);
+  const user = actorUser(actorId);
   if (!isStaff(user)) throw new ExhibitionError("運営以上の権限が必要です。", 403);
   return user!;
 }
@@ -54,7 +61,7 @@ function numberYear(value: unknown) {
 export function validateParticipationPeriods(e: Exhibition) {
   const p = e.participation;
   const times = [p?.opensAt, p?.closesAt, e.opensAt, e.closesAt].map(value => Date.parse(value ?? ""));
-  if (times.some(value => !Number.isFinite(value)) || !(times[0] < times[1] && times[1] <= times[2] && times[2] < times[3])) throw new ExhibitionError("投票開始 < 投票終了 ≦ フォーム開始 < フォーム終了となるよう、すべての日時を設定してください。");
+  if (times.some(value => !Number.isFinite(value)) || !(times[0] < times[1] && times[2] < times[3])) throw new ExhibitionError("参加投票とフォーム入力の日時をすべて設定し、それぞれの終了日時を開始日時より後にしてください。投票期間と入力期間は重ねて設定できます。");
 }
 export async function voteExhibition(actorId: string, exhibitionId: string, value: unknown, now = Date.now()) {
   return withStoreLock(LOCK, () => {
@@ -69,49 +76,69 @@ export async function voteExhibition(actorId: string, exhibitionId: string, valu
 function appendVersion(s: Submission, content: SubmissionContent) {
   const previous = latestContent(s);
   if (!previous || previous.name !== content.name || previous.portfolioUrl !== content.portfolioUrl) {
-    const candidates = s.userId ? readUsers().filter(u => u.approved && u.id === s.userId && u.portfolioId).map(u => ({ userId: u.id, name: u.name, portfolioId: u.portfolioId! })) : portfolioCandidates(content.name);
-    s.portfolioId = candidates.length === 1 ? candidates[0].portfolioId : undefined;
-    s.qrConfirmed = candidates.length === 1;
+    const candidates = s.userId ? readUsers().filter(u => isMemberAccount(u) && u.id === s.userId && u.portfolioId).map(u => ({ userId: u.id, name: u.name, portfolioId: u.portfolioId! })) : portfolioCandidates(content.name);
+    resetSubmissionQr(s, content, candidates.length === 1 ? candidates[0].portfolioId : undefined);
   }
   const version = (s.versions.at(-1)?.version ?? 0) + 1;
   s.draft = content; s.revision++; s.updatedAt = new Date().toISOString();
   s.versions.push({ version, schemaVersion: s.schemaVersion, at: s.updatedAt, content: structuredClone(content), delivery: "pending", attempts: 0, nextAttemptAt: 0 });
 }
+function appendStaffCorrection(s: Submission, content: SubmissionContent, actorId: string) {
+  const previous = latestContent(s);
+  const separateDraft = previous && JSON.stringify(s.draft) !== JSON.stringify(previous) ? structuredClone(s.draft) : undefined;
+  appendVersion(s, content);
+  if (separateDraft) s.draft = separateDraft;
+  const version = s.versions.at(-1)!; version.editedBy = actorId; version.source = "staff";
+  // Imported sheet rows must not become new Google Form answers.
+  if (s.sheetSource) version.delivery = "delivered";
+}
 export function portfolioCandidates(name: string) {
   const normalize = (s: string) => s.normalize("NFKC").replace(/\s+/g, "").toLowerCase();
-  return readUsers().filter(u => u.approved && u.portfolioId && normalize(u.name) === normalize(name)).map(u => ({ userId: u.id, name: u.name, portfolioId: u.portfolioId! }));
+  const members = readUsers().filter(isMemberAccount);
+  const ownerCounts = new Map<string, number>();
+  for (const { portfolioId } of members) if (portfolioId) ownerCounts.set(portfolioId, (ownerCounts.get(portfolioId) ?? 0) + 1);
+  return members.filter(u => u.portfolioId && ownerCounts.get(u.portfolioId) === 1 && normalize(u.name) === normalize(name)).map(u => ({ userId: u.id, name: u.name, portfolioId: u.portfolioId! }));
 }
 export function publicSubmission(data: ExhibitionStore, e: Exhibition, s: Submission, actorId?: string) {
   const schema = e.schemas.find(schema => schema.version === s.schemaVersion);
   if (!schema) throw new ExhibitionError("提出時のフォーム定義が見つかりません。", 503);
-  return { exhibition: { id: e.id, title: e.title, accepting: actorId ? participationState(e, exhibitionMember(actorId)).accepting : false, opensAt: e.opensAt, closesAt: e.closesAt }, schema, effectiveLimits: effectiveSubmissionLimits(e.schemas),
+  return { viewerId: actorId, exhibition: { id: e.id, title: e.title, shiftsEnabled: !!e.openingSchedule, accepting: actorId ? participationState(e, exhibitionMember(actorId)).accepting : false, submissionOverdue:actorId?participationState(e,exhibitionMember(actorId)).submissionOverdue:false, opensAt: e.opensAt, closesAt: e.closesAt }, schema, effectiveLimits: effectiveSubmissionLimits(e.schemas),
     submission: { id: s.id, revision: s.revision, draft: s.draft, versions: s.versions.map(v => ({ version: v.version, at: v.at, delivery: v.delivery, error: v.error })) },
-    assets: data.assets.filter(a => a.submissionId === s.id).map(({ id, name, width, height, bytes, uploaded, albumAdded }) => ({ id, name, width, height, bytes, uploaded, albumAdded })) };
+    assets: data.assets.filter(a => a.submissionId === s.id).map(({ id, name, width, height, bytes, uploaded, albumAdded, photoMetadata }) => ({ id, name, width, height, bytes, uploaded, albumAdded, photoMetadata })) };
 }
 export async function publicAction(exhibitionId: string, token: string, value: unknown, actorId?: string) {
+  const raw = object(value);
+  let initialGrade = "";
+  if (raw.action === "begin") {
+    const existingData = readExhibitions(), existingExhibition = findExhibition(existingData, id(exhibitionId));
+    const user = requireExhibitionInput(existingExhibition, actorId);
+    if (raw.ownerId !== undefined && raw.ownerId !== user.id) throw new ExhibitionError("ログイン中のアカウントが変わりました。元のアカウントでログインし直してください。", 401);
+    // Resolve external profile data before taking the write lock; recheck access below.
+    if (!ownSubmission(existingData, existingExhibition, user.id)) initialGrade = await exhibitionAccountGrade(user);
+  }
   return withStoreLock(LOCK, () => {
-    const data = readExhibitions(), e = findExhibition(data, id(exhibitionId)), raw = object(value);
+    const data = readExhibitions(), e = findExhibition(data, id(exhibitionId));
     const user = requireExhibitionInput(e, actorId);
+    if (raw.ownerId !== undefined && raw.ownerId !== user.id) throw new ExhibitionError("ログイン中のアカウントが変わりました。元のアカウントでログインし直してください。", 401);
     if (raw.action === "begin") {
       const existing = ownSubmission(data, e, user.id);
       if (existing) return { ok: true, ...publicSubmission(data, e, existing, user.id) };
       if (data.submissions.filter(s => s.exhibitionId === e.id).length >= 10000) throw new ExhibitionError("受付件数の上限に達しました。運営に連絡してください。", 429);
       const newToken = crypto.randomBytes(32).toString("base64url"), now = new Date().toISOString();
-      const draft = emptySubmission(); draft.name = user.name; draft.authorName = user.portfolioName || user.name;
+      const draft = emptySubmission(); draft.name = user.name; draft.authorName = user.portfolioName || user.name; draft.grade = initialGrade;
       const s: Submission = { id: crypto.randomUUID(), exhibitionId: e.id, userId: user.id, tokenHash: crypto.createHash("sha256").update(newToken).digest("hex"), createdAt: now, updatedAt: now, revision: 1, schemaVersion: currentSchema(e).version, draft, versions: [] };
       data.submissions.push(s); writeData(FILE, data);
       return { ok: true, token: newToken, ...publicSubmission(data, e, s, user.id) };
     }
     const s = ownSubmission(data, e, user.id, token ? tokenSubmission(data, e.id, token) : undefined);
     if (!s) throw new ExhibitionError("先に出展を開始してください。", 404);
+    if (raw.submissionId !== undefined && raw.submissionId !== s.id) throw new ExhibitionError("提出先が変更されました。画面を開き直してください。", 409);
     checkRevision(s.revision, raw.revision);
     if (!["save", "submit"].includes(raw.action)) throw new ExhibitionError("操作を確認してください。");
     const schema = e.schemas.find(schema => schema.version === s.schemaVersion)!;
-    const content = parseContent(raw.content, schema, data.assets.filter(a => a.submissionId === s.id), raw.action === "submit");
+    const content = parseContent(preserveSubmissionNotes(object(raw.content), s.draft), schema, data.assets.filter(a => a.submissionId === s.id), raw.action === "submit");
     if (data.submissions.some(other => other.id !== s.id && other.exhibitionId === e.id && [...other.draft.works, ...(latestContent(other)?.works ?? [])].some(work => content.works.some(w => w.id === work.id)))) throw new ExhibitionError("別の提出と作品番号が重複しています。作品を作り直してください。");
     if (raw.action === "submit") {
-      const effectiveLimits = effectiveSubmissionLimits(e.schemas), limitIssues = submissionLimitIssues(content, effectiveLimits);
-      if (limitIssues.length) { const error = new ExhibitionError(limitIssues.map(i => i.message).join('\n')); error.limitIssues = limitIssues; error.effectiveLimits = effectiveLimits; throw error; }
       appendVersion(s, content);
     } else { s.draft = content; s.revision++; s.updatedAt = new Date().toISOString(); }
     writeData(FILE, data);
@@ -126,12 +153,13 @@ export async function exhibitionAction(actorId: string, value: unknown) {
     const data = readExhibitions(), now = new Date().toISOString();
     if (raw.action === "create") {
       const e: Exhibition = { id: crypto.randomUUID(), title: text(raw.title, "写真展名", 150, true), revision: 1, status: "draft", opensAt: "", closesAt: "", createdAt: now, updatedAt: now,
-        schemas: [{ version: 1, sections: [{ id: crypto.randomUUID(), title: "通常展示", description: "" }], fields: [], captionLabel: "キャプション" }], rooms: [], albumId: crypto.randomUUID().replaceAll("-", ""), gallery: "staff", googleForms: [], year: new Date(Date.now() + 9 * 3600000).getUTCFullYear(), participation: { state: "draft", opensAt: "", closesAt: "", recipientIds: readUsers().filter(u => u.approved).map(u => u.id), votes: {} }, notices: [] };
+        ...(raw.openingSchedule || raw.enableShifts === true ? { openingSchedule: parseOpeningSchedule(raw.openingSchedule) } : {}), schemas: [{ version: 1, sections: [{ id: crypto.randomUUID(), title: "通常展示", description: "" }], fields: [], captionLabel: "キャプション" }], rooms: [], albumId: crypto.randomUUID().replaceAll("-", ""), gallery: "staff", googleForms: [], year: new Date(Date.now() + 9 * 3600000).getUTCFullYear(), participation: { state: "draft", opensAt: "", closesAt: "", recipientIds: readUsers().filter(isMemberAccount).map(u => u.id), votes: {} }, notices: [] };
       data.exhibitions.push(e); writeData(FILE, data); return { ok: true, exhibition: publicExhibition(e) };
     }
     const e = findExhibition(data, id(raw.exhibitionId)); checkRevision(e.revision, raw.revision);
     const previousTitle = e.title, previousYear = e.year;
     if (raw.action === "settings") {
+      if (raw.openingSchedule !== undefined) e.openingSchedule = parseOpeningSchedule(raw.openingSchedule);
       const opensAt = date(raw.opensAt), closesAt = date(raw.closesAt);
       if (opensAt && closesAt && Date.parse(opensAt) >= Date.parse(closesAt)) throw new ExhibitionError("受付終了日時は開始日時より後にしてください。");
       if (!["draft", "open", "closed"].includes(raw.status) || !["staff", "members", "public"].includes(raw.gallery)) throw new ExhibitionError("受付・公開設定を確認してください。");
@@ -141,12 +169,25 @@ export async function exhibitionAction(actorId: string, value: unknown) {
       if (raw.voteOpensAt !== undefined || raw.voteClosesAt !== undefined || raw.recipientIds !== undefined) {
         const previous = e.participation ?? { state: "draft" as const, opensAt: "", closesAt: "", recipientIds: [], votes: {} };
         const voteOpensAt = date(raw.voteOpensAt ?? previous.opensAt), voteClosesAt = date(raw.voteClosesAt ?? previous.closesAt);
-        if (previous.state === "published" && Date.parse(previous.closesAt) <= Date.now() && Date.parse(voteClosesAt) > Date.now()) throw new ExhibitionError("投票締切後の変更は参加者一覧で行ってください。投票は再開できません。");
-        let recipientIds = previous.recipientIds;
+        const hiddenIds = new Set(readUsers().filter(isSiteManagement).map(u => u.id));
+        const previousRecipientIds = previous.recipientIds.filter(id => !hiddenIds.has(id));
+        let recipientIds = previousRecipientIds;
         if (raw.recipientIds !== undefined) {
-          if (previous.state !== "draft") throw new ExhibitionError("通知後の対象者追加は参加者一覧から行ってください。");
-          if (!Array.isArray(raw.recipientIds) || raw.recipientIds.length > 10000 || raw.recipientIds.some((v: unknown) => typeof v !== "string" || !readUsers().some(u => u.id === v && u.approved))) throw new ExhibitionError("通知先を確認してください。");
-          recipientIds = [...new Set(raw.recipientIds)] as string[];
+          const approvedIds = new Set(readUsers().filter(isMemberAccount).map(u => u.id)), existingIds = new Set(previousRecipientIds);
+          if (!Array.isArray(raw.recipientIds) || raw.recipientIds.length > 10000 || raw.recipientIds.some((v: unknown) => typeof v !== "string" || !hiddenIds.has(v) && !(previous.state !== "draft" && existingIds.has(v)) && !approvedIds.has(v as string))) throw new ExhibitionError("通知先を確認してください。");
+          const selected = new Set<string>((raw.recipientIds as string[]).filter(id => !hiddenIds.has(id))), selectedIds = [...selected];
+          if (previous.state === "draft") recipientIds = selectedIds;
+          else {
+            if (previousRecipientIds.some(userId => !selected.has(userId))) throw new ExhibitionError("通知済みの対象者は解除できません。参加状況は参加者一覧から変更してください。");
+            const addedIds = selectedIds.filter(userId => !existingIds.has(userId));
+            if (addedIds.length) {
+              if (previous.state !== "published") throw new ExhibitionError("通知の送信完了後に対象者を追加してください。", 409);
+              if (Date.parse(voteClosesAt) <= Date.now() || !voteClosesAt) throw new ExhibitionError("通知先を追加するには、参加投票の終了を未来の日時に設定してください。");
+              const actor = requireStaff(actorId);
+              (e.notices ??= []).push({ id: crypto.randomUUID(), exhibitionId: e.id, senderId: actor.id, senderName: actor.name, title: `写真展の参加投票：${e.title}`, body: "写真展の通知対象者に追加されました。参加・不参加・未定をご回答ください。「参加」と回答した方は、フォーム入力期間中に出展フォームを入力できます。", recipientIds: addedIds, createdAt: now });
+            }
+            recipientIds = [...previousRecipientIds, ...addedIds];
+          }
         }
         if (voteClosesAt !== previous.closesAt || voteOpensAt !== previous.opensAt) (e.reminderConfiguredAt ??= {}).vote = now;
         e.participation = { ...previous, opensAt: voteOpensAt, closesAt: voteClosesAt, recipientIds };
@@ -157,16 +198,19 @@ export async function exhibitionAction(actorId: string, value: unknown) {
       const p = e.participation!;
       if (p.state !== "draft") throw new ExhibitionError("この写真展の通知は送信済みか送信中です。", 409);
       if (Date.parse(p.closesAt) <= Date.now()) throw new ExhibitionError("参加投票の終了を未来に設定してください。");
-      if (!p.recipientIds.length || p.recipientIds.some(userId => !readUsers().some(u => u.id === userId && u.approved))) throw new ExhibitionError("承認済み会員を通知先に選んでください。");
+      const hiddenIds = new Set(readUsers().filter(isSiteManagement).map(u => u.id));
+      p.recipientIds = p.recipientIds.filter(id => !hiddenIds.has(id));
+      if (!p.recipientIds.length || p.recipientIds.some(userId => !readUsers().some(u => u.id === userId && isMemberAccount(u)))) throw new ExhibitionError("承認済み会員を通知先に選んでください。");
       if (data.submissions.some(s => s.exhibitionId === e.id && !s.userId && !s.inactive && !s.sheetSource)) throw new ExhibitionError("既存の下書きを会員に紐付けるか、保管対象にしてから通知してください。");
       const actor = requireStaff(actorId), noticeId = crypto.randomUUID();
       p.state = "publishing"; p.noticeId = noticeId;
       e.reminderConfiguredAt = { vote: now, submission: now };
-      (e.notices ??= []).push({ id: noticeId, exhibitionId: e.id, senderId: actor.id, senderName: actor.name, title: `写真展の参加投票：${e.title}`, body: text(raw.body ?? "参加・不参加・未定をご回答ください。参加投票の終了後、参加者は出展フォームを入力できます。", "通知本文", 10000, true), recipientIds: [...p.recipientIds], createdAt: now });
+      (e.notices ??= []).push({ id: noticeId, exhibitionId: e.id, senderId: actor.id, senderName: actor.name, title: `写真展の参加投票：${e.title}`, body: text(raw.body ?? "参加・不参加・未定をご回答ください。「参加」と回答した方は、フォーム入力期間中に出展フォームを入力できます。", "通知本文", 10000, true), recipientIds: [...p.recipientIds], createdAt: now });
     } else if (raw.action === "participation.attendance.set") {
       const p = e.participation;
       if (p?.state !== "published") throw new ExhibitionError("通知済みの写真展を選んでください。");
       const target = exhibitionMember(text(raw.userId, "会員", 128, true));
+      if (isSiteManagement(target)) throw new ExhibitionError("管理専用アカウントは参加者に追加できません。");
       if (!["attending", "absent", "undecided"].includes(raw.vote)) throw new ExhibitionError("参加・不参加・未定を選択してください。");
       if (!p.recipientIds.includes(target.id)) {
         p.recipientIds.push(target.id);
@@ -214,30 +258,63 @@ export async function exhibitionAction(actorId: string, value: unknown) {
         if(changedMetadata) delete work.details;
       }
       const schema = e.schemas.find(schema => schema.version === s.schemaVersion)!;
-      const textIssues=validateBoardText(content);if(textIssues.length)throw new ExhibitionError(textIssues.map(i=>i.message).join("\n"),400,textIssues);
-      appendVersion(s, parseContent(content, schema, data.assets.filter(a => a.submissionId === s.id), false));
-      // Imported sheet rows are board data and must not become new Google answers.
-      if (s.sheetSource) s.versions.at(-1)!.delivery = "delivered";
+      const textIssues=contentTextIssues(content).filter(issue=>!issue.layout);if(textIssues.length)throw new ExhibitionError(textIssues.map(i=>i.message).join("\n"),400,textIssues);
+      appendStaffCorrection(s, parseContent(content, schema, data.assets.filter(a => a.submissionId === s.id), false), actorId);
+    }
+    else if (raw.action === "submission.edit") {
+      const s = data.submissions.find(s => s.id === id(raw.submissionId) && s.exhibitionId === e.id && !s.inactive);
+      const previous = s && latestContent(s);
+      if (!s || !previous) throw new ExhibitionError("修正する提出済みの回答が見つかりません。", 404);
+      checkRevision(s.revision, raw.submissionRevision);
+      const schema = e.schemas.find(schema => schema.version === s.schemaVersion);
+      if (!schema) throw new ExhibitionError("提出時のフォーム定義が見つかりません。", 503);
+      const content = parseContent(preserveSubmissionNotes(object(raw.content), previous), schema, data.assets.filter(a => a.submissionId === s.id), !s.sheetSource);
+      for (const key of ["name", "grade", "authorName"] as const) text(content[key], key, key === "grade" ? 100 : 150, true);
+      content.works.forEach(w => text(w.title, "作品タイトル", 300, true));
+      const textIssues = contentTextIssues(content).filter(issue=>!issue.layout);
+      if (textIssues.length) throw new ExhibitionError(textIssues.map(i => i.message).join("\n"), 400, textIssues);
+      if (data.submissions.some(other => other.id !== s.id && other.exhibitionId === e.id && [...other.draft.works, ...(latestContent(other)?.works ?? [])].some(work => content.works.some(w => w.id === work.id)))) throw new ExhibitionError("別の提出と作品番号が重複しています。");
+      const placed = new Set(e.rooms.flatMap(r => [...r.placements, ...r.books, ...(r.boardPlacements ?? []), ...(r.titleBoards ?? [])].map(p => p.workId)));
+      if (previous.works.some(w => placed.has(w.id) && !content.works.some(next => next.id === w.id && next.kind === w.kind))) throw new ExhibitionError("配置済みの作品は削除できません。先に展示室・壁面レイアウトから配置を解除してください。");
+      const allWorks = data.submissions.filter(other => other.exhibitionId === e.id && other.id !== s.id && !other.inactive).flatMap(other => latestContent(other)?.works ?? []).concat(content.works);
+      const geometry = (w: SubmissionContent["works"][number]) => JSON.stringify(w.photos.map(({x,y,width,height,rotation}) => ({x,y,width,height,rotation})));
+      const resized = new Set(content.works.filter(w => { const old = previous.works.find(old => old.id === w.id); return old && geometry(old) !== geometry(w); }).map(w => w.id));
+      for (const room of e.rooms) {
+        // Text/image-only corrections must not be blocked by an unrelated existing placement.
+        const problems = boardPlacementProblems({...room, boardPlacements: room.boardPlacements?.filter(p => resized.has(p.workId)), titleBoards: []}, allWorks);
+        if (problems.length) throw new ExhibitionError(problems.join("\n"));
+      }
+      appendStaffCorrection(s, content, actorId);
     }
     else if (raw.action === "submission") {
       const s = data.submissions.find(s => s.id === id(raw.submissionId) && s.exhibitionId === e.id);
       if (!s) throw new ExhibitionError("提出が見つかりません。", 404);
       checkRevision(s.revision, raw.submissionRevision);
       const schema = e.schemas.find(schema => schema.version === s.schemaVersion)!;
-      const content = parseContent(raw.content, schema, data.assets.filter(a => a.submissionId === s.id));
-      appendVersion(s, content);
+      const content = parseContent(preserveSubmissionNotes(object(raw.content), latestContent(s) ?? s.draft), schema, data.assets.filter(a => a.submissionId === s.id));
+      appendStaffCorrection(s, content, actorId);
     } else if (raw.action === "qr") {
       const s = data.submissions.find(s => s.id === id(raw.submissionId) && s.exhibitionId === e.id);
       if (!s) throw new ExhibitionError("提出が見つかりません。", 404);
       if (raw.portfolioId) {
         const portfolioId = text(raw.portfolioId, "Portfolio ID", 200, true);
-        if (readUsers().filter(u => u.approved && u.portfolioId === portfolioId).length !== 1) throw new ExhibitionError("承認済みアカウントに紐づくPortfolioを選んでください。");
+        if (readUsers().filter(u => isMemberAccount(u) && u.portfolioId === portfolioId).length !== 1) throw new ExhibitionError("承認済みアカウントに紐づくPortfolioを選んでください。");
         s.portfolioId = portfolioId;
+        s.qrSource = "account";
       } else {
         if (!latestContent(s)?.portfolioUrl) throw new ExhibitionError("外部Portfolio URLを入力するか、アカウントを選んでください。");
         delete s.portfolioId;
+        s.qrSource = "external";
       }
       s.qrConfirmed = true;
+    } else if(raw.action === "boards.design") {
+      const workId=id(raw.workId),submission=data.submissions.find(s=>s.exhibitionId===e.id&&!s.inactive&&latestContent(s)?.works.some(w=>w.id===workId));
+      if(!submission)throw new ExhibitionError('提出済みの作品が見つかりません。',404);
+      checkRevision(submission.revision,raw.submissionRevision);
+      try {
+        if(raw.design===null)delete (e.boardDesigns??={})[workId];
+        else (e.boardDesigns??={})[workId]=parseBoardDesign(raw.design);
+      }catch(error){throw new ExhibitionError(error instanceof Error?error.message:'配置を確認してください。');}
     } else if (raw.action === "retry") {
       for (const s of data.submissions.filter(s => s.exhibitionId === e.id)) for (const v of s.versions.filter(v => v.delivery === "pending")) { v.nextAttemptAt = 0; delete v.error; }
     } else throw new ExhibitionError("操作を確認してください。");
@@ -276,9 +353,26 @@ function writeBinary(file: string, bytes: Buffer) {
   try { const fd = fs.openSync(temp, "wx", 0o600); try { fs.writeFileSync(fd, bytes); fs.fsyncSync(fd); } finally { fs.closeSync(fd); } fs.renameSync(temp, file); }
   finally { fs.rmSync(temp, { force: true }); }
 }
-export async function uploadExhibitionAsset(exhibitionId: string, token: string, assetId: string, file: File, actorId?: string) {
-  const initial = readExhibitions(), e = findExhibition(initial, id(exhibitionId)), user = requireExhibitionInput(e, actorId), s = ownSubmission(initial, e, user.id, token ? tokenSubmission(initial, e.id, token) : undefined); id(assetId);
+type StaffUploadTarget = { submissionId: string; revision: number; exhibitionRevision: number };
+export async function uploadStaffExhibitionAsset(exhibitionId: string, target: StaffUploadTarget, assetId: string, file: File, actorId: string) {
+  requireStaff(actorId);
+  return uploadExhibitionAsset(exhibitionId, "", assetId, file, actorId, target.submissionId, target);
+}
+export async function uploadExhibitionAsset(exhibitionId: string, token: string, assetId: string, file: File, actorId?: string, expectedSubmissionId?: string, staffTarget?: StaffUploadTarget) {
+  const resolve = (data: ExhibitionStore) => {
+    const e = findExhibition(data, id(exhibitionId));
+    if (staffTarget) {
+      requireStaff(actorId ?? ""); checkRevision(e.revision, staffTarget.exhibitionRevision);
+      const s = data.submissions.find(s => s.id === id(staffTarget.submissionId) && s.exhibitionId === e.id && !s.inactive && !!latestContent(s));
+      if (!s) throw new ExhibitionError("提出済みの回答が見つかりません。", 404);
+      checkRevision(s.revision, staffTarget.revision); return { e, s };
+    }
+    const user = requireExhibitionInput(e, actorId);
+    return { e, s: ownSubmission(data, e, user.id, token ? tokenSubmission(data, e.id, token) : undefined) };
+  };
+  const { e, s } = resolve(readExhibitions()); id(assetId);
   if (!s) throw new ExhibitionError("先に出展を開始してください。", 404);
+  if (expectedSubmissionId !== undefined && expectedSubmissionId !== s.id) throw new ExhibitionError("提出先が変更されました。画面を開き直してください。", 409);
   if (!file.size || file.size > MAX_EXHIBITION_BYTES) throw new ExhibitionError("空でない20MB以下のJPEG・PNGを選んでください。", 413);
   const bytes = Buffer.from(await file.arrayBuffer());
   let meta: { format?: string; width?: number; height?: number; pages?: number }, preview: { data: Buffer; info: { width: number; height: number } };
@@ -292,16 +386,16 @@ export async function uploadExhibitionAsset(exhibitionId: string, token: string,
     });
     meta = inspected.metadata; preview = inspected.preview;
   } catch (error) { throw new ExhibitionError(error instanceof ImageBusyError ? error.message : "JPEG・PNGを選んでください。破損・複数フレーム・6000万画素を超える写真は添付できません。", error instanceof ImageBusyError ? error.status : 400); }
+  const photoMetadata = await extractPhotoExif(bytes);
   const digest = crypto.createHash("sha256").update(bytes).digest("hex");
   return withStoreLock(LOCK, () => {
-    const data = readExhibitions(), latest = findExhibition(data, e.id); requireExhibitionInput(latest, actorId);
-    const owner = ownSubmission(data, latest, user.id, token ? tokenSubmission(data, e.id, token) : undefined);
+    const data = readExhibitions(), { s: owner } = resolve(data);
     if (!owner || owner.id !== s.id) throw new ExhibitionError("提出内容が変更されました。画面を開き直してください。", 409);
     const existing = data.assets.find(a => a.id === assetId);
     if (existing) { if (existing.submissionId !== s.id || existing.sha256 !== digest) throw new ExhibitionError("添付番号が別の写真に使われています。選び直してください。", 409); return { ok: true, asset: existing }; }
     if (data.assets.filter(a => a.submissionId === s.id).length >= 1500) throw new ExhibitionError("添付件数の上限に達しました。", 429);
     writeBinary(exhibitionAssetPath(assetId), bytes); writeBinary(exhibitionAssetPath(assetId, true), preview.data);
-    const asset = { id: assetId, exhibitionId: e.id, submissionId: s.id, name: (file.name || "写真").replace(/[\x00-\x1f\x7f/\\]/g, "_").slice(0, 150), mimeType: meta.format === "jpeg" ? "image/jpeg" as const : "image/png" as const,
+    const asset = { photoMetadata, id: assetId, exhibitionId: e.id, submissionId: s.id, name: (file.name || "写真").replace(/[\x00-\x1f\x7f/\\]/g, "_").slice(0, 150), mimeType: meta.format === "jpeg" ? "image/jpeg" as const : "image/png" as const,
       bytes: bytes.length, sha256: digest, width: preview.info.width, height: preview.info.height, createdAt: new Date().toISOString(), lightroomId: crypto.randomUUID().replaceAll("-", "") };
     data.assets.push(asset); writeData(FILE, data); return { ok: true, asset };
   });

@@ -1,0 +1,17 @@
+---
+import AdminLayout from "../layouts/AdminLayout.astro";
+import MemberIcon from "../components/MemberIcon.astro";
+import { isExecutive } from "../lib/auth";
+const user = Astro.locals.user!;
+---
+
+<AdminLayout title="Dashboard" heading="Dashboard" memberArea="staff" pageClass="dashboard-page">
+  <p class="admin-intro">{user.name}さん、利用するページを選んでください。</p>
+  <section class="admin-section" aria-label="移動先を選ぶ">
+    <ul class="admin-link-list dashboard-links">
+      {isExecutive(user) && <li><a href="/Admin" aria-label="Admin"><MemberIcon kind="settings"/><span class="admin-item-label">Admin</span><span class="admin-item-description">アカウント・名簿などを管理する<span class="private-link-arrow" aria-hidden="true"> →</span></span></a></li>}
+      <li><a href="/Management" aria-label="Management"><MemberIcon kind="users"/><span class="admin-item-label">Management</span><span class="admin-item-description">企画・通知・写真展・班分けを管理する<span class="private-link-arrow" aria-hidden="true"> →</span></span></a></li>
+      <li><a href="/Member" aria-label="Member"><MemberIcon kind="user"/><span class="admin-item-label">Member</span><span class="admin-item-description">通知の確認・参加投票・マイページ<span class="private-link-arrow" aria-hidden="true"> →</span></span></a></li>
+    </ul>
+  </section>
+</AdminLayout>

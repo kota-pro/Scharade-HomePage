@@ -72,7 +72,7 @@ HTMLをサーバーで生成し、操作に必要な小さなスクリプトの�
 
 - `blog`：title / slug / body / excerpt / pictures / tags / 公開日時。
 - `portfolio`（環境変数で変更可）：name、self_introduction、instagram、x_url、camera、hashtags、icon（画像）、pictures（複数画像）、grade、generation（数値）、role（文字列）、isExecutive（真偽）、displayOrder（数値）。
-- `card_image`：既存のカルーセル画像フィールド。
+- `card_image`：旧カルーセル用。現在のHomeは公開Portfolioの写真からランダム選出するため参照しません。除外設定は `site-content.json` のHome下書き・公開・復元に含めます（[写真設定](home-photos.md)）。
 
 Content APIキーには読み取りとPortfolioの作成・更新・削除を、Management APIキーにはメディアの書き込みと「コンテンツの取得（一覧・詳細）」を設定します。Management APIキー未設定時はContent APIキーを使います。新しい管理用フィールドがまだない環境ではmicroCMSで追加が必要です。学年がセレクト型の場合は文字列配列へ切り替えて再送する既存スキーマ互換処理があります。
 

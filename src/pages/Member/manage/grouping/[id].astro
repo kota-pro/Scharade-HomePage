@@ -37,7 +37,7 @@ if (!run) Astro.response.status = 404;
         <GroupingRunDelete run={run} />
       </>
     ) : (
-      <h2>班分けが見つかりません。</h2>
+      <h2 data-error="true">班分けが見つかりません。</h2>
     )
   }
   <a class="member-back" href="/Member/manage/grouping"

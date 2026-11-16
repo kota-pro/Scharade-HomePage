@@ -2,7 +2,8 @@ import type { APIRoute } from "astro";
 import { readUsers, updateUsers, createSession, isStaff } from "../../../../lib/auth.ts";
 import { safeReturnPath, fetchWithTimeout } from "../../../../lib/http.ts";
 import { startMfaChallenge } from "../../../../lib/mfa.ts";
-import { cookieOptions, mfaCookieName, setSessionCookie } from "../../../../lib/sessionCookies.ts";
+import { cookieOptions, mfaCookieName, setSessionCookie, trustedBrowserCookieName } from "../../../../lib/sessionCookies.ts";
+import { trustedMfaBrowser } from "../../../../lib/mfaTrustedBrowsers.ts";
 
 function json(status: number, body: any) {
   return new Response(JSON.stringify(body), {
@@ -90,12 +91,13 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     if (current) current.providers.instagram = { id: igUserId, username };
   });
   const maxAgeSeconds = 60 * 60 * 8;
-  if (isStaff(user)) {
+  const trustedToken = cookies.get(trustedBrowserCookieName(request))?.value;
+  if (isStaff(user) && !trustedMfaBrowser(user, trustedToken)) {
     const challenge = await startMfaChallenge(user, next, maxAgeSeconds);
     cookies.set(mfaCookieName(request), challenge.token, cookieOptions(request, 600));
     return redirect("/Mfa");
   }
-  const session = await createSession(user.id, maxAgeSeconds, user.passwordHash, user.email);
+  const session = await createSession(user.id, maxAgeSeconds, user.passwordHash, user.email, undefined, trustedToken);
   setSessionCookie(cookies, request, session);
 
   return redirect(next);

@@ -1,15 +1,17 @@
 ---
 import PageTopNav from "../components/PageTopNav.astro";
 import Layout from "./Layout.astro";
+import type { BreadcrumbItem } from "../lib/breadcrumbs";
 import "../styles/UA+reset.css";
 export interface Props {
   title: string;
   from: string | null;
+  breadcrumbs?: BreadcrumbItem[];
 }
-const { from, title } = Astro.props as Props;
+const { from, title, breadcrumbs } = Astro.props as Props;
 ---
 
-<Layout title={title}>
+<Layout title={title} breadcrumbs={breadcrumbs}>
   <Fragment slot="main-slot">
     <div class="section-title">
       <h1>{from}</h1>

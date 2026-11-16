@@ -1,10 +1,64 @@
-<a href="#main-content" class="page-top-nav" aria-label="ページの先頭へ">
+<a href="#" class="page-top-nav" data-page-top tabindex="0" aria-label="ページの先頭へ" hidden>
   <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2.692 16 12 6.692 21.308 16l-1.064 1.064L12 8.819l-8.244 8.245z" /></svg>
 </a>
+<script>
+  const buttons = document.querySelectorAll<HTMLAnchorElement>("[data-page-top]");
+  const footer = document.querySelector<HTMLElement>("body > footer");
+  let footerTop = Number.POSITIVE_INFINITY;
+  let measureFooter = true;
+  let frame = 0;
+  let appliedOffset = Number.NaN;
+  const updatePosition = () => {
+    frame = 0;
+    const scrollTop = window.scrollY;
+    // Cache document coordinates when layout changes. Scrolling only needs viewport values.
+    if (measureFooter) {
+      footerTop = footer ? footer.getBoundingClientRect().top + scrollTop : Number.POSITIVE_INFINITY;
+      measureFooter = false;
+    }
+    const hidden = scrollTop <= 120;
+    const footerOffset = Math.max(0, scrollTop + window.innerHeight - footerTop);
+    for (const button of buttons) {
+      if (button.hidden !== hidden) button.hidden = hidden;
+      if (footerOffset !== appliedOffset) button.style.setProperty("--page-top-footer-offset", `${footerOffset}px`);
+    }
+    appliedOffset = footerOffset;
+  };
+  const schedulePosition = () => {
+    if (!frame) frame = requestAnimationFrame(updatePosition);
+  };
+  const refreshLayout = () => {
+    measureFooter = true;
+    schedulePosition();
+  };
+  updatePosition();
+  window.addEventListener("scroll", schedulePosition, { passive: true });
+  window.addEventListener("resize", refreshLayout);
+  window.addEventListener("pageshow", refreshLayout);
+  window.visualViewport?.addEventListener("resize", schedulePosition);
+  // Images, fonts and expanded content can move the footer without a scroll event.
+  const resizeObserver = new ResizeObserver(refreshLayout);
+  for (const element of [document.body, document.querySelector("main"), footer]) {
+    if (element) resizeObserver.observe(element);
+  }
+  for (const button of buttons) {
+    button.addEventListener("click", event => {
+      event.preventDefault();
+      window.scrollTo({
+        top: 0,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+      });
+    });
+  }
+</script>
 <style>
-  .page-top-nav { width:50px;height:50px;box-sizing:border-box;background:#fff;color:#000;border:1px solid #000;border-radius:10px;display:flex;align-items:center;justify-content:center;position:sticky;bottom:50px;cursor:pointer;z-index:5;transition:background .3s,color .3s;flex-shrink:0;text-decoration:none; }
-  .page-top-nav svg { width:32px;height:32px;rotate:0deg;transform:none; }
-  .page-top-nav:hover { background:#707070;color:#fff;box-shadow:1px 1px 10px #0003; }
-  .page-top-nav:focus-visible { outline:2px solid #000;outline-offset:4px; }
-  @media(max-width:800px) { .page-top-nav { width:40px;height:40px; } .page-top-nav svg { width:24px;height:24px; } }
+  .page-top-nav[data-page-top] { width:50px;height:50px;box-sizing:border-box;background:#fff;color:#000;border:1px solid #000;border-radius:10px;display:flex;align-items:center;justify-content:center;position:fixed;right:max(24px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));transform:translate3d(0,calc(0px - var(--page-top-footer-offset,0px)),0);will-change:transform;cursor:pointer;z-index:5;transition:background .3s,color .3s;flex-shrink:0;text-decoration:none; }
+  .page-top-nav[data-page-top][hidden] { display:none; }
+  /* The CSS minifier removes rotate:0deg/none beside transform:none. Keep the legacy rotation reset explicit. */
+  .page-top-nav[data-page-top] svg { width:32px;height:32px;rotate:initial;transform:none;color:inherit;transition:none; }
+  .page-top-nav[data-page-top]:hover { background:#707070;color:#fff;box-shadow:1px 1px 10px #0003; }
+  .page-top-nav[data-page-top]:hover svg { filter:none; }
+  .page-top-nav[data-page-top]:focus-visible { outline:2px solid #000;outline-offset:4px; }
+  @media(max-width:800px) { .page-top-nav[data-page-top] { width:40px;height:40px;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom)); } .page-top-nav[data-page-top] svg { width:24px;height:24px; } }
+  @media(prefers-reduced-motion:reduce) { .page-top-nav[data-page-top] { transition:none; } }
 </style>

@@ -1,0 +1,90 @@
+---
+import animatedLogo from "../assets/brand/home-logo-animated.svg?raw";
+import finishedLogo from "../assets/brand/home-logo.svg?url";
+import LoadingIndicator from "./LoadingIndicator.astro";
+---
+
+<div class="home-logo">
+  <div class="home-logo-loading" data-home-logo-loading role="status" aria-label="写真を読み込んでいます" hidden>
+    <LoadingIndicator />
+  </div>
+  <div data-home-logo-result role="img" aria-label="早稲田大学 写団シャレード">
+    <div class="home-logo-animation" aria-hidden="true">
+      <Fragment set:html={animatedLogo} />
+    </div>
+    <picture class="home-logo-still">
+      <source media="(prefers-reduced-motion: reduce)" srcset={finishedLogo} />
+      <img alt="" width="479" height="116" />
+    </picture>
+  </div>
+</div>
+
+<style>
+  .home-logo-loading {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    --loading-indicator-width: 140px;
+  }
+
+  .home-logo-loading[hidden] {
+    display: none;
+  }
+
+  .home-logo-animation :global(svg),
+  .home-logo-still img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .home-logo-still {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .home-logo-animation {
+      display: none;
+    }
+
+    .home-logo-still {
+      display: block;
+    }
+  }
+</style>
+
+<script>
+  const logo = document.querySelector<SVGSVGElement>("[data-home-logo-animation]");
+  const loading = document.querySelector<HTMLElement>("[data-home-logo-loading]");
+  const result = document.querySelector<HTMLElement>("[data-home-logo-result]");
+  if (logo && loading && result) {
+    const pendingPhotos = Array.from(document.querySelectorAll<HTMLImageElement>(".main-visual-photos img"))
+      .filter((photo) => !photo.complete);
+    const showLogo = () => {
+      loading.hidden = true;
+      result.hidden = false;
+      logo.setCurrentTime?.(0);
+      logo.unpauseAnimations?.();
+    };
+
+    if (pendingPhotos.length) {
+      logo.pauseAnimations?.();
+      result.hidden = true;
+      loading.hidden = false;
+      void Promise.all(pendingPhotos.map((photo) => new Promise<void>((resolve) => {
+        const done = () => {
+          photo.removeEventListener("load", done);
+          photo.removeEventListener("error", done);
+          resolve();
+        };
+        photo.addEventListener("load", done);
+        photo.addEventListener("error", done);
+      }))).then(showLogo);
+    }
+
+    window.addEventListener("pageshow", (event) => {
+      if (event.persisted && loading.hidden) showLogo();
+    });
+  }
+</script>

@@ -1,10 +1,10 @@
 ---
 import Icon from "./PortfolioShareIcon.astro";
-interface Props { title: string; id: string; kind: "events" | "notifications"; eventId?: string; }
-const { title, id, kind, eventId } = Astro.props;
-const shareKind = eventId ? "events" : kind;
-const shareId = eventId || id;
-const url = new URL(`/Member/${shareKind}/${encodeURIComponent(shareId)}`, Astro.site).href;
+interface Props { title: string; id: string; kind: "events" | "notifications" | "tools" | "exhibitions"; eventId?: string; toolId?: string; href?: string; }
+const { title, id, kind, eventId, toolId, href } = Astro.props;
+const shareKind = toolId ? "tools" : eventId ? "events" : kind;
+const shareId = toolId || eventId || id;
+const url = new URL(href ?? `/Member/${shareKind}/${encodeURIComponent(shareId)}`, Astro.site).href;
 ---
 <button type="button" class="portfolio-share-trigger activity-share-trigger"
   data-activity-share-open data-share-kind={shareKind} data-share-url={url} data-share-title={title}

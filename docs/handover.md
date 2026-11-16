@@ -26,6 +26,7 @@
 | 未ログイン | Home、About us、Activity、公開Gallery、Portfolio、Contact、各種公開案内 |
 | 承認済み会員 | `/Member`。本人のPortfolio編集、企画参加回答、本人宛通知、写真展提出、立替申請、退会申請 |
 | 運営（staff） | `/Member/manage`。企画・通知・班分け・写真展の管理 |
+| 幹部（executive） | 運営機能に加え一般会員・運営のアカウント、名簿連携、入会・継続・新歓フォームの管理 |
 | 管理者（admin） | 運営機能に加え `/Admin`。サイト情報、アカウント・権限、名簿連携、削除申請の管理 |
 
 承認状態と権限は別の項目です。Portfolioに表示する役職はログイン権限を与えません。運営・管理者には登録メールによる二段階認証があります。企画共有URLは未ログインでも公開部分を閲覧できますが、検索掲載は抑止します。通知本文・回答操作・管理機能には認可があります。
@@ -55,6 +56,7 @@
 | `auth-security.json`・`signup-verifications.json`・`password-reset-tokens.json` | 二段階認証、新規登録メール確認、パスワード再設定。いずれもDATA_DIR内 |
 | `DATA_DIR/site-content.json` | サイト情報の下書き・公開版・前の公開版 |
 | `DATA_DIR/member-activities.json` | 企画・参加回答・通知・名簿対応・班分け・配信キュー |
+| `DATA_DIR/club-forms.json` | 入会・継続・新歓フォームの一覧、Google反映待ちの操作。Google側の管理状態も別途保全する |
 | `DATA_DIR/exhibitions.json` と写真展ファイル | 設定、提出、配置、履歴、画像・出力、連携・再送状態 |
 | `DATA_DIR/advance-requests.json` と `REC-*` | 立替受付、領収書・転送状態。転送途中の実物も独断で削除しない |
 | `push-devices.json`・`adobe-auth.json`・`audit.jsonl` など | 通知端末、Adobe更新トークン、監査記録。いずれもDATA_DIR内 |
@@ -64,7 +66,7 @@
 
 ## 開発・公開の基本
 
-Node.js 22系（22.12以上、23未満）とYarn 1.22.22を使います。初回は `yarn install --frozen-lockfile`、`.env.example` を `.env` へコピーし、ローカル用の `DATA_DIR=./.data`・`SITE_URL=http://localhost:4321`・`TRUST_PROXY=0` を設定して必要なキーを安全に受け取ります。
+Node.js 22系（22.23.4以上、23未満）とYarn 1.22.22を使います。初回は `yarn install --frozen-lockfile`、`.env.example` を `.env` へコピーし、ローカル用の `DATA_DIR=./.data`・`SITE_URL=http://localhost:4321`・`TRUST_PROXY=0` を設定して必要なキーを安全に受け取ります。
 
 | コマンド | 用途 |
 | --- | --- |
@@ -80,7 +82,7 @@ Node.js 22系（22.12以上、23未満）とYarn 1.22.22を使います。初回
 
 ### PM2のプロセス
 
-`ecosystem.config.cjs` の定義は次の4つです。実際の登録・稼働はVPSで `pm2 status` を確認します。設定にあることだけでは本番起動済みとは判断できません。
+`ecosystem.config.cjs` の定義は次の5つです。実際の登録・稼働はVPSで `pm2 status` を確認します。設定にあることだけでは本番起動済みとは判断できません。
 
 | PM2名 | 実行元 | 役割 |
 | --- | --- | --- |
@@ -88,6 +90,7 @@ Node.js 22系（22.12以上、23未満）とYarn 1.22.22を使います。初回
 | `scharade-accounting-worker` | `scripts/advance-worker.mjs` | 立替申請の会計GASへの再送 |
 | `scharade-exhibition-worker` | `scripts/exhibition-worker.mjs` | 写真展のGoogle連携・転送・通知 |
 | `scharade-push-worker` | `scripts/push-worker.mjs` | リマインダー・プッシュ配信キュー |
+| `scharade-club-forms-worker` | `scripts/club-forms-worker.mjs` | 入会・継続・新歓フォームの生成・受付状態確認、統合名簿の保存 |
 
 プッシュ配信は `PUSH_DELIVERY_ENABLED` とExpoの資格情報にも依存します。`.env.example` は配信無効を初期値にしています。本番有効化・実機受信は別の確認事項で、コード更新だけで確認済みと扱いません。
 
@@ -163,3 +166,5 @@ XMLのURLは `https://scharade.jp` に統一します。記事・Portfolio・Gal
 ### 会計と立替申請
 
 [会計・立替申請の操作と復旧手順](accounting.md)を次の会計担当者へ引き継ぎます。会計開始日・開始残高、未返金の立替、次期の名簿URLと期間、担当者Googleアカウント、サイトの再送ワーカーを確認してください。元の名簿は変更しません。
+
+入会・継続・新歓フォームは[専用の操作・導入資料](club-forms.md)を引き継ぎます。contact@scharade.jpの専用GAS、1分の期限トリガー、共有秘密の保管場所、`DATA_DIR/club-forms.json` と確定中の年・春秋・2つの回答元を確認します。フォーム作成だけでは次期名簿へ切り替わりません。

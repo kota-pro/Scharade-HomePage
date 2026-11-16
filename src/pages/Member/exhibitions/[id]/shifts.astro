@@ -1,0 +1,12 @@
+---
+import {exhibitionLoadingHtml} from '../../../../scripts/exhibitionLoading.ts';
+import MemberLayout from '../../../../layouts/MemberLayout.astro';
+import '../../../../styles/Exhibitions.css';
+import '../../../../styles/ExhibitionShifts.css';
+---
+<MemberLayout title="展示シフト">
+  <section class="exhibition-page shift-page" id="exhibition-shifts" data-shift-mode="member" data-exhibition-id={Astro.params.id}>
+    <Fragment set:html={exhibitionLoadingHtml()} />
+  </section>
+</MemberLayout>
+<script>import '../../../../scripts/exhibitionShiftForm.ts';</script>

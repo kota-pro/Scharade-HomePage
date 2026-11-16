@@ -6,6 +6,7 @@ import { mailTransport, CONTACT_EMAIL } from "./mail.ts";
 import { safeReturnPath } from "./http.ts";
 import { env } from "./config.ts";
 import { audit } from "./audit.ts";
+import { REMEMBER_SESSION_SECONDS } from "./sessionPolicy.ts";
 
 const TTL = 10 * 60_000, WINDOW = 15 * 60_000, RESEND_DELAY = 60_000;
 type SendEmail = (email: string, code: string, expiresAt: number) => Promise<void>;
@@ -85,7 +86,7 @@ export async function startMfaChallenge(user: User, returnPath = "/", maxAge = 8
     const expiresAt = Date.now() + TTL;
     state.challenges[key] = { userId: user.id, authVersion: user.authVersion ?? 0,
       passwordFingerprint: securityHash(user.passwordHash ?? ""), emailFingerprint: securityHash(user.email), expiresAt, attempts: 0,
-      returnPath: safeReturnPath(returnPath, "/"), maxAge: Math.min(maxAge, 8 * 60 * 60),
+      returnPath: safeReturnPath(returnPath, "/"), maxAge: Math.min(maxAge, REMEMBER_SESSION_SECONDS),
       emailCodeHash: emailHash(token, code), delivered: false, deliveryId };
     writeMfaState(state); return expiresAt;
   });

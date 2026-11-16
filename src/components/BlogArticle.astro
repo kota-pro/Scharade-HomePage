@@ -1,0 +1,335 @@
+---
+import PhotoCard from "./PhotoCard.astro";
+import { cmsPhotoId } from "../lib/photoIdentity";
+import { blogImages } from "../lib/photos";
+import { renderBlogBody } from "../lib/blogBody";
+import type { Blog } from "../types/microcms";
+import { formatDate, getPublishedDate } from "../utils/blog";
+import { optimizeMicrocmsImage } from "../utils/microcmsImage";
+import { blogPhotoTape } from "../utils/blogPhotoTape";
+import "../styles/PhotoViewer.css";
+
+interface Props { post: Blog; preview?: boolean }
+const { post, preview = false } = Astro.props;
+const optimizedBody = renderBlogBody(post.body ?? "");
+const formattedDate = formatDate(getPublishedDate(post));
+---
+  <div data-blog-id={preview ? undefined : post.id} data-blog-preview-article={preview || undefined} data-blog-photos={JSON.stringify(blogImages(post).map(image => ({ id: cmsPhotoId(image.url), url: image.url })))}>
+  <div class="post-header">
+    <h1 class="post-title">{post.title}</h1>
+    <div class="post-meta">
+      {formattedDate ? <p class="post-date">{formattedDate}</p> : null}
+      {
+        post.tags && post.tags.length > 0 ? (
+          <ul class="post-tags">
+            {post.tags.map((tag) => (
+              <li class="post-tag">#{tag}</li>
+            ))}
+          </ul>
+        ) : null
+      }
+    </div>
+  </div>
+
+  {
+    post.pictures?.length ? (
+      <div class="post-pictures">
+        {post.pictures.map((image) => {
+          const id = cmsPhotoId(image.url);
+          const tapeStyles = blogPhotoTape(id);
+
+          return (
+            <figure class="post-eyecatch" style={tapeStyles}>
+              <PhotoCard photoRef={{ source: "blog", containerId: post.id, imageId: id }} src={optimizeMicrocmsImage(image.url, { width: 1600, quality: 75 })} full={optimizeMicrocmsImage(image.url, { width: 2048, quality: 85 })} alt={image.alt || post.title} width={image.width || undefined} height={image.height || undefined} inlineControls={false} />
+            </figure>
+          );
+        })}
+      </div>
+    ) : null
+  }
+  <div class="post-body" set:html={optimizedBody} />
+  </div>
+
+<script>
+  import { frameBlogPhotos } from "../scripts/blogPhotoFrames";
+  const preview = document.querySelector<HTMLElement>("[data-blog-preview-article]");
+  if (preview) frameBlogPhotos(preview);
+</script>
+
+<style>
+  .post-header {
+    margin-bottom: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .post-title {
+    color: #000;
+    font-family: YakuHanMP, "Zen Old Mincho";
+    font-size: calc(64 / 1440 * 100vw);
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 9.6px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .post-meta {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 24px;
+  }
+
+  .post-date {
+    margin: 0;
+    font-family: "Grandiflora One";
+    font-size: 25px;
+    letter-spacing: 3px;
+  }
+
+  .post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .post-tag {
+    font-family: YakuHanMP, "Grandiflora One";
+    font-size: 18px;
+    letter-spacing: 2px;
+  }
+
+  .post-pictures {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .post-eyecatch {
+    margin: 0;
+    position: relative;
+    box-shadow: 5px 5px 4px rgb(0 0 0 / 25%);
+  }
+
+  .post-eyecatch :global(.photo-open) {
+    height: auto;
+  }
+
+  .post-eyecatch::after,
+  .post-body :global(.taped-image::after) {
+    content: "";
+    background-image: var(--tape-url);
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 30%;
+    height: clamp(14px, 5%, 42px);
+    position: absolute;
+    top: 0;
+    left: 35%;
+    transform: translateY(-50%) rotate(var(--tape-rotate));
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .post-eyecatch :global(.gallery-image) {
+    width: 100%;
+    height: auto;
+    display: block;
+    border: 20px solid #ffffff;
+  }
+
+  :global(.post-body *) {
+    margin-bottom: 1.5em;
+  }
+
+  .post-body :global(h1) {
+    color: #000;
+    font-family: YakuHanMP, "Zen Old Mincho";
+    font-size: 32px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3.6px;
+    margin-top: 1.5em;
+  }
+
+  .post-body :global(h2) {
+    color: #000;
+    font-family: YakuHanMP, "Zen Old Mincho";
+    font-size: 22px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3.3px;
+    margin-top: 1em;
+    margin-bottom: 1em;
+  }
+
+  .post-body :global(h3) {
+    color: #000;
+    font-family: YakuHanMP, "Zen Old Mincho";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
+  }
+
+  .post-body :global(p) {
+    color: #000;
+    font-family: YakuHanRP, "Zen Kurenaido";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
+  }
+
+  .post-body :global(ul) {
+    list-style-type: disc;
+    margin: 0 0 1.5em 5em;
+    padding: 0;
+  }
+
+  .post-body :global(ol) {
+    list-style-type: decimal;
+    margin: 0 0 1.5em 5em;
+    padding: 0;
+  }
+
+  .post-body :global(li) {
+    color: #000;
+    font-family: YakuHanRP, "Zen Kurenaido";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 3px;
+    margin-bottom: 0.5em;
+  }
+
+  .post-body :global(figure) {
+    margin: 24px 5px;
+    position: relative;
+    width: fit-content;
+    width: -webkit-fit-content;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .post-body :global(.taped-image) {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    height: auto;
+    margin: 24px auto;
+    position: relative;
+  }
+
+  .post-body :global(.gallery-image) {
+    max-width: 100%;
+    max-height: 80vh;
+    height: auto;
+    width: auto;
+    display: block;
+    margin: 0;
+    border: 20px solid #ffffff;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    position: relative;
+  }
+
+  .post-body :global(.blog-video) { width: 100%; }
+  .post-body :global(figure[style*="text-align:left"]), .post-body :global(figure[style*="text-align: left"]) { margin-left: 0; }
+  .post-body :global(figure[style*="text-align:right"]), .post-body :global(figure[style*="text-align: right"]) { margin-right: 0; }
+  .post-body :global(.blog-video iframe) { border: 0; aspect-ratio: 16 / 9; width: 100%; height: auto; }
+  .post-body :global(.blog-link-card a) { display: block; padding: 12px 16px; border: 1px solid #d5d0ca; overflow-wrap: anywhere; }
+  .post-body :global(pre) { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .post-body :global(table) { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; }
+  .post-body :global(td), .post-body :global(th) { padding: 8px; border: 1px solid #d5d0ca; }
+  .post-body :global(img) { max-width: 100%; height: auto; }
+
+  @media screen and (max-width: 780px) {
+    .post-header {
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 16px;
+      margin-bottom: 0;
+    }
+
+    .post-title {
+      font-size: 115%;
+      letter-spacing: 4.8px;
+      white-space: pre-wrap;
+      display: inline-block;
+    }
+
+    .post-meta {
+      gap: 5px 10px;
+    }
+
+    .post-date {
+      font-size: 12px;
+      letter-spacing: 2px;
+    }
+
+    .post-tag {
+      font-size: 12px;
+      letter-spacing: 2px;
+    }
+
+    .post-eyecatch :global(.gallery-image) {
+      border-width: 10px;
+    }
+
+    .post-body :global(p) {
+      font-size: 14px;
+      letter-spacing: 2px;
+    }
+
+    .post-body :global(h1) {
+      font-size: 20px;
+    }
+
+    .post-body :global(h2) {
+      font-size: 18px;
+    }
+
+    .post-body :global(h3) {
+      font-size: 16px;
+    }
+
+    .post-body :global(ul),
+    .post-body :global(ol) {
+      margin-left: 1.5em;
+    }
+
+    .post-body :global(li) {
+      font-size: 14px;
+      letter-spacing: 2px;
+    }
+
+    .post-body :global(figure) {
+      margin: 16px auto;
+    }
+
+    .post-body :global(.gallery-image) {
+      border-width: 10px;
+    }
+
+    .post-body :global(.taped-image) {
+      margin-block: 16px;
+    }
+
+  }
+</style>

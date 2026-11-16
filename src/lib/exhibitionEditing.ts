@@ -82,9 +82,12 @@ export function removeRoomVertex(room: RoomLayout, index: number) {
 export function setRoomWall(room: RoomLayout, wall: number, length: number, angle: number) {
   if (!Number.isFinite(length) || length < 1 || length > 100000 || !Number.isFinite(angle)) throw new Error("壁長は1〜100000mm、角度は数値で入力してください。");
   const next = scaleRoomWall(room,wall,length), physical=roomWalls(next)[wall];
-  if(physical.corner&&Math.abs(angle-roomWallAngle(room,wall))>.01)throw new Error('角の向きは直接選択で隣の頂点を動かして変更してください。');
-  const a = next.vertices[physical.nodeIndex], target = (physical.nodeIndex+1)%next.vertices.length, turn=(angle-roomWallAngle(next,wall))*Math.PI/180;
-  if(Math.abs(turn)>.00001){const b=next.vertices[target],dx=b.x-a.x,dy=b.y-a.y;Object.assign(b,{x:a.x+dx*Math.cos(turn)-dy*Math.sin(turn),y:a.y+dx*Math.sin(turn)+dy*Math.cos(turn)});for(const h of [a.out,b.in])if(h){const x=h.x,y=h.y;h.x=x*Math.cos(turn)-y*Math.sin(turn);h.y=x*Math.sin(turn)+y*Math.cos(turn);}}
+  const actual=Math.atan2(physical.segment.b.y-physical.segment.a.y,physical.segment.b.x-physical.segment.a.x),difference=angle*Math.PI/180-actual,turn=Math.atan2(Math.sin(difference),Math.cos(difference));
+  if(physical.corner&&Math.abs(turn)>.01*Math.PI/180)throw new Error('角の向きは直接選択で隣の頂点を動かして変更してください。');
+  const a = next.vertices[physical.nodeIndex], target = (physical.nodeIndex+1)%next.vertices.length;
+  // Use the unrounded geometry, so entering the displayed angle removes tiny
+  // residual turns instead of preserving them or rotating through a full turn.
+  if(Math.abs(turn)>1e-12){const b=next.vertices[target],dx=b.x-a.x,dy=b.y-a.y;Object.assign(b,{x:a.x+dx*Math.cos(turn)-dy*Math.sin(turn),y:a.y+dx*Math.sin(turn)+dy*Math.cos(turn)});for(const h of [a.out,b.in])if(h){const x=h.x,y=h.y;h.x=x*Math.cos(turn)-y*Math.sin(turn);h.y=x*Math.sin(turn)+y*Math.cos(turn);}}
   if (!validRoomPath(next)) throw new Error("部屋の壁が交差します。数値を確認してください。");
   syncRoomWallReferences(next);
   return next;

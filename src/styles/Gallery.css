@@ -84,7 +84,7 @@
 
 .explanation-area p {
   color: #000;
-  font-family: "Zen Kurenaido";
+  font-family: YakuHanRP, "Zen Kurenaido";
   font-size: 24px;
   font-style: normal;
   font-weight: 400;
@@ -120,7 +120,7 @@
   color: #0db49b;
 }
 
-.tab > input {
+.tab > input:not(.tab-radio) {
   display: none;
 }
 
@@ -334,7 +334,7 @@
   align-items: center;
   gap: 40px;
   color: #000;
-  font-family: "Zen Kurenaido";
+  font-family: YakuHanRP, "Zen Kurenaido";
   font-size: 32px;
   font-style: normal;
   font-weight: 400;
@@ -405,6 +405,7 @@ details[open] .arrow-icon {
   object-fit: cover;
   transition: transform 0.3s;
 }
+.image-wrapper img[data-gallery-cover]:not([src]) { display: none; }
 
 .gallery-item:hover img {
   transform: scale(1.05);
@@ -416,7 +417,7 @@ details[open] .arrow-icon {
   right: 10px;
   color: #ffffff;
   text-align: right;
-  font-family: "Zen Kurenaido";
+  font-family: YakuHanRP, "Zen Kurenaido";
   font-size: 16px;
   font-style: normal;
   font-weight: 400;
@@ -424,6 +425,10 @@ details[open] .arrow-icon {
   letter-spacing: 2px;
   mix-blend-mode: exclusion;
 }
+
+.gallery-audience-icon { display: inline-flex; flex: none; vertical-align: middle; }
+.gallery-audience-icon svg { width: 1em; height: 1em; }
+.image-title .gallery-audience-icon { margin-inline-start: 5px; }
 
 @media (max-width: 768px) {
   .section-title {

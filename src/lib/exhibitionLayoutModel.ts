@@ -1,14 +1,16 @@
+import { wallSurface, wallSurfaceKey, wallSurfaceContains, sameWallSurface, wallViewSource } from "./exhibitionWallSurfaces.ts";
+import {scaleLayoutText} from './exhibitionTypographyUnits.ts';
 import {cleanLayoutLabelPositions} from './exhibitionLabelPositions.ts';
 import {objectMeasurementPolygons,type MeasurementPolygon} from './exhibitionMeasurementGeometry.ts';
 import {wallEquipmentBox,moveWallEquipment,syncWallEquipment} from './exhibitionWallEquipment.ts';
 import {openingPathBounds,resizeOpeningPath} from './exhibitionOpeningPath.ts';
 import {compileVectorPath} from './exhibitionVector.ts';
 import { dimensionGeometry } from './exhibitionDimensions.ts';
-import { roomWalls, roomWallPoint, roomWallOffset, wallHeight, validRoomPath } from './exhibitionRoomPath.ts';
+import { roomWalls, roomWallPoint, roomWallOffset, validRoomPath } from './exhibitionRoomPath.ts';
 import { annotationWorldBounds, annotationLocalBounds } from './exhibitionAnnotationPath.ts';
 import { roomSymbolLabels } from './exhibitionRoomSymbols.ts';
 import { boardChain, boardSurface } from './exhibitionBoards.ts';
-import { layoutBounds, placedPhotos, rotatedCorners, wallLength, validPolygon } from './exhibitionGeometry.ts';
+import { layoutBounds, placedPhotos, rotatedCorners, validPolygon } from './exhibitionGeometry.ts';
 import type { RoomLayout, LayoutWork, LayoutEditorMetadata, TitleBoardPlacement } from './exhibitionTypes.ts';
 
 import { titleBoardSize, titleBoardBounds } from './exhibitionTitleBoardLayout.ts';
@@ -59,35 +61,36 @@ export function cleanEditorMetadata(room:RoomLayout) {
   m.groups=m.groups.map(g=>({...g,objectIds:[...new Set(g.objectIds)].filter(id=>known.has(id))})).filter(g=>g.objectIds.length>1);
 }
 export function surfaceHeight(room:RoomLayout,key:string) {
-  if(key.startsWith('wall:'))return wallHeight(room,Number(key.split(':')[1]));
+  if(key.startsWith('wall:'))return wallSurface(room,key)?.height??0;
   const group=room.boardGroups?.find(g=>g.id===key.split(':')[1]);return group?boardSurface(group,key.endsWith(':B')?'B':'A').height:0;
 }
-export function titleBoardBox(room:RoomLayout,card:TitleBoardPlacement) {return titleBoardBounds(card,surfaceHeight(room,card.surface));}
+export function titleBoardBox(room:RoomLayout,card:TitleBoardPlacement) {return titleBoardBounds(wallViewSource(room,card.surface,card),surfaceHeight(room,card.surface));}
 export function placementSurface(room:RoomLayout,workId:string) {
-  const p=room.placements.find(p=>p.workId===workId);if(p)return `wall:${p.wall}`;
+  const p=room.placements.find(p=>p.workId===workId);if(p)return wallSurfaceKey(room,`wall:${p.wall}`);
   const b=room.boardPlacements?.find(p=>p.workId===workId);if(b)return `board:${b.groupId}:${b.face}`;
 }
 export function layoutObjects(room:RoomLayout,works:LayoutWork[],view='floor'):LayoutObject[] {
+  view=wallSurfaceKey(room,view);
   const result:LayoutObject[]=[],workMap=new Map(works.map(w=>[w.id,w]));
   const add=(kind:string,id:string,label:string,frame:string,box:LayoutBox,source:any,resizable=false,rotatable=true,movable=true)=>result.push({id:layoutId(kind,id),kind,label,frame,box,source,rotation:source.rotation??0,resizable,rotatable:rotatable&&!source.attachment,movable});
-  for(const a of room.annotations??[])if((a.surface??'floor')===view)add('annotation',a.id,a.text||roomSymbolLabels[a.kind],view,annotationWorldBounds(a),a,true);
+  for(const a of room.annotations??[])if(sameWallSurface(room,a.surface??'floor',view)){const source=wallViewSource(room,a.surface??'floor',a,['x','y']);add('annotation',a.id,a.name||a.text||roomSymbolLabels[a.kind],view,annotationWorldBounds(source),source,true);}
   if(view==='floor') {
 
     for(const t of room.tables)add('table',t.id,t.name,'floor',rotatedBox(t.x,t.y,t.width,t.depth,t.rotation),t,true);
     for(const g of room.boardGroups??[])add('board',g.id,g.name,'floor',boundsOf(boardChain(g).flatMap(p=>p.polygon)),g);
-    for(const o of room.openings){const box=openingPathBounds(room,o);box.height=Math.max(100,box.height);box.width=Math.max(100,box.width);add('opening',o.id,o.kind==='door'?'扉':'窓',`floor-wall:${o.wall}`,box,o,false,false);}
+    for(const o of room.openings){const box=openingPathBounds(room,o);box.height=Math.max(100,box.height);box.width=Math.max(100,box.width);add('opening',o.id,o.name||(o.kind==='door'?'扉':'窓'),`floor-wall:${o.wall}`,box,o,false,false);}
     for(const p of room.placements){const at=roomWallPoint(room,p.wall,p.x);add('work',p.workId,workMap.get(p.workId)?.title??'作品',`floor-wall:${p.wall}`,{x:at.x-40,y:at.y-40,width:80,height:80},p,false,false);}
     for(const book of room.books){const t=room.tables.find(t=>t.id===book.tableId);if(!t)continue;const a=t.rotation*Math.PI/180,c=Math.cos(a),s=Math.sin(a),points=rotatedCorners(book.width,book.depth,book.rotation).map(p=>({x:p.x+book.x,y:p.y+book.y})).map(p=>({x:t.x+p.x*c-p.y*s,y:t.y+p.x*s+p.y*c}));add('book',book.workId,workMap.get(book.workId)?.title??'ブック',`table:${t.id}`,boundsOf(points),book,false,true);}
   } else {
-    const h=surfaceHeight(room,view),placements=view.startsWith('wall:')?room.placements.filter(p=>p.wall===Number(view.split(':')[1])):(room.boardPlacements??[]).filter(p=>`board:${p.groupId}:${p.face}`===view);
+    const h=surfaceHeight(room,view),placements=view.startsWith('wall:')?room.placements.filter(p=>sameWallSurface(room,`wall:${p.wall}`,view)).map(p=>wallViewSource(room,`wall:${p.wall}`,p)):(room.boardPlacements??[]).filter(p=>`board:${p.groupId}:${p.face}`===view);
     for(const p of placements){const w=workMap.get(p.workId);if(w)add('work',p.workId,w.title,view,layoutBounds(placedPhotos(w,p,h)),p);}
     for(const t of room.tables){const b=wallEquipmentBox(room,t,view);if(b)add('table',t.id,t.name,view,b,t,true);}
     for(const g of room.boardGroups??[]){const b=wallEquipmentBox(room,g,view);if(b)add('board',g.id,g.name,view,b,g,false,true);}
-    if(view.startsWith('wall:'))for(const o of room.openings.filter(o=>o.wall===Number(view.split(':')[1])))add('opening',o.id,o.kind==='door'?'扉':'窓',view,{x:o.offset,y:h-o.bottom-o.height,width:o.width,height:o.height},o,true,false);
-    for(const card of room.titleBoards??[])if(card.surface===view)add('titleboard',card.id,`タイトルボード：${workMap.get(card.workId)?.title??'作品'}`,view,titleBoardBox(room,card),card);
+    if(view.startsWith('wall:'))for(const raw of room.openings.filter(o=>sameWallSurface(room,`wall:${o.wall}`,view))){const o=wallViewSource(room,`wall:${raw.wall}`,raw,['offset']);add('opening',o.id,o.name||(o.kind==='door'?'扉':'窓'),view,{x:o.offset,y:h-o.bottom-o.height,width:o.width,height:o.height},o,true,false);}
+    for(const card of room.titleBoards??[])if(sameWallSurface(room,card.surface,view))add('titleboard',card.id,`タイトルボード：${workMap.get(card.workId)?.title??'作品'}`,view,titleBoardBox(room,card),wallViewSource(room,card.surface,card));
   }
   for(const o of result)o.measurementPolygons=objectMeasurementPolygons(room,works,view,o);
-  for(const d of room.dimensions??[])if(d.surface===view){const geometry=dimensionGeometry(room,d,result);if(geometry)add('dimension',d.id,'寸法',view,geometry.box,d,false,false);}
+  for(const d of room.dimensions??[])if(sameWallSurface(room,d.surface,view)){const geometry=dimensionGeometry(room,d,result);if(geometry)add('dimension',d.id,'寸法',view,geometry.box,d,false,false);}
   return orderedObjects(room,result,true);
 }
 export function selectedLayoutObjects(room:RoomLayout,works:LayoutWork[],view:string,ids:string[],individual=false) {
@@ -133,9 +136,13 @@ export function resizeLayoutObject(room:RoomLayout,works:LayoutWork[],view:strin
   const o=layoutObjects(room,works,view).find(o=>o.id===id);
   if(!o||!o.resizable||objectLocked(room,id))throw new Error('この項目の実寸はキャンバスで変更できません。');
   if(![width,height].every(n=>Number.isFinite(n)&&n>=1&&n<=100000))throw new Error('寸法は1〜100000mmで入力してください。');
+  if(o.kind==='annotation'&&o.source.kind==='text'){
+    const b=annotationLocalBounds(o.source),sx=width/b.width,sy=height/b.height,factor=Math.abs(sx-1)>Math.abs(sy-1)?sx:sy;
+    scaleLayoutText(o.source,factor);return;
+  }
   if(o.kind==='annotation'&&o.source.kind!=='text'&&o.source.text){const a=o.source,b=annotationLocalBounds(a),sx=width/b.width,sy=height/b.height;a.width*=sx;a.height*=sy;a.textScaleX=(a.textScaleX??1)*sx;a.textScaleY=(a.textScaleY??1)*sy;if(a.path)for(const n of a.path.nodes){n.x*=sx;n.y*=sy;for(const h of [n.in,n.out])if(h){h.x*=sx;h.y*=sy;}if(n.radius)n.radius*=Math.min(sx,sy);if(n.arc)n.arc.radius*=Math.min(sx,sy);}return;}
   if(o.kind==='opening'){resizeOpeningPath(o.source,width);o.source.width=round(width);o.source.height=round(height);}
-  else {const originalTextBounds=o.source.kind==='text'?annotationLocalBounds(o.source):undefined;if(o.source.path){const bounds=compileVectorPath(o.source.path).bounds,vertical=bounds.width<1e-8,horizontal=bounds.height<1e-8,pad=vertical?width:horizontal?height:o.source.strokeWidth??0;if((!vertical&&width<=pad)||(!horizontal&&height<=pad)||((vertical||horizontal)&&pad>1000))throw new Error('線の太さは1000mm以下で、線の長さより小さくしてください。');if(vertical||horizontal)o.source.strokeWidth=pad;const sx=vertical?1:(width-pad)/bounds.width,sy=horizontal?1:(height-pad)/bounds.height;for(const node of o.source.path.nodes){node.x*=sx;node.y*=sy;for(const key of ['in','out'])if(node[key]){node[key].x*=sx;node[key].y*=sy;}if(node.radius)node.radius*=Math.min(sx,sy);if(node.arc)node.arc.radius*=Math.min(sx,sy);}}o.source.width=round(width);if(o.kind==='table'){if(view==='floor')o.source.depth=round(height);else o.source.height=round(height);syncWallEquipment(room);}else if(o.source.kind==='text'){const b=originalTextBounds!;o.source.textScaleX=(o.source.textScaleX??1)*width/b.width;o.source.textScaleY=(o.source.textScaleY??1)*height/b.height;o.source.width=round(width);o.source.height=round(height);}else o.source.height=round(height);}
+  else {if(o.source.path){const bounds=compileVectorPath(o.source.path).bounds,vertical=bounds.width<1e-8,horizontal=bounds.height<1e-8,pad=vertical?width:horizontal?height:o.source.strokeWidth??0;if((!vertical&&width<=pad)||(!horizontal&&height<=pad)||((vertical||horizontal)&&pad>1000))throw new Error('線の太さは1000mm以下で、線の長さより小さくしてください。');if(vertical||horizontal)o.source.strokeWidth=pad;const sx=vertical?1:(width-pad)/bounds.width,sy=horizontal?1:(height-pad)/bounds.height;for(const node of o.source.path.nodes){node.x*=sx;node.y*=sy;for(const key of ['in','out'])if(node[key]){node[key].x*=sx;node[key].y*=sy;}if(node.radius)node.radius*=Math.min(sx,sy);if(node.arc)node.arc.radius*=Math.min(sx,sy);}}o.source.width=round(width);if(o.kind==='table'){if(view==='floor')o.source.depth=round(height);else o.source.height=round(height);syncWallEquipment(room);}else o.source.height=round(height);}
 }
 export function addWorkTitleBoardPair(room:RoomLayout,work:LayoutWork,surface:string,workPoint:LayoutPoint,cardPoint:LayoutPoint,cardId=crypto.randomUUID(),groupId=crypto.randomUUID()) {
   if(placementSurface(room,work.id)||room.books.some(p=>p.workId===work.id))throw new Error('この作品は配置済みです。');
@@ -207,7 +214,7 @@ export function titleBoardPlacementProblems(room:RoomLayout,works:LayoutWork[]) 
   const issues:string[]=[];
   for(const card of room.titleBoards??[]) {
     const work=works.find(w=>w.id===card.workId),box=titleBoardBox(room,card),label=work?.title??'作品';
-    if(card.surface.startsWith('wall:')){const i=Number(card.surface.slice(5));if(box.x<0||box.y<0||box.x+box.width>wallLength(room,i)+.01||box.y+box.height>wallHeight(room,i)+.01)issues.push(`${label}のタイトルボードが壁面の外にあります。`);}
+    if(card.surface.startsWith('wall:')){const surface=wallSurface(room,card.surface);if(!surface||!wallSurfaceContains(surface,[{x:box.x,y:box.y},{x:box.x+box.width,y:box.y},{x:box.x+box.width,y:box.y+box.height},{x:box.x,y:box.y+box.height}]))issues.push(`${label}のタイトルボードが壁面の外にあります。`);}
     const overlaps=layoutObjects(room,works,card.surface).filter(o=>o.id!==`titleboard:${card.id}`&&['work','titleboard','opening'].includes(o.kind)).some(o=>box.x<o.box.x+o.box.width-.01&&box.x+box.width>o.box.x+.01&&box.y<o.box.y+o.box.height-.01&&box.y+box.height>o.box.y+.01);
     if(overlaps)issues.push(`${label}のタイトルボードが作品・開口部・他のタイトルボードと重なっています。`);
   }return [...new Set(issues)];

@@ -1,14 +1,16 @@
 import crypto from "node:crypto";
-import { isAdmin, updateUsers, type User } from "./auth.ts";
+import { accountRole } from "./roles.ts";
+import { isAdmin, isExecutive, canManageAccount, updateUsers, type User } from "./auth.ts";
 import { revokeUserPasswordResetTokens } from "./passwordReset.ts";
 import { audit } from "./audit.ts";
+import { isMemberAccount } from "./accountVisibility.ts";
 
 export function accountRegistration(user: User) {
   return {
     name: user.name ?? "",
     email: user.email,
     portfolioName: user.portfolioName ?? "",
-    role: user.role === "admin" || user.role === "staff" ? user.role : "member",
+    role: accountRole(user),
   };
 }
 
@@ -51,9 +53,9 @@ export async function updateAccountRegistration(
   const name = (data.name as string).trim();
   const email = (data.email as string).trim().toLowerCase();
   const portfolioName = (data.portfolioName as string).trim();
-  if (data.role !== "member" && data.role !== "staff" && data.role !== "admin")
+  if (data.role !== "member" && data.role !== "staff" && data.role !== "executive" && data.role !== "admin")
     throw new AccountUpdateError(
-      "権限は一般会員・運営・管理者から選択してください。",
+      "権限は一般会員・運営・幹部・管理者から選択してください。",
       400,
     );
   const role = data.role;
@@ -77,16 +79,20 @@ export async function updateAccountRegistration(
   let emailChanged = false;
   let roleChanged = false;
   let changed = false;
+  let relink = false;
   await updateUsers((users) => {
     // Recheck the actor under the same lock as the write.
-    if (!isAdmin(users.find((user) => user.id === actorId)))
-      throw new AccountUpdateError("管理者権限が必要です。", 403);
+    const actor = users.find((user) => user.id === actorId);
+    if (!isExecutive(actor))
+      throw new AccountUpdateError("幹部以上の権限が必要です。", 403);
     const user = users.find((user) => user.id === targetId);
     if (!user)
       throw new AccountUpdateError(
         "該当するアカウントが見つかりませんでした。",
         404,
       );
+    if (!canManageAccount(actor, user) || (!isAdmin(actor) && (role === "executive" || role === "admin")))
+      throw new AccountUpdateError("このアカウントや権限を変更する権限がありません。", 403);
     if (data.revision !== accountRevision(user))
       throw new AccountUpdateError(
         "ほかの操作で登録内容が更新されました。入力内容を控えてからページを再読み込みしてください。",
@@ -124,11 +130,16 @@ export async function updateAccountRegistration(
       revokeUserPasswordResetTokens(user.id);
       user.authVersion = (user.authVersion ?? 0) + 1;
     }
+    const nameChanged = user.name !== name;
     user.name = name;
     user.email = email;
     if (roleChanged) user.role = role;
     if (portfolioName) user.portfolioName = portfolioName;
     else delete user.portfolioName;
+    if (nameChanged && isMemberAccount(user)) {
+      user.rosterRelink = { id: crypto.randomUUID(), name, attempts: 0, nextAttemptAt: 0 };
+      relink = true;
+    }
   });
   if (changed) {
     try {
@@ -141,7 +152,13 @@ export async function updateAccountRegistration(
       console.error("[admin/accounts] audit write failed after saving");
     }
   }
+  let rosterSync: "linked" | "unlinked" | "pending" | undefined;
+  if (relink) {
+    const { syncAccountRosterAfterRename } = await import("./accountSetup.ts");
+    rosterSync = await syncAccountRosterAfterRename(targetId);
+  }
   return {
+    ...(rosterSync ? { rosterSync } : {}),
     emailChanged,
     roleChanged,
     reauthenticate: (emailChanged || roleChanged) && actorId === targetId,

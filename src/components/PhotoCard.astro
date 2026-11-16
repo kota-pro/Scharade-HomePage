@@ -1,0 +1,31 @@
+---
+import type { PhotoRef, PhotoSeriesPreview } from "../types/photos";
+import type { BookReaderOptions } from "../types/portfolioBooks";
+import { photoSeriesFrameStyle } from "../utils/photoSeriesLayout";
+interface Props {
+  photoRef: PhotoRef; src: string; full: string; alt: string; width?: number; height?: number;
+  hidden?: boolean; aspectRatio?: number; loading?: "eager" | "lazy"; fetchPriority?: "high"; srcset?: string; sizes?: string; series?: PhotoSeriesPreview;
+  book?: BookReaderOptions; title?: string; inlineControls?: boolean;
+}
+const { photoRef, src, full, alt, width, height, hidden = false, aspectRatio, loading = "lazy", fetchPriority, srcset, sizes, series, book, title, inlineControls = true } = Astro.props;
+const ratio = series ? series.width / series.height : aspectRatio;
+---
+<div class="photo-wrapper" data-photo-ref={JSON.stringify(photoRef)} data-photo-inline-controls={inlineControls ? undefined : "false"} data-book-reader={book && JSON.stringify(book)} data-photo-series={series ? "true" : undefined} data-photo-series-members={series?.photos.map(frame => frame.id).join(" ")} data-photo-series-title={series?.title} data-photo-series-shooting={JSON.stringify(series?.shooting)} data-aspect-ratio={ratio} hidden={hidden}>
+  <a class="photo-open" href={full} data-portfolio-book-open={book ? "" : undefined} aria-label={series ? `組写真「${series.title}」を開く` : book ? `${title}の詳細を開く` : `${alt}を拡大`}>
+    {series ? (
+      <>
+        <span class="photo-series-thumbnail" style={{ "--series-ratio": ratio }} aria-hidden="true">
+          {series.photos.map((frame, index) => (
+            <img src={frame.src} alt="" loading={index === 0 ? loading : "lazy"} fetchpriority={index === 0 ? fetchPriority : undefined} decoding="async" style={photoSeriesFrameStyle(frame, series)} />
+          ))}
+        </span>
+        <span class="photo-series-badge">組写真 · {series.photos.length}枚</span>
+      </>
+    ) : <img class="gallery-image" src={src} alt={alt} width={width} height={height} loading={loading} fetchpriority={fetchPriority} decoding="async" srcset={srcset} sizes={sizes} />}
+    {book && <span class="photo-series-badge">ブック</span>}
+  </a>
+  {inlineControls && <>
+  <div class="photo-hover"><div class="photo-author" hidden></div><div class="photo-exif"><span data-photo-equipment><span data-photo-camera hidden></span>&#10;<span data-photo-lens hidden></span>&#10;<span data-photo-film hidden></span></span><span data-photo-settings></span></div></div>
+  <div class="photo-footer"><span class="photo-title" data-photo-title></span><div class="photo-like-controls"><button class="photo-like" type="button" data-photo-like aria-label="いいねする" aria-pressed="false" disabled><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 28S3 20 3 10a7 7 0 0 1 13-3 7 7 0 0 1 13 3c0 10-13 18-13 18Z" /></svg></button><button class="photo-like-count" type="button" data-photo-count aria-haspopup="dialog" aria-controls="photo-likers" aria-label="いいねした会員を見る" hidden></button></div></div>
+  </>}
+</div>

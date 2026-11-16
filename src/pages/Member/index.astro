@@ -1,7 +1,9 @@
 ---
+import ExhibitionShiftEntries from "../../components/ExhibitionShiftEntries.astro";
 import MemberLayout from "../../layouts/MemberLayout.astro";
 import ActivityDashboard from "../../components/ActivityDashboard.astro";
-import { isStaff } from "../../lib/auth";
+import MemberIcon from "../../components/MemberIcon.astro";
+import PhotoNotificationBell from "../../components/PhotoNotificationBell.astro";
 const user = Astro.locals.user!;
 const profileUrl = user.portfolioId
   ? `/Portfolio/${encodeURIComponent(user.portfolioId)}`
@@ -9,25 +11,20 @@ const profileUrl = user.portfolioId
 ---
 
 <MemberLayout title="メンバー専用ページ">
-  <p class="admin-intro">{user.name}さんのメンバーページです。</p>
-  {
-    isStaff(user) && (
-      <p>
-        <a class="admin-button" href="/Member/manage">
-          管理・運営
-        </a>
-      </p>
-    )
-  }
+  <div class="member-home-intro">
+    <p class="admin-intro">{user.name}さんのメンバーページです。</p>
+    <PhotoNotificationBell placement="member" />
+  </div>
   <div class="member-dashboard">
     <ActivityDashboard />
-    <section class="admin-section">
+    <ExhibitionShiftEntries userId={user.id} />
+    <section class="admin-section" id="my-page">
       <h2>My page</h2>
       <ul class="admin-link-list member-action-list">
-        <li><a href="/Member/security"><span class="admin-item-label">アカウントの保護</span><span class="admin-item-description">パスワードと二段階認証を管理する</span></a></li>
+        <li><a href="/Member/security"><MemberIcon kind="shield" /><span class="admin-item-label">アカウントの保護</span><span class="admin-item-description">パスワードと二段階認証を管理する</span></a></li>
         <li>
           <a href="/Member/profile"
-            ><span class="admin-item-label">班分け用プロフィール</span><span
+            ><MemberIcon kind="user" /><span class="admin-item-label">班分け用プロフィール</span><span
               class="admin-item-description"
               >名簿から取得した性別・学年を確認する</span
             ></a
@@ -37,6 +34,7 @@ const profileUrl = user.portfolioId
           !user.siteManagement && (
             <li>
               <a href={profileUrl}>
+                <MemberIcon kind="image" />
                 <span class="admin-item-label">My Portfolio</span>
                 <span class="admin-item-description">
                   自分のPortfolioを見る
@@ -47,7 +45,7 @@ const profileUrl = user.portfolioId
         }
         <li>
           <a href="/Member/advance"
-            ><span class="admin-item-label">立替申請</span><span
+            ><MemberIcon kind="wallet" /><span class="admin-item-label">立替申請</span><span
               class="admin-item-description"
               >サークルのために立て替えた費用を申請する</span
             ></a
@@ -55,7 +53,7 @@ const profileUrl = user.portfolioId
         </li>
         <li>
           <button id="member-logout" type="button"
-            ><span class="admin-item-label">Log out</span><span
+            ><MemberIcon kind="logout" /><span class="admin-item-label">Log out</span><span
               class="admin-item-description">ログアウトする</span
             ></button
           >

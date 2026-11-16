@@ -1,3 +1,4 @@
+import "./require-secure-runtime.mjs";
 import fs from "node:fs";
 import crypto from "node:crypto";
 import { parseEnv } from "node:util";

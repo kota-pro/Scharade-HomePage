@@ -1,0 +1,10 @@
+.advisory-warning,.exhibition-page .advisory-warning,.member-page .advisory-warning { display:flex;align-items:flex-start;gap:8px;color:#bd606d;font-size:14px;line-height:1.7; }
+.advisory-warning-icon { display:inline-flex;flex:none;color:#d78d99;vertical-align:middle;align-items:center;justify-content:center;margin-inline-start:6px; }
+.advisory-warning-icon svg { display:block;width:18px;height:18px; }
+.advisory-warning>.advisory-warning-icon { margin:3px 0 0; }
+.advisory-warning-list { margin:8px 0;padding-left:22px;color:#bd606d;font-size:14px;line-height:1.7; }
+.submission-warning-summary { margin:12px 0;padding:12px 16px;border-left:3px solid #d78d99;background:#fcf3f5; }
+.submission-warning-summary h3 { margin:0 0 8px;font-size:15px;color:#bd606d; }
+.submission-warning-summary button,.exhibition-page .submission-warning-summary button { border:0;background:transparent;color:#bd606d;text-decoration:underline;text-align:left;padding:4px;font:inherit; }
+.submission-detail-button [data-submission-warning] { border-radius:50%;background:#fff; }
+[data-warning-anchor]:focus { outline:2px solid #d78d99;outline-offset:5px; }

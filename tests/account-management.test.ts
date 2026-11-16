@@ -79,7 +79,10 @@ test("name and registration edits preserve credentials, ownership, approval and 
     payload(member, { name: " 新しい会員 ", portfolioName: "登録時の訂正名" }),
   );
   const saved = readUsers().find((u) => u.id === member.id)!;
-  assert.deepEqual(saved, {
+  assert.ok(saved.rosterRelink?.id);
+  assert.equal(saved.rosterRelink?.name, "新しい会員");
+  const { rosterRelink, ...registration } = saved;
+  assert.deepEqual(registration, {
     ...member,
     name: "新しい会員",
     portfolioName: "登録時の訂正名",

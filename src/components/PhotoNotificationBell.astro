@@ -1,0 +1,7 @@
+---
+interface Props { placement?: "welcome" | "member"; }
+const { placement = "member" } = Astro.props;
+---
+<button type="button" class:list={["photo-notification-bell", `photo-notification-${placement}`]} data-photo-notification-bell data-placement={placement} aria-label="写真のいいね通知" aria-haspopup="dialog" aria-controls="photo-notifications" hidden={placement === "welcome"}>
+  <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M5 20h18l-3-4V11a6 6 0 0 0-12 0v5Zm6 3a3 3 0 0 0 6 0M14 3V1" /></svg><span class="photo-unread-dot" hidden></span>
+</button>

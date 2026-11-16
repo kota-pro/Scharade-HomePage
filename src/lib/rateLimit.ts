@@ -63,7 +63,9 @@ export async function checkRateLimit(
   context: Pick<APIContext, "request" | "url" | "locals" | "clientAddress">,
 ) {
   // Dynamic IDs cannot create fresh buckets for the same expensive operation.
-  const p = context.url.pathname.replace(/\/exhibitions\/[^/]+/g, "/exhibitions/:id").replace(/\/accounts\/[^/]+/g, "/accounts/:id");
+  const p = context.url.pathname.replace(/\/exhibitions\/[^/]+/g, "/exhibitions/:id").replace(/\/accounts\/[^/]+/g, "/accounts/:id")
+    .replace(/^\/api\/member\/gallery\/[^/]+/, "/api/member/gallery/:id")
+    .replace(/^\/api\/member\/blog\/articles\/[^/]+/, "/api/member/blog/articles/:id");
   if(/^\/api\/member\/exhibitions\/:id\/layout(?:\/(?:lease|presence))?$/.test(p)) {
     const now=Date.now(),presence=p.endsWith('/presence'),identity=context.locals.user?.id??clientIdentity(context),key=`${p}:${identity}`;
     if(layoutBuckets.size>10000)for(const [k,v] of layoutBuckets)if(v.until<=now)layoutBuckets.delete(k);
@@ -75,7 +77,9 @@ export async function checkRateLimit(
     p === "/api/account-deletion" ||
     p.includes("/signup") ||
     p.includes("/password-reset/");
-  const limit = p.endsWith("/login") || p === "/api/member/receipts/upload" ? 20 : sensitive ? 8 : p === "/api/member/activities" ? 300 : 100;
+  // Photo state is a read operation (batched to keep signed references out of URLs).
+  // Browsing and hovering a large album must not consume a write-sized allowance.
+  const limit = p.endsWith("/login") || p === "/api/member/receipts/upload" ? 20 : sensitive ? 8 : p === "/api/photos/state" ? 600 : p === "/api/member/activities" ? 300 : 100;
   // The VPS reverse proxy must overwrite X-Real-IP before TRUST_PROXY is enabled.
   const address = clientIdentity(context);
   const identity = p.endsWith("/login") ? address : context.locals.user?.id ?? address;

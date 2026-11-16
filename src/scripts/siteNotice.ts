@@ -1,4 +1,6 @@
 import { noticeDuration } from "../lib/noticeTiming.ts";
+import { formatSiteError } from '../lib/siteErrors.ts';
+import { reportDisplayedError } from './siteErrorReports.ts';
 export type NoticeKind = "success" | "error" | "progress";
 type NoticeItem = { element: HTMLElement; timer?: number; deadline: number; remaining: number; hovered: boolean; focused: boolean };
 type NoticeState = { host: HTMLElement; items: Map<string, NoticeItem> };
@@ -38,6 +40,7 @@ export function dismissNotice(id: string) {
 }
 export function notify(message: string, kind: NoticeKind = "success", id: string = crypto.randomUUID()): string {
   if (!message) return id;
+  if (kind === 'error') { message = formatSiteError(message); reportDisplayedError(message); }
   const s = state(); let item = s.items.get(id);
   if (!item) {
     while (s.items.size >= 3) dismissNotice(s.items.keys().next().value!);

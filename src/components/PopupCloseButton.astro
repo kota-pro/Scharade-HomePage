@@ -1,0 +1,48 @@
+---
+interface Props {
+  label: string;
+  id?: string;
+  "data-close-preview"?: boolean;
+}
+const { label, ...attrs } = Astro.props;
+---
+<button type="button" class="popup-close" aria-label={label} {...attrs}>
+  <span aria-hidden="true"></span><span aria-hidden="true"></span>
+</button>
+
+<style>
+  button.popup-close[type="button"] {
+    position: relative;
+    display: block;
+    flex: none;
+    width: 36px;
+    min-width: 0;
+    height: 36px;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    cursor: pointer;
+  }
+  button.popup-close[type="button"],
+  button.popup-close[type="button"]:hover:not(:disabled) {
+    background: transparent;
+    color: #000;
+  }
+  .popup-close span {
+    position: absolute;
+    display: block;
+    width: 120%;
+    height: 1px;
+    top: calc(50% - 0.5px);
+    left: -10%;
+    background: currentColor;
+    transition: transform .3s;
+  }
+  .popup-close span:first-child { transform: rotate(45deg); }
+  .popup-close span:last-child { transform: rotate(-45deg); }
+  .popup-close:hover span:first-child { transform: rotate(-135deg); }
+  .popup-close:hover span:last-child { transform: rotate(135deg); }
+  @media (max-width: 1024px) {
+    button.popup-close[type="button"] { width: 28px; height: 28px; }
+  }
+</style>

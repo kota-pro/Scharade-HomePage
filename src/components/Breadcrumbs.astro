@@ -1,10 +1,15 @@
 ---
+import { isStaff } from "../lib/auth";
+import PhotoNotificationBell from "./PhotoNotificationBell.astro";
 import type { BreadcrumbItem } from "../lib/breadcrumbs";
 interface Props {
   items: BreadcrumbItem[];
 }
 const { items } = Astro.props;
 const user = Astro.locals.user;
+const dashboard = isStaff(user);
+const destination = dashboard ? "/Dashboard" : "/Member";
+const destinationLabel = dashboard ? "Dashboard" : "My page";
 const greeting = user ? `${user.name}さん、ようこそ。` : "";
 ---
 
@@ -35,16 +40,17 @@ const greeting = user ? `${user.name}さん、ようこそ。` : "";
 </nav>
 {
   user && (
-    <a
+    <span class="welcome-notification-group" data-dashboard={dashboard && !Astro.locals.appShell || undefined}><a
       class="user-welcome"
-      href="/Member"
+      href={destination}
+      data-dashboard={dashboard && !Astro.locals.appShell || undefined}
       title={greeting}
-      aria-label={`${greeting} My pageへ`}
+      aria-label={`${greeting} ${destinationLabel}へ`}
       data-compact
     >
       <span class="welcome-full">{greeting}</span>
-      <span class="welcome-short">My pageへ</span>
-    </a>
+      <span class="welcome-short">{destinationLabel}へ</span>
+    </a><PhotoNotificationBell placement="welcome" /></span>
   )
 }
 </div>
@@ -61,7 +67,7 @@ const greeting = user ? `${user.name}さん、ようこそ。` : "";
       list.style.width = "max-content";
       list.style.maxWidth = "none";
       list.style.flexWrap = "nowrap";
-      const required = list.getBoundingClientRect().width + full.getBoundingClientRect().width;
+      const required = list.getBoundingClientRect().width + full.getBoundingClientRect().width + parseFloat(getComputedStyle(welcome.parentElement!).paddingRight || "0");
       list.style.removeProperty("width");
       list.style.removeProperty("max-width");
       list.style.removeProperty("flex-wrap");
@@ -140,10 +146,17 @@ const greeting = user ? `${user.name}さん、ようこそ。` : "";
     min-width: 0;
   }
   .user-welcome {
+    font-family: YakuHanRP, "Zen Kurenaido", sans-serif;
     position: relative;
-    flex: none;
+    min-width: 0;
     white-space: nowrap;
     color: #000;
+  }
+  .welcome-notification-group {
+    max-width: calc(100% - 16px);
+  }
+  .user-welcome:not([data-compact]) {
+    overflow: clip;
   }
   .welcome-full {
     display: inline-block;
@@ -161,6 +174,8 @@ const greeting = user ? `${user.name}さん、ようこそ。` : "";
   .user-welcome[data-compact] .welcome-short {
     display: inline;
   }
+  .breadcrumb-bar .welcome-notification-group[data-dashboard] { display: inline-flex; }
+  .breadcrumb-bar .user-welcome[data-dashboard] { display: inline-flex; }
   @media (max-width: 767px) {
     .breadcrumb-bar {
       font-size: clamp(0.75rem, 3.2vw, 0.875rem);

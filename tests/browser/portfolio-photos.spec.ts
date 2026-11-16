@@ -69,11 +69,11 @@ test("Portfolio uses one photo per mobile row and balanced desktop rows before a
     await expectPhotoRows(page);
   }
   await page.locator(".photo-wrapper").last().click();
-  await expect(page.locator(".lb-number")).toHaveText("Image 35 of 35");
+  await expect(page.locator("[data-photo-position]")).toHaveText("35 / 35");
   await page.keyboard.press("ArrowLeft");
-  await expect(page.locator(".lb-number")).toHaveText("Image 34 of 35");
+  await expect(page.locator("[data-photo-position]")).toHaveText("34 / 35");
   await page.keyboard.press("Escape");
-  await expect(page.locator("#lightbox")).not.toBeVisible();
+  await expect(page.locator("#photo-dialog")).not.toBeVisible();
 });
 
 
@@ -109,7 +109,7 @@ test("mixed photos handle pagination, failed images, absent metadata and contain
   await expectPhotoRows(page, false);
 });
 
-test("mobile landscape enlargement rotates only in portrait screens and keeps navigation and close usable", async ({ page }) => {
+test("mobile photo dialog rotates landscape photographs with its controls and keeps navigation usable", async ({ page }) => {
   await page.route("**/*", async route => {
     const url = new URL(route.request().url());
     if (url.hostname === "127.0.0.1") return route.continue();
@@ -123,12 +123,12 @@ test("mobile landscape enlargement rotates only in portrait screens and keeps na
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/Portfolio/photo-layout");
   await page.locator(".photo-wrapper").first().click();
-  const viewer = page.locator("#lightbox");
-  const image = viewer.locator(".lb-image");
+  const viewer = page.locator("#photo-dialog");
+  const image = viewer.locator("[data-photo-image]");
   const fits = async () => {
     await expect.poll(() => viewer.evaluate(viewer => {
-      const image = viewer.querySelector(".lb-image")!.getBoundingClientRect();
-      const close = viewer.querySelector(".lb-close")!.getBoundingClientRect();
+      const image = viewer.querySelector("[data-photo-image]")!.getBoundingClientRect();
+      const close = viewer.querySelector("[data-photo-close]")!.getBoundingClientRect();
       const screen = window.visualViewport;
       const width = screen?.width ?? innerWidth, height = screen?.height ?? innerHeight;
       return image.width > 0 && image.height > 0 && image.left >= 0 && image.right <= width &&
@@ -136,41 +136,44 @@ test("mobile landscape enlargement rotates only in portrait screens and keeps na
         close.left >= 0 && close.right <= width && close.top >= 0 && close.bottom <= height;
     })).toBe(true);
   };
-  await expect(viewer.locator(".lb-number")).toHaveText("Image 1 of 105");
-  await expect(viewer).toHaveClass(/portfolio-landscape-photo/);
-  await expect(image).toHaveCSS("transform", /matrix\(0, 1, -1, 0,/);
+  await expect(viewer.locator("[data-photo-position]")).toHaveText("1 / 105");
+  await expect(viewer).toHaveAttribute("data-photo-rotated", "true");
+  await expect(image).toHaveCSS("transform", "none");
   await fits();
-  await expect(page.locator("body")).toHaveClass(/lb-disable-scrolling/);
+  await expect(page.locator("body")).toHaveCSS("overflow", "hidden");
 
-  await viewer.locator(".lb-next").click();
-  await expect(viewer.locator(".lb-number")).toHaveText("Image 2 of 105");
-  await expect(viewer).not.toHaveClass(/portfolio-landscape-photo/);
+  await viewer.locator("[data-photo-next]").click();
+  await expect(viewer.locator("[data-photo-position]")).toHaveText("2 / 105");
   await fits();
-  await viewer.locator(".lb-prev").click();
-  await expect(viewer.locator(".lb-number")).toHaveText("Image 1 of 105");
-  await expect(viewer).toHaveClass(/portfolio-landscape-photo/);
+  await viewer.locator("[data-photo-prev]").click();
+  await expect(viewer.locator("[data-photo-position]")).toHaveText("1 / 105");
   await page.setViewportSize({ width: 844, height: 390 });
-  await expect(viewer).not.toHaveClass(/portfolio-landscape-photo/);
   await fits();
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(viewer).toHaveClass(/portfolio-landscape-photo/);
   await fits();
-  await viewer.locator(".lb-close").click();
+  await viewer.locator("[data-photo-close]").click();
   await expect(viewer).not.toBeVisible();
-  await expect(page.locator("body")).not.toHaveClass(/lb-disable-scrolling/);
+  await expect(page.locator("body")).not.toHaveCSS("overflow", "hidden");
 
   await page.locator(".photo-wrapper").nth(4).click();
-  await expect(viewer.locator(".lb-number")).toHaveText("Image 5 of 105");
-  await expect(viewer).not.toHaveClass(/portfolio-landscape-photo/);
+  await expect(viewer.locator("[data-photo-position]")).toHaveText("5 / 105");
   await fits();
   await page.keyboard.press("Escape");
   await expect(viewer).not.toBeVisible();
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.locator(".photo-wrapper").first().click();
-  await expect(viewer.locator(".lb-number")).toHaveText("Image 1 of 105");
-  await expect(viewer).not.toHaveClass(/portfolio-mobile-lightbox/);
+  await expect(viewer.locator("[data-photo-position]")).toHaveText("1 / 105");
   await expect(image).toHaveCSS("transform", "none");
   await page.keyboard.press("Escape");
   await expect(viewer).not.toBeVisible();
   expect(errors).toEqual([]);
+});
+test("Portfolio deep links reveal a photograph beyond the first hundred", async ({ page }) => {
+  await page.route("**/*", route => new URL(route.request().url()).hostname === "127.0.0.1" ? route.continue() : route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"/>' }));
+  await page.goto("/Portfolio/photo-layout");
+  const ref = JSON.parse((await page.locator(".photo-wrapper").last().getAttribute("data-photo-ref"))!);
+  await page.goto(`/Portfolio/photo-layout?photo=${ref.imageId}`);
+  await expect(page.locator("#photo-dialog")).toBeVisible();
+  await expect(page.locator("#photo-dialog [data-photo-position]")).toHaveText("105 / 105");
+  await expect(page.locator(".page-input-top")).toHaveValue("2");
 });

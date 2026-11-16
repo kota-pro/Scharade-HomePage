@@ -3,7 +3,12 @@ import { parseRosterSource, rosterGender, rosterGrade } from "./activityRoster.t
 import { advanceIntegrationConfigured, postAccountingPayload } from "./advanceRequests.ts";
 import { ActivityError } from "./activities.ts";
 
-export type GroupingGuest = Participant & { lastUsedAt: string; expiresAt: string };
+export type GroupingParticipantSource = "event" | "sheet" | "manual";
+export type GroupingParticipant = Participant & { inputSource?: GroupingParticipantSource };
+export type GroupingGuest = GroupingParticipant & { lastUsedAt: string; expiresAt: string };
+export function isGroupingParticipantSource(value: unknown): value is GroupingParticipantSource {
+  return value === "event" || value === "sheet" || value === "manual";
+}
 export const participantKey = (value: string) => value.normalize("NFKC").replace(/\s+/g, "").toLocaleLowerCase("ja");
 export function guestExpiry(now: string): string {
   const local = new Date(Date.parse(now) + 9 * 3600_000);
@@ -22,15 +27,19 @@ export function rosterParticipants(activities: ActivityStore): Participant[] {
     id: r.key, name: r.name, lineName: r.lineName, grade: r.grade!, gender: r.gender!,
   }));
 }
-export function parseGuest(value: unknown): Participant {
-  const p = value as Partial<Participant> | null;
+export function parseGuest(value: unknown): GroupingParticipant {
+  const p = value as Partial<GroupingParticipant> | null;
   if (!p || typeof p !== "object" || typeof p.id !== "string" || !/^guest-[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(p.id) ||
       typeof p.name !== "string" || !p.name.trim() || p.name.length > 200 || /[\x00-\x1f\x7f]/.test(p.name) ||
       typeof p.gender !== "string" || !Object.hasOwn(genderLabels, p.gender) ||
       typeof p.grade !== "string" || !Object.hasOwn(gradeLabels, p.grade) ||
-      (p.lineName !== undefined && (typeof p.lineName !== "string" || p.lineName.length > 200 || /[\x00-\x1f\x7f]/.test(p.lineName))))
+      (p.lineName !== undefined && (typeof p.lineName !== "string" || p.lineName.length > 200 || /[\x00-\x1f\x7f]/.test(p.lineName))) ||
+      (p.inputSource !== undefined && !isGroupingParticipantSource(p.inputSource)))
     throw new ActivityError("追加参加者の名前・学年・性別を確認してください。");
-  return { id: p.id, name: p.name.trim(), lineName: p.lineName?.trim() || "", gender: p.gender, grade: p.grade };
+  return {
+    id: p.id, name: p.name.trim(), lineName: p.lineName?.trim() || "", gender: p.gender, grade: p.grade,
+    ...(p.inputSource ? { inputSource: p.inputSource } : {}),
+  };
 }
 export async function previewGroupingParticipants(url: unknown, columns?: unknown) {
   let source;

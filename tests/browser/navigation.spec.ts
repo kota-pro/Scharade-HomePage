@@ -36,9 +36,11 @@ for (const account of ["other", "member"]) {
           const logo = document.querySelector(".header-logo")!.getBoundingClientRect();
           const nav = document.querySelector(".breadcrumbs")!.getBoundingClientRect();
           const link = document.querySelector(".user-welcome")!.getBoundingClientRect();
+          // The greeting and notification bell share the right-edge space.
+          const greetingGroup = document.querySelector(".welcome-notification-group")!.getBoundingClientRect();
           const first = document.querySelector(".breadcrumbs li")!.getBoundingClientRect();
           return Math.abs(nav.left - logo.left) < 1 &&
-            Math.abs(nav.left - (document.documentElement.clientWidth - link.right)) < 1 &&
+            Math.abs(nav.left - (document.documentElement.clientWidth - greetingGroup.right)) < 1 &&
             Math.abs(first.top - link.top) < 3 &&
             nav.right + 8 <= link.left &&
             document.documentElement.scrollWidth <= window.innerWidth + 1;

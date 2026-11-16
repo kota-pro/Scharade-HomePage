@@ -12,7 +12,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   if (!token) return redirect("/ReviewAccount?result=invalid", 303);
   const result = await applyAccountReview(token.userId, token.action);
   const retry = new URLSearchParams();
-  if (result === "email-failed")
+  if (["email-failed", "setup-failed", "setup-unlinked"].includes(result))
     for (const key of ["action", "userId", "expires", "sig"])
       retry.set(key, params.get(key) ?? "");
   retry.set("result", result);

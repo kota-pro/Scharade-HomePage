@@ -1,0 +1,38 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import LoadingIndicator from "../../components/LoadingIndicator.astro";
+import "../../styles/PhotoRanking.css";
+import { getAllContents, getAllPortfolios } from "../../lib/microcms";
+import { getGalleryAlbums } from "../../lib/galleryCatalog";
+import { accessibleAlbum } from "../../lib/galleryAccess";
+import type { Blog } from "../../types/microcms";
+const sources = await Promise.allSettled([getAllPortfolios(), getAllContents<Blog>("blog", { fields: ["id", "title"] }), getGalleryAlbums()]);
+const portfolios = sources[0].status === "fulfilled" ? sources[0].value : [];
+const blogs = sources[1].status === "fulfilled" ? sources[1].value : [];
+const albums = sources[2].status === "fulfilled" ? (await Promise.all(sources[2].value.map(album => accessibleAlbum(album.id, Astro.locals.user)))).filter(album => album !== null) : [];
+---
+<AdminLayout title="写真のいいねランキング" pageClass="photo-ranking-page">
+  <h2>写真のいいねランキング</h2>
+  <p class="photo-ranking-intro">いいねが付いた写真を、多い順に確認できます。同じ写真が複数のページに掲載されている場合は、まとめて集計します。</p>
+  <p class="photo-likers-note">会員名はログイン中に押されたいいねのみ表示します。</p>
+  {sources.some(source => source.status === "rejected") && <p role="status">一部の掲載先を取得できませんでした。時間をおいて再読み込みしてください。</p>}
+  <section id="photo-manager" aria-label="いいねの概要とランキング">
+    <div class="photo-ranking-summary" aria-label="いいねの概要">
+      <dl><dt>合計いいね</dt><dd data-photo-summary="totalLikes">—</dd></dl>
+      <dl><dt>いいねのある写真</dt><dd><span data-photo-summary="likedPhotos">—</span><small>枚</small></dd></dl>
+      <dl><dt>最多いいね</dt><dd data-photo-summary="mostLikes">—</dd></dl>
+    </div>
+    <div class="photo-ranking-toolbar">
+      <label for="photo-container">掲載先で絞り込む
+        <select id="photo-container"><option value="">すべての掲載先</option><optgroup label="Portfolio">{portfolios.map(person => <option value={`portfolio:${person.id}`}>{person.name}</option>)}</optgroup><optgroup label="Blog">{blogs.map(post => <option value={`blog:${post.id}`}>{post.title}</option>)}</optgroup><optgroup label="Gallery">{albums.map(album => <option value={`gallery:${album.id}`}>{album.payload.name}</option>)}</optgroup></select>
+      </label>
+      <button type="button" data-photo-ranking-refresh>更新する</button>
+    </div>
+    <div class="photo-ranking-heading"><h3 data-photo-ranking-scope>すべての掲載先</h3><p data-photo-ranking-updated></p></div>
+    <p data-photo-manager-status role="status" aria-live="polite"></p>
+    <div class="photo-ranking-loading" data-photo-ranking-loading hidden><LoadingIndicator /><span>ランキングを読み込んでいます…</span></div>
+    <ol data-photo-manager-list class="photo-manager-list" aria-label="写真ランキング"></ol>
+    <nav class="photo-ranking-pagination" aria-label="ランキングのページ"><button type="button" data-photo-manager-prev hidden>前へ</button><span data-photo-ranking-page></span><button type="button" data-photo-manager-next hidden>次へ</button></nav>
+  </section>
+</AdminLayout>
+<script>import "../../scripts/photoManager";</script>

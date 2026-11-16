@@ -5,7 +5,7 @@ import {
   type PublishedGroups,
 } from "../lib/activityTypes";
 import GroupPersonPicker from "./GroupPersonPicker.astro";
-import { isAdmin } from "../lib/auth";
+import { isExecutive } from "../lib/auth";
 import { displayName } from "../lib/groupPresentation";
 import GroupBoard from "./GroupBoard.astro";
 import GroupWarningIcon from "./GroupWarningIcon.astro";
@@ -50,7 +50,7 @@ const groups = plan.draftGroups?.groups || [];
       <p class="activity-warning">
         班分け情報が未登録：{missing.map(displayName).join("、")}。
         管理者にGoogle名簿の確認・更新を依頼してから生成してください。
-        {isAdmin(Astro.locals.user) && <a href="/Admin/grouping-roster">Google名簿を確認</a>}
+        {isExecutive(Astro.locals.user) && <a href="/Admin/grouping-roster">Google名簿を確認</a>}
       </p>
     )
   }

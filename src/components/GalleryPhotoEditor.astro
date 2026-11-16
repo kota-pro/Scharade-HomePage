@@ -1,0 +1,38 @@
+---
+import { photoFieldLabels, photoMetadataFields } from "../types/photos";
+import "../styles/PortfolioShare.css";
+import "../styles/GalleryPhotoEditor.css";
+---
+<dialog id="gallery-photo-editor" class="portfolio-share-dialog gallery-photo-editor" aria-labelledby="gallery-photo-editor-title">
+  <form>
+    <div class="gallery-editor-heading">
+      <h2 id="gallery-photo-editor-title">写真情報を編集</h2>
+      <button class="portfolio-share-close" type="button" data-gallery-editor-close aria-label="編集を閉じる">
+        <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 5 14 14M19 5 5 19" fill="none" stroke="currentColor" stroke-width="1.2" /></svg>
+      </button>
+    </div>
+    <div class="gallery-editor-body">
+      <section class="gallery-editor-preview" aria-label="作品のプレビュー" data-gallery-editor-preview>
+        <img data-gallery-editor-image alt="" />
+        <div class="gallery-editor-book-controls" data-gallery-book-controls role="group" aria-label="ブックのページ操作" hidden>
+          <button type="button" data-gallery-page="previous" aria-label="前のページ">〈</button>
+          <span data-gallery-book-position aria-live="polite"></span>
+          <button type="button" data-gallery-page="next" aria-label="次のページ">〉</button>
+        </div>
+        <div class="exhibition-page gallery-editor-series" data-gallery-series-editor hidden></div>
+      </section>
+      <fieldset class="gallery-editor-fields" aria-label="作品情報と撮影諸元">
+        {photoMetadataFields.map(key => (
+          <label class:list={[{ "gallery-editor-wide-field": key === "title" || key === "caption" }]}>
+            <span>{photoFieldLabels[key]}</span>
+            {key === "caption" ? <textarea name={key} rows="4" maxlength="5000" /> : <input type="text" name={key} maxlength={key === "title" ? 300 : 1000} />}
+          </label>
+        ))}
+      </fieldset>
+    </div>
+    <div class="gallery-editor-footer">
+      <p role="status" data-gallery-editor-status></p>
+      <button class="gallery-editor-save" type="submit">保存</button>
+    </div>
+  </form>
+</dialog>
