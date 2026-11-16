@@ -187,7 +187,7 @@ test("the blog toolbar stays visible while long content scrolls within the edito
 
 test("the blog preview matches the published article at desktop and phone widths", async ({ page }) => {
   await login(page, "planner");
-  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto("/Management/blog/edit/post");
   const article = await page.context().newPage();
   await article.route("**/*", route => {
@@ -199,6 +199,10 @@ test("the blog preview matches the published article at desktop and phone widths
   const dialog = page.getByRole("dialog", { name: "プレビュー" });
   const frame = dialog.frameLocator("iframe");
   await expect(frame.locator(".post-body .taped-image img")).toHaveCount(1);
+  const panelBox = (await dialog.boundingBox())!;
+  expect(panelBox.width).toBeGreaterThanOrEqual(1920 - 32);
+  expect(panelBox.height).toBeGreaterThanOrEqual(1080 - 16);
+  expect((await dialog.locator("[data-blog-preview-stage]").boundingBox())!.height).toBeGreaterThan(930);
   const view = (body: Element) => {
     const styles = (selector: string) => {
       const node = body.querySelector<HTMLElement>(selector)!;
@@ -267,6 +271,9 @@ test.describe("blog preview on touch screens", () => {
     await title.tap();
     await expect(preview).toBeVisible();
     const previewBox = (await preview.boundingBox())!;
+    expect(previewBox.width).toBeGreaterThanOrEqual(390 - 32);
+    expect(previewBox.height).toBeGreaterThanOrEqual(844 - 16);
+    expect((await preview.locator("[data-blog-preview-stage]").boundingBox())!.height).toBeGreaterThan(700);
     await page.touchscreen.tap(previewBox.x / 2, previewBox.y + previewBox.height / 2);
     await expect(preview).toBeHidden();
     await expect(open).toBeFocused();
