@@ -11,6 +11,7 @@ import {
 } from "../lib/groupingGrade";
 import {
   validateGroups,
+  publishBlockers,
   groupScore,
   groupPairs,
   groupPreferenceWarnings,
@@ -56,7 +57,8 @@ export function setupGroupBoard(form: HTMLFormElement) {
         ? document.activeElement.dataset.personId
         : undefined;
     const groups = selectedGroups(form),
-      problems = validateGroups(people, rules, groups);
+      problems = validateGroups(people, rules, groups),
+      blockers = publishBlockers(people, rules, groups);
     const warnings = groupPreferenceWarnings(groups, rules, history);
     const flagged = new Set(warnings.flatMap((w) => w.ids));
     const placed = new Set(groups.flatMap((g) => g.memberIds));
@@ -131,6 +133,8 @@ export function setupGroupBoard(form: HTMLFormElement) {
       !problems.length;
     summary.querySelector<HTMLElement>("[data-group-valid]")!.hidden =
       problems.length > 0;
+    summary.querySelector<HTMLElement>("[data-group-confirmable]")!.hidden =
+      !(problems.length && !blockers.length);
     summary.querySelector("[data-group-error-list]")!.replaceChildren(
       ...problems.map((problem) => {
         const li = document.createElement("li");

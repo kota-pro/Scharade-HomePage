@@ -6,6 +6,7 @@ import {
   groupScore,
   groupPreferenceWarnings,
   groupPriorityScore,
+  publishBlockers,
   validateGroups,
 } from "../src/lib/grouping.ts";
 import {
@@ -249,6 +250,43 @@ test("manual edits cannot publish duplicate, missing, outsider, wrong leader or 
     const invalid = structuredClone(groups);
     change(invalid);
     assert.ok(validateGroups(p, r, invalid).length);
+  }
+});
+
+test("a lone woman or first-year can be confirmed, but every other mandatory problem still blocks", () => {
+  const p = people(8),
+    r = rules(2);
+  const lone = [
+    { leaderId: "p0", memberIds: ["p0", "p1", "p5", "p3"] },
+    { leaderId: "p4", memberIds: ["p4", "p2", "p6", "p7"] },
+  ];
+  assert.deepEqual(validateGroups(p, r, lone), [
+    "2班で女性が1人です。",
+    "2班で1年生が1人です。",
+  ]);
+  assert.deepEqual(publishBlockers(p, r, lone), []);
+  const alone = p.map((person) =>
+    person.id === "p0" ? person : { ...person, gender: "male" as const, grade: "2" as const },
+  );
+  assert.equal(validateGroups(alone, r, lone).length, 4);
+  assert.deepEqual(publishBlockers(alone, r, lone), []);
+  for (const change of [
+    (g: typeof lone) => {
+      g[1].memberIds.push(g[0].memberIds.pop()!);
+    },
+    (g: typeof lone) => {
+      g[0].leaderId = "p1";
+    },
+    (g: typeof lone) => {
+      g[0].memberIds[3] = "p2";
+    },
+  ]) {
+    const invalid = structuredClone(lone);
+    change(invalid);
+    const blockers = publishBlockers(p, r, invalid);
+    assert.ok(blockers.length);
+    assert.ok(blockers.every((problem) => !/が1人/.test(problem)));
+    assert.ok(validateGroups(p, r, invalid).length > blockers.length);
   }
 });
 

@@ -14,9 +14,11 @@ export function groupPairs(groups: Group[]): Set<string> {
         pairs.add(pairKey(g.memberIds[i], g.memberIds[j]));
   return pairs;
 }
+type ProblemOptions = { singletons?: boolean };
 export function ruleProblems(
   people: Participant[],
   rules: GroupRules,
+  { singletons = true }: ProblemOptions = {},
 ): string[] {
   const problems: string[] = [];
   const ids = new Set(people.map((p) => p.id));
@@ -50,11 +52,11 @@ export function ruleProblems(
         pair.some((id) => !ids.has(id))
       )
         problems.push("同班・別班指定は、異なる参加者2人を選択してください。");
-  if (people.filter((p) => p.gender === "female").length === 1)
+  if (singletons && people.filter((p) => p.gender === "female").length === 1)
     problems.push(
       "女性の参加者が全体で1人のため、単独配置禁止を満たせません。",
     );
-  if (people.filter((p) => p.grade === "1").length === 1)
+  if (singletons && people.filter((p) => p.grade === "1").length === 1)
     problems.push(
       "1年生の参加者が全体で1人のため、単独配置禁止を満たせません。",
     );
@@ -64,8 +66,10 @@ export function validateGroups(
   people: Participant[],
   rules: GroupRules,
   groups: Group[],
+  options: ProblemOptions = {},
 ): string[] {
-  const problems = ruleProblems(people, rules);
+  const singletons = options.singletons ?? true;
+  const problems = ruleProblems(people, rules, options);
   const placed = groups.flatMap((g) => g.memberIds);
   const ids = new Set(people.map((p) => p.id));
   if (groups.length !== rules.count)
@@ -83,6 +87,7 @@ export function validateGroups(
       problems.push(`${i + 1}班の人数が範囲外です。`);
     if (g.leaderId !== rules.leaders[i] || !g.memberIds.includes(g.leaderId))
       problems.push(`${i + 1}班の指定リーダーを配置してください。`);
+    if (!singletons) return;
     const members = people.filter((p) => g.memberIds.includes(p.id));
     if (members.filter((p) => p.gender === "female").length === 1)
       problems.push(`${i + 1}班で女性が1人です。`);
@@ -90,6 +95,15 @@ export function validateGroups(
       problems.push(`${i + 1}班で1年生が1人です。`);
   });
   return [...new Set(problems)];
+}
+/** Problems that still block confirming. A lone woman or first-year in a group
+ * stays in 要修正 but may be confirmed explicitly; every other check blocks. */
+export function publishBlockers(
+  people: Participant[],
+  rules: GroupRules,
+  groups: Group[],
+): string[] {
+  return validateGroups(people, rules, groups, { singletons: false });
 }
 export function groupScore(
   people: Participant[],

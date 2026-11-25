@@ -22,6 +22,7 @@ import {
   groupPairs,
   groupScore,
   validateGroups,
+  publishBlockers,
 } from "./grouping.ts";
 import { audit } from "./audit.ts";
 import { activeGuests, guestExpiry, isGroupingParticipantSource, parseGuest, rosterParticipants, previewGroupingParticipants, type GroupingGuest, type GroupingParticipant, type GroupingParticipantSource } from "./groupingParticipants.ts";
@@ -124,6 +125,9 @@ export function groupingToolSummary(
     stale: !!run.draftGroups && source !== run.draftGroups.source,
     problems: run.draftGroups
       ? validateGroups(people, run.rules, run.draftGroups.groups)
+      : [],
+    blockers: run.draftGroups
+      ? publishBlockers(people, run.rules, run.draftGroups.groups)
       : [],
     score: run.draftGroups
       ? groupScore(
@@ -408,7 +412,7 @@ export async function groupingToolAction(
               "班案を保存・再確認してから確定してください。",
               409,
             );
-          const problems = validateGroups(
+          const problems = publishBlockers(
             people,
             run.rules,
             run.draftGroups.groups,

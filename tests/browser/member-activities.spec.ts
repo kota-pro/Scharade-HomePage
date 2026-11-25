@@ -270,6 +270,56 @@ test("staff publishes an event, members vote, staff generates and edits groups, 
     await expect(repairWarnings).toBeHidden();
     await expect(groupForm.locator("[data-group-valid]")).toBeVisible();
     await submit(page, "groups.save", "班案を保存・再確認");
+    // A lone woman / first-year stays in 要修正 but can be confirmed after a dialog.
+    let loneSwap = "";
+    for (const id of ["activity-2", "activity-3", "activity-6", "activity-7"])
+      if (
+        (await groupForm.locator(`[data-assignment="${id}"]`).inputValue()) ===
+        "1"
+      ) {
+        loneSwap = id;
+        break;
+      }
+    expect(loneSwap).not.toBe("");
+    await groupForm.locator('[data-person-id="activity-1"]').click();
+    await groupForm.locator(`[data-person-id="${loneSwap}"]`).click();
+    await expect(repairWarnings.locator("[data-group-error-list]")).toContainText(
+      "1班で女性が1人です。",
+    );
+    await expect(groupForm.locator("[data-group-confirmable]")).toBeVisible();
+    await submit(page, "groups.save", "班案を保存・再確認");
+    const publishButton = page.getByRole("button", {
+      name: "班を確定・公開",
+      exact: true,
+    });
+    await expect(publishButton).toBeEnabled();
+    let publishRequests = 0,
+      dialogMessage = "";
+    const countPublish = (request: { url(): string; postDataJSON(): any }) => {
+      if (
+        request.url().endsWith("/api/member/activities") &&
+        request.postDataJSON()?.action === "groups.publish"
+      )
+        publishRequests++;
+    };
+    page.on("request", countPublish);
+    page.once("dialog", (dialog) => {
+      dialogMessage = dialog.message();
+      void dialog.dismiss();
+    });
+    await publishButton.click();
+    await expect.poll(() => dialogMessage).toContain("1班で1年生が1人です。");
+    expect(publishRequests).toBe(0);
+    page.off("request", countPublish);
+    page.once("dialog", (dialog) => void dialog.accept());
+    await submit(page, "groups.publish", "班を確定・公開");
+    await expect(page.locator("#grouping .activity-subsection h3")).toContainText(
+      "公開中の班",
+    );
+    await groupForm.locator('[data-person-id="activity-1"]').click();
+    await groupForm.locator(`[data-person-id="${loneSwap}"]`).click();
+    await expect(repairWarnings).toBeHidden();
+    await submit(page, "groups.save", "班案を保存・再確認");
     const beforeSwap = await groupForm
       .locator('[data-assignment="activity-2"]')
       .inputValue();

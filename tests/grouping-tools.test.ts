@@ -197,6 +197,23 @@ test("membership, staff authorization, revisions and manual assignment constrain
   await rejects(command("groups.publish", { source: summary().source }), 400);
   assert.equal(current().publishedGroups, undefined);
 });
+test("a plan whose only problems are a lone woman or first-year can be confirmed", async () => {
+  await setup();
+  await command("groups.generate");
+  const lone = [
+    { leaderId: "p0", memberIds: ["p0", "p1", "p5", "p3"] },
+    { leaderId: "p4", memberIds: ["p4", "p2", "p6", "p7"] },
+  ];
+  await command("groups.save", { source: summary().source, groups: lone });
+  assert.deepEqual(summary().problems, [
+    "2班で女性が1人です。",
+    "2班で1年生が1人です。",
+  ]);
+  assert.deepEqual(summary().blockers, []);
+  await command("groups.publish", { source: summary().source });
+  assert.deepEqual(current().publishedGroups!.groups, lone);
+  assert.equal(current().publishedGroups!.version, 1);
+});
 test("changes to the roster or selected history invalidate a prepared plan", async () => {
   await setup();
   await command("groups.generate");
