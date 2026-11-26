@@ -126,7 +126,7 @@ test("staff delete draft, open and closed tools from the list and editor; member
     );
     if (index === 1) {
       // Saving must also refresh the deletion revision without reloading the page.
-      await page.getByLabel("質問内容").fill("編集後の日程調整");
+      await page.getByRole("textbox", { name: "質問内容", exact: true }).fill("編集後の日程調整");
       await page
         .getByRole("button", { name: "保存して内容を確認", exact: true })
         .click();

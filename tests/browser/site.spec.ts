@@ -69,10 +69,14 @@ test("public pages: breadcrumbs and no horizontal overflow at 320, 390, 768, 144
     ]) {
       const response = await page.goto(route);
       expect(response?.status(), route).toBe(route === "/404" ? 404 : 200);
-      await expect(
-        page.getByRole("navigation", { name: "パンくずリスト" }),
-        route,
-      ).toBeVisible();
+      if (route === "/404") {
+        await expect(page.getByRole("alert")).toContainText("SITE-006");
+      } else {
+        await expect(
+          page.getByRole("navigation", { name: "パンくずリスト" }),
+          route,
+        ).toBeVisible();
+      }
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth + 2,
       );
