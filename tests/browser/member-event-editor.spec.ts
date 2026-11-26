@@ -81,12 +81,12 @@ test("event confirmation saves a draft, supports editing, images and links, and 
     const description =
       "案内 https://example.com/details?q=1&b=2。\n<img src=x onerror=alert(1)> javascript:alert(1)";
     const descriptionEditor = page.getByRole("textbox", { name: "企画内容", exact: true });
-    const descriptionTools = page.getByRole("group", { name: "企画内容の文字装飾" });
+    const descriptionTools = page.getByRole("group", { name: "企画内容の編集ツール" });
     await descriptionEditor.fill(description);
     await descriptionEditor.press("ControlOrMeta+A");
-    await descriptionTools.getByLabel("文字サイズ", { exact: true }).selectOption("5");
+    await descriptionTools.getByLabel("文字サイズ", { exact: true }).selectOption("24px");
     await descriptionEditor.press("ControlOrMeta+A");
-    await descriptionTools.getByLabel("文字色", { exact: true }).evaluate((input: HTMLInputElement) => {
+    await descriptionTools.getByLabel("文字色を選ぶ", { exact: true }).evaluate((input: HTMLInputElement) => {
       input.value = "#c42b48";
       input.dispatchEvent(new Event("change", { bubbles: true }));
     });
@@ -103,8 +103,8 @@ test("event confirmation saves a draft, supports editing, images and links, and 
     const itineraryEditor = page.getByRole("textbox", { name: "行程", exact: true });
     await itineraryEditor.fill("行程 https://example.com/plan");
     await itineraryEditor.press("ControlOrMeta+A");
-    await page.getByRole("group", { name: "行程の文字装飾" })
-      .getByRole("button", { name: "番号付き", exact: true }).click();
+    await page.getByRole("group", { name: "行程の編集ツール" })
+      .getByRole("button", { name: "番号付きリスト", exact: true }).click();
     await page.getByRole("button", { name: "全解除", exact: true }).click();
     await page.locator('[name="recipientIds"][value="activity-0"]').check();
     const upload = page.waitForResponse("**/api/member/event-image/upload");
@@ -123,7 +123,7 @@ test("event confirmation saves a draft, supports editing, images and links, and 
     ).toHaveText(description, { useInnerText: true });
     await expect(dialog.locator('[data-preview-value="description"] [style*="font-size"]').first()).toHaveCSS("font-size", "24px");
     await expect(dialog.locator('[data-preview-value="description"] [style*="color:"]').first()).toHaveCSS("color", "rgb(196, 43, 72)");
-    await expect(dialog.locator('[data-preview-value="description"] [style*="text-decoration"]').first()).toHaveCSS("text-decoration-line", "underline");
+    await expect(dialog.locator('[data-preview-value="description"] :is(u,[style*="text-decoration"])').first()).toHaveCSS("text-decoration-line", "underline");
     await expect(dialog.locator('[data-preview-value="itinerary"] ol li')).toHaveText("行程 https://example.com/plan");
     await expect(
       dialog.locator('a[href="https://example.com/details?q=1&b=2"]'),
@@ -183,11 +183,20 @@ test("event confirmation saves a draft, supports editing, images and links, and 
         .toBe(true);
       await expect
         .poll(() =>
-          page.evaluate(
-            () => document.documentElement.scrollWidth <= innerWidth + 1,
-          ),
+          page.evaluate(() => {
+            const overflow = document.documentElement.scrollWidth - innerWidth;
+            if (overflow <= 1) return [];
+            const outside = [...document.querySelectorAll<HTMLElement>("body *")]
+              .filter(el => {
+                const right = el.getBoundingClientRect().right, style = getComputedStyle(el);
+                return right > innerWidth + 1 || (style.overflowX === "visible" && el.scrollWidth > el.clientWidth + 10);
+              })
+              .slice(0, 12)
+              .map(el => `${el.tagName} ${el.id} ${el.getAttribute("class") ?? ""} right=${Math.round(el.getBoundingClientRect().right)} scroll=${el.scrollWidth} client=${el.clientWidth}`);
+            return [`viewport ${innerWidth}, overflow ${overflow}`, ...outside];
+          }),
         )
-        .toBe(true);
+        .toEqual([]);
       await dialog
         .getByRole("button", { name: "企画を公開して通知" })
         .scrollIntoViewIfNeeded();
@@ -228,7 +237,7 @@ test("event confirmation saves a draft, supports editing, images and links, and 
     await page.goto(`/Member/events/${id}`);
     await expect(page.locator('.activity-details [style*="font-size"]').first()).toHaveCSS("font-size", "24px");
     await expect(page.locator('.activity-details [style*="color:"]').first()).toHaveCSS("color", "rgb(196, 43, 72)");
-    await expect(page.locator('.activity-details [style*="text-decoration"]').first()).toHaveCSS("text-decoration-line", "underline");
+    await expect(page.locator('.activity-details :is(u,[style*="text-decoration"])').first()).toHaveCSS("text-decoration-line", "underline");
     await expect(page.locator(".activity-details ol li")).toHaveText("行程 https://example.com/plan");
     await expect(page.locator(".activity-eyecatch img")).toBeVisible();
     await expect(

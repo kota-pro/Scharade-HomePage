@@ -394,7 +394,7 @@ globalThis.fetch = async (input, options = {}) => {
   if (url.hostname.endsWith(".microcms-management.io") && url.pathname === "/api/v1/apis/blog") {
     return Response.json({ apiFields: [
       { fieldId: "body", kind: "richEditorV2", richEditorV2ColorList: [{ value: "#884422", label: "茶色" }], richEditorV2FontSizeList: [{ value: "120%", label: "大きめ" }], customClassList: [{ className: "highlight", label: "強調" }] },
-      { fieldId: "tags", kind: "select", selectItems: [{ value: "撮影会" }, { value: "その他" }] },
+      { fieldId: "tags", kind: "select", selectItems: [{ value: "撮影会" }, { value: "Others" }, { value: "Member's" }] },
     ] });
   }
   if (url.hostname.endsWith(".microcms-management.io") && url.pathname.startsWith("/api/v1/contents/blog")) {
@@ -465,7 +465,8 @@ globalThis.fetch = async (input, options = {}) => {
         return Response.json(p || {}, { status: p ? 200 : 404 });
       }
       const q = url.searchParams.get("q") || "",
-        list = portfolios.filter((p) => p.name.includes(q));
+        ids = url.searchParams.get("ids")?.split(","),
+        list = portfolios.filter((p) => p.name.includes(q) && (!ids || ids.includes(p.id)));
       const offset = Number(url.searchParams.get("offset") || 0),
         limit = Number(url.searchParams.get("limit") || 10);
       return Response.json({

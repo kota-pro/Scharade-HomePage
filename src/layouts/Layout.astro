@@ -93,7 +93,7 @@ const memberHome = Boolean(memberArea && ["/Member", "/Management", "/Dashboard"
 		{!appShell && <Header />}
         <AdminViewBanner />
         {Astro.locals.preview && <aside class="preview-banner"><strong>下書きのプレビュー</strong> この内容はまだ公開されていません。 <a href={editorLink}>編集画面へ戻る</a></aside>}
-        <Breadcrumbs items={breadcrumbs} />
+        {breadcrumbs.length > 0 && <Breadcrumbs items={breadcrumbs} />}
 		<main id="main-content">
 		<slot name="main-slot" />
 		<div class:list={["container", { "container-wide": wideContent }]}>

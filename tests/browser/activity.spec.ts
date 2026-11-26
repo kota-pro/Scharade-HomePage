@@ -18,7 +18,7 @@ test('Activity links open Japanese articles with punctuation and return to the l
    const article=page.locator('.tab-panel.is-active .Activity-item').filter({has:page.getByRole('heading',{name:title,exact:true})});
    const [response]=await Promise.all([
     page.waitForResponse(r=>r.request().isNavigationRequest()&&r.url().includes('/posts/')),
-    article.locator('a').click(),
+    article.getByRole('link',{name:title,exact:true}).click(),
    ]);
    expect(response.status(),title).toBe(200);
    await expect(page.locator('.post-title')).toHaveText(title);

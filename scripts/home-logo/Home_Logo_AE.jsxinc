@@ -1,0 +1,239 @@
+#include "Home_Logo_SVG.jsxinc"
+
+var ScharadeLogoAE = (function () {
+    var COMP_TAG = "Scharade homepage logo / SVG 1";
+    var ART_TAG = "Scharade homepage logo artwork";
+    var SCALE = 3;
+    var ROOT = "ADBE Root Vectors Group";
+    var CONTENTS = "ADBE Vectors Group";
+    var TRANSFORM = "ADBE Transform Group";
+    var OPACITY = "ADBE Opacity";
+    var FILL = "ADBE Vector Graphic - Fill";
+    var PATH = "ADBE Vector Shape - Group";
+    var SHAPE = "ADBE Vector Shape";
+    var STROKE = "ADBE Vector Graphic - Stroke";
+    var STROKE_WIDTH = "ADBE Vector Stroke Width";
+    var STROKE_CAP = "ADBE Vector Stroke Line Cap";
+    var TRIM = "ADBE Vector Filter - Trim";
+    var TRIM_END = "ADBE Vector Trim End";
+
+    function fileRead(file) {
+        file.encoding = "UTF-8";
+        if (!file.open("r")) throw new Error("Cannot read " + file.fsName);
+        try {
+            return file.read();
+        } finally {
+            file.close();
+        }
+    }
+
+    function fileWrite(file, content) {
+        file.encoding = "UTF-8";
+        file.lineFeed = "Unix";
+        if (!file.open("w")) throw new Error("Cannot write " + file.fsName);
+        try {
+            if (!file.write(content)) throw new Error("Cannot write " + file.fsName);
+        } finally {
+            file.close();
+        }
+    }
+
+    function shapeLayer(comp, name) {
+        var layer = comp.layers.addShape();
+        var transform = layer.property(TRANSFORM);
+        layer.name = name;
+        transform.property("ADBE Anchor Point").setValue([0, 0]);
+        transform.property("ADBE Position").setValue([0, 0]);
+        transform.property("ADBE Scale").setValue([SCALE * 100, SCALE * 100]);
+        return layer;
+    }
+
+    function addGroup(layer, name) {
+        var group = layer.property(ROOT).addProperty("ADBE Vector Group");
+        group.name = name;
+        return group;
+    }
+
+    function addPath(group, data) {
+        var shape = new Shape();
+        shape.vertices = data.vertices;
+        shape.inTangents = data.inTangents;
+        shape.outTangents = data.outTangents;
+        shape.closed = data.closed;
+        group.addProperty(PATH).property(SHAPE).setValue(shape);
+    }
+
+    function color(hex) {
+        return [parseInt(hex.substr(1, 2), 16) / 255, parseInt(hex.substr(3, 2), 16) / 255,
+            parseInt(hex.substr(5, 2), 16) / 255, 1];
+    }
+
+    function hex(colorValue) {
+        var result = "#";
+        for (var i = 0; i < 3; i++) {
+            result += ("0" + Math.round(colorValue[i] * 255).toString(16)).slice(-2);
+        }
+        return result;
+    }
+
+    function addFill(group, fill) {
+        var property = group.addProperty(FILL);
+        property.property("ADBE Vector Fill Color").setValue(color(fill));
+        property.property("ADBE Vector Fill Rule").setValue(1);
+    }
+
+    function setKeys(property, keys) {
+        for (var index = 0; index < keys.length; index++) {
+            property.setValueAtTime(keys[index].time, keys[index].value);
+        }
+        for (var key = 1; key <= keys.length; key++) {
+            var data = keys[key - 1];
+            var ease = new KeyframeEase(data.speed, data.influence);
+            if (!data.hold) property.setTemporalEaseAtKey(key, [ease], [ease]);
+        }
+        for (var holdKey = 1; holdKey <= keys.length; holdKey++) {
+            if (keys[holdKey - 1].hold) {
+                property.setInterpolationTypeAtKey(holdKey, KeyframeInterpolationType.HOLD, KeyframeInterpolationType.HOLD);
+            }
+        }
+    }
+
+    function addMatte(comp, artwork, data, dimensions) {
+        var matte = shapeLayer(comp, "Draw / " + artwork.name);
+        var pen = addGroup(matte, "Pen path").property(CONTENTS);
+        addPath(pen, data.shape);
+        var stroke = pen.addProperty(STROKE);
+        stroke.property("ADBE Vector Stroke Color").setValue([1, 1, 1, 1]);
+        stroke.property(STROKE_WIDTH).setValue(data.width);
+        stroke.property(STROKE_CAP).setValue(data.butt ? 1 : 2);
+        stroke.property("ADBE Vector Stroke Line Join").setValue(2);
+        var trim = pen.addProperty(TRIM);
+        trim.name = "Draw";
+        setKeys(trim.property(TRIM_END), data.keys);
+
+        var coverage = addGroup(matte, "Full coverage at the last draw key");
+        var contents = coverage.property(CONTENTS);
+        var rectangle = contents.addProperty("ADBE Vector Shape - Rect");
+        rectangle.property("ADBE Vector Rect Size").setValue(dimensions);
+        rectangle.property("ADBE Vector Rect Position").setValue([dimensions[0] / 2, dimensions[1] / 2]);
+        addFill(contents, "#ffffff");
+        coverage.property("ADBE Vector Transform Group").property("ADBE Vector Group Opacity").expression =
+            'var end = thisLayer.content("Pen path").content("Draw").end;\n' +
+            'time >= end.key(end.numKeys).time ? 100 : 0;';
+        artwork.setTrackMatte(matte, TrackMatteType.ALPHA);
+        matte.enabled = false;
+    }
+
+    function create(data) {
+        var project = app.project || app.newProject();
+        if (project.file || project.numItems > 0) {
+            throw new Error("Open a new, empty After Effects project before running Create.");
+        }
+        var comp = project.items.addComp("Scharade Home Logo", Math.round(data.width * SCALE),
+            Math.round(data.height * SCALE), 1, data.duration, data.fps);
+        comp.comment = COMP_TAG;
+        comp.bgColor = [0.992, 0.992, 0.992];
+        for (var index = 0; index < data.layers.length; index++) {
+            var item = data.layers[index];
+            var layer = shapeLayer(comp, item.name);
+            layer.comment = ART_TAG;
+            for (var artIndex = 0; artIndex < item.art.length; artIndex++) {
+                var element = item.art[artIndex];
+                var group = addGroup(layer, "Artwork " + (artIndex + 1)).property(CONTENTS);
+                for (var shapeIndex = 0; shapeIndex < element.shapes.length; shapeIndex++) {
+                    addPath(group, element.shapes[shapeIndex]);
+                }
+                addFill(group, element.color);
+            }
+            if (item.opacity) setKeys(layer.property(TRANSFORM).property(OPACITY), item.opacity);
+            if (item.matte) addMatte(comp, layer, item.matte, [data.width, data.height]);
+        }
+        var cues = [
+            [0, "Scharade / handwriting"], [39, "Camera outline"], [46, "Grip"],
+            [50, "Shutter button"], [72, "Lens rings"], [90, "Lens fill / name / body wipe"],
+            [101, "Complete"]
+        ];
+        for (var cue = 0; cue < cues.length; cue++) {
+            comp.markerProperty.setValueAtTime(cues[cue][0] / data.fps, new MarkerValue(cues[cue][1]));
+        }
+        comp.time = 0;
+        return comp;
+    }
+
+    function readKeys(property) {
+        var keys = [];
+        for (var index = 1; index <= property.numKeys; index++) {
+            var incoming = property.keyInTemporalEase(index)[0];
+            var outgoing = property.keyOutTemporalEase(index)[0];
+            var inType = property.keyInInterpolationType(index);
+            var outType = property.keyOutInterpolationType(index);
+            keys.push({
+                time: property.keyTime(index),
+                value: property.keyValue(index),
+                speedIn: incoming.speed, speedOut: outgoing.speed,
+                influenceIn: incoming.influence, influenceOut: outgoing.influence,
+                linearIn: inType === KeyframeInterpolationType.LINEAR,
+                linearOut: outType === KeyframeInterpolationType.LINEAR,
+                hold: outType === KeyframeInterpolationType.HOLD
+            });
+        }
+        return keys;
+    }
+
+    function readMatte(layer) {
+        var pen = layer.property(ROOT).property("Pen path").property(CONTENTS);
+        var stroke = pen.property(STROKE);
+        var keys = readKeys(pen.property(TRIM).property(TRIM_END));
+        if (keys.length < 2 || keys[0].value !== 0 || keys[keys.length - 1].value !== 100) {
+            throw new Error(layer.name + " needs an initial 0% and a final 100% Draw key.");
+        }
+        return {
+            shape: pen.property(PATH).property(SHAPE).value,
+            width: stroke.property(STROKE_WIDTH).value,
+            butt: stroke.property(STROKE_CAP).value === 1,
+            keys: keys
+        };
+    }
+
+    function readArt(layer) {
+        var root = layer.property(ROOT);
+        var artwork = [];
+        for (var index = 1; index <= root.numProperties; index++) {
+            var group = root.property(index).property(CONTENTS);
+            var fill = group.property(FILL);
+            var shapes = [];
+            for (var childIndex = 1; childIndex <= group.numProperties; childIndex++) {
+                var child = group.property(childIndex);
+                if (child.matchName === PATH) shapes.push(child.property(SHAPE).value);
+            }
+            artwork.push({ shapes: shapes, color: hex(fill.property("ADBE Vector Fill Color").value) });
+        }
+        return artwork;
+    }
+
+    function writeSvg(comp, file) {
+        if (!(comp instanceof CompItem) || comp.comment !== COMP_TAG) {
+            throw new Error("Open the Scharade Home Logo composition before exporting.");
+        }
+        var layers = [];
+        for (var index = comp.numLayers; index >= 1; index--) {
+            var layer = comp.layer(index);
+            if (layer.comment !== ART_TAG || !layer.enabled) continue;
+            var opacity = readKeys(layer.property(TRANSFORM).property(OPACITY));
+            layers.push({
+                name: layer.name,
+                art: readArt(layer),
+                matte: layer.trackMatteLayer ? readMatte(layer.trackMatteLayer) : null,
+                opacity: opacity.length ? opacity : null
+            });
+        }
+        fileWrite(file, ScharadeLogoSVG.render({
+            width: Math.round(comp.width / SCALE * 100) / 100,
+            height: Math.round(comp.height / SCALE * 100) / 100,
+            duration: comp.duration,
+            layers: layers
+        }));
+    }
+
+    return { create: create, read: fileRead, write: fileWrite, writeSvg: writeSvg };
+}());

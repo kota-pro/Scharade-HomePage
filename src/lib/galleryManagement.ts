@@ -31,12 +31,20 @@ function conflict() {
   return new ContentManagementError("別の画面で変更されました。再読み込みしてください。", 409);
 }
 
-export function galleryAlbumFields(input: Record<string, unknown>) {
-  const name = typeof input.name === "string" ? input.name.trim() : "";
+export function galleryAlbumName(input: unknown) {
+  const name = typeof input === "string" ? input.trim() : "";
   if (!name || name.length > 120 || /[\x00-\x1f\x7f]/.test(name)) throw new ContentManagementError("アルバム名を120文字以内で入力してください。");
-  const category = input.category as GalleryAlbumCategory;
+  return name;
+}
+
+export function galleryAlbumCategory(input: unknown) {
+  const category = input as GalleryAlbumCategory;
   if (!GALLERY_CATEGORY_ORDER.includes(category)) throw new ContentManagementError("分類を選択してください。");
-  return { name, category };
+  return category;
+}
+
+export function galleryAlbumFields(input: Record<string, unknown>) {
+  return { name: galleryAlbumName(input.name), category: galleryAlbumCategory(input.category) };
 }
 
 async function lightroomContext() {

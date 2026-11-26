@@ -1,4 +1,5 @@
 import { describeSiteError, formatSiteError, siteErrorBody } from './siteErrors.ts';
+import { hasErrorPage } from './errorPages.ts';
 
 /** A page failure must remain readable even when the application cannot render its layout. */
 export function siteFailurePage(status = 503) {
@@ -28,6 +29,8 @@ export async function numberErrorResponse(response: Response): Promise<Response>
     if (response.status < 400) return response;
     const headers = new Headers(response.headers);
     if (response.status >= 500 && type.includes('text/html')) {
+      // A rendered error page has already supplied its support number.
+      if (hasErrorPage(response.status) && headers.get('X-Error-Code') === describeSiteError('', response.status).code) return response;
       const page = siteFailurePage(response.status);
       headers.delete('Content-Length'); headers.delete('Content-Encoding');
       page.headers.forEach((value, key) => headers.set(key, value));

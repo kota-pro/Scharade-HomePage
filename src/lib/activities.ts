@@ -7,7 +7,9 @@ import { reconcileRoster } from "./rosterReconciliation.ts";
 import { queueRosterPortfolioGrades } from "./portfolioRosterGrade.ts";
 import { ACTIVITY_HTML_LIMIT, ACTIVITY_TEXT_LIMIT, isActivityHeaderImage } from "./activityPresentation.ts";
 import { activityRichTextPlain } from "./activityRichText.ts";
-import { sanitizePortfolioIntroduction } from "./portfolioIntroduction.ts";
+import { sanitizeArticleHtml } from "./contentSecurity.ts";
+import { checkBodyAssets } from "./bodyMedia.ts";
+import type { BodyMediaScope } from "../types/bodyMedia.ts";
 import { readUsers, isStaff, isExecutive, type User } from "./auth.ts";
 import {
   fetchActivityRoster,
@@ -59,7 +61,7 @@ export async function appendExhibitionNotice(notice: import("./exhibitionTypes.t
       if (existing.exhibitionId !== notice.exhibitionId) throw new ActivityError("通知IDが重複しています。", 409);
       return;
     }
-    const notification = { id: notice.id, exhibitionId: notice.exhibitionId, title: notice.title, body: notice.body, senderId: notice.senderId, senderName: notice.senderName, recipientIds: [...notice.recipientIds], createdAt: notice.createdAt, readBy: {}, kind: notice.kind === "exhibition-shift" ? "exhibition-shift" as const : "exhibition" as const };
+    const notification = { id: notice.id, exhibitionId: notice.exhibitionId, title: notice.title, body: notice.body, bodyHtml: notice.bodyHtml, senderId: notice.senderId, senderName: notice.senderName, recipientIds: [...notice.recipientIds], createdAt: notice.createdAt, readBy: {}, kind: notice.kind === "exhibition-shift" ? "exhibition-shift" as const : "exhibition" as const };
     data.notifications.push(notification);
     enqueuePushNotice(data, notification);
     writeData(file, data);
@@ -107,11 +109,14 @@ function strings(input: unknown, max = 1000): string[] {
     throw new ActivityError("対象メンバーの指定を確認してください。");
   return input as string[];
 }
-function activityText(input: unknown, html: unknown, label: string, required = true) {
+function activityText(input: unknown, html: unknown, label: string, scope: BodyMediaScope, author: string, previous: (string | undefined)[] = [], required = true) {
+  if (html === undefined && input === undefined && previous[0]) return { text: activityRichTextPlain(previous[0]), html: previous[0] };
   if (html === undefined) return { text: text(input, label, ACTIVITY_TEXT_LIMIT, required), html: undefined };
   if (typeof html !== "string" || html.length > ACTIVITY_HTML_LIMIT)
     throw new ActivityError(`${label}の文章や装飾を減らしてください。`);
-  const clean = sanitizePortfolioIntroduction(html, true);
+  const clean = sanitizeArticleHtml(html, true);
+  if (!checkBodyAssets(clean, scope, author, previous))
+    throw new ActivityError(`${label}の添付ファイルを確認してください。`);
   const plain = text(activityRichTextPlain(clean), label, ACTIVITY_TEXT_LIMIT, required);
   return { text: plain, html: plain ? clean : undefined };
 }
@@ -563,7 +568,7 @@ export async function activityAction(
             throw new ActivityError("通知IDが重複しています。", 409);
           return { ok: true, id };
         }
-        const body = activityText(p.body, p.bodyHtml, "本文");
+        const body = activityText(p.body, p.bodyHtml, "本文", { kind: "notification", id }, actor.id);
         notify(
           data,
           actor,
@@ -585,7 +590,7 @@ export async function activityAction(
         const currentRevision = notice.revision ?? 0;
         revision(currentRevision, p.revision);
         const title = text(p.title, "件名");
-        const body = activityText(p.body, p.bodyHtml, "本文");
+        const body = activityText(p.body, p.bodyHtml, "本文", { kind: "notification", id }, actor.id, [notice.bodyHtml]);
         notice.title = title;
         notice.body = body.text;
         if (body.html) notice.bodyHtml = body.html;
@@ -597,6 +602,10 @@ export async function activityAction(
       if (action === "event.save") {
         staff(actor);
         const old = p.eventId ? eventFor(data, p.eventId) : undefined;
+        const eventId = old?.id ?? (p.draftId === undefined ? crypto.randomUUID() : text(p.draftId, "企画ID", 36));
+        if (!old && (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(eventId) ||
+          data.events.some(event => event.id === eventId))) throw new ActivityError("企画の作成画面を開き直してください。", 409);
+        const scope = { kind: "event", id: eventId } as const;
         if (old) {
           revision(old.revision, p.revision);
         }
@@ -615,8 +624,8 @@ export async function activityAction(
           );
         const category = p.category ?? old?.category ?? "other";
         if (typeof category !== "string" || !Object.hasOwn(eventCategoryLabels, category)) throw new ActivityError("企画の種類を選択してください。");
-        const description = activityText(p.description, p.descriptionHtml, "企画内容");
-        const itinerary = activityText(p.itinerary, p.itineraryHtml, "行程", false);
+        const description = activityText(p.description, p.descriptionHtml, "企画内容", scope, actor.id, [old?.descriptionHtml, old?.itineraryHtml]);
+        const itinerary = activityText(p.itinerary, p.itineraryHtml, "行程", scope, actor.id, [old?.itineraryHtml, old?.descriptionHtml], false);
         const details = {
           category: category as EventCategory,
           title: text(p.title, "企画名"),
@@ -671,7 +680,7 @@ export async function activityAction(
         }
         const event: ActivityEvent = {
           ...details,
-          id: crypto.randomUUID(),
+          id: eventId,
           revision: 1,
           status: "draft",
           createdAt: timestamp,

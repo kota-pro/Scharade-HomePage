@@ -1,6 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
 import sharp from "sharp";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
 import { fixtureLogin } from "./fixture-auth";
+import { emptyActivities } from "../../src/lib/activityTypes";
 
 const origin = "http://127.0.0.1:4329";
 const headers = { Origin: origin };
@@ -36,6 +39,96 @@ test("content management pages and APIs enforce staff access", async ({ page }) 
   await page.goto("/Management");
   await expect(page.getByRole("link", { name: /Galleryのアルバム管理/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /Activityのブログ管理/ })).toBeVisible();
+});
+
+test("a member submits their own blog and staff find its public byline by LINE name", async ({ page, browser }, info) => {
+  const { directory } = JSON.parse(readFileSync(".data/browser-fixture-path.json", "utf8"));
+  const rosterFile = join(directory, "member-activities.json");
+  const activities = existsSync(rosterFile) ? JSON.parse(readFileSync(rosterFile, "utf8")) : emptyActivities();
+  const lineName = `Line alias ${info.project.name}`;
+  activities.roster = { ...activities.roster, bindings: { ...activities.roster?.bindings, other: "blog-byline-test" },
+    records: [...(activities.roster?.records ?? []).filter((record: { key: string }) => record.key !== "blog-byline-test"),
+      { key: "blog-byline-test", name: "別名の会員", lineName, active: true }] };
+  writeFileSync(rosterFile, JSON.stringify(activities));
+  const title = `会員ブログの申請 ${info.project.name}`;
+  const slug = `member-application-${info.project.name}`;
+  await login(page, "member");
+  await page.goto("/Member");
+  await page.getByRole("link", { name: /Write Blog/ }).click();
+  await expect(page.getByLabel("執筆者を検索")).toHaveCount(0);
+  await page.getByLabel("タイトル", { exact: true }).fill(title);
+  await page.getByLabel("記事URL").fill(slug);
+  await page.getByRole("button", { name: "下書き保存" }).click();
+  await expect(page).toHaveURL(/\/Member\/blog\/edit\/b-[a-f0-9]+\?saved=1/);
+  const mine = new URL(page.url()).pathname;
+  const id = mine.split("/").at(-1)!;
+  await page.getByRole("button", { name: "承認を申請する" }).click();
+  await expect(page).toHaveURL(/saved=submit/);
+  await expect(page.getByRole("button", { name: "公開する" })).toHaveCount(0);
+  await page.goto("/Member/blog");
+  await expect(page.getByRole("listitem").filter({ hasText: title })).toContainText("承認待ち");
+
+  const manager = await browser.newPage({ baseURL: origin });
+  await manager.route("**/*", route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
+  try {
+    await login(manager, "other");
+    expect((await pageApi(manager, mine)).status()).toBe(404);
+    const denied = await manager.request.patch(`/api/member/blog/articles/${id}`, { headers, data: { action: "save", title: "上書き" } });
+    expect(denied.status()).toBe(404);
+    await login(manager, "planner");
+    await manager.goto("/Management/blog");
+    const filters = manager.getByRole("form", { name: "ブログを検索" });
+    await filters.getByLabel("記事名・キーワード").fill(title);
+    await filters.getByLabel("タグ", { exact: true }).selectOption("Member's");
+    await filters.getByLabel("公開ステータス").selectOption("pending");
+    await filters.getByRole("button", { name: "検索" }).click();
+    await manager.locator("#review").getByRole("link", { name: title, exact: true }).click();
+    await manager.getByLabel("執筆者を検索").fill(lineName.toUpperCase());
+    const author = manager.getByLabel("執筆者", { exact: true });
+    await expect(author.locator("option[data-author-names]")).toHaveText(["別の会員"]);
+    await author.selectOption("other");
+    await manager.getByRole("button", { name: "下書き保存" }).click();
+    await expect(manager).toHaveURL(/saved=1/);
+    await expect(author).toHaveValue("other");
+    await manager.getByRole("button", { name: "承認する" }).click();
+    await expect(manager).toHaveURL(/saved=approve/);
+    await manager.getByRole("button", { name: "公開する" }).click();
+    await expect(manager).toHaveURL(/saved=publish/);
+    const updatedAt = await manager.locator("[data-blog-editor]").getAttribute("data-updated-at");
+    await manager.goto(`/posts/${slug}`);
+    await expect(manager.locator(".blog-byline")).toContainText("by 別の会員");
+    await expect(manager.locator("body")).not.toContainText(lineName);
+    const portfolioName = "別の会員のPortfolio";
+    const detailLink = manager.getByRole("link", { name: portfolioName, exact: true });
+    const detailIcon = detailLink.locator("img");
+    await expect(detailIcon).not.toHaveCSS("box-shadow", "none");
+    await detailLink.hover();
+    await expect(detailIcon).toHaveCSS("box-shadow", "none");
+    await detailLink.click();
+    await expect(manager).toHaveURL(`${origin}/Portfolio/other`);
+    await manager.setViewportSize({ width: 390, height: 844 });
+    await manager.goto("/Activity");
+    const article = manager.locator(".Activity-item:visible").filter({ has: manager.getByRole("heading", { name: title, exact: true }) });
+    await expect(article.getByRole("link", { name: title, exact: true })).toHaveAttribute("href", `/posts/${slug}?from=activity`);
+    await article.getByRole("link", { name: portfolioName, exact: true }).click();
+    await expect(manager).toHaveURL(`${origin}/Portfolio/other`);
+    const cleanup = await manager.request.delete(`/api/member/blog/articles/${id}`, {
+      headers, data: { confirmation: "delete", updatedAt },
+    });
+    expect(cleanup.status()).toBe(200);
+    await manager.goto("/Management/gallery");
+    const albumFilters = manager.getByRole("form", { name: "アルバムを検索" });
+    await albumFilters.getByLabel("アルバム名").fill("公開 撮影会");
+    await albumFilters.getByLabel("公開範囲").selectOption("public");
+    await albumFilters.getByLabel("並べ替え").selectOption("title");
+    await albumFilters.getByLabel("順序").selectOption("asc");
+    await albumFilters.getByRole("button", { name: "検索" }).click();
+    const titles = await manager.locator(".content-catalog-row > div > a").allTextContents();
+    expect(titles.length).toBeGreaterThan(1);
+    expect(titles).toEqual([...titles].sort());
+  } finally {
+    await manager.close();
+  }
 });
 
 test("authenticated HTTPS management responses fit the production proxy header buffer", async ({ request }) => {
@@ -121,8 +214,10 @@ test("blog settings sit above a full-width editor and secondary actions use outl
 
 test("Activity article links use the original unframed icon", async ({ page }) => {
   await page.goto("/Activity");
-  const article = page.locator(".Activity-item > a:visible").first();
+  const article = page.locator(".Activity-item:visible").first();
   const icon = article.locator('img.link-button[src="/icons/link.svg"]');
+  const link = article.locator(".Activity-post-link");
+  let iconCenter = { x: 0, y: 0 };
   for (const [width, iconWidth, padding] of [[1440, 50, 15], [700, 40, 10], [320, 34, 8]]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.mouse.move(0, 0);
@@ -130,11 +225,13 @@ test("Activity article links use the original unframed icon", async ({ page }) =
     await expect(icon).toHaveCSS("padding-top", `${padding}px`);
     await expect(icon).toHaveCSS("border-top-width", "0px");
     await expect(icon).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-    await icon.hover();
+    const { x, y, width: w, height: h } = (await icon.boundingBox())!;
+    iconCenter = { x: x + w / 2, y: y + h / 2 };
+    await page.mouse.move(iconCenter.x, iconCenter.y);
     await expect(icon).toHaveCSS("background-color", "rgb(240, 240, 240)");
   }
-  const href = (await article.getAttribute("href"))!;
-  await icon.click();
+  const href = (await link.getAttribute("href"))!;
+  await page.mouse.click(iconCenter.x, iconCenter.y);
   await expect(page).toHaveURL(new URL(href, origin).href);
 });
 
@@ -334,6 +431,23 @@ test("staff publish and remove Lightroom albums and retry a partial upload", asy
   await page.getByRole("button", { name: "設定を保存" }).click();
   await expect.poll(async () => (await visitor.request.get(origin + album.photos[0].src)).status()).toBe(200);
   await expect(page.getByLabel("公開範囲")).toHaveValue("public");
+  await page.goto(`/Gallery/${id}`);
+  await page.getByRole("button", { name: "アルバム設定" }).click();
+  const settings = page.getByRole("dialog", { name: "アルバム設定" });
+  await expect(settings.getByLabel("分類")).toHaveValue("shooting");
+  await settings.getByLabel("分類").selectOption("camp");
+  await settings.getByRole("button", { name: "設定を保存" }).click();
+  await expect(settings).toBeHidden();
+  await page.getByRole("button", { name: "アルバム設定" }).click();
+  await expect(settings.getByLabel("分類")).toHaveValue("camp");
+  await expect(settings.getByLabel("公開範囲")).toHaveValue("public");
+  const listing = await visitor.newPage();
+  await listing.goto(origin + "/Gallery");
+  const group = listing.locator(".category-section").filter({ has: listing.locator(`a[href="/Gallery/${id}"]`) });
+  await expect(group).toHaveCount(2);
+  await expect(group.locator(".category-title")).toHaveText(["合宿", "合宿"]);
+  await page.goto(`/Management/gallery/${id}`);
+  await expect(page.getByLabel("アルバム名")).toHaveValue(name);
   await page.getByRole("button", { name: "アルバムを削除", exact: true }).click();
   const confirmation = page.getByRole("dialog", { name: "アルバムを削除" });
   await expect(confirmation).toContainText(name);
@@ -368,12 +482,17 @@ test("staff publish and remove Lightroom albums and retry a partial upload", asy
   await visitor.close();
 });
 
-test("staff preview unsaved rich posts, publish, update, unpublish, and delete", async ({ page, request }, info) => {
+test("staff preview, return, approve, publish, update, unpublish, and delete", async ({ page, request, browser }, info) => {
   await login(page, "planner");
+  const reviewer = await browser.newPage({ baseURL: origin });
+  await reviewer.route("**/*", route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
+  await login(reviewer, `photo-staff-${info.project.name}`);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/Management/blog");
   await expect(page.getByRole("link", { name: "撮影会のお知らせ", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "新規作成" }).click();
+  await expect(page.getByLabel("タグ", { exact: true })).toHaveValues(["Member's"]);
+  await expect(page.getByLabel("タグ", { exact: true }).locator("option")).toHaveText(["撮影会", "Member's", "Others"]);
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThan(2);
   const slug = `管理ブログ-${info.project.name}`;
   const path = `/posts/${encodeURIComponent(slug)}`;
@@ -422,6 +541,7 @@ test("staff preview unsaved rich posts, publish, update, unpublish, and delete",
   const preview = page.getByRole("dialog", { name: "プレビュー" });
   const frame = preview.frameLocator("iframe");
   await expect(frame.locator(".post-title")).toHaveText("公開前の撮影会");
+  await expect(frame.locator(".post-meta .blog-byline")).toContainText("by 写団シャレード");
   await expect(frame.locator(".post-body strong")).toHaveText("太字の本文");
   await expect(frame.locator(".post-body table tr").first().locator("th,td")).toHaveCount(2);
   await expect(frame.locator(".post-pictures img")).toHaveAttribute("src", /gallery-editor\.jpg/);
@@ -434,13 +554,55 @@ test("staff preview unsaved rich posts, publish, update, unpublish, and delete",
   await expect(page).toHaveURL(/\/Management\/blog\/edit\/b-[a-f0-9]+\?saved=1/);
   expect((await pageApi(page, path)).status()).toBe(404);
   await expectPublicListings(false);
+  const editPath = new URL(page.url()).pathname;
+  const editorForm = page.locator("[data-blog-editor]");
+  const endpoint = (await editorForm.getAttribute("data-endpoint"))!;
+  const transition = async (action: string) => {
+    const data = {
+      action,
+      updatedAt: await editorForm.getAttribute("data-updated-at"),
+      workflowRevision: Number(await editorForm.getAttribute("data-workflow-revision")),
+    };
+    return page.request.patch(endpoint, { headers, data });
+  };
+  expect((await transition("publish")).status()).toBe(409);
+  await page.getByRole("button", { name: "承認を申請する" }).click();
+  await expect(page).toHaveURL(/saved=submit/);
+  expect((await transition("approve")).status()).toBe(403);
+  await reviewer.goto(editPath);
+  await reviewer.getByLabel("差し戻し理由", { exact: true }).fill("見出しをもう一度確認してください。");
+  await reviewer.getByRole("button", { name: "差し戻す" }).click();
+  await expect(reviewer).toHaveURL(/saved=return/);
+  await page.reload();
+  await expect(page.getByRole("region", { name: "差し戻し理由" })).toContainText("見出しをもう一度確認");
+  await page.getByRole("button", { name: "承認を申請する" }).click();
+  await expect(page).toHaveURL(/saved=submit/);
+  await reviewer.reload();
+  await reviewer.getByRole("button", { name: "承認する" }).click();
+  await expect(reviewer).toHaveURL(/saved=approve/);
+  await page.reload();
+  await expectPublicListings(false);
+  await reviewer.getByLabel("概要").fill("承認後の更新は再承認が必要です。");
+  await reviewer.getByRole("button", { name: "下書き保存" }).click();
+  await expect(reviewer).toHaveURL(/saved=1/);
+  await page.reload();
+  expect((await transition("publish")).status()).toBe(409);
+  await reviewer.getByRole("button", { name: "承認する" }).click();
+  await expect(reviewer).toHaveURL(/saved=approve/);
+  await page.reload();
   await page.getByRole("button", { name: "公開する" }).click();
   await expect(page).toHaveURL(/saved=publish/);
   await expect(page.getByLabel("記事URL")).toHaveAttribute("readonly", "");
   expect((await pageApi(page, path)).status()).toBe(200);
   await expectPublicListings(true, "公開前の撮影会");
-  const editorForm = page.locator("[data-blog-editor]");
-  const endpoint = (await editorForm.getAttribute("data-endpoint"))!;
+  await reviewer.setViewportSize({ width: 1365, height: 900 });
+  await reviewer.goto("/Activity");
+  const listing = reviewer.locator(".Activity-item:visible").filter({ hasText: "公開前の撮影会" });
+  await expect(listing.locator(".blog-byline")).toContainText("by 写団シャレード");
+  await expect(listing.locator(".blog-byline a")).toHaveCount(0);
+  const icon = await listing.locator(".blog-byline img").boundingBox();
+  const link = await listing.locator(".link-button").boundingBox();
+  expect(link!.x - icon!.x - icon!.width).toBeCloseTo(50, 0);
   const publishedRevision = await editorForm.getAttribute("data-updated-at");
   await page.getByLabel("タイトル", { exact: true }).fill("公開後に更新した撮影会");
   await page.getByRole("button", { name: "プレビュー", exact: true }).click();
@@ -458,6 +620,13 @@ test("staff preview unsaved rich posts, publish, update, unpublish, and delete",
   await expect(page).toHaveURL(/saved=unpublish/);
   expect((await pageApi(page, path)).status()).toBe(404);
   await expectPublicListings(false);
+  expect((await transition("publish")).status()).toBe(409);
+  await page.getByRole("button", { name: "承認を申請する" }).click();
+  await expect(page).toHaveURL(/saved=submit/);
+  await reviewer.goto(editPath);
+  await reviewer.getByRole("button", { name: "承認する" }).click();
+  await expect(reviewer).toHaveURL(/saved=approve/);
+  await page.reload();
   await page.getByRole("button", { name: "公開する" }).click();
   await expect(page).toHaveURL(/saved=publish/);
   await expectPublicListings(true);
@@ -469,6 +638,56 @@ test("staff preview unsaved rich posts, publish, update, unpublish, and delete",
   await expect(page).toHaveURL(/\/Management\/blog\?deleted=1/);
   expect((await pageApi(page, path)).status()).toBe(404);
   await expectPublicListings(false);
+  await reviewer.close();
+});
+
+test("notification body attachments are available only to the sender during editing and to recipients after sending", async ({ page, browser, request }, info) => {
+  await login(page, "planner");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/Member/manage/notifications");
+  const form = page.locator('form[data-activity-action="notification.send"]');
+  const noticeId = (await form.getAttribute("data-id"))!;
+  await form.getByLabel("件名").fill(`本文の添付確認 ${info.project.name}`);
+  const editor = form.getByRole("textbox", { name: "本文", exact: true });
+  await editor.fill("通知の本文");
+  await editor.press("ControlOrMeta+a");
+  await form.getByRole("button", { name: "太字", exact: true }).click();
+  await editor.press("ArrowRight");
+  await editor.press("Enter");
+  const recipients = form.locator(".activity-recipients");
+  await recipients.getByRole("button", { name: "全解除", exact: true }).click();
+  await recipients.locator('input[name="recipientIds"][value="member"]').check();
+
+  await form.getByRole("button", { name: "添付ファイル", exact: true }).click();
+  const dialog = form.getByRole("dialog", { name: "添付ファイル" });
+  await dialog.locator('[type="file"]').setInputFiles({ name: "notice.txt", mimeType: "text/plain", buffer: Buffer.from("private notice attachment") });
+  const upload = page.waitForResponse(response => response.url().endsWith("/body-media/upload"));
+  await dialog.getByRole("button", { name: "適用", exact: true }).click();
+  const { url } = await (await upload).json();
+  await expect(editor.locator("a")).toHaveAttribute("href", url);
+  expect((await page.request.get(url)).status()).toBe(200);
+  expect((await request.get(url)).status()).toBe(404);
+  const recipient = await browser.newPage({ baseURL: origin });
+  const other = await browser.newPage({ baseURL: origin });
+  try {
+    await login(recipient, "member");
+    await login(other, "other");
+    expect((await recipient.request.get(url)).status()).toBe(404);
+    await form.getByRole("button", { name: "お知らせを送信", exact: true }).click();
+    await expect(page).toHaveURL(/saved=1/);
+    await recipient.goto(`/Member/notifications/${noticeId}`);
+    await expect(recipient.locator(".rich-body-content strong").filter({ hasText: "通知の本文" })).toHaveText("通知の本文");
+    await expect(recipient.getByRole("link", { name: "notice.txt" })).toHaveAttribute("href", url);
+    const file = await recipient.request.get(url);
+    expect(file.status()).toBe(200);
+    expect(file.headers()["cache-control"]).toContain("no-store");
+    expect(await file.text()).toBe("private notice attachment");
+    expect((await other.request.get(url)).status()).toBe(404);
+    expect((await request.get(url)).status()).toBe(404);
+  } finally {
+    await recipient.close();
+    await other.close();
+  }
 });
 
 test("staff can delete an existing microCMS article with a reserved screen name as its ID", async ({ page }, info) => {

@@ -1,0 +1,31 @@
+---
+interface Field {
+  name: string;
+  label: string;
+  options?: { value: string; label: string }[];
+  type?: "search" | "date";
+  all?: string;
+}
+interface Props { fields: Field[]; title: string }
+const { fields, title } = Astro.props;
+const { pathname, searchParams } = Astro.url;
+---
+<form action={pathname} method="get" class="content-catalog-filter" aria-label={title}>
+  <div class="content-management-fields content-catalog-fields">
+    {fields.map(field => {
+      const value = searchParams.get(field.name) ?? "";
+      return <label><span id={`catalog-label-${field.name}`}>{field.label}</span>
+        {field.options ? (
+          <select name={field.name} aria-labelledby={`catalog-label-${field.name}`}>
+            {field.all && <option value="">{field.all}</option>}
+            {field.options.map(option => <option value={option.value} selected={value === option.value}>{option.label}</option>)}
+          </select>
+        ) : <input type={field.type ?? "search"} name={field.name} value={value} maxlength={field.type === "date" ? undefined : 160} />}
+      </label>;
+    })}
+  </div>
+  <div class="content-catalog-buttons">
+    <button type="submit" class="admin-button">検索</button>
+    <a href={pathname} class="member-back">条件をクリア</a>
+  </div>
+</form>

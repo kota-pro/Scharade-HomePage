@@ -1,3 +1,4 @@
+import { richBodyPreviewHtml } from "./richBodyPreview";
 import {watchAdvisoryClock,paintDeadlineWarning} from './advisoryDeadlineUi.ts';
 import {deadlinePassed} from '../lib/advisoryWarnings.ts';
 import { photoExifEditor, bindPhotoExifEditor } from "./photoExifEditor";
@@ -182,7 +183,7 @@ if (root) {
     const sectionFields = fieldsFor("section", section.sectionId).map((field: AnyRecord) => fieldControl(field, section.fields?.[field.id], "section", "", section.sectionId)).join("");
     const works = content().works.filter((work: AnyRecord) => work.sectionId === section.sectionId);
     const grouped = ["single", "series", "book"].map(kind => works.filter((work: AnyRecord) => work.kind === kind).map((work: AnyRecord, index: number) => workHtml(work, index)).join("")).join("");
-    return `<fieldset data-section="${section.sectionId}"><legend>${escape(schemaSection.title)}</legend>${schemaSection.description ? `<p>${escape(schemaSection.description)}</p>` : ""}
+    return `<fieldset data-section="${section.sectionId}"><legend>${escape(schemaSection.title)}</legend>${schemaSection.descriptionHtml ? `<div class="portfolio-introduction-content rich-body-content">${richBodyPreviewHtml(schemaSection.descriptionHtml)}</div>` : schemaSection.description ? `<p>${escape(schemaSection.description)}</p>` : ""}
       <p class="exhibition-limit-summary" data-limit-section="${section.sectionId}"></p><p class="exhibition-limit-warning" data-limit-errors="section" data-limit-id="${section.sectionId}" aria-live="polite" hidden></p>
       <div class="exhibition-grid"><label>単写真枚数<input data-count="singles" type="number" min="0" max="300" value="${section.singles}" /></label><label>組写真作品数<input data-count="series" type="number" min="0" max="100" value="${section.series}" /></label><label>ブック冊数<input data-count="books" type="number" min="0" max="100" value="${section.books}" /></label></div>
       ${sectionFields}<div class="exhibition-list">${grouped}</div></fieldset>`;

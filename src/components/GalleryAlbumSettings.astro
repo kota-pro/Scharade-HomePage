@@ -1,5 +1,6 @@
 ---
 import MemberIcon from "./MemberIcon.astro";
+import { GALLERY_CATEGORY_LABELS, GALLERY_CATEGORY_ORDER } from "../data/galleryAlbums";
 import type { GalleryAlbum } from "../lib/galleryCatalog";
 interface Props { album: GalleryAlbum; photosOnly?: boolean }
 const { album, photosOnly = false } = Astro.props;
@@ -15,17 +16,24 @@ const heading = photosOnly ? "カバー・掲載写真" : "アルバム設定";
       <div class="gallery-settings-scroll" data-gallery-settings-scroll>
         <fieldset class="gallery-settings-fields">
           <div class="gallery-settings-modes" role="group" aria-label="編集する設定">
-            <button type="button" data-gallery-settings-mode="album" aria-pressed="true" aria-controls="gallery-album-fields">{photosOnly ? "カバー写真" : "公開範囲・カバー"}</button>
+            <button type="button" data-gallery-settings-mode="album" aria-pressed="true" aria-controls="gallery-album-fields">{photosOnly ? "カバー写真" : "分類・公開範囲・カバー"}</button>
             <button type="button" data-gallery-settings-mode="exclusions" aria-pressed="false" aria-controls="gallery-exclusion-fields">公開しない写真</button>
           </div>
           <div id="gallery-album-fields" class="gallery-settings-content">
-            {photosOnly ? <input type="hidden" name="visibility" value={album.visibility} /> : <label class="gallery-settings-visibility">公開範囲
-              <select name="visibility">
-                <option value="public" selected={album.visibility === "public"}>一般公開</option>
-                <option value="members" selected={album.visibility === "members"}>会員限定</option>
-                <option value="staff" selected={album.visibility === "staff"}>運営限定</option>
-              </select>
-            </label>}
+            {photosOnly ? <input type="hidden" name="visibility" value={album.visibility} /> : <div class="gallery-settings-options">
+              <label class="gallery-settings-visibility">分類
+                <select name="category">
+                  {GALLERY_CATEGORY_ORDER.map(category => <option value={category} selected={category === album.category}>{GALLERY_CATEGORY_LABELS[category]}</option>)}
+                </select>
+              </label>
+              <label class="gallery-settings-visibility">公開範囲
+                <select name="visibility">
+                  <option value="public" selected={album.visibility === "public"}>一般公開</option>
+                  <option value="members" selected={album.visibility === "members"}>会員限定</option>
+                  <option value="staff" selected={album.visibility === "staff"}>運営限定</option>
+                </select>
+              </label>
+            </div>}
             <div class="gallery-settings-cover">
               <div class="gallery-settings-cover-head">
                 <h3>カバー写真</h3>
@@ -100,6 +108,7 @@ const heading = photosOnly ? "カバー・掲載写真" : "アルバム設定";
   .gallery-settings-modes button { min-height: 40px; padding: 6px 10px; border: 1px solid transparent; border-radius: 6px; background: white; color: #43534f; cursor: pointer; font: inherit; font-size: 14px; }
   .gallery-settings-modes button[aria-pressed="true"] { border-color: #a3c9c1; background: #e8f6f1; color: #005c50; }
   .gallery-settings-content { display: grid; gap: 16px; }
+  .gallery-settings-options { display: grid; align-content: start; gap: 12px; }
   .gallery-settings-visibility { display: grid; align-self: start; gap: 6px; font-weight: 600; min-width: 0; }
   .gallery-settings-visibility select { grid-area: 2 / 1; appearance: none; width: 100%; min-width: 0; min-height: 44px; padding: 8px 32px 8px 12px; color: inherit; background: white; border: 1px solid #c5cecb; border-radius: 6px; font: inherit; }
   .gallery-settings-visibility::after { content: ""; grid-area: 2 / 1; place-self: center end; width: 7px; height: 7px; margin-inline-end: 15px; border: solid currentColor; border-width: 0 1px 1px 0; transform: translateY(-2px) rotate(45deg); pointer-events: none; }

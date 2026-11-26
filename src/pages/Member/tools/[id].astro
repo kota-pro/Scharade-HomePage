@@ -42,7 +42,7 @@ const login = `/Login?next=${encodeURIComponent(Astro.url.pathname)}`;
           <div class="activity-title-row"><h2>{toolLabels[t.kind]}</h2><ActivityShareButton kind="tools" id={t.id} title={t.question}/></div>
           <div class="tool-answer-meta"><span class="activity-badge" data-tool-state-badge>{t.status==='draft'?'下書き':dto.open?'受付中':'受付終了'}</span><p data-reception-status></p></div>
         </header>
-        <section class="tool-question-panel" aria-label="質問"><span class="tool-kind-label">質問</span><div class="activity-prose tool-question"><ActivityText text={t.question}/></div>
+        <section class="tool-question-panel" aria-label="質問"><span class="tool-kind-label">質問</span><div class="activity-prose tool-question"><ActivityText text={dto.question} html={dto.questionHtml}/></div>
           {dto.canEdit&&<a class="tool-text-link" href={`/Member/manage/tools/${t.id}`}>質問・設定を編集 →</a>}
         </section>
         <p data-tool-status role="status" aria-live="polite"/>

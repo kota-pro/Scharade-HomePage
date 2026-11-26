@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { audit } from "./audit.ts";
-import type { User } from "./auth.ts";
+import { isStaff, readUsers, type User } from "./auth.ts";
 import { cached, invalidateCache } from "./cache.ts";
 import { env } from "./config.ts";
 import { ContentManagementError } from "./contentManagement.ts";
@@ -8,10 +8,18 @@ import { safeMediaUrl, sanitizeArticleHtml } from "./contentSecurity.ts";
 import { fetchWithTimeout } from "./http.ts";
 import { withStoreLock } from "./store.ts";
 import type { Blog } from "../types/microcms.ts";
+import { MEMBERS_BLOG_TAG, normalizeTags, orderBlogTags } from "../utils/blog.ts";
+import { blogIdentity, blogReview, canReviewBlog, canSubmitBlog, readBlogReviews, removeBlogReview, saveBlogReview, type BlogReview } from "./blogReview.ts";
+import { blogBylineUserId, getBlogAuthorOptions } from "./blogBylines.ts";
+import { isSiteManagement } from "./accountVisibility.ts";
+import { RICH_TEXT_SIZES } from "../utils/portfolioIntroduction.ts";
 
-type BlogStatus = "draft" | "published" | "published-with-draft" | "closed";
+export type BlogStatus = "draft" | "published" | "published-with-draft" | "closed";
 type Metadata = {
-  id: string; status: string | string[]; updatedAt: string; publishedAt?: string | null; draftKey?: string | null;
+  id: string; status: string | string[]; createdAt?: string; updatedAt: string; publishedAt?: string | null; draftKey?: string | null;
+};
+export const blogStatusLabels: Record<BlogStatus, string> = {
+  draft: "下書き", published: "公開中", "published-with-draft": "公開中・CMS下書きあり", closed: "公開終了",
 };
 export type BlogEditorOptions = {
   tags: string[]; colors: { label: string; value: string }[]; sizes: { label: string; value: string }[];
@@ -19,6 +27,10 @@ export type BlogEditorOptions = {
   bodyKind?: string;
 };
 export const emptyBlogOptions: BlogEditorOptions = { tags: [], colors: [], sizes: [], classes: [], presetColorsOnly: false };
+export const managementBodyOptions: BlogEditorOptions = {
+  ...emptyBlogOptions,
+  sizes: RICH_TEXT_SIZES.map(({ pixels }) => ({ value: `${pixels}px`, label: `${pixels}px` })),
+};
 type CmsBlog = { title: string; slug: string; excerpt: string; body: string; tags: string[]; pictures: string[] };
 const contentPath = "/api/v1/blog";
 const managementPath = "/api/v1/contents/blog";
@@ -88,14 +100,15 @@ function statusOf(item: Metadata): BlogStatus {
 
 function itemSummary(item: Metadata) {
   const status = statusOf(item);
-  return { id: item.id, status, updatedAt: item.updatedAt, publishedAt: item.publishedAt ?? null, slugLocked: status !== "draft" || Boolean(item.publishedAt) };
+  return { id: item.id, status, createdAt: item.createdAt ?? item.updatedAt, updatedAt: item.updatedAt, publishedAt: item.publishedAt ?? null, slugLocked: status !== "draft" || Boolean(item.publishedAt) };
 }
 
-async function content(item: Metadata): Promise<Blog | null> {
+async function content(item: Metadata, fields?: string): Promise<Blog | null> {
   const status = statusOf(item);
   if (status === "closed") return null;
   if (status === "draft" && !item.draftKey) throw cmsUnavailable();
   const query = new URLSearchParams({ depth: "1" });
+  if (fields) query.set("fields", fields);
   if (status === "draft") query.set("draftKey", item.draftKey!);
   const response = await cmsRequest(`${contentPath}/${blogId(item.id)}?${query}`, false);
   checkResponse(response);
@@ -104,34 +117,88 @@ async function content(item: Metadata): Promise<Blog | null> {
   return post;
 }
 
-export async function getEditableBlog(id: string) {
+export async function getEditableBlog(id: string, ownerId?: string) {
+  if (ownerId !== undefined && !ownsBlogDraft(id, ownerId)) return null;
   const item = await metadata(id);
-  return item ? { ...itemSummary(item), post: await content(item) } : null;
+  return item ? { ...itemSummary(item), post: await content(item), review: blogReview(id, item.updatedAt) } : null;
 }
 
-export const BLOG_MANAGEMENT_PAGE_SIZE = 20;
-export async function getManageableBlogs(page: number) {
-  const response = await cmsRequest(`${managementPath}?limit=${BLOG_MANAGEMENT_PAGE_SIZE}&offset=${(page - 1) * BLOG_MANAGEMENT_PAGE_SIZE}`, true);
-  checkResponse(response);
-  const data = await response.json() as { contents: Metadata[]; totalCount: number };
-  if (!Array.isArray(data.contents) || !Number.isSafeInteger(data.totalCount)) throw cmsUnavailable();
-  const publishedIds = data.contents.filter(item => ["published", "published-with-draft"].includes(statusOf(item))).map(item => item.id);
-  const posts = new Map<string, string>();
-  if (publishedIds.length) {
-    const query = new URLSearchParams({ ids: publishedIds.join(","), fields: "id,title", limit: String(BLOG_MANAGEMENT_PAGE_SIZE) });
+export function ownsBlogDraft(id: string, userId: string) {
+  return validId(id) && blogReview(id, "").author?.userId === userId;
+}
+
+export function canEditOwnBlog(item: { status: BlogStatus; review: BlogReview }) {
+  return item.status === "draft" && (item.review.state === "draft" || item.review.state === "returned");
+}
+
+const indexFields = "id,title,tags,createdAt";
+const catalogKey = "cms:blog-management-catalog";
+const catalogPageSize = 100;
+type BlogIndexData = Pick<Blog, "id" | "title" | "tags" | "createdAt">;
+
+async function readBlogCatalog() {
+  const metadataItems = new Map<string, Metadata>();
+  for (let offset = 0; ; offset += catalogPageSize) {
+    const response = await cmsRequest(`${managementPath}?limit=${catalogPageSize}&offset=${offset}`, true);
+    checkResponse(response);
+    const data = await response.json() as { contents: Metadata[]; totalCount: number };
+    if (!Array.isArray(data.contents) || !Number.isSafeInteger(data.totalCount)) throw cmsUnavailable();
+    for (const item of data.contents) metadataItems.set(item.id, item);
+    if (!data.contents.length || offset + data.contents.length >= data.totalCount) break;
+  }
+  return blogIndexData([...metadataItems.values()]);
+}
+
+async function blogIndexData(metadataItems: Metadata[]) {
+  const publishedIds = metadataItems.filter(item => ["published", "published-with-draft"].includes(statusOf(item))).map(item => item.id);
+  const posts = new Map<string, BlogIndexData>();
+  for (let index = 0; index < publishedIds.length; index += catalogPageSize) {
+    const ids = publishedIds.slice(index, index + catalogPageSize);
+    const query = new URLSearchParams({ ids: ids.join(","), fields: indexFields, limit: String(ids.length) });
     const results = await cmsRequest(`${contentPath}?${query}`, false);
     checkResponse(results);
-    const { contents } = await results.json() as { contents: Array<Pick<Blog, "id" | "title">> };
-    contents.forEach(post => posts.set(post.id, post.title));
+    const { contents } = await results.json() as { contents: BlogIndexData[] };
+    contents.forEach(post => posts.set(post.id, post));
   }
-  const drafts = data.contents.filter(item => statusOf(item) === "draft");
+  const drafts = metadataItems.filter(item => statusOf(item) === "draft");
   for (let index = 0; index < drafts.length; index += 4) {
     await Promise.all(drafts.slice(index, index + 4).map(async item => {
-      const post = await content(item).catch(() => null);
-      if (post) posts.set(item.id, post.title);
+      const post = await content(item, indexFields);
+      if (post) posts.set(item.id, post);
     }));
   }
-  return { total: data.totalCount, items: data.contents.map(item => ({ ...itemSummary(item), title: posts.get(item.id) || item.id })) };
+  return { metadataItems, posts };
+}
+
+function blogIndexRows({ metadataItems, posts }: Awaited<ReturnType<typeof blogIndexData>>) {
+  const reviews = readBlogReviews();
+  const users = new Map(readUsers().filter(user => !isSiteManagement(user)).map(user => [user.id, user.name]));
+  return metadataItems.map(item => {
+    const post = posts.get(item.id);
+    const review = blogReview(item.id, item.updatedAt, reviews);
+    const author = blogBylineUserId(review);
+    const authorName = author ? users.get(author) ?? "写団シャレード" : author === null ? "写団シャレード" : "記録なし";
+    return {
+      ...itemSummary(item), title: post?.title || item.id, tags: normalizeTags(post?.tags),
+      createdAt: post?.createdAt || item.createdAt || item.updatedAt,
+      author: authorName, authorId: author && users.has(author) ? author : authorName === "記録なし" ? "unknown" : "club",
+      reviewState: review.state,
+    };
+  });
+}
+
+export async function getManageableBlogs() {
+  return blogIndexRows(await cached(catalogKey, readBlogCatalog, 30_000));
+}
+
+export async function getOwnBlogs(user: User) {
+  const ids = Object.entries(readBlogReviews()).filter(([, review]) => review.author?.userId === user.id).map(([id]) => id);
+  const found: Metadata[] = [];
+  for (let index = 0; index < ids.length; index += 4) {
+    const results = await Promise.all(ids.slice(index, index + 4).map(metadata));
+    for (const item of results) if (item) found.push(item);
+  }
+  return blogIndexRows(await blogIndexData(found));
 }
 
 function items(input: unknown, valueKeys: string[]) {
@@ -153,7 +220,7 @@ export function getBlogEditorOptions() {
     const body = fields.find(field => field.fieldId === "body");
     const tags = fields.find(field => field.fieldId === "tags");
     return {
-      tags: items(tags?.selectItems, ["value"]).map(item => item.value),
+      tags: orderBlogTags(items(tags?.selectItems, ["value"]).map(item => item.value)),
       colors: items(body?.richEditorV2ColorList, ["value", "color"]).filter(item => /^#[a-f0-9]{3,8}$/i.test(item.value)),
       sizes: items(body?.richEditorV2FontSizeList, ["value", "size", "fontSize"]).filter(item => /^\d{1,3}(?:px|pt|%)$/.test(item.value)),
       classes: items(body?.customClassList, ["class", "className", "value"]).filter(item => /^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(item.value)),
@@ -199,7 +266,7 @@ export function parseBlogInput(input: Record<string, unknown>, current?: Blog | 
   const oldBody = current?.body ?? "";
   const rawBody = input.body === undefined ? oldBody : textField(input.body, "本文", 180_000);
   const body = input.body === undefined || rawBody === oldBody ? oldBody : sanitizeArticleHtml(rawBody);
-  const tags = input.tags === undefined ? current?.tags ?? [] : listField(input.tags, "タグ", 50).map(tag => textField(tag, "タグ", 100, true));
+  const tags = input.tags === undefined ? current?.tags ?? [] : orderBlogTags(listField(input.tags, "タグ", 50).map(tag => textField(tag, "タグ", 100, true)));
   const pictures = input.pictures === undefined ? current?.pictures?.map(image => image.url) ?? [] : listField(input.pictures, "記事写真", 50);
   if (input.pictures !== undefined && pictures.some(url => !safeMediaUrl(url))) throw new ContentManagementError("記事写真はmicroCMSのメディアを選択してください。");
   return { title, slug, excerpt, body, tags, pictures };
@@ -224,6 +291,10 @@ function changesFor(values: CmsBlog, before: Blog) {
   return Object.fromEntries(Object.entries(values).filter(([field, value]) => !sameValue(existing[field as keyof CmsBlog], value)));
 }
 
+function contentDigest(post: Blog) {
+  return createHash("sha256").update(JSON.stringify(parseBlogInput({}, post))).digest("hex");
+}
+
 async function ensureUniqueSlug(slug: string, id: string) {
   const limit = 100;
   for (let offset = 0; ; offset += limit) {
@@ -240,17 +311,33 @@ async function changeStatus(id: string, status: "PUBLISH" | "DRAFT") {
   await mutatePublishedContent(`${managementPath}/${blogId(id)}/status`, true, jsonRequest("PATCH", { status: [status] }));
 }
 
+export async function parseBlogByline(value: unknown, user: User, current?: BlogReview) {
+  if (value === undefined) return current?.bylineUserId;
+  if (!isStaff(user)) throw new ContentManagementError("執筆者の表示設定は運営以上が変更できます。", 403);
+  if (value === "default") return undefined;
+  if (value === "club") return null;
+  if (typeof value === "string" && (value === current?.bylineUserId ||
+    (await getBlogAuthorOptions(readUsers().filter(account => account.id === value))).length > 0)) return value;
+  throw new ContentManagementError("公開Portfolioのある会員を執筆者に選んでください。");
+}
+
 export async function createBlogDraft(input: Record<string, unknown>, user: User) {
+  if (!user.approved) throw new ContentManagementError("承認済みの会員アカウントが必要です。", 403);
   const { requestId } = input;
   if (typeof requestId !== "string" || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(requestId))
     throw new ContentManagementError("作成画面を再読み込みしてください。");
   const id = "b-" + createHash("sha256").update(JSON.stringify([user.id, requestId.toLowerCase()])).digest("hex").slice(0, 30);
-  const values = parseBlogInput(input);
+  const values = parseBlogInput({ ...input, tags: input.tags ?? [MEMBERS_BLOG_TAG] });
   return withStoreLock("blog-management", async () => {
     if (await metadata(id)) return id;
     if (values.body) await requireRichTextSchema();
+    const review = blogReview(id, "");
+    const bylineUserId = await parseBlogByline(input.byline, user, review);
+    if (!review.author || bylineUserId !== review.bylineUserId)
+      saveBlogReview(id, review, { author: review.author ?? blogIdentity(user), bylineUserId });
     const body = Object.fromEntries(Object.entries(values).filter(([, value]) => value.length));
     checkResponse(await cmsRequest(`${contentPath}/${id}?status=draft`, false, jsonRequest("PUT", body)));
+    invalidateCache(catalogKey);
     await audit(user.id, "blog.create", id);
     return id;
   });
@@ -258,45 +345,81 @@ export async function createBlogDraft(input: Record<string, unknown>, user: User
 
 export async function updateBlog(id: string, input: Record<string, unknown>, user: User) {
   return withStoreLock("blog-management", async () => {
+    const staff = isStaff(user);
+    if (!user.approved || (!staff && !ownsBlogDraft(id, user.id))) throw notFound();
+    if (!staff && input.action !== "save" && input.action !== "submit")
+      throw new ContentManagementError("承認・公開の操作は運営以上が行えます。", 403);
     const item = await metadata(id);
     if (!item) throw notFound();
     const { status, slugLocked } = itemSummary(item);
     if (input.updatedAt !== item.updatedAt) throw conflict();
+    const review = blogReview(id, item.updatedAt);
+    if (!staff && !canEditOwnBlog({ status, review }))
+      throw new ContentManagementError("下書きと差し戻された記事を編集できます。", 409);
     if (input.action === "unpublish") {
       if (status !== "published") throw new ContentManagementError("この公開状態はmicroCMSの画面から変更してください。", 409);
+      saveBlogReview(id, review, { state: "draft", submittedBy: undefined, approvedVersion: undefined, returnReason: undefined });
       await changeStatus(id, "DRAFT");
       await audit(user.id, "blog.unpublish", id);
       return;
     }
-    if (input.action !== "save" && input.action !== "publish") throw new ContentManagementError("記事の操作を確認してください。");
-    if (status === "closed" || input.action === "publish" && status !== "draft")
+    const action = input.action;
+    if (!["save", "submit", "approve", "return", "publish"].some(value => value === action))
+      throw new ContentManagementError("記事の操作を確認してください。");
+    if (status === "closed" || action !== "save" && status !== "draft")
       throw new ContentManagementError("この公開状態はmicroCMSの画面から変更してください。", 409);
+    if ((status === "draft" || input.byline !== undefined) && input.workflowRevision !== review.revision) throw conflict();
     const before = await content(item);
     if (!before) throw notFound();
     const values = parseBlogInput(input, before, slugLocked);
-    if (input.action === "publish") {
-      if (!values.title?.trim() || !values.slug?.trim()) throw new ContentManagementError("公開するにはタイトルと記事URLを入力してください。");
-      await ensureUniqueSlug(values.slug, id);
-    }
     const changes = changesFor(values, before);
-    if (Object.keys(changes).length) {
+    const bylineUserId = await parseBlogByline(input.byline, user, review);
+    const bylineChanged = bylineUserId !== review.bylineUserId;
+    if (action !== "save") {
+      if (Object.keys(changes).length || bylineChanged) throw new ContentManagementError("変更を保存してから操作してください。", 409);
+      if (action === "submit") {
+        if (!canSubmitBlog(review, user)) throw new ContentManagementError("この下書きを承認申請できません。", 403);
+        if (!before.title?.trim() || !before.slug?.trim())
+          throw new ContentManagementError("承認申請にはタイトルと記事URLを入力してください。");
+        saveBlogReview(id, review, { state: "pending", submittedBy: blogIdentity(user), returnReason: undefined });
+      } else if (action === "approve" || action === "return") {
+        if (!canReviewBlog(review, user)) throw new ContentManagementError("承認待ちの記事は、執筆者・申請者とは別の運営以上が確認してください。", 403);
+        if (action === "approve") {
+          saveBlogReview(id, review, { state: "approved", approvedVersion: { updatedAt: item.updatedAt, digest: contentDigest(before) } });
+        } else {
+          const returnReason = textField(input.reason, "差し戻し理由", 1000, true).trim();
+          saveBlogReview(id, review, { state: "returned", returnReason });
+        }
+      } else {
+        if (review.state !== "approved" || review.approvedVersion?.digest !== contentDigest(before))
+          throw new ContentManagementError("保存されている最新版の承認を得てから公開してください。", 409);
+        await ensureUniqueSlug(values.slug, id);
+        await changeStatus(id, "PUBLISH");
+        saveBlogReview(id, review, { state: "draft", submittedBy: undefined, approvedVersion: undefined, returnReason: undefined });
+      }
+      await audit(user.id, `blog.${action}`, id);
+      return;
+    }
+    let nextReview = review;
+    const hasContentChanges = Object.keys(changes).length > 0;
+    if (hasContentChanges) {
       // Only changed fields are rewritten. In particular, metadata edits must not round-trip legacy rich text.
       if (Object.hasOwn(changes, "body")) await requireRichTextSchema();
       const path = `${contentPath}/${blogId(id)}`;
       const update = jsonRequest("PATCH", changes);
-      if (status === "draft") checkResponse(await cmsRequest(`${path}?status=draft`, false, update));
-      else await mutatePublishedContent(path, false, update);
-      await audit(user.id, "blog.update", id);
-    }
-    if (input.action === "publish") {
-      try { await changeStatus(id, "PUBLISH"); }
-      catch (error) {
-        if (Object.keys(changes).length)
-          throw new ContentManagementError("下書きは保存しました。公開の結果を確認するため、ページを再読み込みしてください。", error instanceof ContentManagementError ? error.status : 503);
-        throw error;
+      if (status === "draft") {
+        if (review.state === "approved" && !bylineChanged)
+          saveBlogReview(id, review, { state: "pending", approvedVersion: undefined });
+        checkResponse(await cmsRequest(`${path}?status=draft`, false, update));
+        invalidateCache(catalogKey);
       }
-      await audit(user.id, "blog.publish", id);
+      else await mutatePublishedContent(path, false, update);
     }
+    if (bylineChanged) {
+      if (status === "draft" && review.state === "approved") nextReview = { ...review, state: "pending", approvedVersion: undefined };
+      saveBlogReview(id, review, { ...nextReview, bylineUserId });
+    }
+    if (hasContentChanges || bylineChanged) await audit(user.id, "blog.update", id);
   });
 }
 
@@ -304,9 +427,10 @@ export async function deleteBlog(id: string, input: Record<string, unknown>, use
   if (input.confirmation !== "delete") throw new ContentManagementError("削除する内容を確認してください。");
   return withStoreLock("blog-management", async () => {
     const item = await metadata(id);
-    if (!item) return;
+    if (!item) { removeBlogReview(id); return; }
     if (input.updatedAt !== item.updatedAt) throw conflict();
     await mutatePublishedContent(`${contentPath}/${blogId(id)}`, false, { method: "DELETE" });
+    removeBlogReview(id);
     await audit(user.id, "blog.delete", id);
   });
 }

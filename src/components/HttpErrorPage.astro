@@ -1,0 +1,170 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { getErrorPage, type ErrorPageStatus } from "../lib/errorPages.ts";
+import { describeSiteError } from "../lib/siteErrors.ts";
+
+interface Props {
+  status: ErrorPageStatus;
+}
+
+const { status } = Astro.props;
+const page = getErrorPage(status);
+const { code } = describeSiteError("", status);
+const errorNumber = `エラー番号：${code}\n`;
+const [width, height] = page.artworkSize ?? [980, 553];
+const artwork = status === 404 ? "/404page/Oh404.svg"
+  : status === 503 ? "/503page/error503.svg"
+  : `/error-pages/error${status}.svg`;
+const artworkLabel = `${status} ${page.title}`;
+const contactEnding = status === 503 ? "から運営にお問い合わせください。" : "から運営へお問い合わせください。";
+
+Astro.response.status = status;
+Astro.response.headers.set("X-Error-Code", code);
+Astro.response.headers.set("X-Robots-Tag", "noindex");
+if (status === 503) {
+  Astro.response.statusText = "Service Unavailable";
+  Astro.response.headers.set("Retry-After", "60");
+}
+---
+
+<Layout title={page.title} breadcrumbs={[]}>
+  <section slot="setting-none" class="http-error-page" lang="ja" style={`--artwork-width: ${68 * width / 980}vw; --artwork-max: ${width}px`}>
+    <h1>
+      <picture>
+        {status === 404 && <source media="(max-width: 650px)" srcset="/404page/Oh404Mobile.svg" width="341" height="269" />}
+        <img src={artwork} width={width} height={height} alt={artworkLabel} />
+      </picture>
+    </h1>
+    <div class="http-error-message" role="alert">
+      <span class="visually-hidden">{errorNumber}</span>{page.lines.map(line => <p>{line}</p>)}
+      {page.contact && <p>{page.contact}<a href="/Contact">Contact</a>{contactEnding}</p>}
+    </div>
+    {page.action === "search" && (
+      <form class="error-search" method="get" action="/SearchResult" role="search" aria-label="サイト内検索">
+        <input type="search" name="q" aria-label="検索語" placeholder="Search..." maxlength="100" required />
+        <button type="submit" aria-label="検索">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <circle cx="10" cy="10" r="6" />
+            <path d="m15 15 5 5" />
+          </svg>
+        </button>
+      </form>
+    )}
+    {page.action === "account" && (
+      <nav class="error-account" aria-label="アカウント">
+        <a href="/Login">Log in</a>
+        <a href="/Signup">Sign in</a>
+      </nav>
+    )}
+  </section>
+</Layout>
+
+<style>
+  .http-error-page {
+    box-sizing: border-box;
+    min-height: min(60vw, 850px);
+    padding: clamp(24px, 3.2vw, 44px) 30px 20px;
+    text-align: center;
+  }
+
+  h1 {
+    margin: 0;
+  }
+
+  h1 img {
+    display: block;
+    width: min(100%, var(--artwork-width), var(--artwork-max));
+    height: auto;
+    margin-inline: auto;
+  }
+
+  .http-error-message {
+    max-width: 1240px;
+    margin: clamp(28px, 5.7vw, 80px) auto 0;
+    font: 1.25rem/1.4 "Zen Kurenaido", sans-serif;
+    letter-spacing: 3px;
+  }
+
+  .http-error-message p {
+    margin: 0;
+  }
+
+  .http-error-message a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+  }
+
+  .error-search, .error-account {
+    display: flex;
+    justify-content: center;
+    margin: clamp(24px, 4.75vw, 68px) auto 0;
+  }
+
+  .error-search {
+    width: min(100%, 750px);
+    border: 1px solid #858585;
+  }
+
+  .error-search input {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 12px;
+    border: 0;
+    background: transparent;
+    font: inherit;
+  }
+
+  .error-search button, .error-account a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    color: inherit;
+  }
+
+  .error-search button {
+    width: 44px;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .error-account {
+    gap: 16px 3vw;
+    flex-wrap: wrap;
+  }
+
+  .error-account a {
+    border: 1px solid #858585;
+    padding-inline: 16px;
+    font-family: "Zen Old Mincho", serif;
+    letter-spacing: 0.1em;
+    text-decoration: none;
+  }
+
+  .error-account a:hover {
+    background: #eee;
+  }
+
+  @media (max-width: 900px) {
+    .http-error-page {
+      min-height: auto;
+      padding-bottom: 32px;
+    }
+
+    h1 img {
+      width: min(100%, 680px);
+    }
+
+    .http-error-message {
+      font-size: clamp(1rem, 2.2vw, 1.125rem);
+      letter-spacing: 1.8px;
+      text-wrap: balance;
+    }
+
+    .http-error-message p + p {
+      margin-top: 0.5em;
+    }
+  }
+</style>

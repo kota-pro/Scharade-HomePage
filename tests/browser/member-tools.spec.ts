@@ -63,7 +63,7 @@ test("poll draft preview, publishing, voting, anonymous permission and PNG", asy
   await page.getByRole("button", { name: "投票を作成", exact: true }).click();
   await expect(page).toHaveURL(/manage\/tools\/[a-f0-9-]+/);
   const id = page.url().split("/").pop()!;
-  await page.getByLabel("質問内容").fill("架空の好きな撮影場所");
+  await page.getByRole("textbox", { name: "質問内容", exact: true }).fill("架空の好きな撮影場所");
   await page.locator("[name=optionText]").nth(0).fill("海");
   await page.locator("[name=optionText]").nth(1).fill("山");
   const png = await sharp({
@@ -177,7 +177,7 @@ test("calendar selection supports slots and schedule answers survive edits", asy
     .click();
   await expect(page).toHaveURL(/manage\/tools\/[a-f0-9-]+/);
   const id = page.url().split("/").pop()!;
-  await page.getByLabel("質問内容").fill("架空の日程調整");
+  await page.getByRole("textbox", { name: "質問内容", exact: true }).fill("架空の日程調整");
   await page.locator("[data-calendar-days] button").nth(0).click();
   await page.locator("[data-calendar-days] button").nth(0).click();
   await expect(page.locator("[name=optionDate]")).toHaveCount(2);

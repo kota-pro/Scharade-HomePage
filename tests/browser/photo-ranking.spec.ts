@@ -56,12 +56,48 @@ test("filter races cannot restore stale rankings, empty results are clear and fa
   } finally { release(); }
 });
 
-test("ranking pagination keeps the global rank and returns to the previous page", async ({ page }) => {
+test("ranking pagination shows page numbers and arrows, and preserves the selected filter", async ({ page }) => {
   await setup(page);
-  await page.route("**/api/admin/photos?*", route => route.fulfill({ contentType: "application/json", body: JSON.stringify(sample("", Number(new URL(route.request().url()).searchParams.get("page")))) }));
-  await page.goto("/Admin/photos"); await expect(page.locator(".photo-ranking-row")).toHaveAttribute("data-photo-rank", "1");
-  await page.locator("[data-photo-manager-next]").click(); await expect(page.locator(".photo-ranking-row")).toHaveAttribute("data-photo-rank", "21"); await expect(page.locator("[data-photo-ranking-page]")).toContainText("21");
-  await page.locator("[data-photo-manager-prev]").click(); await expect(page.locator(".photo-ranking-row")).toHaveAttribute("data-photo-rank", "1"); await expect(page.locator("[data-photo-manager-prev]")).toBeHidden();
+  await page.route("**/api/admin/photos?*", route => {
+    const params = new URL(route.request().url()).searchParams;
+    const current = Number(params.get("page"));
+    const data = sample(params.get("container") ?? "", current);
+    return route.fulfill({ json: { ...data, pages: data.scope.value.startsWith("portfolio:") ? 1 : 12,
+      photos: [{ ...data.photos[0], rank: (current - 1) * data.pageSize + 1 }] } });
+  });
+  await page.goto("/Admin/photos?container=blog%3Apost");
+  const pagination = page.getByRole("navigation", { name: "ページ送り" });
+  const active = pagination.locator('[aria-current="page"]');
+  const rank = page.locator(".photo-ranking-row");
+  const arrow = (name: string) => pagination.getByRole("link", { name, exact: true });
+  await expect(active).toHaveText("1");
+  await expect(arrow("最初のページへ")).toHaveAttribute("aria-disabled", "true");
+  await expect(arrow("前へ")).toHaveAttribute("aria-disabled", "true");
+  await expect(pagination.locator("[aria-hidden=true]")).toHaveText("...");
+  await arrow("次へ").click();
+  await expect(active).toHaveText("2");
+  await expect(rank).toHaveAttribute("data-photo-rank", "21");
+  await arrow("最後のページへ").click();
+  await expect(active).toHaveText("12");
+  await expect(rank).toHaveAttribute("data-photo-rank", "221");
+  await expect(arrow("次へ")).toHaveAttribute("aria-disabled", "true");
+  await expect(arrow("最後のページへ")).toHaveAttribute("aria-disabled", "true");
+  await arrow("前へ").click();
+  await expect(active).toHaveText("11");
+  await arrow("2ページ目").click();
+  await expect(active).toHaveText("2");
+  await page.reload();
+  await expect(active).toHaveText("2");
+  await expect(page.locator("#photo-container")).toHaveValue("blog:post");
+
+  await page.setViewportSize({ width: 320, height: 844 });
+  await expect(pagination).toBeVisible();
+  expect(await pagination.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
+  await arrow("最初のページへ").click();
+  await expect(active).toHaveText("1");
+  await expect(rank).toHaveAttribute("data-photo-rank", "1");
+  await page.locator("#photo-container").selectOption("portfolio:member");
+  await expect(pagination).toBeHidden();
 });
 
 test("portrait hover separates wrapped equipment and unbroken settings without overlapping the author or footer", async ({ page }, info) => {

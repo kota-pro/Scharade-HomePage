@@ -1,0 +1,23 @@
+---
+import MemberLayout from "../../../layouts/MemberLayout.astro";
+import ManagementCatalogList from "../../../components/ManagementCatalogList.astro";
+import { blogReviewLabels } from "../../../lib/blogReview";
+import { blogStatusLabels, getOwnBlogs } from "../../../lib/blogManagement";
+import { catalogDate, catalogPage, sortCatalog } from "../../../lib/managementCatalog";
+import "../../../styles/ContentManagement.css";
+
+const listing = await getOwnBlogs(Astro.locals.user!).catch(() => null);
+const page = catalogPage(sortCatalog(listing ?? [], item => item.updatedAt, "desc"), Astro.url, "page");
+---
+<MemberLayout title="自分の記事・申請状況">
+  <div class="content-management-heading">
+    <h2>自分の記事・申請状況</h2>
+    <a href="/Member/blog/new" class="admin-button admin-button-outline">Write Blog</a>
+  </div>
+  {listing ? <ManagementCatalogList page={page} label="自分の記事" empty="まだ記事はありません。" rows={page.items.map(item => ({
+    title: item.title, href: `/Member/blog/edit/${encodeURIComponent(item.id)}`,
+    details: [item.status === "draft" ? blogReviewLabels[item.reviewState] : blogStatusLabels[item.status], catalogDate(item.updatedAt)].filter(Boolean),
+    action: "確認",
+  }))} /> : <p role="alert">記事一覧を取得できませんでした。時間をおいて再読み込みしてください。</p>}
+  <div class="content-management-actions"><a class="member-back" href="/Member#my-page">My pageへ戻る</a></div>
+</MemberLayout>

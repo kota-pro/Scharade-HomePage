@@ -3,9 +3,11 @@ import BlogArticle from "./BlogArticle.astro";
 import MypostLayout from "../layouts/Mypost_Layout.astro";
 import { breadcrumbsFor } from "../lib/breadcrumbs";
 import type { Blog } from "../types/microcms";
+import { getBlogBylines, type BlogByline } from "../lib/blogBylines";
 
-interface Props { post: Blog; fromParam: string | null; preview?: boolean }
+interface Props { post: Blog; fromParam: string | null; preview?: boolean; previewAuthor?: BlogByline }
 const { post, fromParam, preview = false } = Astro.props;
+const author = preview ? Astro.props.previewAuthor : (await getBlogBylines([post.id]).catch(() => null))?.get(post.id);
 const breadcrumbs = breadcrumbsFor("/posts/article", post.title);
 const backLinkMap = {
   activity: { href: "/Activity", label: "Activityへ戻る" },
@@ -20,7 +22,7 @@ const backLinkMapJSON = JSON.stringify(backLinkMap);
 ---
 
 <MypostLayout title={post.title} from="Activity" breadcrumbs={breadcrumbs}>
-  <BlogArticle post={post} preview={preview} />
+  <BlogArticle post={post} preview={preview} author={author} />
   <div
     class="back-link"
     id="post-back-link"

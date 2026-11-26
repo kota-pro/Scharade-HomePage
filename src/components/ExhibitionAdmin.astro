@@ -1,5 +1,9 @@
 ---
 import "../styles/Exhibitions.css";
+import "../styles/PortfolioIntroduction.css";
+import "../styles/RichBody.css";
+import BlogRichEditor from "./BlogRichEditor.astro";
+import { managementBodyOptions } from "../lib/blogManagement";
 import {exhibitionLoadingHtml} from '../scripts/exhibitionLoading.ts';
 interface Props { id: string; view: "overview" | "form" | "layout" | "submissions" | "participants" }
 const { id, view } = Astro.props;
@@ -8,4 +12,7 @@ const { id, view } = Astro.props;
   <p><a class="member-back" href="/Member/manage/exhibitions">写真展一覧へ戻る</a></p>
   <Fragment set:html={exhibitionLoadingHtml()} />
 </section>
+{(view === "overview" || view === "form") && <template data-exhibition-body-editor>
+  <BlogRichEditor body="" options={managementBodyOptions} />
+</template>}
 <script>import "../scripts/exhibitionAdmin.ts";</script>

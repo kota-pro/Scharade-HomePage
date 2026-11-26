@@ -21,11 +21,11 @@ test('recipient picker supports all, none, grades and normalized name search, re
 });
 test('full width section description and popup preview preserve drafts until confirmed, including failed saves',async({page},info)=>{
   const e=await create(page,`保存プレビュー ${info.project.name}`);await page.goto(`/Member/manage/exhibitions/${e.id}/form`);
-  const description=page.locator('textarea[data-section-key="description"]');await description.fill('ゆったりした説明欄で企画展の案内を入力');
+  const description=page.getByRole('textbox',{name:'説明',exact:true});await description.fill('ゆったりした説明欄で企画展の案内を入力');
   for(const width of [1440,1024,375]){await page.setViewportSize({width,height:900});const r=await description.boundingBox(),parent=await description.locator('..').boundingBox();expect(r!.width).toBeGreaterThan(parent!.width-4);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2)).toBe(true);}
   await page.locator('[data-save-schema]').click();const popup=page.getByRole('dialog',{name:'保存前のフォームプレビュー'});await expect(popup).toBeVisible();await expect(popup).toHaveCSS('background-color','rgb(255, 255, 255)');await expect(popup).toHaveCSS('opacity','1');await expect(popup).toContainText('ゆったりした説明欄');await expect(popup.getByLabel('名前（必須）',{exact:true})).toBeDisabled();await page.screenshot({path:`/private/tmp/exhibition-management-20261009/preview-mobile-${info.project.name}.png`});
   expect((await(await page.request.get(`/api/member/exhibitions/${e.id}`)).json()).exhibition.schemas.length).toBe(1);
-  await popup.getByRole('button',{name:'戻って編集',exact:true}).last().click();await expect(description).toHaveValue('ゆったりした説明欄で企画展の案内を入力');
+  await popup.getByRole('button',{name:'戻って編集',exact:true}).last().click();await expect(description).toHaveText('ゆったりした説明欄で企画展の案内を入力');
   await page.locator('[data-save-schema]').click();await page.route('**/api/member/exhibitions',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({ok:false,message:'保存を再試行してください'})}));
   await popup.getByRole('button',{name:'この内容で保存',exact:true}).click();await expect(popup.locator('[data-preview-status]')).toContainText('EXH-015');await expect(popup.locator('[data-preview-status]')).toContainText('保存できませんでした');await expect(popup.getByRole('button',{name:'この内容で保存',exact:true})).toBeEnabled();
   await page.unroute('**/api/member/exhibitions');await page.setViewportSize({width:1440,height:1000});await popup.evaluate(el=>el.scrollTop=0);await page.screenshot({path:`/private/tmp/exhibition-management-20261009/preview-${info.project.name}.png`});

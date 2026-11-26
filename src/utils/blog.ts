@@ -1,5 +1,17 @@
 import type { Blog } from "../types/microcms.ts";
 
+export const MEMBERS_BLOG_TAG = "Member's";
+
+export function orderBlogTags(tags: string[]) {
+  const ordered = [...new Set(tags)];
+  const member = ordered.indexOf(MEMBERS_BLOG_TAG);
+  const others = ordered.includes("Others") ? "Others" : "その他";
+  if (member < 0 || !ordered.includes(others)) return ordered;
+  ordered.splice(member, 1);
+  ordered.splice(ordered.indexOf(others), 0, MEMBERS_BLOG_TAG);
+  return ordered;
+}
+
 export const getPublishedDate = (blog: Blog) =>
   blog.publishedAt ?? blog.createdAt ?? blog.updatedAt ?? blog.revisedAt;
 
@@ -27,13 +39,13 @@ export const toTabSlug = (value: string) => {
 
 export const normalizeTags = (tags: string[] | undefined) => {
   if (!tags) return [];
-  return Array.isArray(tags) ? tags : [tags];
+  return orderBlogTags(Array.isArray(tags) ? tags : [tags]);
 };
 
 export const buildTabs = (posts: Blog[]) => {
-  const allTags = Array.from(
-    new Set(posts.flatMap((post) => normalizeTags(post.tags))),
-  ).sort();
+  const allTags = orderBlogTags(Array.from(
+    new Set([MEMBERS_BLOG_TAG, ...posts.flatMap((post) => normalizeTags(post.tags))]),
+  ).sort());
   const usedSlugs = new Set(["all"]);
 
   return [

@@ -1,0 +1,24 @@
+---
+interface Row { title: string; href: string; details: string[]; action?: string }
+interface Props {
+  rows: Row[];
+  empty: string;
+  page?: { total: number; page: number; last: number; previous?: string; next?: string };
+  label?: string;
+}
+const { rows, empty, page, label } = Astro.props;
+---
+{rows.length ? <ul class="content-management-list">
+  {rows.map(row => <li class="content-catalog-row">
+    <div>
+      <a href={row.href}>{row.title}</a>
+      {row.details.length > 0 && <p><small>{row.details.join(" · ")}</small></p>}
+    </div>
+    <a class="admin-button admin-button-outline" href={row.href} aria-label={`${row.title}を${row.action ?? "管理"}`}>{row.action ?? "管理"}</a>
+  </li>)}
+</ul> : <p>{empty}</p>}
+{page && page.last > 1 && <nav aria-label={`${label ?? "一覧"}のページ`} class="content-catalog-pages">
+  {page.previous ? <a href={page.previous}>前のページ</a> : <span />}
+  <span>{page.page} / {page.last}</span>
+  {page.next ? <a href={page.next}>次のページ</a> : <span />}
+</nav>}

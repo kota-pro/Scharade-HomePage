@@ -1,33 +1,68 @@
 ---
 import StaffLayout from "../../../layouts/StaffLayout.astro";
+import ManagementCatalogForm from "../../../components/ManagementCatalogForm.astro";
+import ManagementCatalogList from "../../../components/ManagementCatalogList.astro";
 import { getGalleryAlbums } from "../../../lib/galleryCatalog";
 import { readGallerySettings } from "../../../lib/gallerySettings";
 import { GALLERY_CATEGORY_LABELS } from "../../../data/galleryAlbums";
+import { catalogDate, catalogMatches, catalogOption, catalogOptions, catalogPage, sortCatalog } from "../../../lib/managementCatalog";
 import "../../../styles/ContentManagement.css";
 
 const albums = await getGalleryAlbums().catch(() => null);
-albums?.sort((a, b) => b.created.localeCompare(a.created));
-const pending = Object.entries(readGallerySettings()).filter(([, value]) => value.deletePending);
+const settings = readGallerySettings();
 const labels = { staff: "運営限定", members: "会員限定", public: "一般公開" };
+const statusLabels = { published: "公開中", private: "非公開", deleting: "Lightroomでの削除待ち" };
+const sortLabels = { year: "年度", title: "アルバム名", category: "分類", status: "公開ステータス", visibility: "公開範囲" };
+const yearOf = (value?: string) => catalogDate(value).slice(0, 4);
+const rows = (albums ?? []).map(album => ({
+  id: album.id, title: album.payload.name, year: yearOf(album.created), category: album.category, visibility: album.visibility,
+  status: (album.visibility === "staff" ? "private" : "published") as keyof typeof statusLabels,
+}));
+for (const [id, value] of Object.entries(settings)) {
+  if (!value.deletePending) continue;
+  const existing = rows.find(row => row.id === id);
+  if (existing) existing.status = "deleting";
+  else rows.push({ id, title: value.name ?? id, year: yearOf(value.project?.createdAt), category: value.category ?? "other", visibility: value.visibility ?? "staff", status: "deleting" });
+}
+const years = [...new Set(rows.map(row => row.year).filter(Boolean))].sort().reverse();
+const fields = [
+  { name: "q", label: "アルバム名" },
+  { name: "year", label: "年度", options: years.map(year => catalogOption(year, `${year}年`)), all: "すべて" },
+  { name: "category", label: "分類", options: catalogOptions(GALLERY_CATEGORY_LABELS), all: "すべて" },
+  { name: "status", label: "公開ステータス", options: catalogOptions(statusLabels), all: "すべて" },
+  { name: "visibility", label: "公開範囲", options: catalogOptions(labels), all: "すべて" },
+  { name: "sort", label: "並べ替え", options: catalogOptions(sortLabels) },
+  { name: "order", label: "順序", options: catalogOptions({ desc: "降順", asc: "昇順" }) },
+];
+const search = (key: string) => Astro.url.searchParams.get(key)?.trim() ?? "";
+const filtered = rows.filter(row => catalogMatches(search("q"), row.title) &&
+  (["year", "category", "status", "visibility"] as const).every(key => !search(key) || row[key] === search(key)));
+const sorted = sortCatalog(filtered, row => {
+  switch (search("sort")) {
+    case "title": return row.title;
+    case "category": return GALLERY_CATEGORY_LABELS[row.category];
+    case "status": return statusLabels[row.status];
+    case "visibility": return labels[row.visibility];
+    default: return row.year;
+  }
+}, search("order"));
+const page = catalogPage(sorted, Astro.url, "page");
 ---
 <StaffLayout title="Galleryのアルバム管理">
   <div class="content-management-heading">
     <h2>Galleryのアルバム管理</h2>
-    <a class="admin-button" href="/Management/gallery/new">新規作成</a>
+    <a class="admin-button admin-button-outline" href="/Management/gallery/new">新規作成</a>
   </div>
   {Astro.url.searchParams.has("deleted") && <p role="status">アルバムを削除しました。</p>}
-  {albums ? (
-    albums.length ? <ul class="content-management-list">
-      {albums.map(album => <li class="content-management-row">
-        <div><a href={`/Management/gallery/${encodeURIComponent(album.id)}`}>{album.payload.name}</a>
-          <p><small>{GALLERY_CATEGORY_LABELS[album.category]} · {labels[album.visibility]}</small></p>
-        </div>
-        <a class="admin-button" href={`/Management/gallery/${encodeURIComponent(album.id)}`} aria-label={`${album.payload.name}を管理`}>管理</a>
-      </li>)}
-    </ul> : <p>アルバムはまだありません。</p>
-  ) : <p role="alert">アルバム一覧を取得できませんでした。時間をおいて再読み込みしてください。</p>}
-  {pending.length > 0 && <section class="content-management-danger"><h3>Lightroomでの削除待ち</h3><ul class="content-management-list">
-    {pending.map(([id, value]) => <li><a href={`/Management/gallery/${encodeURIComponent(id)}`}>{value.name ?? id}の削除を再試行</a></li>)}
-  </ul></section>}
+  {!albums && <p role="alert">アルバム一覧を取得できませんでした。時間をおいて再読み込みしてください。</p>}
+  {(albums || rows.length > 0) && <>
+    <ManagementCatalogForm title="アルバムを検索" fields={fields} />
+    <p>検索結果 {page.total}件</p>
+    <ManagementCatalogList page={page} label="アルバム一覧" empty="該当するアルバムはありません。" rows={page.items.map(album => ({
+      title: album.title, href: `/Management/gallery/${encodeURIComponent(album.id)}`,
+      details: [album.year && `${album.year}年`, GALLERY_CATEGORY_LABELS[album.category], statusLabels[album.status], labels[album.visibility]].filter(Boolean),
+      action: album.status === "deleting" ? "削除を再試行" : undefined,
+    }))} />
+  </>}
   <div class="content-management-actions"><a class="member-back" href="/Management">Managementへ戻る</a></div>
 </StaffLayout>

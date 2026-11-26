@@ -1,0 +1,161 @@
+/* Shared SVG writer for the Scharade After Effects project. */
+var ScharadeLogoSVG = (function () {
+    function number(value) {
+        return String(Math.round(value * 1e9) / 1e9);
+    }
+
+    function coordinate(point, offset) {
+        var x = point[0] + (offset ? offset[0] : 0);
+        var y = point[1] + (offset ? offset[1] : 0);
+        return Math.round(x * 1e4) / 1e4 + " " + Math.round(y * 1e4) / 1e4;
+    }
+
+    function attributeText(text) {
+        return text.replace(/&/g, "&amp;").replace(/"/g, "&quot;")
+            .replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function path(shape) {
+        var vertices = shape.vertices;
+        var segments = ["M" + coordinate(vertices[0])];
+        var count = vertices.length + (shape.closed ? 1 : 0);
+        for (var index = 1; index < count; index++) {
+            var target = index % vertices.length;
+            var out = shape.outTangents[index - 1];
+            var incoming = shape.inTangents[target];
+            if (out[0] || out[1] || incoming[0] || incoming[1]) {
+                segments.push("C" + coordinate(vertices[index - 1], out) + " " +
+                    coordinate(vertices[target], incoming) + " " + coordinate(vertices[target]));
+            } else if (target) {
+                segments.push("L" + coordinate(vertices[target]));
+            }
+        }
+        if (shape.closed) segments.push("Z");
+        return segments.join(" ");
+    }
+
+    function spline(start, end) {
+        if (start.value === end.value || start.linearOut || end.linearIn) return "0 0 1 1";
+        var x1 = (start.influenceOut === undefined ? start.influence : start.influenceOut) / 100;
+        var incoming = (end.influenceIn === undefined ? end.influence : end.influenceIn) / 100;
+        var rate = (end.time - start.time) / Math.abs(end.value - start.value);
+        var y1 = x1 * (start.speedOut === undefined ? start.speed : start.speedOut) * rate;
+        var y2 = 1 - incoming * (end.speedIn === undefined ? end.speed : end.speedIn) * rate;
+        if (y1 < 0 || y1 > 1 || y2 < 0 || y2 > 1) {
+            throw new Error("Use a speed curve without overshoot or reverse motion.");
+        }
+        return [number(x1), number(y1), number(1 - incoming), number(y2)].join(" ");
+    }
+
+    function animation(attribute, keys, duration, value) {
+        var first = keys[0];
+        var last = keys[keys.length - 1];
+        var times = [];
+        var values = [];
+        var splines = [];
+        var discrete = false;
+        for (var i = 0; i < keys.length - 1; i++) {
+            if (keys[i].hold && keys[i].value !== keys[i + 1].value) discrete = true;
+        }
+        if (first.time > 0) {
+            times.push("0");
+            values.push(number(value(first.value)));
+            splines.push("0 0 1 1");
+        }
+        for (var index = 0; index < keys.length; index++) {
+            var key = keys[index];
+            times.push(number(key.time / duration));
+            values.push(number(value(key.value)));
+            if (index < keys.length - 1 && !discrete) splines.push(spline(key, keys[index + 1]));
+            if (discrete && index < keys.length - 1 && !key.hold && key.value !== keys[index + 1].value) {
+                throw new Error("Use either Hold keys or eased keys for one property.");
+            }
+        }
+        if (last.time < duration) {
+            times.push("1");
+            values.push(number(value(last.value)));
+            splines.push("0 0 1 1");
+        }
+        return '<animate attributeName="' + attribute + '" dur="' + number(duration) +
+            's" fill="freeze" calcMode="' + (discrete ? 'discrete' : 'spline') + '" keyTimes="' +
+            times.join(";") + '" values="' + values.join(";") + '"' +
+            (discrete ? "" : ' keySplines="' + splines.join(";") + '"') + "/>";
+    }
+
+    function opacity(value) {
+        return value / 100;
+    }
+
+    function dashOffset(value) {
+        return 1 - value / 100;
+    }
+
+    function showAt(time, duration) {
+        if (time === 0) return "";
+        return animation("opacity", [
+            { time: 0, value: 0, hold: true },
+            { time: time, value: 100 }
+        ], duration, opacity);
+    }
+
+    function maskMarkup(id, layer, model) {
+        var matte = layer.matte;
+        var start = matte.keys[0].time;
+        var end = matte.keys[matte.keys.length - 1].time;
+        var cap = matte.butt ? "butt" : "round";
+        return [
+            '<mask id="' + id + '" maskUnits="userSpaceOnUse" x="0" y="0" width="' +
+                model.width + '" height="' + model.height + '">',
+            '<path d="' + path(matte.shape) + '" fill="none" stroke="#fff" stroke-width="' +
+                number(matte.width) + '" stroke-linecap="' + cap + '" stroke-linejoin="round" ' +
+                'pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="0">',
+            animation("stroke-dashoffset", matte.keys, model.duration, dashOffset),
+            showAt(start + 0.0001, model.duration),
+            '</path>',
+            '<rect width="' + model.width + '" height="' + model.height + '" fill="#fff">',
+            showAt(end, model.duration),
+            '</rect>',
+            '</mask>'
+        ].join("\n");
+    }
+
+    function render(model) {
+        var masks = [];
+        var artwork = [];
+        for (var index = 0; index < model.layers.length; index++) {
+            var layer = model.layers[index];
+            var group = '<g data-logo-part="' + attributeText(layer.name) + '"';
+            if (layer.matte) {
+                var id = "scharade-home-logo-mask-" + (index + 1);
+                masks.push(maskMarkup(id, layer, model));
+                group += ' mask="url(#' + id + ')"';
+            }
+            artwork.push(group + ">");
+            if (layer.opacity) {
+                artwork.push(animation("opacity", layer.opacity, model.duration, opacity));
+            }
+            for (var artIndex = 0; artIndex < layer.art.length; artIndex++) {
+                var art = layer.art[artIndex];
+                var paths = [];
+                for (var shapeIndex = 0; shapeIndex < art.shapes.length; shapeIndex++) {
+                    paths.push(path(art.shapes[shapeIndex]));
+                }
+                artwork.push('<path fill="' + art.color + '" d="' + paths.join(" ") + '"/>');
+            }
+            artwork.push("</g>");
+        }
+        return [
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + model.width + " " +
+                model.height + '" width="' + model.width + '" height="' + model.height +
+                '" data-home-logo-animation="" role="img" aria-label="早稲田大学 写団シャレード">',
+            "<defs>",
+            masks.join("\n"),
+            "</defs>",
+            artwork.join("\n"),
+            "</svg>",
+            ""
+        ].join("\n");
+    }
+
+    return { render: render };
+}());

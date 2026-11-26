@@ -7,6 +7,10 @@ import { readUsers, type User } from "./auth.ts";
 import { accountRole, isStaff, isExecutive, hasRole } from "./roles.ts";
 import { audit } from "./audit.ts";
 import { readActivities } from "./activities.ts";
+import { activityRichTextPlain } from "./activityRichText.ts";
+import { ACTIVITY_HTML_LIMIT } from "./activityPresentation.ts";
+import { checkBodyAssets } from "./bodyMedia.ts";
+import { sanitizeArticleHtml } from "./contentSecurity.ts";
 import {
   defaultToolSettings,
   defaultToolPublication,
@@ -277,6 +281,7 @@ export function questionFor(t: MemberTool, user?: User | null) {
     answerRevision: t.answerRevision,
     kind: t.kind,
     question: t.question,
+    questionHtml: t.questionHtml,
     status: t.status,
     closed: t.closed,
     options: t.options.filter((o) => !o.removed),
@@ -510,7 +515,20 @@ export async function toolAction(id: string, user: User, p: any) {
         409,
       );
     if (p.action === "save") {
-      t.question = text(p.question, "質問", 10000);
+      if (p.questionHtml === undefined) {
+        const question = text(p.question, "質問", 10000);
+        if (question !== t.question) delete t.questionHtml;
+        t.question = question;
+      } else {
+        if (typeof p.questionHtml !== "string" || p.questionHtml.length > ACTIVITY_HTML_LIMIT)
+          throw new ToolError("質問の文章や装飾を減らしてください。");
+        const html = sanitizeArticleHtml(p.questionHtml, true);
+        if (!checkBodyAssets(html, { kind: "tool", id: t.id }, user.id, [t.questionHtml]))
+          throw new ToolError("質問の添付ファイルを確認してください。");
+        t.question = text(activityRichTextPlain(html), "質問", 10000);
+        if (t.question) t.questionHtml = html;
+        else delete t.questionHtml;
+      }
       t.recipientIds = approvedIds(p.recipientIds);
       if (t.kind !== "box") t.options = options(t, p.options);
       const s = p.settings;

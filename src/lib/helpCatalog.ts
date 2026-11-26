@@ -473,7 +473,7 @@ detailBlueprints.push(
   }, undefined, true),
   b('gallery-settings', 'Galleryの公開範囲とカバーを変える', 'アルバム設定で、閲覧できる人と一覧に載せる写真を選びます。', ['アルバムを公開', 'ギャラリーの公開範囲', 'カバー写真を変える', '会員限定にしたい'], '/Gallery', galleryGuidePath, p => galleryAlbumSteps(p, album => [
     step(album, 'settings', 'アルバム設定を開く', '対象のアルバムで歯車の「アルバム設定」を押します。', '[data-open-gallery-settings], #gallery-settings-heading'),
-    step(album, 'mode', '「公開範囲・カバー」を開く', '公開範囲やカバーを変更するタブを選びます。', '[data-gallery-settings-mode="album"]'),
+    step(album, 'mode', '「分類・公開範囲・カバー」を開く', '分類や公開範囲、カバーを変更するタブを選びます。', '[data-gallery-settings-mode="album"]'),
     step(album, 'visibility', '閲覧できる人を選ぶ', '一般公開は未ログインでも閲覧できます。会員限定は承認済みの会員が閲覧できます。', '#gallery-album-fields [name="visibility"]'),
     step(album, 'cover', '一覧に表示するカバーを選ぶ', '掲載できる写真からカバーを選びます。自動で先頭の写真を使う場合は次の手順です。', '[data-gallery-cover-photos] [data-cover-id]'),
     step(album, 'default-cover', '先頭の写真を使う場合', 'カバーの指定を外して先頭の写真に戻す場合は、このボタンを押します。', 'button[data-cover-id=""]'),
@@ -800,7 +800,7 @@ function contextualSteps(id: string, p: string, fallback: HelpStep[], user?: Use
     step(p, 'intake', '出展フォームの受付状態を選ぶ', '準備中なら下書き、提出を受け付けるなら受付中を選びます。', '[data-setting="status"]'),
     step(p, 'recipients', '参加投票の通知先を選ぶ', '氏名や学年で対象を探し、通知する会員のチェックを確認します。', '[data-exhibition-recipient], [data-recipient-search]'),
     step(p, 'save', '受付設定を保存する', '期間と通知先を確認し、受付設定を保存してください。', '[data-save-settings]'),
-    step(p, 'notice', '参加投票の通知本文を書く', '公開前は、回答方法と提出期限が分かる案内文を入力できます。', '[data-exhibition-notice]'),
+    step(p, 'notice', '参加投票の通知本文を書く', '公開前は、回答方法と提出期限が分かる案内文を入力できます。', '[data-exhibition-body-field="exhibition-notice"] [data-rich-body]'),
     step(p, 'publish', '参加投票を公開する', '投票の案内と通知先を確認して、公開ボタンを押します。', '[data-publish-exhibition]'),
     step(p, 'participants', '参加者一覧を開く', '参加投票と作品提出の状態を確認します。', '.exhibition-admin-nav a[href$="/participants"]'),
     step(p, 'form', '出展フォームの設定を開く', '会員が入力する項目や展示区分を設定します。', '.exhibition-admin-nav a[href$="/form"]', { details: ['exhibition-form'] }),
@@ -813,7 +813,7 @@ function contextualSteps(id: string, p: string, fallback: HelpStep[], user?: Use
   if (id === 'exhibition-form') return [
     step(p, 'overview', 'このページでできること', '会員が入力する出展フォームの展示区分や質問を設定します。', '#exhibition-admin > h2'),
     step(p, 'sections', '展示区分の名前を設定する', '会員が選択する展示の名前を入力します。', '[data-section-key="title"]'),
-    step(p, 'description', '展示区分の説明を入力する', '展示の条件や、入力する人に伝えたい注意事項を記入できます。', '[data-section-key="description"]'),
+    step(p, 'description', '展示区分の説明を入力する', '展示の条件や、入力する人に伝えたい注意事項を記入できます。', '[data-exhibition-body-field="exhibition-section"] [data-rich-body]'),
     step(p, 'limits', '展示区分の作品数やサイズを設定する', '展示に合わせて作品数・寸法の目安を設定できます。', '[data-section-limit] input, [data-total-work-limit]'),
     step(p, 'questions', '質問を追加する', '追加ボタンで、会員に入力してほしい質問の欄を作ります。', '[data-add-field]'),
     step(p, 'label', '質問文を入力する', '質問名の欄に、回答してほしい内容を入力します。', '[data-field-key="label"]'),

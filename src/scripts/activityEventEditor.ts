@@ -2,8 +2,8 @@ import { readApiResponse, apiErrorMessage } from "./apiResponse";
 import { operationNotice } from "./siteNotice";
 import { activityTextParts } from "../lib/activityPresentation";
 import { activityDate, eventCategoryLabels, type EventCategory } from "../lib/activityTypes";
-import { INTRODUCTION_NON_TEXT_TAGS, INTRODUCTION_TAGS, introductionTag } from "../utils/portfolioIntroduction";
-import type { createPortfolioIntroductionEditor } from "./portfolioIntroductionEditor";
+import { richBodyPreview } from "./richBodyPreview";
+import type { initRichBodyEditor } from "./richBodyEditor";
 
 function linkifiedText(value: string) {
   return activityTextParts(value).map(part => {
@@ -17,23 +17,9 @@ function linkifiedText(value: string) {
   });
 }
 
-function previewText(node: Node, inLink = false): Node[] {
-  if (node.nodeType === Node.TEXT_NODE)
-    return inLink ? [document.createTextNode(node.textContent ?? "")] : linkifiedText(node.textContent ?? "");
-  if (!(node instanceof HTMLElement) || INTRODUCTION_NON_TEXT_TAGS.includes(node.localName)) return [];
-  const attributes = Object.fromEntries([...node.attributes].map(attribute => [attribute.name, attribute.value]));
-  const { tagName, attribs } = introductionTag(node.localName, attributes, true);
-  const children = [...node.childNodes].flatMap(child => previewText(child, inLink || tagName === "a"));
-  if (!INTRODUCTION_TAGS.includes(tagName)) return children;
-  const element = document.createElement(tagName);
-  for (const [name, value] of Object.entries(attribs)) element.setAttribute(name, value);
-  element.append(...children);
-  return [element];
-}
-
 export function setupEventEditor(
   form: HTMLFormElement,
-  richFields: ReadonlyMap<string, ReturnType<typeof createPortfolioIntroductionEditor>>,
+  richFields: ReadonlyMap<string, ReturnType<typeof initRichBodyEditor>>,
 ) {
   const dialog = document.querySelector<HTMLDialogElement>(
     "[data-event-confirm]",
@@ -126,12 +112,11 @@ export function setupEventEditor(
       .querySelectorAll<HTMLElement>("[data-preview-value]")
       .forEach((element) => {
         const key = element.dataset.previewValue!;
-        const editor = richFields.get(key)?.element;
+        const editor = richFields.get(key);
         if (editor) {
-          const children = editor.textContent?.trim()
-            ? [...editor.childNodes].flatMap(node => previewText(node))
-            : ["（なし）"];
-          element.replaceChildren(...children);
+          const body = richBodyPreview(editor.html());
+          element.classList.add("portfolio-introduction-content", "rich-body-content");
+          element.replaceChildren(body.textContent?.trim() || body.querySelector("img") ? body : "（なし）");
           return;
         }
         let value = String(fd.get(key) || "");

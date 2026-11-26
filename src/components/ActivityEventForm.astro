@@ -1,9 +1,12 @@
 ---
 import ActivityRecipients from "./ActivityRecipients.astro";
 import ActivityHeaderImage from "./ActivityHeaderImage.astro";
-import PortfolioIntroductionEditor from "./PortfolioIntroductionEditor.astro";
+import { randomUUID } from "node:crypto";
+import BlogRichEditor from "./BlogRichEditor.astro";
+import { managementBodyOptions } from "../lib/blogManagement";
 import { activityEditorHtml } from "../lib/activityRichText";
 import "../styles/ActivityEventEditor.css";
+import "../styles/RichBody.css";
 import { localDateTime, eventCategoryLabels, type ActivityEvent } from "../lib/activityTypes";
 interface Props {
   event?: ActivityEvent;
@@ -11,6 +14,8 @@ interface Props {
   staffUsers: { id: string; name: string }[];
 }
 const { event, users, staffUsers } = Astro.props;
+const draftId = event ? undefined : randomUUID();
+const scope = { kind: "event", id: event?.id ?? draftId! } as const;
 const published = event?.status === "published";
 const released = !!event && event.status !== "draft";
 const canNotify = published && Date.parse(event.endsAt) > Date.now();
@@ -33,6 +38,7 @@ const previewFields = [
   class="activity-form"
   data-activity-action="event.save"
   data-event-id={event?.id}
+  data-draft-id={draftId}
   data-revision={event?.revision}
   data-redirect="/Member/manage/events/{eventId}"
   data-released={String(released)}
@@ -73,7 +79,7 @@ const previewFields = [
   <p class="activity-field-hint">
     企画内容・集合場所・行程などに入力したURL（https://…）は、詳細画面でリンクとして開けます。
   </p>
-  <PortfolioIntroductionEditor name="description" label="企画内容" html={activityEditorHtml(event?.description, event?.descriptionHtml)} required />
+  <BlogRichEditor name="description" label="企画内容" body={activityEditorHtml(event?.description, event?.descriptionHtml)} options={managementBodyOptions} scope={scope} required />
   <div class="activity-fields">
     <label
       >開始日時（日本時間）<input
@@ -121,7 +127,7 @@ const previewFields = [
       maxlength="1000"
     /></label
   >
-  <PortfolioIntroductionEditor name="itinerary" label="行程" html={activityEditorHtml(event?.itinerary, event?.itineraryHtml)} />
+  <BlogRichEditor name="itinerary" label="行程" body={activityEditorHtml(event?.itinerary, event?.itineraryHtml)} options={managementBodyOptions} scope={scope} />
   <label
     >徴収費<input
       name="fee"

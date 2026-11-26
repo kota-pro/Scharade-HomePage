@@ -11,7 +11,7 @@ export type SectionLimits = { maxWorks?: number; frameSizeIds?: string[]; maxLon
 export type EffectiveSubmissionLimits = { maxWorks?: number; sections: Record<string, SectionLimits & { title: string }> };
 export type LimitIssue = { code: 'total-count' | 'section-count' | 'size'; message: string; sectionId?: string; workId?: string };
 export type FormSchema = {
-  version: number; sections: { id: string; title: string; description: string; limits?: SectionLimits }[];
+  version: number; sections: { id: string; title: string; description: string; descriptionHtml?: string; limits?: SectionLimits }[];
   limits?: { maxWorks?: number };
   fields: FormField[]; captionLabel: string;
 };
@@ -67,7 +67,7 @@ export type ExhibitionParticipation = {
 export type ExhibitionNotice = {
   kind?: import("./activityTypes.ts").MemberNotification["kind"];
   id: string; exhibitionId: string; senderId: string; senderName: string;
-  title: string; body: string; recipientIds: string[]; createdAt: string;
+  title: string; body: string; bodyHtml?: string; recipientIds: string[]; createdAt: string;
   deliveredAt?: string; error?: string;
 };
 export type ExhibitionOutput = {

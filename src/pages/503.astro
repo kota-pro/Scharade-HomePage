@@ -1,18 +1,5 @@
 ---
-import Layout from "../layouts/Layout.astro";
-import { formatSiteError } from '../lib/siteErrors.ts';
-Astro.response.status = 503;
-Astro.response.headers.set("Retry-After", "60");
+import HttpErrorPage from "../components/HttpErrorPage.astro";
 ---
 
-<Layout
-  title="一時的に表示できません"
-  breadcrumbs={[
-    { label: "Home", href: "/" },
-    { label: "一時的に表示できません" },
-  ]}
->
-  <section slot="body-slot" class="service-notice">
-    <h1>一時的に表示できません</h1><p role="alert">{formatSiteError('情報の取得に失敗しました。時間をおいて、このページを再読み込みしてください。', 'SITE-011')}</p><p><a href="/">Homeへ戻る</a> ／ <a href="/Contact">お問い合わせ</a></p>
-  </section>
-</Layout>
+<HttpErrorPage status={503} />

@@ -1,28 +1,32 @@
 ---
 import PhotoCard from "./PhotoCard.astro";
+import BlogByline from "./BlogByline.astro";
+import type { BlogByline as Byline } from "../lib/blogBylines";
 import { cmsPhotoId } from "../lib/photoIdentity";
 import { blogImages } from "../lib/photos";
 import { renderBlogBody } from "../lib/blogBody";
 import type { Blog } from "../types/microcms";
-import { formatDate, getPublishedDate } from "../utils/blog";
+import { formatDate, getPublishedDate, normalizeTags } from "../utils/blog";
 import { optimizeMicrocmsImage } from "../utils/microcmsImage";
 import { blogPhotoTape } from "../utils/blogPhotoTape";
 import "../styles/PhotoViewer.css";
 
-interface Props { post: Blog; preview?: boolean }
-const { post, preview = false } = Astro.props;
+interface Props { post: Blog; preview?: boolean; author?: Byline }
+const { post, preview = false, author } = Astro.props;
 const optimizedBody = renderBlogBody(post.body ?? "");
 const formattedDate = formatDate(getPublishedDate(post));
+const tags = normalizeTags(post.tags);
 ---
   <div data-blog-id={preview ? undefined : post.id} data-blog-preview-article={preview || undefined} data-blog-photos={JSON.stringify(blogImages(post).map(image => ({ id: cmsPhotoId(image.url), url: image.url })))}>
   <div class="post-header">
     <h1 class="post-title">{post.title}</h1>
     <div class="post-meta">
+      {author && <BlogByline author={author} />}
       {formattedDate ? <p class="post-date">{formattedDate}</p> : null}
       {
-        post.tags && post.tags.length > 0 ? (
+        tags.length > 0 ? (
           <ul class="post-tags">
-            {post.tags.map((tag) => (
+            {tags.map((tag) => (
               <li class="post-tag">#{tag}</li>
             ))}
           </ul>
