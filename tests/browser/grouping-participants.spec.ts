@@ -34,6 +34,7 @@ test("staff import preview, manual guests, reuse, deduplication and guest-only g
   const eventRow = page.locator('[data-import-source="event"]');
   await expect(eventRow).toHaveCount(1);
   await expect(eventRow.locator('[data-import-field="name"]')).toHaveValue("撮影会員 activity-7");
+  await eventRow.locator("[data-import-match]").selectOption("new");
   await eventRow.locator('[data-import-field="grade"]').selectOption("2");
   await eventRow.locator('[data-import-field="gender"]').selectOption("female");
   await page.getByText("フォームのスプレッドシートから追加",{exact:true}).click();

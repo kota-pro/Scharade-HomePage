@@ -159,6 +159,7 @@ test("staff publishes an event, members vote, staff generates and edits groups, 
       memberPage.getByRole("heading", { name: `企画のご案内：${title}` }),
     ).toBeVisible();
     await memberPage.getByRole("link", { name: "企画の詳細を見る" }).click();
+    await memberPage.waitForLoadState("load");
     await expect(memberPage.locator(".activity-details")).toContainText(
       "秋の光",
     );
@@ -366,7 +367,11 @@ test("staff publishes an event, members vote, staff generates and edits groups, 
           data: { action: "vote", eventId: id, vote: "absent" },
         })
       ).status(),
-    ).toBe(409);
+    ).toBe(200);
+    await memberPage.reload();
+    await expect(
+      memberPage.getByRole("heading", { name: "公開された班分け" }),
+    ).toHaveCount(0);
     await memberPage.goto(`/Member?view=calendar&month=${start.slice(0, 7)}`);
     await expect(memberPage.getByRole("table")).toBeVisible();
     await expect(memberPage.locator(".activity-month-events")).toContainText(

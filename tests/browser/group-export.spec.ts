@@ -5,7 +5,7 @@ import sharp from "sharp";
 import { fixtureLogin } from "./fixture-auth";
 
 const origin = "http://127.0.0.1:4329", headers = { Origin: origin };
-test("confirmed groups scroll horizontally, copy per-group images, export all groups and copy formatted TXT", async ({ page }, info) => {
+test("confirmed groups fit mobile, scroll on desktop, and export images and TXT", async ({ page }, info) => {
   test.setTimeout(90000);
   const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
   await page.route("**/*", route => new URL(route.request().url()).hostname === "127.0.0.1" ? route.continue() : route.abort());
@@ -46,9 +46,17 @@ test("confirmed groups scroll horizontally, copy per-group images, export all gr
   for (const width of [320,390,1440]) {
     await page.setViewportSize({ width, height: 900 });
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
-    expect(await scroller.evaluate(el => el.scrollWidth > el.clientWidth)).toBe(true);
-    const ys = await board.locator("[data-copy-group]").evaluateAll(cards => cards.map(c => c.getBoundingClientRect().top));
-    expect(Math.max(...ys) - Math.min(...ys)).toBeLessThan(1);
+    const horizontal = width > 768;
+    expect(await scroller.evaluate(el => el.scrollWidth > el.clientWidth)).toBe(horizontal);
+    const cards = await board.locator("[data-copy-group]").evaluateAll(elements =>
+      elements.map(element => {
+        const { left, top } = element.getBoundingClientRect();
+        return { left, top };
+      }),
+    );
+    const aligned = cards.map(card => horizontal ? card.top : card.left);
+    expect(Math.max(...aligned) - Math.min(...aligned)).toBeLessThan(1);
+    if (!horizontal) expect(cards.at(-1)!.top).toBeGreaterThan(cards[0].top);
   }
   await board.getByRole("button", { name: "TXTでコピー", exact: true }).click();
   await expect(board.locator("[data-group-export-status]")).toHaveText("全班の名簿をTXTでコピーしました。");
@@ -74,7 +82,7 @@ test("confirmed groups scroll horizontally, copy per-group images, export all gr
   const all = await sharp(info.outputPath("all-groups.png")).metadata();
   expect(all.width).toBeGreaterThan(3000); expect(all.height).toBeGreaterThan(singleMeta.height!);
   await scroller.evaluate(el => { el.scrollLeft = el.scrollWidth; });
-  await board.screenshot({ path: info.outputPath("horizontal-groups-mobile.png") });
+  await board.screenshot({ path: info.outputPath("groups-mobile.png") });
   await page.evaluate(() => { (window as any).denyCopy = true; });
   await board.getByRole("button", { name: "6班の画像をコピー", exact: true }).click();
   await expect(board.locator("[data-group-download]")).toBeVisible();
