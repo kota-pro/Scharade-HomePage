@@ -172,9 +172,10 @@ body[data-app-shell] .blog-toolbar { top: 0; }
 .admin-page [data-rich-body-editor] .blog-toolbar .blog-tool-select-block select { padding: 0 24px 0 8px; }
 .blog-tool-select-block .blog-tool-chevron { position: absolute; inset-inline-end: 6px; }
 .admin-page [data-rich-body-editor] .blog-toolbar .blog-tool-select-icon select,
-.blog-toolbar .blog-color-picker input {
+.admin-page [data-rich-body-editor] .blog-toolbar .blog-color-picker input {
   position: absolute;
   inset: 0;
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
   padding: 0;
