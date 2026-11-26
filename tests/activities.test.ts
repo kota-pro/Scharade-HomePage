@@ -13,6 +13,7 @@ import {
   memberEvent,
   publicEvent,
   groupSource,
+  groupingSummary,
   previousEvent,
   appendExhibitionNotice,
 } from "../src/lib/activities.ts";
@@ -525,6 +526,40 @@ test("group lifecycle validates manual edits, keeps published snapshots and dete
   });
   assert.equal(latest().publishedGroups?.version, 2);
   assert.equal(latest().groupHistory.length, 2);
+});
+test("event groups whose only problems are a lone woman or first-year can be published", async () => {
+  for (const i of [2, 3])
+    Object.assign(rosterRows[i], { gender: "女", grade: "1年生" });
+  await ready();
+  const id = latest().id,
+    source = groupSource(readActivities(), latest(), users, now);
+  const lone = [
+    { leaderId: "u0", memberIds: ["u0", "u2", "u4", "u5"] },
+    { leaderId: "u1", memberIds: ["u1", "u3", "u6", "u7"] },
+  ];
+  await act("u1", {
+    action: "groups.save",
+    eventId: id,
+    revision: latest().revision,
+    source,
+    groups: lone,
+  });
+  const summary = groupingSummary(readActivities(), latest(), users, now);
+  assert.deepEqual(summary.problems, [
+    "1班で女性が1人です。",
+    "1班で1年生が1人です。",
+    "2班で女性が1人です。",
+    "2班で1年生が1人です。",
+  ]);
+  assert.deepEqual(summary.blockers, []);
+  await act("u1", {
+    action: "groups.publish",
+    eventId: id,
+    revision: latest().revision,
+    source,
+  });
+  assert.deepEqual(latest().publishedGroups?.groups, lone);
+  assert.equal(latest().publishedGroups?.version, 1);
 });
 test("missing attributes, revoked actor and changed generation source fail safely", async () => {
   await published();

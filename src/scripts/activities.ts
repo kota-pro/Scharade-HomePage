@@ -83,6 +83,11 @@ document
         status.dataset.error = "true";
         return;
       }
+      if (
+        form.dataset.publishConfirm &&
+        !window.confirm(form.dataset.publishConfirm)
+      )
+        return;
       const fd = new FormData(form);
       const payload: Record<string, unknown> = {
         ...Object.fromEntries(fd),

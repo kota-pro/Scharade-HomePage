@@ -35,6 +35,7 @@ import {
   groupPairs,
   groupScore,
   validateGroups,
+  publishBlockers,
 } from "./grouping.ts";
 
 export class ActivityError extends Error {
@@ -849,7 +850,7 @@ export async function activityAction(
               "班案を保存・再確認してから公開してください。",
               409,
             );
-          const errors = validateGroups(
+          const errors = publishBlockers(
             people,
             event.rules,
             event.draftGroups.groups,
@@ -994,6 +995,9 @@ export function groupingSummary(
     stale: !!event.draftGroups && event.draftGroups.source !== source,
     problems: event.draftGroups
       ? validateGroups(people, event.rules, event.draftGroups.groups)
+      : [],
+    blockers: event.draftGroups
+      ? publishBlockers(people, event.rules, event.draftGroups.groups)
       : [],
     score: event.draftGroups
       ? groupScore(

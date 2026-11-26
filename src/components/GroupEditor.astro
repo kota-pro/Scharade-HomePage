@@ -20,6 +20,7 @@ interface Props {
     source: string;
     previous?: { title: string; publishedGroups?: PublishedGroups };
     problems: string[];
+    blockers: string[];
     stale: boolean;
     score: number[] | null;
   };
@@ -27,7 +28,12 @@ interface Props {
   standalone?: boolean;
 }
 const { plan, summary, destination, standalone = false } = Astro.props;
-const { people, source, previous, problems, stale, score } = summary;
+const { people, source, previous, problems, blockers, stale, score } = summary;
+// Only lone-woman / lone-first-year items can remain here; confirm asks first.
+const publishConfirm =
+  problems.length > 0 && !blockers.length
+    ? `要修正が残っています：\n${problems.join("\n")}\n\nこのまま${standalone ? "確定" : "確定・公開"}しますか？`
+    : undefined;
 const choices = people.map((p) => ({ id: p.id, name: displayName(p) }));
 const missing = people.filter((p) => !p.gender || !p.grade);
 const rules = plan.rules;
@@ -39,7 +45,7 @@ const groups = plan.draftGroups?.groups || [];
   <p>
     参照履歴：{
       previous ? previous.title : "前回の班分けなし"
-    }。女性・1年生は各班0人または2人以上にします。
+    }。女性・1年生は各班0人または2人以上にします（参加者全体で1人の場合は、その人が1人の班になります）。
   </p>
   <p>
     優先順位は「別の班にする → 同じ班にする →
@@ -244,6 +250,12 @@ const groups = plan.draftGroups?.groups || [];
                     <li>{problem}</li>
                   ))}
                 </ul>
+                <p
+                  data-group-confirmable
+                  hidden={!(problems.length && !blockers.length)}
+                >
+                  女性・1年生が1人の班は、確認のうえそのまま確定できます。
+                </p>
               </div>
             </div>
             <p data-group-valid hidden={problems.length > 0}>
@@ -266,6 +278,7 @@ const groups = plan.draftGroups?.groups || [];
           data-revision={plan.revision}
           data-source={source}
           data-redirect={destination}
+          data-publish-confirm={publishConfirm}
         >
           <p>
             {standalone
@@ -276,7 +289,7 @@ const groups = plan.draftGroups?.groups || [];
             <button
               class="member-submit"
               type="submit"
-              disabled={stale || problems.length > 0 || missing.length > 0}
+              disabled={stale || blockers.length > 0 || missing.length > 0}
             >
               {standalone ? "班を確定して保存" : "班を確定・公開"}
             </button>

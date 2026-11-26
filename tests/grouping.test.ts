@@ -6,6 +6,7 @@ import {
   groupScore,
   groupPreferenceWarnings,
   groupPriorityScore,
+  publishBlockers,
   validateGroups,
 } from "../src/lib/grouping.ts";
 import {
@@ -93,16 +94,45 @@ test("0/1/2 women or first-years, including overlapping attributes", async () =>
     (await generateGroups(p, r, new Set(), { budgetMs: 80 })).status,
     "found",
   );
-  p[0].gender = "female";
-  assert.match((await generateGroups(p, r)).problems.join(), /女性.*1人/);
-  p[1].gender = "female";
-  p[0].grade = "1";
-  assert.match((await generateGroups(p, r)).problems.join(), /1年生.*1人/);
+  // Only one overall: unavoidable, so generation places them and confirm asks first.
+  for (const [field, value, pattern] of [
+    ["gender", "female", /女性.*1人/],
+    ["grade", "1", /1年生.*1人/],
+  ] as const) {
+    if (field === "grade") {
+      p[1].gender = "female";
+      p[0].grade = "1";
+    } else p[0].gender = "female";
+    const lone = await generateGroups(p, r, new Set(), { budgetMs: 80 });
+    assert.equal(lone.status, "found", value);
+    assert.match(validateGroups(p, r, lone.groups!).join(), pattern);
+    assert.deepEqual(publishBlockers(p, r, lone.groups!), []);
+  }
   p[1].grade = "1";
   assert.equal(
     (await generateGroups(p, r, new Set(), { budgetMs: 80 })).status,
     "found",
   );
+});
+test("a lone woman overall is placed while first-years still avoid one-person groups", async () => {
+  const p = people(8).map((person, i) => ({
+    ...person,
+    gender: i === 0 ? ("female" as const) : ("male" as const),
+    grade: i === 1 || i === 2 ? ("1" as const) : ("2" as const),
+  })) as Participant[];
+  const r = rules(2);
+  for (const seed of [1, 2, 3, 4, 5]) {
+    const generated = await generateGroups(p, r, new Set(), {
+      seed,
+      budgetMs: 200,
+    });
+    assert.equal(generated.status, "found");
+    const problems = validateGroups(p, r, generated.groups!);
+    assert.ok(problems.includes("女性の参加者が全体で1人のため、単独配置禁止を満たせません。"));
+    assert.ok(problems.some((problem) => /班で女性が1人です。$/.test(problem)));
+    assert.ok(problems.every((problem) => !/1年生/.test(problem)));
+    assert.deepEqual(publishBlockers(p, r, generated.groups!), []);
+  }
 });
 test("conflicting preferences fall back to a valid plan while capacity remains mandatory", async () => {
   const p = people(12),
@@ -249,6 +279,43 @@ test("manual edits cannot publish duplicate, missing, outsider, wrong leader or 
     const invalid = structuredClone(groups);
     change(invalid);
     assert.ok(validateGroups(p, r, invalid).length);
+  }
+});
+
+test("a lone woman or first-year can be confirmed, but every other mandatory problem still blocks", () => {
+  const p = people(8),
+    r = rules(2);
+  const lone = [
+    { leaderId: "p0", memberIds: ["p0", "p1", "p5", "p3"] },
+    { leaderId: "p4", memberIds: ["p4", "p2", "p6", "p7"] },
+  ];
+  assert.deepEqual(validateGroups(p, r, lone), [
+    "2班で女性が1人です。",
+    "2班で1年生が1人です。",
+  ]);
+  assert.deepEqual(publishBlockers(p, r, lone), []);
+  const alone = p.map((person) =>
+    person.id === "p0" ? person : { ...person, gender: "male" as const, grade: "2" as const },
+  );
+  assert.equal(validateGroups(alone, r, lone).length, 4);
+  assert.deepEqual(publishBlockers(alone, r, lone), []);
+  for (const change of [
+    (g: typeof lone) => {
+      g[1].memberIds.push(g[0].memberIds.pop()!);
+    },
+    (g: typeof lone) => {
+      g[0].leaderId = "p1";
+    },
+    (g: typeof lone) => {
+      g[0].memberIds[3] = "p2";
+    },
+  ]) {
+    const invalid = structuredClone(lone);
+    change(invalid);
+    const blockers = publishBlockers(p, r, invalid);
+    assert.ok(blockers.length);
+    assert.ok(blockers.every((problem) => !/が1人/.test(problem)));
+    assert.ok(validateGroups(p, r, invalid).length > blockers.length);
   }
 });
 
