@@ -5,7 +5,8 @@ import ActivityShareButton from "../../../components/ActivityShareButton.astro";
 import crypto from "node:crypto";
 import StaffLayout from "../../../layouts/StaffLayout.astro";
 import ActivityRecipients from "../../../components/ActivityRecipients.astro";
-import PortfolioIntroductionEditor from "../../../components/PortfolioIntroductionEditor.astro";
+import BlogRichEditor from "../../../components/BlogRichEditor.astro";
+import { managementBodyOptions } from "../../../lib/blogManagement";
 import ActivityText from "../../../components/ActivityText.astro";
 import { activityEditorHtml } from "../../../lib/activityRichText";
 import { readUsers } from "../../../lib/auth";
@@ -21,6 +22,7 @@ const notices = allNotices.slice((currentPage - 1) * 30, currentPage * 30);
 const editId = Astro.url.searchParams.get("edit");
 const editing = editId ? allNotices.find(notice => notice.id === editId) : undefined;
 const listHref = `/Member/manage/notifications?page=${currentPage}`;
+const draftId = crypto.randomUUID();
 if (editId && !editing) Astro.response.status = 404;
 ---
 
@@ -38,7 +40,7 @@ if (editId && !editing) Astro.response.status = 404;
         >
           <p>{activityDate(editing.createdAt)}に送信 · 宛先 {editing.recipientIds.length}人</p>
           <label>件名<input name="title" value={editing.title} required maxlength="200" /></label>
-          <PortfolioIntroductionEditor name="body" label="本文" html={activityEditorHtml(editing.body, editing.bodyHtml)} required />
+          <BlogRichEditor name="body" label="本文" body={activityEditorHtml(editing.body, editing.bodyHtml)} options={managementBodyOptions} scope={{ kind: "notification", id: editing.id }} required />
           <p>保存すると、メンバーが開く通知の件名と本文が更新されます。</p>
           <div class="activity-actions">
             <button class="member-submit" type="submit">変更を保存</button>
@@ -63,10 +65,10 @@ if (editId && !editing) Astro.response.status = 404;
   <form
     class="activity-form"
     data-activity-action="notification.send"
-    data-id={crypto.randomUUID()}
+    data-id={draftId}
   >
     <label>件名<input name="title" required maxlength="200" /></label>
-    <PortfolioIntroductionEditor name="body" label="本文" required />
+    <BlogRichEditor name="body" label="本文" body="" options={managementBodyOptions} scope={{ kind: "notification", id: draftId }} required />
     <ActivityRecipients users={users} />
     <button class="member-submit" type="submit">お知らせを送信</button><p
       data-status

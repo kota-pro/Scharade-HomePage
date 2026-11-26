@@ -32,7 +32,13 @@ const albums = sources[2].status === "fulfilled" ? (await Promise.all(sources[2]
     <p data-photo-manager-status role="status" aria-live="polite"></p>
     <div class="photo-ranking-loading" data-photo-ranking-loading hidden><LoadingIndicator /><span>ランキングを読み込んでいます…</span></div>
     <ol data-photo-manager-list class="photo-manager-list" aria-label="写真ランキング"></ol>
-    <nav class="photo-ranking-pagination" aria-label="ランキングのページ"><button type="button" data-photo-manager-prev hidden>前へ</button><span data-photo-ranking-page></span><button type="button" data-photo-manager-next hidden>次へ</button></nav>
+    <nav class="admin-account-pagination photo-ranking-pagination" aria-label="ページ送り" hidden>
+      <a class="admin-account-page-arrow is-double" data-photo-manager-first aria-label="最初のページへ"><img src="/icons/doubleleftarrow.svg" alt="" width="26" height="20" /></a>
+      <a class="admin-account-page-arrow" data-photo-manager-prev aria-label="前へ"><img src="/icons/leftarrow.svg" alt="" width="20" height="20" /></a>
+      <div class="admin-account-page-numbers" data-photo-ranking-pages></div>
+      <a class="admin-account-page-arrow" data-photo-manager-next aria-label="次へ"><img src="/icons/rightarrow.svg" alt="" width="20" height="20" /></a>
+      <a class="admin-account-page-arrow is-double" data-photo-manager-last aria-label="最後のページへ"><img src="/icons/doublerightarrow.svg" alt="" width="26" height="20" /></a>
+    </nav>
   </section>
 </AdminLayout>
 <script>import "../../scripts/photoManager";</script>

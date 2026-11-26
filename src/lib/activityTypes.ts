@@ -188,7 +188,9 @@ export const emptyActivities = (): ActivityStore => ({
   events: [],
   notifications: [],
 });
-export function activityDate(value: string) {
+export function activityDate(value?: string) {
+  const timestamp = value ? Date.parse(value) : NaN;
+  if (!Number.isFinite(timestamp)) return "日時不明";
   return new Intl.DateTimeFormat("ja-JP", {
     timeZone: "Asia/Tokyo",
     year: "numeric",
@@ -197,7 +199,7 @@ export function activityDate(value: string) {
     hour: "2-digit",
     minute: "2-digit",
     hourCycle: "h23",
-  }).format(new Date(value));
+  }).format(timestamp);
 }
 export function localDateTime(value?: string) {
   return value

@@ -4,26 +4,67 @@ import ManagementDelete from "./ManagementDelete.astro";
 import PopupCloseButton from "./PopupCloseButton.astro";
 import { sanitizeArticleHtml } from "../lib/contentSecurity";
 import type { BlogEditorOptions, getEditableBlog } from "../lib/blogManagement";
-import { normalizeTags } from "../utils/blog";
+import { MEMBERS_BLOG_TAG, normalizeTags, orderBlogTags } from "../utils/blog";
+import { canReviewBlog, canSubmitBlog } from "../lib/blogReview";
+import { blogBylineUserId, getBlogAuthorOptions, getNewBlogByline, resolveBlogByline } from "../lib/blogBylines";
+import { readActivities } from "../lib/activities";
+import { readUsers } from "../lib/auth";
 import { linkToPost } from "../utils/linkToPost";
 
-interface Props { item?: NonNullable<Awaited<ReturnType<typeof getEditableBlog>>>; options: BlogEditorOptions; requestId?: string }
-const { item, options, requestId } = Astro.props;
+interface Props { item?: NonNullable<Awaited<ReturnType<typeof getEditableBlog>>>; options: BlogEditorOptions; requestId?: string; member?: boolean }
+const { item, options, requestId, member = false } = Astro.props;
 const post = item?.post;
-const tags = normalizeTags(post?.tags);
-const listedTags = [...new Set([...options.tags, ...tags])];
+const tags = item ? normalizeTags(post?.tags) : [MEMBERS_BLOG_TAG];
+const listedTags = orderBlogTags([...options.tags, MEMBERS_BLOG_TAG, ...tags]);
 const published = item?.status === "published" || item?.status === "published-with-draft";
 const endpoint = item ? `/api/member/blog/articles/${encodeURIComponent(item.id)}` : "/api/member/blog";
+const draft = item?.status === "draft" ? item.review : undefined;
+const user = Astro.locals.user;
+const canSubmit = !!(draft && user && canSubmitBlog(draft, user));
+const canReview = !member && !!(draft && user && canReviewBlog(draft, user));
+const blogPath = member ? "/Member/blog" : "/Management/blog";
+const bylineValue = item?.review.bylineUserId === null ? "club" : item?.review.bylineUserId ?? "default";
+const [authors, currentByline, defaultByline] = await Promise.all([
+  member ? null : getBlogAuthorOptions().catch(() => null),
+  item ? resolveBlogByline(blogBylineUserId(item.review)) : user && getNewBlogByline(user),
+  member ? undefined : item ? resolveBlogByline(item.review.author?.userId) : user && getNewBlogByline(user),
+]);
+const roster = authors ? readActivities().roster : undefined;
+const rosterByKey = new Map(roster?.records.filter(record => record.active).map(record => [record.key, record]));
+const accounts = new Map(authors ? readUsers().map(account => [account.id, account]) : []);
 ---
 {options.bodyKind !== "richEditorV2" && <p role="status">
   {options.bodyKind ? "本文を保存するには、microCMSでブログの本文を現行のリッチエディタに設定してください。" : "本文の設定を確認できませんでした。本文を保存するには、microCMSの「API情報の取得」権限が必要です。"}
 </p>}
-<form id="blog-management-form" class="blog-editor" novalidate data-blog-editor data-endpoint={endpoint} data-request-id={requestId} data-id={item?.id} data-updated-at={item?.updatedAt} data-published-at={item?.publishedAt ?? ""}>
+<form id="blog-management-form" class="blog-editor" novalidate data-blog-editor data-endpoint={endpoint} data-blog-path={blogPath} data-own-blog-editor={member || undefined} data-request-id={requestId} data-id={item?.id} data-updated-at={item?.updatedAt} data-published-at={item?.publishedAt ?? ""} data-workflow-revision={item?.review.revision}>
   <section class="content-management-panel blog-settings" aria-labelledby="blog-settings-title">
     <h3 id="blog-settings-title">記事の設定</h3>
     <div class="blog-settings-fields">
       <div class="content-management-fields">
         <label>タイトル<input name="title" required maxlength="200" value={post?.title} /></label>
+        {member ? <div class="content-management-field"><span>執筆者</span><strong>{currentByline?.name ?? "表示なし"}</strong></div> : (
+          <div class="content-management-field">
+            {authors && authors.length > 0 && <label>執筆者を検索
+              <input type="search" data-author-search placeholder="名前・LINE名で絞り込み" maxlength="100" aria-controls="blog-byline" autocomplete="off" disabled />
+            </label>}
+            <label><span id="blog-byline-label">執筆者</span>
+              <select id="blog-byline" name="byline" aria-labelledby="blog-byline-label" aria-describedby="blog-byline-hint" disabled={!authors}>
+                <option value="default" selected={bylineValue === "default"}>{defaultByline?.name ?? "表示なし"}（既定）</option>
+                <option value="club" selected={bylineValue === "club"}>写団シャレード</option>
+                {bylineValue !== "default" && bylineValue !== "club" && !authors?.some(author => author.id === bylineValue) &&
+                  <option value={bylineValue} selected>{currentByline?.name ?? "表示なし"}（現在の設定）</option>}
+                {authors?.map(author => {
+                  const record = rosterByKey.get(roster?.bindings[author.id] ?? "");
+                  const account = accounts.get(author.id);
+                  return <option value={author.id} selected={bylineValue === author.id}
+                    data-author-names={[author.name, account?.name, account?.portfolioName, record?.name, record?.lineName].filter(Boolean).join(" ")}>{author.name}</option>;
+                })}
+              </select>
+            </label>
+            <small id="blog-byline-hint">{authors ? "記事に表示する名前とアイコンを選びます。申請者の記録は維持されます。" : "執筆者の候補を取得できませんでした。再読み込みすると再試行できます。"}</small>
+            <small data-author-search-status role="status" hidden></small>
+          </div>
+        )}
         <label>概要<textarea name="excerpt" rows="3" maxlength="1000">{post?.excerpt}</textarea></label>
       </div>
       <div class="content-management-fields">
@@ -33,9 +74,9 @@ const endpoint = item ? `/api/member/blog/articles/${encodeURIComponent(item.id)
           </label>
           <small id="blog-slug-hint">{item?.slugLocked ? "初回公開時のURLを使用します。" : "記事URLの /posts/ に続く部分です。初回公開後は固定されます。"}</small>
         </div>
-        <label>タグ
+        <label><span id="blog-tags-label">タグ</span>
           {listedTags.length && options.tags.length
-            ? <select name="tags" multiple size={Math.min(7, Math.max(2, listedTags.length))}>
+            ? <select name="tags" aria-labelledby="blog-tags-label" multiple size={Math.min(7, Math.max(2, listedTags.length))}>
                 {listedTags.map(tag => <option value={tag} selected={tags.includes(tag)}>{tag}</option>)}
               </select>
             : <input name="tagText" value={tags.join("、")} placeholder="「、」で区切って入力" />}
@@ -54,7 +95,7 @@ const endpoint = item ? `/api/member/blog/articles/${encodeURIComponent(item.id)
         <button type="button" class="admin-button admin-button-outline" data-blog-media="picture">記事写真を追加</button>
       </div>
     </div>
-    {item && <div class="blog-settings-actions">
+    {item && !member && <div class="blog-settings-actions">
       {published && post && <p><a href={linkToPost(post.slug, "activity")} target="_blank" rel="noopener">公開中の記事を開く</a></p>}
       {item?.status === "published-with-draft" && <p>microCMSに別の下書きがあります。この画面の更新内容は公開版に反映されます。</p>}
       <div class="blog-settings-danger">
@@ -64,12 +105,22 @@ const endpoint = item ? `/api/member/blog/articles/${encodeURIComponent(item.id)
     </div>}
   </section>
   <BlogRichEditor body={sanitizeArticleHtml(post?.body ?? "")} options={options} />
+  {draft?.returnReason && <section class="content-management-panel" aria-label="差し戻し理由">
+    <h3>差し戻し理由</h3>
+    <p style="white-space:pre-wrap">{draft.returnReason}</p>
+  </section>}
+  {canReview && <label class="content-management-field">差し戻し理由<textarea name="reviewReason" maxlength="1000" rows="3"></textarea></label>}
   <p data-status class="content-management-status" role="status"></p>
   <div class="content-management-actions">
-    <a class="member-back" href="/Management/blog">一覧へ戻る</a>
+    <a class="member-back" href={blogPath}>{member ? "自分の記事・申請状況" : "一覧へ戻る"}</a>
     <button class="admin-button admin-button-outline" type="button" data-blog-preview>プレビュー</button>
     <button class:list={["admin-button", { "admin-button-outline": item?.status === "draft" }]} type="submit" value="save">{published ? "公開内容を更新" : "下書き保存"}</button>
-    {item?.status === "draft" && <button class="admin-button" type="submit" value="publish">公開する</button>}
+    {canSubmit && <button class="admin-button" type="submit" value="submit">承認を申請する</button>}
+    {canReview && <>
+      <button class="admin-button admin-button-outline" type="submit" value="return">差し戻す</button>
+      <button class="admin-button" type="submit" value="approve">承認する</button>
+    </>}
+    {!member && draft?.state === "approved" && <button class="admin-button" type="submit" value="publish">公開する</button>}
   </div>
 </form>
 
@@ -89,5 +140,5 @@ const endpoint = item ? `/api/member/blog/articles/${encodeURIComponent(item.id)
     </div>
   </div>
 </dialog>
-{item && <ManagementDelete />}
+{item && !member && <ManagementDelete />}
 <script>import "../scripts/blogEditor";</script>

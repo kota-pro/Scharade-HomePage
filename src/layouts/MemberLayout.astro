@@ -9,12 +9,13 @@ import "../styles/Activities.css";
 import "../styles/PrivateMobile.css";
 interface Props {
   title: string;
+  wideContent?: boolean;
 }
-const { title } = Astro.props;
+const { title, wideContent } = Astro.props;
 const isMemberHome = Astro.url.pathname.replace(/\/$/, "") === "/Member";
 ---
 
-<Layout title={title} memberArea="member">
+<Layout title={title} memberArea="member" wideContent={wideContent}>
   <div slot="main-slot" class="admin-title member-title">
     <h1>Member</h1><div
       class="admin-title-line"

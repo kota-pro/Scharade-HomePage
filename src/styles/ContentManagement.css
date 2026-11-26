@@ -47,6 +47,24 @@
 }
 .content-management-danger button { color: #932b2a; }
 .content-management-status:empty { display: none; }
+.content-catalog-filter {
+  padding: clamp(12px, 2vw, 24px);
+  border: 1px solid #d5d0ca;
+  border-radius: 8px;
+  background: #f8f8f6;
+  margin-block-end: 24px;
+}
+.content-management-fields.content-catalog-fields { grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); }
+.content-catalog-fields :is(input, select) { background: #fff; min-height: 44px; font-size: max(16px, 1em); }
+.content-catalog-buttons { display: flex; gap: 16px; align-items: center; margin-block-start: 14px; }
+.content-catalog-section { margin-block-start: 28px; }
+.content-catalog-section > h3 { margin: 0; padding-block-end: 8px; border-bottom: 1px solid #d5d0ca; }
+.content-catalog-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.content-catalog-row div { min-width: 0; overflow-wrap: anywhere; }
+.content-catalog-row p { margin: 2px 0 0; }
+.content-catalog-row > .admin-button { min-width: 4.5em; text-align: center; }
+.content-catalog-pages { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: center; margin-block-start: 14px; }
+.content-catalog-pages > :last-child { justify-self: end; }
 .content-management-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); gap: 12px; margin: 16px 0; }
 .content-management-photos figure { min-width: 0; margin: 0; }
 .content-management-photos img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 4px; background: #eee; }
@@ -107,7 +125,7 @@ body:has(.blog-rich[data-expanded]) { overflow: hidden; }
 }
 body[data-app-shell] .blog-toolbar { top: 0; }
 .blog-tool-group { min-width: 0; max-width: 100%; padding-inline: 3px; border-inline-end: 1px solid #d1d5d8; }
-.admin-page .blog-editor .blog-toolbar button,
+.admin-page [data-rich-body-editor] .blog-toolbar button,
 .blog-toolbar .blog-tool-select,
 .blog-toolbar .blog-color-picker {
   position: relative;
@@ -125,22 +143,22 @@ body[data-app-shell] .blog-toolbar { top: 0; }
   box-sizing: border-box;
 }
 .blog-toolbar :is(.blog-tool-select, .blog-color-picker) { cursor: pointer; }
-.admin-page .blog-editor .blog-toolbar button:not(:disabled):hover,
+.admin-page [data-rich-body-editor] .blog-toolbar button:not(:disabled):hover,
 .blog-toolbar :is(.blog-tool-select:not(:has(select:disabled)), .blog-color-picker):hover {
   border-color: #a1a6aa;
   background: #e4e6e8;
   color: #151719;
 }
-.admin-page .blog-editor .blog-toolbar button[aria-pressed="true"] { border-color: #81888d; background: #d9dde0; }
+.admin-page [data-rich-body-editor] .blog-toolbar button[aria-pressed="true"] { border-color: #81888d; background: #d9dde0; }
 .blog-toolbar :is(button:focus-visible, .blog-tool-select:focus-within, .blog-color-picker:focus-within) {
   outline: 2px solid #4b5c59;
   outline-offset: 1px;
 }
 .blog-toolbar svg { flex: none; pointer-events: none; }
 .blog-tool-select:has(select:disabled) { opacity: .45; cursor: default; }
-.blog-tool-select-icon { gap: 2px; }
+.blog-tool-select-icon { gap: 2px; overflow: clip; }
 .blog-toolbar .blog-tool-chevron { width: 13px; height: 13px; }
-.admin-page .blog-toolbar .blog-tool-select select {
+.admin-page [data-rich-body-editor] .blog-toolbar .blog-tool-select select {
   appearance: none;
   min-height: calc(var(--blog-tool-size) - 2px);
   min-width: 0;
@@ -151,21 +169,22 @@ body[data-app-shell] .blog-toolbar { top: 0; }
   font-size: .86rem;
   cursor: inherit;
 }
-.admin-page .blog-toolbar .blog-tool-select-block select { padding: 0 24px 0 8px; }
+.admin-page [data-rich-body-editor] .blog-toolbar .blog-tool-select-block select { padding: 0 24px 0 8px; }
 .blog-tool-select-block .blog-tool-chevron { position: absolute; inset-inline-end: 6px; }
-.admin-page .blog-toolbar .blog-tool-select-icon select,
-.blog-toolbar .blog-color-picker input {
+.admin-page [data-rich-body-editor] .blog-toolbar .blog-tool-select-icon select,
+.admin-page [data-rich-body-editor] .blog-toolbar .blog-color-picker input {
   position: absolute;
   inset: 0;
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
   padding: 0;
 }
-.admin-page .blog-toolbar .blog-tool-select-icon select { color: transparent; }
+.admin-page [data-rich-body-editor] .blog-toolbar .blog-tool-select-icon select { color: transparent; }
 .blog-toolbar select option { color: #202124; background: #fff; }
 .blog-toolbar select:focus-visible { outline: none; }
 .blog-toolbar .blog-color-picker input { opacity: 0; cursor: pointer; }
-.admin-page .blog-editor .blog-toolbar [data-rich-expand] { margin-inline-start: auto; }
+.admin-page [data-rich-body-editor] .blog-toolbar [data-rich-expand] { margin-inline-start: auto; }
 .blog-toolbar [data-rich-expand][aria-pressed="false"] .blog-collapse-icon,
 .blog-toolbar [data-rich-expand][aria-pressed="true"] .blog-expand-icon { display: none; }
 .blog-rich-body {
@@ -235,7 +254,7 @@ body[data-app-shell] .blog-toolbar { top: 0; }
   .blog-toolbar { --blog-tool-size: 44px; gap: 3px; }
   .blog-preview-controls button { min-height: 44px; }
   .blog-toolbar .blog-tool-group { padding-inline: 0; gap: 3px; }
-  body[data-member-area] main .admin-page .blog-editor .blog-toolbar .blog-tool-select select[data-rich-select] {
+  body[data-member-area] main .admin-page [data-rich-body-editor] .blog-toolbar .blog-tool-select select[data-rich-select] {
     min-height: calc(var(--blog-tool-size) - 2px);
     border: 0;
     border-radius: 0;
@@ -243,11 +262,11 @@ body[data-app-shell] .blog-toolbar { top: 0; }
     font-size: .86rem;
     letter-spacing: normal;
   }
-  body[data-member-area] main .admin-page .blog-editor .blog-toolbar .blog-tool-select-block select[data-rich-select] {
+  body[data-member-area] main .admin-page [data-rich-body-editor] .blog-toolbar .blog-tool-select-block select[data-rich-select] {
     width: auto;
     padding: 0 24px 0 8px;
   }
-  body[data-member-area] main .admin-page .blog-editor .blog-toolbar .blog-tool-select-icon select[data-rich-select] {
+  body[data-member-area] main .admin-page [data-rich-body-editor] .blog-toolbar .blog-tool-select-icon select[data-rich-select] {
     padding: 0;
     color: transparent;
   }

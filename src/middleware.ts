@@ -5,6 +5,7 @@ import { json, isSameOrigin, boundedBody, decodeRequestBody, HttpInputError } fr
 import { checkRateLimit } from "./lib/rateLimit.ts";
 import { securityResponse } from "./lib/security.ts";
 import { numberErrorResponse, siteFailurePage } from './lib/siteErrorResponse.ts';
+import { hasErrorPage, type ErrorPageStatus } from './lib/errorPages.ts';
 import { queueErrorReport, startErrorReportDelivery } from './lib/siteErrorReports.ts';
 import { errorReportEndpoint } from './lib/siteErrorReport.ts';
 import { validErrorDetail } from './lib/siteErrors.ts';
@@ -17,6 +18,24 @@ import { adminViewPath } from './lib/adminViewPolicy.ts';
 startErrorReportDelivery();
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  const { request, url, routePattern } = context;
+  const apiRequest = url.pathname.startsWith('/api/');
+  const errorRoute = hasErrorPage(Number(routePattern.slice(1)));
+  const documentRequest = !apiRequest && (request.method === 'GET' || request.method === 'HEAD') &&
+    (request.headers.get('sec-fetch-mode') === 'navigate' || request.headers.get('accept')?.includes('text/html'));
+
+  const renderErrorPage = async (status: ErrorPageStatus, original: Response) => {
+    const page = await context.rewrite(`/${status}`);
+    if (page.status !== status || !page.headers.has('X-Error-Code')) return original;
+    const headers = new Headers(page.headers);
+    for (const name of ['Retry-After', 'WWW-Authenticate', 'X-Robots-Tag']) {
+      const value = original.headers.get(name);
+      if (value) headers.set(name, value);
+    }
+    void original.body?.cancel().catch(() => {});
+    return new Response(page.body, { status, statusText: page.statusText, headers });
+  };
+
   const guarded = async () => {
   const { request, url } = context;
   const pathname = url.pathname;
@@ -60,10 +79,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const publicEventPage = /^\/Member\/events\/[^/]+\/?$/.test(pathname);
   const publicToolPage = /^\/Member\/tools\/[^/]+\/?$/.test(pathname);
   const publicToolRead = request.method === "GET" && /^\/api\/member\/tools\/[^/]+(?:\/assets\/[^/]+)?\/?$/.test(pathname);
+  const bodyMediaRead = request.method === "GET" && /^\/api\/member\/body-media\/[a-f0-9-]{36}\/?$/.test(pathname);
   const memberApi = pathname.startsWith("/api/member/");
   const exhibitionPage = pathname.startsWith("/Exhibition/");
   const exhibitionApi = pathname.startsWith("/api/exhibitions/");
-  if (((memberPage && !publicEventPage && !publicToolPage) || (memberApi && !publicToolRead) || exhibitionPage || exhibitionApi) && !user?.approved) {
+  if (((memberPage && !publicEventPage && !publicToolPage) || (memberApi && !publicToolRead && !bodyMediaRead) || exhibitionPage || exhibitionApi) && !user?.approved) {
     if (memberApi || exhibitionApi) return json({ ok: false, message: "ログインが必要です。" }, 401);
     return context.redirect(`/Login?next=${encodeURIComponent(pathname + url.search)}`, 302);
   }
@@ -163,15 +183,30 @@ export const onRequest = defineMiddleware(async (context, next) => {
   return response;
   };
   try {
-    const response = await numberErrorResponse(await guarded());
-    if ((response.status >= 400 || response.headers.has('X-Error-Code')) && !context.url.pathname.startsWith(errorReportEndpoint)) {
+    const original = await guarded();
+    const response = await numberErrorResponse(original);
+    if (!errorRoute && (response.status >= 400 || response.headers.has('X-Error-Code')) && !url.pathname.startsWith(errorReportEndpoint)) {
       const code = response.headers.get('X-Error-Code') ?? (response.status >= 500 ? 'SITE-011' : 'SITE-001');
       const body = response.headers.get('Content-Type')?.includes('application/json') ? await response.clone().json().catch(() => null) : null;
-      if (response.status >= 500 || validErrorDetail(code, body?.errorDetail)) void queueErrorReport({ code, detail: body?.errorDetail, route: context.routePattern || context.url.pathname, kind: 'server', method: context.request.method, status: response.status, at: Date.now() });
+      if (response.status >= 500 || validErrorDetail(code, body?.errorDetail)) void queueErrorReport({ code, detail: body?.errorDetail, route: routePattern || url.pathname, kind: 'server', method: request.method, status: response.status, at: Date.now() });
     }
-    return securityResponse(response, context.url, context.locals.user, context.locals.preview);
+    const type = original.headers.get('Content-Type') ?? '';
+    if (!errorRoute && documentRequest && hasErrorPage(response.status) &&
+      !original.headers.has('Content-Disposition') &&
+      (type.includes('text/plain') || type.includes('text/html')) &&
+      !(type.includes('text/html') && original.headers.has('X-Error-Code'))) {
+      return securityResponse(await renderErrorPage(response.status, response), url, context.locals.user, context.locals.preview);
+    }
+    return securityResponse(response, url, context.locals.user, context.locals.preview);
   } catch (error) {
-    if (!context.url.pathname.startsWith(errorReportEndpoint)) void queueErrorReport({ code: 'SITE-011', route: context.routePattern || context.url.pathname, kind: 'server', reason: 'exception', exception: error instanceof Error ? error.name : 'Unknown', method: context.request.method, status: 503, at: Date.now() }, { error });
-    return securityResponse(context.url.pathname.startsWith('/api/') ? await numberErrorResponse(json({ ok: false, message: "現在操作を完了できません。時間をおいて再度お試しください。" }, 503)) : siteFailurePage(), context.url);
+    const status = apiRequest ? 503 : 500;
+    if (!url.pathname.startsWith(errorReportEndpoint)) void queueErrorReport({ code: 'SITE-011', route: routePattern || url.pathname, kind: 'server', reason: 'exception', exception: error instanceof Error ? error.name : 'Unknown', method: request.method, status, at: Date.now() }, { error });
+    if (apiRequest) return securityResponse(await numberErrorResponse(json({ ok: false, message: "現在操作を完了できません。時間をおいて再度お試しください。" }, 503)), url);
+    const fallback = siteFailurePage(status);
+    if (!errorRoute && documentRequest) {
+      const page = await renderErrorPage(500, fallback).catch(() => fallback);
+      return securityResponse(page, url, context.locals.user, context.locals.preview);
+    }
+    return securityResponse(fallback, url);
   }
 });

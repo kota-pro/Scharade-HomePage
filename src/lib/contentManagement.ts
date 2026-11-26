@@ -13,9 +13,18 @@ export class ContentManagementError extends Error {
 }
 
 export function staffContentRoute(action: (context: APIContext) => Promise<Response>): APIRoute {
+  return contentRoute(action, true);
+}
+
+export function memberContentRoute(action: (context: APIContext) => Promise<Response>): APIRoute {
+  return contentRoute(action, false);
+}
+
+function contentRoute(action: (context: APIContext) => Promise<Response>, staff: boolean): APIRoute {
   return async context => {
-    if (!isStaff(context.locals.user) || context.locals.adminView?.readOnly)
-      return json({ ok: false, message: "運営以上の権限が必要です。" }, context.locals.user ? 403 : 401);
+    const user = context.locals.user;
+    if (!(staff ? isStaff(user) : user?.approved) || context.locals.adminView?.readOnly)
+      return json({ ok: false, message: staff ? "運営以上の権限が必要です。" : "承認済みの会員アカウントが必要です。" }, user ? 403 : 401);
     try {
       return await action(context);
     } catch (error) {

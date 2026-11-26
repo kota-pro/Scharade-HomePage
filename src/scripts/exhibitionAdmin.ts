@@ -28,6 +28,9 @@ import { bindRecipientPicker } from "./recipientPicker";
 import { createPersonPicker } from "./groupPersonPicker";
 import { displayName } from "../lib/groupPresentation.ts";
 import { formPreviewHtml } from "./exhibitionFormPreview";
+import { initRichBodyEditor } from "./richBodyEditor";
+import { blogClipboardHtml } from "./blogClipboard";
+import type { BodyMediaScope } from "../types/bodyMedia";
 import { notificationGradeOptions } from "../lib/notificationRecipients.ts";
 import type { FormSchema, RoomLayout, Work } from "../lib/exhibitionTypes.ts";
 type AnyRecord = Record<string, any>;
@@ -42,6 +45,37 @@ if (root) {
   let roomsDraft: AnyRecord[] = [];
   let activeRoom = 0;
   let roomModal:HTMLDialogElement|undefined,previousRoomOverflow="",previousRoomFocus:HTMLElement|null=null;
+  const bodyTemplate = document.querySelector<HTMLTemplateElement>("[data-exhibition-body-editor]");
+  const bodyEditors: ReturnType<typeof initRichBodyEditor>[] = [];
+  const defaultNotice = "参加・不参加・未定をご回答ください。「参加」と回答した方は、フォーム入力期間中に出展フォームを入力できます。";
+  let noticeHtml: string | undefined;
+  let noticeEditor: ReturnType<typeof initRichBodyEditor> | undefined;
+
+  function mountBodyEditor(place: HTMLElement, label: string, scope: BodyMediaScope, text: string, html?: string, required = false) {
+    const editor = bodyTemplate!.content.firstElementChild!.cloneNode(true) as HTMLElement;
+    editor.dataset.exhibitionBodyField = scope.kind;
+    editor.querySelector("[data-rich-label]")!.textContent = label;
+    editor.querySelector(".blog-toolbar")!.setAttribute("aria-label", `${label}の編集ツール`);
+    const content = editor.querySelector<HTMLElement>("[data-rich-body]")!;
+    content.setAttribute("aria-label", label);
+    if (required) {
+      content.setAttribute("aria-required", "true");
+      editor.dataset.bodyRequired = "true";
+    }
+    if (html !== undefined) content.innerHTML = blogClipboardHtml(html, true);
+    else if (text) {
+      const paragraph = document.createElement("p");
+      text.split(/\r?\n/).forEach((line, index) => {
+        if (index) paragraph.append(document.createElement("br"));
+        paragraph.append(line);
+      });
+      content.append(paragraph);
+    }
+    place.replaceWith(editor);
+    const mounted = initRichBodyEditor(editor, { scope });
+    bodyEditors.push(mounted);
+    return mounted;
+  }
   let pointerBusy=false;
   let roomPreviewObserver: ResizeObserver | undefined;
   let overviewDirty=false,previewFrame:number|undefined;
@@ -82,7 +116,7 @@ if (root) {
     return `<section><h3>出展フォームの質問とセクション</h3><p>「通常展示」は最初から入っています。企画展示はここで追加し、タイトル・説明・追加質問はいつでも編集できます。質問は新しいフォーム定義版として保存します。提出済みの回答と履歴は保持し、作品数・寸法の上限は次の提出・再提出から最新設定を適用します。</p>
       <p class="exhibition-muted">キャプションの質問名は「キャプション」で固定です。</p>
       <fieldset class="exhibition-limits-editor"><legend>全展示合計の提出上限（1人ごと）</legend><label>作品数の上限<input data-total-work-limit type="number" min="1" max="300" step="1" placeholder="制限なし" value="${escape(schema.limits?.maxWorks??'')}"/></label><p class="exhibition-muted">単写真1枚・組写真1組を、それぞれ1作品と数えます。ブックは作品数の上限の対象外です。空欄は制限なしです。</p></fieldset><h4>展示セクション</h4><datalist id="schema-sections">${schema.sections.map((section: AnyRecord) => `<option value="${escape(section.id)}">${escape(section.title)}</option>`).join("")}</datalist>
-      <div class="exhibition-list exhibition-schema-sections">${schema.sections.map((section: AnyRecord,index: number) => `<fieldset class="exhibition-builder-question" data-section-index="${index}"><legend>展示 ${index+1}</legend><div class="exhibition-form"><label>タイトル<input data-section-key="title" value="${escape(section.title)}"/></label><label>説明<textarea data-section-key="description" rows="4">${escape(section.description)}</textarea></label></div>${limitsEditor(section,index)}<div class="exhibition-actions"><button class="danger" type="button" data-remove-section="${index}" ${schema.sections.length === 1 ? "disabled" : ""}>この展示を削除</button></div></fieldset>`).join("")}</div><div class="exhibition-actions"><button class="secondary" type="button" data-add-section>企画展示セクションを追加</button></div>
+      <div class="exhibition-list exhibition-schema-sections">${schema.sections.map((section: AnyRecord,index: number) => `<fieldset class="exhibition-builder-question" data-section-index="${index}"><legend>展示 ${index+1}</legend><div class="exhibition-form"><label>タイトル<input data-section-key="title" value="${escape(section.title)}"/></label><div data-section-body-editor></div></div>${limitsEditor(section,index)}<div class="exhibition-actions"><button class="danger" type="button" data-remove-section="${index}" ${schema.sections.length === 1 ? "disabled" : ""}>この展示を削除</button></div></fieldset>`).join("")}</div><div class="exhibition-actions"><button class="secondary" type="button" data-add-section>企画展示セクションを追加</button></div>
       <h4>追加質問</h4><p class="exhibition-muted">質問の表示位置、対象の展示・作品、回答形式を選べます。</p>
       <div class="exhibition-list">${schema.fields.map(formField).join("")}</div><div class="exhibition-actions"><button class="secondary" type="button" data-add-field>質問を追加</button><button type="button" data-save-schema>プレビューして保存</button></div></section>`;
   };
@@ -145,7 +179,7 @@ if (root) {
       ].map((group, index) => `<div class="exhibition-date-group" role="group" aria-labelledby="exhibition-date-group-${index}"><h4 class="exhibition-date-group-title" id="exhibition-date-group-${index}">${group.title}</h4>${group.fields.map(([key,label]) => `<label>${label}<input data-setting="${key}" type="datetime-local" value="${escape(settingsDraft[key])}"/></label>`).join("")}</div>`).join("")}</div>
       <fieldset data-recipient-picker><legend>通知先</legend>${p.state === "published" ? '<p class="exhibition-muted">通知済みの対象者は保持されます。追加する会員を選んで受付設定を保存すると、その会員に参加投票の通知を送信します。締切後は参加投票終了を未来に変更して保存してください。</p>' : ""}<div class="exhibition-actions"><button type="button" data-select-recipients="all" ${!recipientsEditable ? "disabled" : ""}>全選択</button><button type="button" data-select-recipients="none" ${!recipientsEditable ? "disabled" : ""}>全解除</button></div><div class="exhibition-grid"><label>学年別選択<select data-recipient-grade><option value="">すべての学年</option>${notificationGradeOptions.map(([value,label]) => `<option value="${value}">${label}</option>`).join("")}<option value="unknown">学年未設定</option></select></label><label>名前検索<input type="search" data-recipient-search placeholder="氏名・LINE名で検索"/></label></div><div class="exhibition-actions"><button type="button" data-select-recipients="grade-all" ${!recipientsEditable ? "disabled" : ""}>この学年を選択</button><button type="button" data-select-recipients="grade-none" ${!recipientsEditable ? "disabled" : ""}>この学年を解除</button></div><p data-recipient-count role="status" aria-live="polite"></p><div class="exhibition-recipient-list">${(data?.users ?? []).map((u: AnyRecord) => `<label class="exhibition-check" data-recipient-name="${escape(displayName({ name: u.name, lineName: u.lineName }))}" data-recipient-grade="${escape(u.grade)}"><input type="checkbox" data-recipient-id="${escape(u.id)}" data-exhibition-recipient="${escape(u.id)}" ${settingsDraft.recipientIds?.includes(u.id) ? "checked" : ""} ${!recipientsEditable || p.state === "published" && p.recipientIds.includes(u.id) ? "disabled" : ""}/>${escape(displayName({ name: u.name, lineName: u.lineName }))}（${escape(u.gradeLabel)}）</label>`).join("")}</div></fieldset>
       <div class="exhibition-actions"><button data-save-settings>受付設定を保存</button><a class="exhibition-button secondary" href="/Member/manage/exhibitions/${exhibitionId}/participants">参加者一覧</a></div>
-      ${p.state === "draft" ? `<label>写真展の通知本文<textarea data-exhibition-notice>参加・不参加・未定をご回答ください。「参加」と回答した方は、フォーム入力期間中に出展フォームを入力できます。</textarea></label><div class="exhibition-actions"><button data-publish-exhibition>通知を送信して参加投票を公開</button></div>` : `<p class="exhibition-muted">${p.state === "publishing" ? "通知を送信中です。記録後に参加投票が公開されます。" : "通知済みです。締切後も「参加投票終了」を未来の日時に変更して保存すると投票を再開できます。参加状況は参加者一覧ページからも変更できます。"}</p>`}
+      ${p.state === "draft" ? `<div data-exhibition-notice></div><div class="exhibition-actions"><button data-publish-exhibition>通知を送信して参加投票を公開</button></div>` : `<p class="exhibition-muted">${p.state === "publishing" ? "通知を送信中です。記録後に参加投票が公開されます。" : "通知済みです。締切後も「参加投票終了」を未来の日時に変更して保存すると投票を再開できます。参加状況は参加者一覧ページからも変更できます。"}</p>`}
       ${unbound.length ? `<p class="exhibition-status error">既存の下書き${unbound.length}件を「提出内容・QR確認」画面で会員に紐付けるか保管対象にしてください。</p>` : ""}
       </div></section>
       <section><h3>Google・Lightroom連携</h3><div class="exhibition-actions"><button class="secondary" data-google-create>${exhibition.googleForms.length ? "Googleフォームに設定を反映" : "Googleフォームを作成"}</button><button class="secondary" data-lightroom-create>${exhibition.albumCreated ? "Lightroomアルバムに設定を反映" : "Lightroomアルバムを作成"}</button></div><p class="exhibition-muted">作成済みの場合は同じフォーム・回答シート・アルバムを更新します。<br/>${exhibition.googleSync?.pending ? `<span class="error">Googleの設定反映を再試行しています。${escape(exhibition.googleSync.error ?? "")}</span><br/>` : ""}${exhibition.albumSync?.pending ? `<span class="error">Lightroomの設定反映を再試行しています。${escape(exhibition.albumSync.error ?? "")}</span><br/>` : ""}Googleフォーム：${exhibition.googleForms.length ? `作成済み` : "未作成"} / Lightroom：${exhibition.albumCreated ? "作成済み" : "未作成"} / 写真の除外：${(exhibition.albumExcludedAssetIds ?? []).length}枚</p>${exhibition.driveFolders ? `<p><a href="https://drive.google.com/drive/folders/${encodeURIComponent(exhibition.driveFolders.folderId)}" target="_blank" rel="noreferrer">写真展の保存フォルダを開く</a></p>` : ""}</section><section><h3>写真展の削除</h3><p>この写真展と回答・画像を削除し、紐付くGoogleファイルとLightroomアルバムも整理します。削除前のバックアップを保存します。</p><button class="danger" type="button" data-delete-exhibition>この写真展を削除</button></section>`;
@@ -218,10 +252,23 @@ if (root) {
     previousRoomFocus=document.activeElement as HTMLElement;previousRoomOverflow=document.body.style.overflow;document.body.style.overflow="hidden";roomModal.showModal();roomModal.querySelector<HTMLElement>("[data-layout-sync-status]")!.textContent=syncMessage;layoutEditor.mount(roomModal.querySelector<HTMLElement>("[data-room-modal-content]")!,mode==="wall"?"wall:0":"floor");
   };
   const render = () => {
+    for (const editor of bodyEditors.splice(0)) editor.destroy();
+    noticeEditor = undefined;
     if (!data) return;
     if(view==="layout"&&roomModal?.open){overviewDirty=true;layoutEditor.refresh();return;}
     overviewDirty=false;roomPreviewObserver?.disconnect();cancelAnimationFrame(previewFrame??0);
     root.innerHTML = `<p><a class="member-back" href="/Member/manage/exhibitions">写真展一覧へ戻る</a></p><h2>${escape(current().title)}</h2>${navigationHtml()}<p class="exhibition-status" aria-live="polite"></p><div class="exhibition-editor">${view === "form" ? schemaHtml() : view === "layout" ? roomHtml() : view === "submissions" ? submissionsHtml() : view === "participants" ? participantsHtml() : overviewHtml()}</div>`;
+    for (const place of root.querySelectorAll<HTMLElement>("[data-section-body-editor]")) {
+      const index = Number(place.closest<HTMLElement>("[data-section-index]")?.dataset.sectionIndex);
+      const section = schemaDraft!.sections[index];
+      const editor = mountBodyEditor(place, "説明", { kind: "exhibition-section", id: exhibitionId }, section.description, section.descriptionHtml);
+      editor.element.addEventListener("input", () => { section.descriptionHtml = editor.html(); });
+    }
+    const noticePlace = root.querySelector<HTMLElement>("[data-exhibition-notice]");
+    if (noticePlace) {
+      const editor = noticeEditor = mountBodyEditor(noticePlace, "写真展の通知本文", { kind: "exhibition-notice", id: exhibitionId }, defaultNotice, noticeHtml, true);
+      editor.element.addEventListener("input", () => { noticeHtml = editor.html(); });
+    }
     bind();
     const preview=root.querySelector<SVGSVGElement>(".room-summary-preview");
     if(preview){
@@ -243,7 +290,12 @@ if (root) {
     root.querySelectorAll<HTMLElement>("[data-recipient-picker]").forEach(picker => bindRecipientPicker(picker, ids => { settingsDraft.recipientIds = current().participation?.state === "published" ? [...new Set([...current().participation.recipientIds, ...ids])] : ids; }));
     filterParticipants();
     root.querySelectorAll<HTMLInputElement|HTMLSelectElement>("[data-participant-filter]").forEach(input=>input.addEventListener("input",()=>{participantFilters[input.dataset.participantFilter as keyof typeof participantFilters]=input.value;filterParticipants();}));
-    root.querySelector<HTMLButtonElement>("[data-publish-exhibition]")?.addEventListener("click", () => mutate({ action: "participation.publish", exhibitionId, revision: current().revision, body: root.querySelector<HTMLTextAreaElement>("[data-exhibition-notice]")?.value }, "通知を送信しています。参加投票は通知の記録後に公開されます。"));
+    root.querySelector<HTMLButtonElement>("[data-publish-exhibition]")?.addEventListener("click", () => {
+      if (!noticeEditor?.validate()) return;
+      void mutate({
+        action: "participation.publish", exhibitionId, revision: current().revision, bodyHtml: noticeEditor.html(),
+      }, "通知を送信しています。参加投票は通知の記録後に公開されます。");
+    });
     root.querySelectorAll<HTMLButtonElement>("[data-save-attendance]").forEach(button => button.addEventListener("click", () => { const input = [...root.querySelectorAll<HTMLSelectElement>("[data-attendance-user]")].find(i => i.dataset.attendanceUser === button.dataset.saveAttendance); if (input?.value) void mutate({ action: "participation.attendance.set", exhibitionId, revision: current().revision, userId: button.dataset.saveAttendance, vote: input.value }, "参加状況を保存しました。"); }));
     const attendeeMount = root.querySelector<HTMLElement>("[data-attendee-picker]");
     if (attendeeMount) {
@@ -315,6 +367,7 @@ if (root) {
     catch (error) { message(error instanceof Error ? error.message : "保存できませんでした。", true); return false; }
   };
   const openSchemaPreview = () => {
+    if (!bodyEditors.every(editor => editor.validate())) return;
     for (const input of root.querySelectorAll<HTMLInputElement>('[data-total-work-limit], [data-section-limit]')) if (!input.reportValidity()) return;
     for (const section of schemaDraft!.sections) {
       const rule = section.limits;

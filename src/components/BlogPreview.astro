@@ -1,0 +1,38 @@
+---
+import BlogPostPage from "./BlogPostPage.astro";
+import MypostLayout from "../layouts/Mypost_Layout.astro";
+import { ownsBlogDraft, parseBlogByline, previewBlog } from "../lib/blogManagement";
+import { blogBylineUserId, getNewBlogByline, resolveBlogByline, type BlogByline } from "../lib/blogBylines";
+import { blogReview } from "../lib/blogReview";
+import { boundedFormData } from "../lib/http";
+
+const { personal = false } = Astro.props as { personal?: boolean };
+const user = Astro.locals.user!;
+let post;
+let author: BlogByline | undefined;
+try {
+  const data = await boundedFormData(Astro.request, 512 * 1024);
+  const input = data.get("content");
+  if (typeof input !== "string" || [...data.keys()].length !== 1) throw new Error("Invalid preview");
+  const value = JSON.parse(input);
+  const id = typeof value.articleId === "string" && value.articleId;
+  if (id && personal && !ownsBlogDraft(id, user.id)) throw new Error("Invalid article");
+  const review = id ? blogReview(id, "") : undefined;
+  post = previewBlog(value);
+  if (!personal && value.byline !== undefined) {
+    const byline = await parseBlogByline(value.byline, user, review);
+    author = id ? await resolveBlogByline(blogBylineUserId({ ...review!, bylineUserId: byline })) :
+      byline === undefined ? await getNewBlogByline(user) : await resolveBlogByline(byline);
+  } else {
+    author = id ? await resolveBlogByline(blogBylineUserId(review)) : await getNewBlogByline(user);
+  }
+} catch {
+  post = undefined;
+  Astro.response.status = 400;
+}
+---
+{post ? <BlogPostPage post={post} fromParam="activity" preview previewAuthor={author} /> : (
+  <MypostLayout title="ブログのプレビュー" from="Activity">
+    <p role="alert">プレビューを表示できませんでした。記事の入力内容を確認してください。</p>
+  </MypostLayout>
+)}

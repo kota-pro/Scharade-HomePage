@@ -1,27 +1,12 @@
 ---
-import BlogPostPage from "../../../components/BlogPostPage.astro";
-import MypostLayout from "../../../layouts/Mypost_Layout.astro";
-import { previewBlog } from "../../../lib/blogManagement";
+import BlogPreview from "../../../components/BlogPreview.astro";
 import { isStaff } from "../../../lib/auth";
-import { boundedFormData, isSameOrigin } from "../../../lib/http";
+import { isSameOrigin } from "../../../lib/http";
 
 if (Astro.request.method !== "POST") return Astro.rewrite("/404");
 if (!isStaff(Astro.locals.user) || Astro.locals.adminView?.readOnly || !isSameOrigin(Astro.request))
   return new Response("運営画面からプレビューを開いてください。", { status: 403 });
 Astro.response.headers.set("Cache-Control", "private, no-store");
 Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
-let post;
-try {
-  const data = await boundedFormData(Astro.request, 512 * 1024);
-  const input = data.get("content");
-  if (typeof input !== "string" || [...data.keys()].length !== 1) throw new Error("Invalid preview");
-  post = previewBlog(JSON.parse(input));
-} catch {
-  Astro.response.status = 400;
-}
 ---
-{post ? <BlogPostPage post={post} fromParam="activity" preview /> : (
-  <MypostLayout title="ブログのプレビュー" from="Activity">
-    <p role="alert">プレビューを表示できませんでした。記事の入力内容を確認してください。</p>
-  </MypostLayout>
-)}
+<BlogPreview />

@@ -62,6 +62,7 @@ export type MemberTool = {
   answerRevision: number;
   kind: ToolKind;
   question: string;
+  questionHtml?: string;
   creatorId: string;
   creatorRole: Role;
   createdAt: string;

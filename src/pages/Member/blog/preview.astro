@@ -1,0 +1,11 @@
+---
+import BlogPreview from "../../../components/BlogPreview.astro";
+import { isSameOrigin } from "../../../lib/http";
+
+if (Astro.request.method !== "POST") return Astro.rewrite("/404");
+if (!Astro.locals.user?.approved || Astro.locals.adminView?.readOnly || !isSameOrigin(Astro.request))
+  return new Response("ブログの編集画面からプレビューを開いてください。", { status: 403 });
+Astro.response.headers.set("Cache-Control", "private, no-store");
+Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
+---
+<BlogPreview personal />

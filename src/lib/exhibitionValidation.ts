@@ -12,6 +12,7 @@ import type { EffectiveSubmissionLimits, LimitIssue, SectionLimits } from './exh
 import type { ExhibitionAsset, FieldValue, FormField, FormSchema, RoomLayout, RoomAnnotation, VectorNode, VectorPath, RichTextRun, LayoutDimension, DimensionAnchor, SubmissionContent, WorkKind } from "./exhibitionTypes.ts";
 import { validPolygon, wallLength } from "./exhibitionGeometry.ts";
 import { layoutObjectIds, placementSurface } from "./exhibitionLayoutModel.ts";
+import { ACTIVITY_HTML_LIMIT } from "./activityPresentation.ts";
 export class ExhibitionError extends Error {
   status: number;
   code: ExhibitionErrorCode;
@@ -80,7 +81,14 @@ function parseLimits(value: unknown, section = false): SectionLimits {
 export function parseSchema(value: unknown, version: number): FormSchema {
   const raw = object(value);
   const sections = list(raw.sections, "セクション", 20).map(s0 => {
-    const s = object(s0); return { id: id(s.id), title: text(s.title, "セクション名", 150, true), description: text(s.description ?? "", "説明", 1500), ...(s.limits === undefined ? {} : { limits: parseLimits(s.limits, true) }) };
+    const s = object(s0);
+    const descriptionHtml = s.descriptionHtml === undefined ? undefined : text(s.descriptionHtml, "説明", ACTIVITY_HTML_LIMIT);
+    const description = text(s.description ?? "", "説明", 1500);
+    return {
+      id: id(s.id), title: text(s.title, "セクション名", 150, true), description,
+      ...(descriptionHtml === undefined ? {} : { descriptionHtml }),
+      ...(s.limits === undefined ? {} : { limits: parseLimits(s.limits, true) }),
+    };
   });
   if (!sections.length) throw new ExhibitionError("展示セクションを最低1つ設定してください。");
   unique(sections.map(s => s.id), "セクション");

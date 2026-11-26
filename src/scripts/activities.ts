@@ -5,7 +5,7 @@ import type { Participant } from "../lib/activityTypes";
 import { selectedGroups, setupGroupBoard } from "./groupBoard";
 import { setupPersonPicker, createPersonPicker } from "./groupPersonPicker";
 import { setupEventEditor } from "./activityEventEditor";
-import { createPortfolioIntroductionEditor } from "./portfolioIntroductionEditor";
+import { initRichBodyEditor } from "./richBodyEditor";
 
 async function send(
   payload: Record<string, unknown>,
@@ -41,8 +41,8 @@ document
   .forEach((form) => {
     const action = form.dataset.activityAction!;
     const status = form.querySelector<HTMLElement>("[data-status]")!;
-    const richFields = new Map([...form.querySelectorAll<HTMLElement>("[data-activity-rich-field]")]
-      .map(root => [root.dataset.activityRichField!, createPortfolioIntroductionEditor(root)] as const));
+    const richFields = new Map([...form.querySelectorAll<HTMLElement>("[data-body-field]")]
+      .map(root => [root.dataset.bodyField!, initRichBodyEditor(root)] as const));
     const eventEditor = action === "event.save" ? setupEventEditor(form, richFields) : null;
     let busy = false;
     form.addEventListener("input", (event) => {
@@ -95,7 +95,7 @@ document
       };
       delete payload.headerFile;
       for (const [name, editor] of richFields) payload[`${name}Html`] = editor.html();
-      for (const key of ["id", "eventId", "runId", "userId", "source"] as const)
+      for (const key of ["id", "eventId", "draftId", "runId", "userId", "source"] as const)
         if (form.dataset[key]) payload[key] = form.dataset[key];
       if (form.dataset.revision)
         payload.revision = Number(form.dataset.revision);

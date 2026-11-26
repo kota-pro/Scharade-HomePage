@@ -10,6 +10,8 @@ if (root) {
   const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
   const visibility = form.querySelector<HTMLInputElement | HTMLSelectElement>("[name=visibility]")!;
   const savedVisibility = visibility.value;
+  const category = form.querySelector<HTMLSelectElement>("[name=category]");
+  const savedCategory = category?.value;
   const albumFields = dialog.querySelector<HTMLElement>("#gallery-album-fields")!;
   const exclusionFields = dialog.querySelector<HTMLElement>("#gallery-exclusion-fields")!;
   const count = dialog.querySelector<HTMLElement>("[data-gallery-exclusion-count]")!;
@@ -125,7 +127,7 @@ if (root) {
     const next = button.dataset.gallerySettingsMode as Mode;
     if (saving || mode === next) return;
     const changed = mode === "album"
-      ? coverId !== savedCover || visibility.value !== savedVisibility
+      ? coverId !== savedCover || visibility.value !== savedVisibility || category?.value !== savedCategory
       : excluded.size !== savedExclusions.size || [...excluded].some(id => !savedExclusions.has(id));
     if (changed) {
       saveStatus.textContent = "変更を保存してから表示を切り替えてください。";
@@ -154,7 +156,10 @@ if (root) {
     const exclusions = mode === "exclusions";
     const body = exclusions
       ? { revision: exclusionRevision, excludedPhotoIds: [...excluded] }
-      : { visibility: visibility.value, revision: Number(root.dataset.revision), coverPhotoId: coverId || null };
+      : {
+          visibility: visibility.value, revision: Number(root.dataset.revision), coverPhotoId: coverId || null,
+          ...(category && category.value !== savedCategory ? { category: category.value } : {}),
+        };
     saving = close.disabled = fieldset.disabled = submit.disabled = true;
     saveStatus.textContent = "保存しています…";
     try {

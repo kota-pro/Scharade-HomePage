@@ -1,0 +1,31 @@
+---
+import BlogEditor from "../../../../components/BlogEditor.astro";
+import MemberLayout from "../../../../layouts/MemberLayout.astro";
+import { canEditOwnBlog, emptyBlogOptions, getBlogEditorOptions, getEditableBlog, blogStatusLabels } from "../../../../lib/blogManagement";
+import { ContentManagementError } from "../../../../lib/contentManagement";
+import { blogReviewLabels } from "../../../../lib/blogReview";
+import { linkToPost } from "../../../../utils/linkToPost";
+import "../../../../styles/ContentManagement.css";
+
+const result = await getEditableBlog(Astro.params.id ?? "", Astro.locals.user!.id)
+  .then(item => ({ item, unavailable: false }))
+  .catch(error => ({ item: null, unavailable: !(error instanceof ContentManagementError && error.status === 404) }));
+const { item } = result;
+if (!item && !result.unavailable) return Astro.rewrite("/404");
+const editable = !!(item?.post && canEditOwnBlog(item) && !Astro.locals.adminView?.readOnly);
+const options = editable ? await getBlogEditorOptions().catch(() => emptyBlogOptions) : emptyBlogOptions;
+const title = item?.post?.title ?? "記事・申請状況";
+const published = item?.status === "published" || item?.status === "published-with-draft";
+---
+<MemberLayout title={title} wideContent={editable}>
+  <div class="content-management-heading"><h2>{title}</h2>{item && <span>{item.status === "draft" ? blogReviewLabels[item.review.state] : blogStatusLabels[item.status]}</span>}</div>
+  {Astro.url.searchParams.get("saved") === "1" && <p role="status">記事を保存しました。</p>}
+  {Astro.url.searchParams.get("saved") === "submit" && <p role="status">運営へ公開を申請しました。</p>}
+  {editable && item ? <BlogEditor item={item} options={options} member /> : <>
+    {result.unavailable && <p role="alert">記事を取得できませんでした。時間をおいて再読み込みしてください。</p>}
+    {item?.status === "draft" && item.review.state === "pending" && <p>運営が公開申請を確認しています。</p>}
+    {item?.status === "draft" && item.review.state === "approved" && <p>運営の承認が完了しました。現在は公開待ちです。</p>}
+    {published && item?.post && <p><a href={linkToPost(item.post.slug, "activity")}>公開中の記事を開く</a></p>}
+    <div class="content-management-actions"><a class="member-back" href="/Member/blog">自分の記事・申請状況</a></div>
+  </>}
+</MemberLayout>

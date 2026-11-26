@@ -5,11 +5,15 @@ import StaffLayout from '../../../../layouts/StaffLayout.astro';
 import ActivityRecipients from '../../../../components/ActivityRecipients.astro';
 import MemberToolResults from '../../../../components/MemberToolResults.astro';
 import ActivityShareButton from '../../../../components/ActivityShareButton.astro';
+import BlogRichEditor from '../../../../components/BlogRichEditor.astro';
+import { activityEditorHtml } from '../../../../lib/activityRichText';
+import { managementBodyOptions } from '../../../../lib/blogManagement';
 import {readTool,questionFor,ToolError} from '../../../../lib/memberTools.ts';
 import {readUsers} from '../../../../lib/auth.ts';
 import {toolLabels} from '../../../../lib/memberToolTypes.ts';
 import '../../../../styles/ActivityEventEditor.css';
 import '../../../../styles/MemberTools.css';
+import '../../../../styles/RichBody.css';
 let t;try{t=readTool(Astro.params.id!);}catch(e){if(e instanceof ToolError)return Astro.redirect('/Member/manage/tools');throw e;}
 const dto=questionFor(t,Astro.locals.user),users=readUsers().filter(isMemberAccount);
 const jst=(d:string)=>d?new Date(Date.parse(d)+9*3600000).toISOString().slice(0,16):'';
@@ -27,7 +31,7 @@ const starts=[['always','常に公開'],['answered','閲覧者が回答したあ
    <form data-tool-editor class="activity-form tool-editor">
     <div class="tool-editor-grid">
      <div class="tool-editor-main">
-      <label class="tool-question-field">質問内容<textarea name="question" rows="5" maxlength="10000" required placeholder="メンバーに聞きたいことを入力してください">{t.question}</textarea></label>
+      <BlogRichEditor name="question" label="質問内容" body={activityEditorHtml(t.question, t.questionHtml)} options={managementBodyOptions} scope={{ kind: "tool", id: t.id }} required />
       {t.kind!=='box'&&<section class="tool-candidates" aria-labelledby="tool-options-title"><div class="tool-subheading"><h4 id="tool-options-title">{t.kind==='poll'?'選択肢':'日程の候補'}</h4><span class="tool-help" data-option-count></span></div>
        {t.kind==='schedule'&&<div class="tool-calendar" data-tool-calendar><div class="tool-calendar-nav"><button type="button" data-calendar-prev aria-label="前の月">‹</button><strong data-calendar-month></strong><button type="button" data-calendar-next aria-label="次の月">›</button></div><div class="tool-calendar-grid" data-calendar-days></div><p class="tool-help">日付を選んで候補を追加。同じ日を選ぶと時間帯を分けられます。</p></div>}
        <div class="tool-options" data-tool-options></div>{t.kind==='poll'&&<button type="button" data-add-option class="tool-add-option">＋ 選択肢を追加</button>}

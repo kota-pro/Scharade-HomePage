@@ -5,6 +5,8 @@ import type { questionFor } from "../lib/memberTools";
 import { type ToolOption, type ToolResults } from "../lib/memberToolTypes";
 import { exportToolResults, type ExportAsset } from "./memberToolExport";
 import { operationNotice } from "./siteNotice";
+import { initRichBodyEditor } from "./richBodyEditor";
+import { richBodyPreview } from "./richBodyPreview";
 type State = ReturnType<typeof questionFor>;
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text = "") => {
   const n = document.createElement(tag);
@@ -91,6 +93,8 @@ function setup(root: HTMLElement) {
     assets: ExportAsset[] = JSON.parse(root.dataset.toolAssets || "[]");
   const base = `/api/member/tools/${root.dataset.toolId}`,
     manage = root.dataset.toolMode === "manage";
+  const questionField = root.querySelector<HTMLElement>('[data-body-field="question"]');
+  const questionEditor = questionField && initRichBodyEditor(questionField);
   let busy = false,
     loadedResults: ToolResults | null = null;
   const assetURL = (id: string) => `${base}/assets/${id}`;
@@ -429,6 +433,7 @@ function setup(root: HTMLElement) {
     .querySelector<HTMLFormElement>("[data-tool-editor]")
     ?.addEventListener("submit", (event) => {
       event.preventDefault();
+      if (!questionEditor?.validate()) return;
       void run(async () => {
         const form = event.currentTarget as HTMLFormElement; // captured before asynchronous work
         const options = [];
@@ -460,7 +465,7 @@ function setup(root: HTMLElement) {
           false;
         await act({
           action: "save",
-          question: field(form, "question").value,
+          questionHtml: questionEditor.html(),
           options,
           recipientIds: [
             ...form.querySelectorAll<HTMLInputElement>(
@@ -482,7 +487,8 @@ function setup(root: HTMLElement) {
             "[data-tool-preview]",
           )!,
           content = preview.querySelector("[data-preview-content]")!;
-        content.replaceChildren(safeText(state.question));
+        content.classList.add("portfolio-introduction-content", "rich-body-content");
+        content.replaceChildren(state.questionHtml ? richBodyPreview(state.questionHtml) : safeText(state.question));
         for (const o of state.options) {
           const item = node(
             "div",

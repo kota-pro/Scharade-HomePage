@@ -1,5 +1,7 @@
 ---
 import PageTopNav from "../components/PageTopNav.astro";
+import BlogByline from "../components/BlogByline.astro";
+import { getBlogBylines } from "../lib/blogBylines";
 import Layout from "../layouts/Layout.astro";
 import "../styles/UA+reset.css";
 import "../styles/Activity.css";
@@ -29,6 +31,7 @@ const { contents: posts } = await microcmsClient
   });
 
 const tabs = buildTabs(posts);
+const authors = await getBlogBylines(posts.map(post => post.id)).catch(() => null);
 
 const ITEMS_PER_PAGE = 10;
 ---
@@ -114,7 +117,7 @@ const ITEMS_PER_PAGE = 10;
                 {tab.posts.length ? (
                   tab.posts.map((post, postIndex) => (
                     <article class="Activity-item" data-index={postIndex}>
-                      <a href={linkToPost(post.slug, "activity")}>
+                      <div class:list={["Activity-item-content", { "Activity-with-byline": authors?.has(post.id) }]}>
                         <div class="Activity-text-container">
                           <div class="Activity-info">
                             <p class="Activity-date">
@@ -123,8 +126,11 @@ const ITEMS_PER_PAGE = 10;
                             {normalizeTags(post.tags).map((tag) => (
                               <span class="Activity-tag">#{tag}</span>
                             ))}
+                            {authors?.has(post.id) && <BlogByline author={authors.get(post.id)!} />}
                           </div>
-                          <h2 class="Activity-title">{post.title}</h2>
+                          <h2 class="Activity-title">
+                            <a class="Activity-post-link" href={linkToPost(post.slug, "activity")}>{post.title}</a>
+                          </h2>
                           <div class="Activity-excerpt-container">
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -143,7 +149,7 @@ const ITEMS_PER_PAGE = 10;
                           </div>
                         </div>
                         <img class="link-button" src="/icons/link.svg" alt="" />
-                      </a>
+                      </div>
                     </article>
                   ))
                 ) : (

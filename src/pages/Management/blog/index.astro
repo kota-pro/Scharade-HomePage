@@ -1,12 +1,56 @@
 ---
 import StaffLayout from "../../../layouts/StaffLayout.astro";
-import { BLOG_MANAGEMENT_PAGE_SIZE, getManageableBlogs } from "../../../lib/blogManagement";
+import ManagementCatalogForm from "../../../components/ManagementCatalogForm.astro";
+import ManagementCatalogList from "../../../components/ManagementCatalogList.astro";
+import { getManageableBlogs } from "../../../lib/blogManagement";
+import { catalogDate, catalogMatches, catalogOption, catalogOptions, catalogPage, sortCatalog } from "../../../lib/managementCatalog";
+import { orderBlogTags } from "../../../utils/blog";
 import "../../../styles/ContentManagement.css";
 
-const page = Number(Astro.url.searchParams.get("page"));
-const current = Number.isSafeInteger(page) && page > 0 && page < 10001 ? page : 1;
-const listing = await getManageableBlogs(current).catch(() => null);
-const statusLabels = { draft: "下書き", published: "公開中", "published-with-draft": "公開中・下書きあり", closed: "公開終了" };
+const listing = await getManageableBlogs().catch(() => null);
+const { searchParams } = Astro.url;
+const search = (key: string) => searchParams.get(key)?.trim() ?? "";
+const statusLabels = {
+  pending: "承認待ち", approved: "公開待ち", published: "公開中",
+  "published-with-draft": "公開中・CMS下書きあり", draft: "下書き", returned: "差し戻し", closed: "公開終了",
+};
+const sortLabels = { date: "執筆日", title: "記事名", status: "公開ステータス", author: "執筆者", tag: "タグ" };
+const articles = (listing ?? []).map(item => {
+  const status = item.status === "draft" ? item.reviewState : item.status;
+  return { ...item, status, date: catalogDate(item.createdAt), statusLabel: statusLabels[status] };
+});
+const authors = sortCatalog([...new Map(articles.map(item => [item.authorId, catalogOption(item.authorId, item.author)])).values()], item => item.label, "asc");
+const tags = orderBlogTags(articles.flatMap(item => item.tags).sort((a, b) => a.localeCompare(b, "ja")));
+const fields = [
+  { name: "q", label: "記事名・キーワード" },
+  { name: "from", label: "執筆日（開始）", type: "date" as const },
+  { name: "to", label: "執筆日（終了）", type: "date" as const },
+  { name: "status", label: "公開ステータス", options: catalogOptions(statusLabels), all: "すべて" },
+  { name: "author", label: "執筆者", options: authors, all: "すべて" },
+  { name: "tag", label: "タグ", options: tags.map(tag => catalogOption(tag, tag)), all: "すべて" },
+  { name: "sort", label: "並べ替え", options: catalogOptions(sortLabels) },
+  { name: "order", label: "順序", options: catalogOptions({ desc: "降順", asc: "昇順" }) },
+];
+const filtered = articles.filter(item =>
+  catalogMatches(search("q"), item.title, item.author, ...item.tags) &&
+  (!search("from") || item.date >= search("from")) && (!search("to") || item.date <= search("to")) &&
+  (!search("status") || search("status") === item.status) &&
+  (!search("author") || search("author") === item.authorId) &&
+  (!search("tag") || item.tags.includes(search("tag"))));
+const sorted = sortCatalog(filtered, item => {
+  switch (search("sort")) {
+    case "title": return item.title;
+    case "status": return item.statusLabel;
+    case "author": return item.author;
+    case "tag": return item.tags.join("、");
+    default: return item.createdAt;
+  }
+}, search("order"));
+const sections = [
+  { id: "review", title: "承認待ちのBlog", statuses: ["pending", "approved"] },
+  { id: "published", title: "公開中のBlog", statuses: ["published", "published-with-draft"] },
+  { id: "drafts", title: "下書きのBlog", statuses: ["draft", "returned", "closed"] },
+].map(section => ({ ...section, page: catalogPage(sorted.filter(item => section.statuses.includes(item.status)), Astro.url, section.id, section.id) }));
 ---
 <StaffLayout title="Activityのブログ管理">
   <div class="content-management-heading">
@@ -14,17 +58,16 @@ const statusLabels = { draft: "下書き", published: "公開中", "published-wi
     <a class="admin-button admin-button-outline" href="/Management/blog/new">新規作成</a>
   </div>
   {Astro.url.searchParams.has("deleted") && <p role="status">記事を削除しました。</p>}
-  {listing ? (
-    listing.items.length ? <ul class="content-management-list">
-      {listing.items.map(item => <li class="content-management-row">
-        <div><a href={`/Management/blog/edit/${encodeURIComponent(item.id)}`}>{item.title}</a><p><small>{statusLabels[item.status]}</small></p></div>
-        <a class="admin-button admin-button-outline" href={`/Management/blog/edit/${encodeURIComponent(item.id)}`} aria-label={`${item.title}を管理`}>管理</a>
-      </li>)}
-    </ul> : <p>このページに記事はありません。</p>
-  ) : <p role="alert">記事一覧を取得できませんでした。microCMSの接続と権限を確認してください。</p>}
-  {listing && (current > 1 || current * BLOG_MANAGEMENT_PAGE_SIZE < listing.total) && <nav aria-label="記事一覧のページ" class="content-management-actions">
-    {current > 1 && <a href={`/Management/blog?page=${current - 1}`}>前のページ</a>}
-    {current * BLOG_MANAGEMENT_PAGE_SIZE < listing.total && <a href={`/Management/blog?page=${current + 1}`}>次のページ</a>}
-  </nav>}
+  {listing ? <>
+    <ManagementCatalogForm title="ブログを検索" fields={fields} />
+    <p>検索結果 {filtered.length}件</p>
+    {sections.map(section => <section class="content-catalog-section" id={section.id} aria-labelledby={`${section.id}-title`}>
+      <h3 id={`${section.id}-title`}>{section.title}（{section.page.total}件）</h3>
+      <ManagementCatalogList label={section.title} page={section.page} empty="該当する記事はありません。" rows={section.page.items.map(item => ({
+        title: item.title, href: `/Management/blog/edit/${encodeURIComponent(item.id)}`,
+        details: [item.statusLabel, item.date, item.author, ...item.tags].filter(Boolean),
+      }))} />
+    </section>)}
+  </> : <p role="alert">記事一覧を取得できませんでした。microCMSの接続と権限を確認してください。</p>}
   <div class="content-management-actions"><a class="member-back" href="/Management">Managementへ戻る</a></div>
 </StaffLayout>

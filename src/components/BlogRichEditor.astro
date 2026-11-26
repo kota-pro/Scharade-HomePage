@@ -1,8 +1,10 @@
 ---
 import type { BlogEditorOptions } from "../lib/blogManagement";
+import type { BodyMediaScope } from "../types/bodyMedia";
 import BlogToolIcon from "./BlogToolIcon.astro";
-interface Props { body: string; options: BlogEditorOptions }
-const { body, options } = Astro.props;
+import "../styles/ContentManagement.css";
+interface Props { body: string; options: BlogEditorOptions; label?: string; name?: string; required?: boolean; scope?: BodyMediaScope }
+const { body, options, label = "本文", name, required = false, scope } = Astro.props;
 const groups = [
   [{ value: "bold", label: "太字" }, { value: "italic", label: "斜体" }, { value: "underline", label: "下線" }, { value: "strikeThrough", label: "取り消し線" }, { value: "inline-code", label: "インラインコード" }],
   [{ value: "justifyLeft", label: "左揃え" }, { value: "justifyCenter", label: "中央揃え" }, { value: "justifyRight", label: "右揃え" }],
@@ -20,9 +22,10 @@ const tableActions = [
 ];
 const sizes = options.sizes.length ? options.sizes : [80, 100, 120, 150, 200].map(value => ({ value: `${value}%`, label: `${value}%` }));
 ---
+<div data-rich-body-editor data-body-field={name} data-body-required={required || undefined} data-body-media-scope={scope && JSON.stringify(scope)}>
 <div data-blog-rich class="blog-rich">
-  <label class="content-management-field" id="blog-body-label">本文</label>
-  <div class="blog-toolbar" role="group" aria-label="本文の編集ツール">
+  <label class="content-management-field" data-rich-label>{label}</label>
+  <div class="blog-toolbar" role="group" aria-label={`${label}の編集ツール`}>
     <div class="blog-tool-group">
       <div class="blog-tool-select blog-tool-select-block">
         <select data-rich-select="block" aria-label="段落・見出し" title="段落・見出し">
@@ -82,12 +85,12 @@ const sizes = options.sizes.length ? options.sizes : [80, 100, 120, 150, 200].ma
       <BlogToolIcon kind="collapse" class="blog-collapse-icon" />
     </button>
   </div>
-  <div class="blog-rich-body" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="blog-body-label" data-rich-body set:html={body}></div>
+  <div class="blog-rich-body" contenteditable="true" role="textbox" aria-multiline="true" aria-label={label} aria-required={required || undefined} data-rich-body set:html={body}></div>
   <p class="content-management-status" data-rich-status role="status"></p>
 </div>
 
-<dialog class="admin-dialog blog-insert-dialog" data-rich-dialog aria-labelledby="blog-insert-title">
-  <h2 id="blog-insert-title" data-rich-dialog-title></h2>
+<dialog class="admin-dialog blog-insert-dialog" data-rich-dialog>
+  <h2 data-rich-dialog-title></h2>
   <div class="content-management-fields">
     <label data-dialog-field="upload">アップロードするファイル<input type="file" data-rich-input="upload" /></label>
     <details data-dialog-field="library" data-rich-media-library>
@@ -119,3 +122,4 @@ const sizes = options.sizes.length ? options.sizes : [80, 100, 120, 150, 200].ma
     <button class="admin-button" type="button" data-rich-dialog-apply>適用</button>
   </div>
 </dialog>
+</div>

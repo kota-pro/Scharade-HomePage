@@ -159,6 +159,7 @@ test("staff publishes an event, members vote, staff generates and edits groups, 
       memberPage.getByRole("heading", { name: `企画のご案内：${title}` }),
     ).toBeVisible();
     await memberPage.getByRole("link", { name: "企画の詳細を見る" }).click();
+    await memberPage.waitForLoadState("load");
     await expect(memberPage.locator(".activity-details")).toContainText(
       "秋の光",
     );
@@ -366,7 +367,11 @@ test("staff publishes an event, members vote, staff generates and edits groups, 
           data: { action: "vote", eventId: id, vote: "absent" },
         })
       ).status(),
-    ).toBe(409);
+    ).toBe(200);
+    await memberPage.reload();
+    await expect(
+      memberPage.getByRole("heading", { name: "公開された班分け" }),
+    ).toHaveCount(0);
     await memberPage.goto(`/Member?view=calendar&month=${start.slice(0, 7)}`);
     await expect(memberPage.getByRole("table")).toBeVisible();
     await expect(memberPage.locator(".activity-month-events")).toContainText(
@@ -425,13 +430,13 @@ test("ordinary notices can target one member and cannot be read by others", asyn
     await page.setViewportSize({ width: 390, height: 900 });
     await editor.fill(message);
     await editor.press("ControlOrMeta+A");
-    await page.getByLabel("文字サイズ", { exact: true }).selectOption("5");
+    await page.getByLabel("文字サイズ", { exact: true }).selectOption("24px");
     await editor.press("ControlOrMeta+A");
-    await page.getByLabel("文字色", { exact: true }).evaluate((input: HTMLInputElement) => {
+    await page.getByLabel("文字色を選ぶ", { exact: true }).evaluate((input: HTMLInputElement) => {
       input.value = "#c42b48";
       input.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    const toolbar = page.getByRole("group", { name: "本文の文字装飾" });
+    const toolbar = page.getByRole("group", { name: "本文の編集ツール" });
     for (const name of ["下線", "太字", "斜体"]) {
       await editor.press("ControlOrMeta+A");
       await toolbar.getByRole("button", { name, exact: true }).click();
@@ -456,7 +461,7 @@ test("ordinary notices can target one member and cannot be read by others", asyn
       await selectLinkText();
       await toolbar.getByRole("button", { name: "リンク", exact: true }).click();
       await page.getByLabel("URL", { exact: true }).fill(`https://example.com/${path}`);
-      await page.getByRole("button", { name: "設定する", exact: true }).click();
+      await page.getByRole("button", { name: "適用", exact: true }).click();
       const link = editor.getByRole("link", { name: "確認", exact: true });
       await expect(link).toHaveAttribute("href", `https://example.com/${path}`);
       await expect(editor.getByText("確認", { exact: true })).toHaveCSS("font-weight", "700");
@@ -474,13 +479,13 @@ test("ordinary notices can target one member and cannot be read by others", asyn
     const sent = page.locator(`[data-sent-notice="${id}"]`);
     await sent.locator("summary").click();
     await expect(sent.locator('[style*="font-size"]').first()).toHaveCSS("font-size", "24px");
-    await expect(sent.locator('[style*="text-decoration"]').first()).toHaveCSS("text-decoration-line", "underline");
+    await expect(sent.locator(':is(u,[style*="text-decoration"])').first()).toHaveCSS("text-decoration-line", "underline");
     const recipient = await member.newPage();
     await recipient.goto(`/Member/notifications/${id}`);
     await expect(recipient.locator('.activity-prose [style*="font-size"]').first()).toHaveCSS("font-size", "24px");
     await expect(recipient.locator('.activity-prose [style*="color:"]').first()).toHaveCSS("color", "rgb(196, 43, 72)");
     const prose = recipient.locator(".activity-prose");
-    await expect(prose.locator('[style*="text-decoration"]').first()).toHaveCSS("text-decoration-line", "underline");
+    await expect(prose.locator(':is(u,[style*="text-decoration"])').first()).toHaveCSS("text-decoration-line", "underline");
     await expect(prose.getByRole("link", { name: "確認", exact: true })).toHaveAttribute("href", "https://example.com/updated");
     await expect(prose.getByText("確認", { exact: true })).toHaveCSS("font-weight", "700");
     await expect(prose.getByText("確認", { exact: true })).toHaveCSS("font-style", "italic");
@@ -516,7 +521,7 @@ test("ordinary notices can target one member and cannot be read by others", asyn
     await sent.getByRole("link", { name: "通知を編集", exact: true }).click();
     const editForm = page.locator('form[data-activity-action="notification.edit"]');
     await expect(editForm.getByLabel("件名")).toHaveValue(received.title);
-    await expect(editForm.locator('[data-intro-editable] [style*="text-decoration"]').first()).toHaveCSS("text-decoration-line", "underline");
+    await expect(editForm.locator('[data-rich-body] :is(u,[style*="text-decoration"])').first()).toHaveCSS("text-decoration-line", "underline");
     await editForm.getByLabel("件名").fill("配信後に訂正した件名");
     await editForm.getByRole("textbox", { name: "本文", exact: true }).fill("集合場所を変更しました。");
     await submit(page, "notification.edit", "変更を保存");

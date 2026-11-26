@@ -161,7 +161,7 @@ test("admin can search, page and inspect registration details without secret dat
   expect((await page.goto("/Admin/accounts/no-such-account"))?.status()).toBe(
     404,
   );
-  await expect(page.getByRole("alert")).toContainText("見つかりませんでした");
+  await expect(page.getByRole("alert")).toContainText("SITE-006");
   expect(writes).toEqual([]);
 });
 

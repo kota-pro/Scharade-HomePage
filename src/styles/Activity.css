@@ -251,18 +251,57 @@
     background-color: #f0f0f0;
 }
 
-.Activity-item a {
-    color: inherit;
-    text-decoration: none;
+.Activity-item-content {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
+}
+
+.Activity-post-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.Activity-post-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+}
+
+.Activity-post-link:focus-visible::after {
+    outline: 2px solid currentColor;
+    outline-offset: 4px;
 }
 
 .Activity-info {
     display: flex;
     flex-direction: row;
     align-items: center;
+}
+
+.Activity-with-byline {
+    gap: 50px;
+}
+
+.Activity-with-byline .Activity-text-container {
+    flex: 1;
+    min-width: 0;
+}
+
+.Activity-with-byline .Activity-info {
+    flex-wrap: wrap;
+    row-gap: 4px;
+}
+
+.Activity-with-byline .blog-byline {
+    margin-inline-start: auto;
+    max-width: 100%;
+}
+
+.Activity-with-byline .link-button {
+    flex: none;
+    margin-inline-start: 0;
 }
 
 .Activity-date {
@@ -348,7 +387,7 @@
     margin-left: 20px;
 }
 
-.link-button:hover {
+.Activity-item:has(.Activity-post-link:hover) .link-button {
     background-color: #f0f0f0;
 }
 
@@ -469,11 +508,13 @@
         left: 35%;
     }
 
-    .Activity-item a {
+    .Activity-item-content {
         flex-direction: row;
         align-items: center;
         gap: 0;
     }
+
+    .Activity-with-byline { gap: 10px; }
 
     .Activity-date {
         margin-right: 25px;

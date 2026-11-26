@@ -1,0 +1,56 @@
+---
+import type { BlogByline } from "../lib/blogBylines";
+interface Props { author: BlogByline }
+const { author } = Astro.props;
+---
+<span class="blog-byline">
+  <span>by {author.name}</span>
+  {author.portfolioHref ? (
+    <a class="blog-byline-link" href={author.portfolioHref} aria-label={`${author.name}のPortfolio`}>
+      <img src={author.icon} alt="" width="28" height="28" loading="lazy" decoding="async" />
+    </a>
+  ) : <img src={author.icon} alt="" width="28" height="28" loading="lazy" decoding="async" />}
+</span>
+<style>
+  .blog-byline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    font-family: YakuHanRP, "Zen Kurenaido", sans-serif;
+    font-size: 16px;
+    overflow-wrap: anywhere;
+  }
+  .blog-byline img {
+    display: block;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  .blog-byline-link {
+    position: relative;
+    z-index: 1;
+    flex: none;
+    border-radius: 50%;
+  }
+  .blog-byline-link img {
+    box-shadow: 0 3px 8px rgb(0 0 0 / 25%);
+  }
+  .blog-byline-link:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+  }
+  .blog-byline-link:is(:focus-visible, :active) img { box-shadow: none; }
+  @media (hover: hover) {
+    .blog-byline-link:hover img { box-shadow: none; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .blog-byline-link img { transition: box-shadow .2s ease; }
+  }
+  @media (max-width: 780px) {
+    .blog-byline { font-size: 12px; gap: 5px; }
+    .blog-byline img { width: 22px; height: 22px; }
+  }
+</style>

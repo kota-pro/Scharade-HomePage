@@ -8,7 +8,7 @@ import {getBlogBySlug} from '../src/lib/blog.ts';
 import {deleteBlog,updateBlog} from '../src/lib/blogManagement.ts';
 import {invalidateCache} from '../src/lib/cache.ts';
 import {linkToPost} from '../src/utils/linkToPost.ts';
-import {buildTabs} from '../src/utils/blog.ts';
+import {buildTabs, MEMBERS_BLOG_TAG} from '../src/utils/blog.ts';
 import type {Blog} from '../src/types/microcms.ts';
 
 const originalFetch=globalThis.fetch;
@@ -18,13 +18,15 @@ beforeEach(()=>invalidateCache());
 after(()=>{globalThis.fetch=originalFetch});
 
 test('tag tabs distinguish Japanese names, punctuation variants and the reserved all tab',()=>{
- const names=['暗室','撮影会','お知らせ','All','all','a b','a-b','tag'];
+ const names=['暗室','撮影会','お知らせ','All','all','a b','a-b','tag','Others'];
  const posts=names.map((tag,i)=>({id:`post-${i}`,slug:`post-${i}`,title:tag,tags:[tag]})) as Blog[];
  const tabs=buildTabs(posts);
  assert.equal(tabs[0].slug,'all');
  assert.equal(tabs[0].posts.length,posts.length);
  assert.equal(new Set(tabs.map(tab=>tab.slug)).size,tabs.length);
- for(const tab of tabs.slice(1))assert.deepEqual(tab.posts.map(post=>post.title),[tab.label]);
+ assert.deepEqual(tabs.find(tab => tab.label === MEMBERS_BLOG_TAG)?.posts, []);
+ assert.equal(tabs[tabs.findIndex(tab => tab.label === "Others") - 1].label, MEMBERS_BLOG_TAG);
+ for(const tab of tabs.slice(1).filter(tab => tab.label !== MEMBERS_BLOG_TAG))assert.deepEqual(tab.posts.map(post=>post.title),[tab.label]);
 });
 
 test('blog links keep Japanese punctuation, query delimiters and literal percent sequences in the path',()=>{

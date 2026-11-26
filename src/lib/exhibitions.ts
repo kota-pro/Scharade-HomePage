@@ -20,6 +20,10 @@ import { preserveSubmissionNotes } from "./exhibitionNotes.ts";
 import { resetSubmissionQr } from "./exhibitionQrTarget.ts";
 import { currentSchema, emptySubmission, latestContent, type Exhibition, type ExhibitionStore, type Submission, type SubmissionContent } from "./exhibitionTypes.ts";
 import { ExhibitionError, id, object, text, parseSchema, parseContent, parseRooms } from "./exhibitionValidation.ts";
+import { ACTIVITY_HTML_LIMIT } from "./activityPresentation.ts";
+import { activityRichTextPlain } from "./activityRichText.ts";
+import { checkBodyAssets } from "./bodyMedia.ts";
+import { sanitizeArticleHtml } from "./contentSecurity.ts";
 
 const FILE = "exhibitions.json", LOCK = "exhibitions";
 export function readExhibitions(): ExhibitionStore {
@@ -203,9 +207,15 @@ export async function exhibitionAction(actorId: string, value: unknown) {
       if (!p.recipientIds.length || p.recipientIds.some(userId => !readUsers().some(u => u.id === userId && isMemberAccount(u)))) throw new ExhibitionError("承認済み会員を通知先に選んでください。");
       if (data.submissions.some(s => s.exhibitionId === e.id && !s.userId && !s.inactive && !s.sheetSource)) throw new ExhibitionError("既存の下書きを会員に紐付けるか、保管対象にしてから通知してください。");
       const actor = requireStaff(actorId), noticeId = crypto.randomUUID();
+      const bodyHtml = raw.bodyHtml === undefined ? undefined : sanitizeArticleHtml(text(raw.bodyHtml, "通知本文", ACTIVITY_HTML_LIMIT), true);
+      if (bodyHtml !== undefined && !checkBodyAssets(bodyHtml, { kind: "exhibition-notice", id: e.id }, actorId))
+        throw new ExhibitionError("通知本文の添付ファイルを確認してください。");
+      const body = text(bodyHtml === undefined
+        ? raw.body ?? "参加・不参加・未定をご回答ください。「参加」と回答した方は、フォーム入力期間中に出展フォームを入力できます。"
+        : activityRichTextPlain(bodyHtml), "通知本文", 10000, true);
       p.state = "publishing"; p.noticeId = noticeId;
       e.reminderConfiguredAt = { vote: now, submission: now };
-      (e.notices ??= []).push({ id: noticeId, exhibitionId: e.id, senderId: actor.id, senderName: actor.name, title: `写真展の参加投票：${e.title}`, body: text(raw.body ?? "参加・不参加・未定をご回答ください。「参加」と回答した方は、フォーム入力期間中に出展フォームを入力できます。", "通知本文", 10000, true), recipientIds: [...p.recipientIds], createdAt: now });
+      (e.notices ??= []).push({ id: noticeId, exhibitionId: e.id, senderId: actor.id, senderName: actor.name, title: `写真展の参加投票：${e.title}`, body, bodyHtml, recipientIds: [...p.recipientIds], createdAt: now });
     } else if (raw.action === "participation.attendance.set") {
       const p = e.participation;
       if (p?.state !== "published") throw new ExhibitionError("通知済みの写真展を選んでください。");
@@ -230,8 +240,21 @@ export async function exhibitionAction(actorId: string, value: unknown) {
         submission.userId = target.id; delete submission.inactive;
       }
       submission.revision++; submission.updatedAt = now;
-    } else if (raw.action === "schema") e.schemas.push(parseSchema(raw.schema, currentSchema(e).version + 1));
-    else if (raw.action === "rooms") {
+    } else if (raw.action === "schema") {
+      const previous = currentSchema(e);
+      const next = parseSchema(raw.schema, previous.version + 1);
+      const existing = previous.sections.map(section => section.descriptionHtml);
+      for (const section of next.sections) {
+        if (section.descriptionHtml === undefined) continue;
+        const html = sanitizeArticleHtml(section.descriptionHtml, true);
+        if (!checkBodyAssets(html, { kind: "exhibition-section", id: e.id }, actorId, existing))
+          throw new ExhibitionError("展示区分の説明に添付したファイルを確認してください。");
+        section.description = text(activityRichTextPlain(html), "説明", 1500);
+        if (section.description) section.descriptionHtml = html;
+        else delete section.descriptionHtml;
+      }
+      e.schemas.push(next);
+    } else if (raw.action === "rooms") {
       if(e.layoutProtocol)throw new ExhibitionError("共同編集の画面を再読み込みしてください。旧画面からの一括保存はできません。",409);
       const rooms = parseRooms(raw.rooms), works = data.submissions.filter(s => s.exhibitionId === e.id).flatMap(s => latestContent(s)?.works ?? []);
       if (rooms.some(r => r.placements.some(p => !works.some(w => w.id === p.workId && w.kind !== "book")) || r.books.some(p => !works.some(w => w.id === p.workId && w.kind === "book") || !r.tables.some(t => t.id === p.tableId)))) throw new ExhibitionError("配置する作品・展示台を確認してください。");

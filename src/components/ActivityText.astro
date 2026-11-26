@@ -2,6 +2,7 @@
 import { activityTextParts } from "../lib/activityPresentation";
 import { activityRichHtml } from "../lib/activityRichText";
 import "../styles/PortfolioIntroduction.css";
+import "../styles/RichBody.css";
 interface Props {
   text: string;
   html?: string;
@@ -10,7 +11,7 @@ const { text, html } = Astro.props;
 ---
 
 {
-  html ? <div class="portfolio-introduction-content" set:html={activityRichHtml(html)} /> : activityTextParts(text).map((part) =>
+  html ? <div class="portfolio-introduction-content rich-body-content" set:html={activityRichHtml(html)} /> : activityTextParts(text).map((part) =>
     part.href ? (
       <a href={part.href} target="_blank" rel="noopener noreferrer">
         {part.text}
