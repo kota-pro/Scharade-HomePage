@@ -214,6 +214,23 @@ test("a plan whose only problems are a lone woman or first-year can be confirmed
   assert.deepEqual(current().publishedGroups!.groups, lone);
   assert.equal(current().publishedGroups!.version, 1);
 });
+test("with only one woman overall, generation still succeeds and the plan can be confirmed", async () => {
+  for (const record of activities.roster!.records)
+    if (record.key !== "p0") record.gender = "male";
+  writeData("member-activities.json", activities);
+  await setup();
+  await command("groups.generate");
+  const generated = summary();
+  assert.ok(
+    generated.problems.includes(
+      "女性の参加者が全体で1人のため、単独配置禁止を満たせません。",
+    ),
+  );
+  assert.ok(generated.problems.every((problem) => !/1年生/.test(problem)));
+  assert.deepEqual(generated.blockers, []);
+  await command("groups.publish", { source: generated.source });
+  assert.equal(current().publishedGroups!.version, 1);
+});
 test("changes to the roster or selected history invalidate a prepared plan", async () => {
   await setup();
   await command("groups.generate");

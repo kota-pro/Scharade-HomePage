@@ -14,11 +14,18 @@ export function groupPairs(groups: Group[]): Set<string> {
         pairs.add(pairKey(g.memberIds[i], g.memberIds[j]));
   return pairs;
 }
-type ProblemOptions = { singletons?: boolean };
+/** "all" reports every lone woman / first-year (display). "avoidable" skips an
+ * attribute that only one participant has, since no grouping can avoid it
+ * (generation). "none" skips them all (confirming). */
+type ProblemOptions = { singletons?: "all" | "avoidable" | "none" };
+const onlyOne = (people: Participant[]) => ({
+  female: people.filter((p) => p.gender === "female").length === 1,
+  first: people.filter((p) => p.grade === "1").length === 1,
+});
 export function ruleProblems(
   people: Participant[],
   rules: GroupRules,
-  { singletons = true }: ProblemOptions = {},
+  { singletons = "all" }: ProblemOptions = {},
 ): string[] {
   const problems: string[] = [];
   const ids = new Set(people.map((p) => p.id));
@@ -52,11 +59,12 @@ export function ruleProblems(
         pair.some((id) => !ids.has(id))
       )
         problems.push("同班・別班指定は、異なる参加者2人を選択してください。");
-  if (singletons && people.filter((p) => p.gender === "female").length === 1)
+  const only = onlyOne(people);
+  if (singletons === "all" && only.female)
     problems.push(
       "女性の参加者が全体で1人のため、単独配置禁止を満たせません。",
     );
-  if (singletons && people.filter((p) => p.grade === "1").length === 1)
+  if (singletons === "all" && only.first)
     problems.push(
       "1年生の参加者が全体で1人のため、単独配置禁止を満たせません。",
     );
@@ -68,7 +76,10 @@ export function validateGroups(
   groups: Group[],
   options: ProblemOptions = {},
 ): string[] {
-  const singletons = options.singletons ?? true;
+  const singletons = options.singletons ?? "all",
+    only = onlyOne(people);
+  const check = (field: "female" | "first") =>
+    singletons === "all" || (singletons === "avoidable" && !only[field]);
   const problems = ruleProblems(people, rules, options);
   const placed = groups.flatMap((g) => g.memberIds);
   const ids = new Set(people.map((p) => p.id));
@@ -87,11 +98,10 @@ export function validateGroups(
       problems.push(`${i + 1}班の人数が範囲外です。`);
     if (g.leaderId !== rules.leaders[i] || !g.memberIds.includes(g.leaderId))
       problems.push(`${i + 1}班の指定リーダーを配置してください。`);
-    if (!singletons) return;
     const members = people.filter((p) => g.memberIds.includes(p.id));
-    if (members.filter((p) => p.gender === "female").length === 1)
+    if (check("female") && members.filter((p) => p.gender === "female").length === 1)
       problems.push(`${i + 1}班で女性が1人です。`);
-    if (members.filter((p) => p.grade === "1").length === 1)
+    if (check("first") && members.filter((p) => p.grade === "1").length === 1)
       problems.push(`${i + 1}班で1年生が1人です。`);
   });
   return [...new Set(problems)];
@@ -103,7 +113,7 @@ export function publishBlockers(
   rules: GroupRules,
   groups: Group[],
 ): string[] {
-  return validateGroups(people, rules, groups, { singletons: false });
+  return validateGroups(people, rules, groups, { singletons: "none" });
 }
 export function groupScore(
   people: Participant[],
@@ -149,7 +159,7 @@ async function constrainedGroups(
   options: { budgetMs?: number; seed?: number } = {},
   priorities: GroupRules = rules,
 ) {
-  const problems = ruleProblems(people, rules);
+  const problems = ruleProblems(people, rules, { singletons: "avoidable" });
   const parent = new Map(people.map((p) => [p.id, p.id]));
   const root = (id: string): string => {
     let r = id;
@@ -206,6 +216,8 @@ async function constrainedGroups(
       random() - 0.5,
   );
   const counts = groups.map(() => ({ female: 0, first: 0 }));
+  // A lone attribute overall cannot avoid a one-person group, so it is not pruned.
+  const only = onlyOne(people);
   const remaining = blocks.map((_, i) => blocks.slice(i).flat());
   const feasible = (next: number) => {
     const rest = remaining[next] || [];
@@ -220,6 +232,7 @@ async function constrainedGroups(
       ["female", rest.filter((p) => p.gender === "female").length],
       ["first", rest.filter((p) => p.grade === "1").length],
     ] as const) {
+      if (only[field]) continue;
       if (counts.filter((c) => c[field] === 1).length > total) return false;
       if (
         counts.some(
@@ -239,7 +252,8 @@ async function constrainedGroups(
       }
     }
     if (at === blocks.length) {
-      if (validateGroups(people, rules, groups).length) return false;
+      if (validateGroups(people, rules, groups, { singletons: "avoidable" }).length)
+        return false;
       best = structuredClone(groups);
       bestScore = groupPriorityScore(people, priorities, groups, history);
       return true;
@@ -346,7 +360,8 @@ async function constrainedGroups(
       .filter((id) => !b.includes(id))
       .concat(a);
     if (
-      validateGroups(people, rules, candidate).length ||
+      validateGroups(people, rules, candidate, { singletons: "avoidable" })
+        .length ||
       groupPreferenceWarnings(candidate, rules).length
     )
       continue;
@@ -420,7 +435,7 @@ export async function generateGroups(
   history = new Set<string>(),
   options: { budgetMs?: number; seed?: number } = {},
 ) {
-  const problems = ruleProblems(people, rules);
+  const problems = ruleProblems(people, rules, { singletons: "avoidable" });
   if (problems.length)
     return {
       status: "impossible" as const,

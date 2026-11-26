@@ -94,16 +94,45 @@ test("0/1/2 women or first-years, including overlapping attributes", async () =>
     (await generateGroups(p, r, new Set(), { budgetMs: 80 })).status,
     "found",
   );
-  p[0].gender = "female";
-  assert.match((await generateGroups(p, r)).problems.join(), /女性.*1人/);
-  p[1].gender = "female";
-  p[0].grade = "1";
-  assert.match((await generateGroups(p, r)).problems.join(), /1年生.*1人/);
+  // Only one overall: unavoidable, so generation places them and confirm asks first.
+  for (const [field, value, pattern] of [
+    ["gender", "female", /女性.*1人/],
+    ["grade", "1", /1年生.*1人/],
+  ] as const) {
+    if (field === "grade") {
+      p[1].gender = "female";
+      p[0].grade = "1";
+    } else p[0].gender = "female";
+    const lone = await generateGroups(p, r, new Set(), { budgetMs: 80 });
+    assert.equal(lone.status, "found", value);
+    assert.match(validateGroups(p, r, lone.groups!).join(), pattern);
+    assert.deepEqual(publishBlockers(p, r, lone.groups!), []);
+  }
   p[1].grade = "1";
   assert.equal(
     (await generateGroups(p, r, new Set(), { budgetMs: 80 })).status,
     "found",
   );
+});
+test("a lone woman overall is placed while first-years still avoid one-person groups", async () => {
+  const p = people(8).map((person, i) => ({
+    ...person,
+    gender: i === 0 ? ("female" as const) : ("male" as const),
+    grade: i === 1 || i === 2 ? ("1" as const) : ("2" as const),
+  })) as Participant[];
+  const r = rules(2);
+  for (const seed of [1, 2, 3, 4, 5]) {
+    const generated = await generateGroups(p, r, new Set(), {
+      seed,
+      budgetMs: 200,
+    });
+    assert.equal(generated.status, "found");
+    const problems = validateGroups(p, r, generated.groups!);
+    assert.ok(problems.includes("女性の参加者が全体で1人のため、単独配置禁止を満たせません。"));
+    assert.ok(problems.some((problem) => /班で女性が1人です。$/.test(problem)));
+    assert.ok(problems.every((problem) => !/1年生/.test(problem)));
+    assert.deepEqual(publishBlockers(p, r, generated.groups!), []);
+  }
 });
 test("conflicting preferences fall back to a valid plan while capacity remains mandatory", async () => {
   const p = people(12),
