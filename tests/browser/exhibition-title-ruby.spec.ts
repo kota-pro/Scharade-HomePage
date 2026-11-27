@@ -1,9 +1,10 @@
+import { fixtureExhibition } from "./fixture-exhibition";
 import {test,expect,type Page} from '@playwright/test';
 import {fixtureLogin} from './fixture-auth';
 const headers={Origin:'http://127.0.0.1:4329'};
 const login=async(page:Page,email='member@example.invalid')=>expect((await fixtureLogin(page.request,'/api/auth/login',{headers,data:{email,password:'fixture-password-123'}})).ok()).toBe(true);
-async function fixture(page:Page,engine:string,prefix='f3000000',books=1) {
-  await login(page);const id=`${prefix}-0000-4000-8000-00000000000${['chromium','firefox','webkit'].indexOf(engine)+1}`,endpoint=`/api/exhibitions/${id}`;
+async function fixture(page:Page,engine:string,source: 'form' | 'book' = 'book',books=1) {
+  await login(page);const id=await fixtureExhibition(engine,"作品タイトルとふりがな",{source}),endpoint=`/api/exhibitions/${id}`;
   const initial=await(await page.request.get(endpoint)).json(),schema=initial.schema??initial.exhibition.schemas?.at(-1);
   const started=await page.request.post(endpoint,{headers,data:{action:'begin'}});expect(started.ok(),await started.text()).toBe(true);
   const value=await started.json(),sectionId=schema.sections[0].id,workId=crypto.randomUUID();
@@ -13,7 +14,7 @@ async function fixture(page:Page,engine:string,prefix='f3000000',books=1) {
   return{id,endpoint,workId,form:page.locator(`[data-titleboard-work="${workId}"]`),draft:async()=> (await(await page.request.get(endpoint)).json()).submission.draft};
 }
 test('readings and per-work photography permission survive autosave, preview, submission and staff correction',async({page},info)=>{
-  test.setTimeout(120000);const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));const f=await fixture(page,info.project.name,'f3000000',2);
+  test.setTimeout(120000);const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));const f=await fixture(page,info.project.name,'book',2);
   await page.locator('[data-help-open]').click();
   await page.locator('#help-query').fill('撮影NG');
   await page.locator('#help-search-results').getByRole('button', { name: /展示作品の撮影可否を設定する/ }).click();
@@ -47,7 +48,13 @@ test('readings and per-work photography permission survive autosave, preview, su
   await page.locator('[data-board-preview-next]').click();
   await expect(preview).toBeVisible();expect(await hasRedMark()).toBe(false);
   await page.keyboard.press('Escape');
-  await page.locator('[data-submit]').click();await expect.poll(async()=>(await(await page.request.get(f.endpoint)).json()).submission.versions.length).toBe(1);
+  const [submitted] = await Promise.all([
+    page.waitForResponse(response => response.url().endsWith(f.endpoint) && response.request().method() === 'POST' && response.request().postDataJSON().action === 'submit'),
+    page.locator('[data-submit]').click(),
+  ]);
+  expect(submitted.ok(), await submitted.text()).toBe(true);
+  expect((await submitted.json()).submission.versions).toHaveLength(1);
+  await expect(page.locator('.exhibition-status')).toContainText('提出しました');
   await login(page,'planner@example.invalid');await page.goto(`/Member/manage/exhibitions/${f.id}/submissions`);await page.locator('[data-submission-tab="works"]').click();await page.locator('.submission-work-card [data-submission-detail]').first().click();
   const modal=page.locator('.submission-detail-dialog'),staff=modal.locator(`[data-titleboard-work="${f.workId}"]`);await expect(staff.locator('[data-titleboard-quoted]')).not.toBeChecked();await expect(staff.locator('[data-title-ruby-reading][data-ruby-group="true"]')).toHaveValue('ずっと');
   await expect(staff.getByRole('radio',{name:'撮影NG',exact:true})).toBeChecked();
@@ -59,7 +66,7 @@ test('readings and per-work photography permission survive autosave, preview, su
   await page.keyboard.press('Escape');expect(errors).toEqual([]);
 });
 test('word removal restores character readings; repeated words select exact positions and invalid readings warn',async({page},info)=>{
-  const f=await fixture(page,info.project.name,'f1000000');await f.form.locator('[data-titleboard-enabled]').check();
+  const f=await fixture(page,info.project.name,'form');await f.form.locator('[data-titleboard-enabled]').check();
   await f.form.locator('[data-title-ruby-reading][data-ruby-start="0"]').fill('えい');await f.form.locator('[data-title-ruby-reading][data-ruby-start="1"]').fill('えん');
   await f.form.locator('[data-title-ruby-target]').fill('永遠');await f.form.locator('[data-title-ruby-add]').click();await f.form.locator('[data-title-ruby-reading][data-ruby-group="true"]').fill('ずっと');await f.form.locator('[data-title-ruby-remove]').click();
   await expect(f.form.locator('[data-title-ruby-reading][data-ruby-start="0"]')).toHaveValue('えい');await expect(f.form.locator('[data-title-ruby-reading][data-ruby-start="1"]')).toHaveValue('えん');

@@ -1,3 +1,4 @@
+import { openPropertySection } from "./layout-tools-helper";
 import {test,expect} from '@playwright/test';
 import {fixtureLogin} from './fixture-auth';
 const headers={Origin:'http://127.0.0.1:4329'};
@@ -22,8 +23,26 @@ test('pen drafts survive invalid save and close, settle before switches, and war
  await point(2500,2000);await page.locator('[data-layout-tool="select"]').click();await expect(page.locator('[data-layout-kind="annotation"]')).toHaveCount(1);await page.locator('[data-layout-undo]').click();await expect(page.locator('[data-layout-kind="annotation"]')).toHaveCount(0);await page.locator('[data-layout-redo]').click();
  await page.locator('[data-layout-tool="draw"]').click();await point(3500,1500);await point(4500,2000);await page.locator('[data-layout-view]').selectOption('wall:0');await page.locator('[data-layout-save]').click();await expect(page.locator('.site-notice').last()).toContainText('保存しました');
  let room=(await(await page.request.get(`/api/member/exhibitions/${id}`)).json()).exhibition.rooms[0];expect(room.annotations).toHaveLength(2);expect(room.annotations.every((a:any)=>a.surface==='floor')).toBe(true);
- await page.locator('[data-layout-view]').selectOption('floor');await page.locator('[data-vector-draw-kind]').selectOption('room');for(const [x,y] of [[1000,1000],[2000,2000],[1000,2000],[2000,1000]])await point(x,y);
+ await page.locator('[data-layout-view]').selectOption('floor');await openPropertySection(page, '頂点・描画の編集');await page.locator('[data-vector-draw-kind]').selectOption('room');for(const [x,y] of [[1000,1000],[2000,2000],[1000,2000],[2000,1000]])await point(x,y);
  await page.locator('[data-layout-save]').click();await expect(page.locator('.site-notice').last()).toContainText('交差');await expect(page.locator('[data-vector-draft]')).toHaveCount(4);await page.keyboard.press('Escape');await expect(page.locator('[data-vector-draft]')).toHaveCount(0);
- await page.locator('[data-vector-draw-kind]').selectOption('shape');await point(5000,3000);await point(5500,3500);await page.locator('[data-room-modal-close]').click();const confirm=page.getByRole('dialog',{name:'未保存の配置'});await expect(confirm).toBeVisible();await confirm.getByRole('button',{name:'編集を続ける'}).click();await expect(page.locator('[data-layout-kind="annotation"]')).toHaveCount(3);await page.locator('[data-layout-save]').click();await expect(page.locator('.site-notice').last()).toContainText('保存しました');
+ await page.locator('[data-vector-draw-kind]').selectOption('shape');await point(5000,3000);await point(5500,3500);
+ const layoutURL=`**/api/member/exhibitions/${id}/layout`;
+ let release!:()=>void;
+ const held=new Promise<void>(resolve=>{release=resolve;});
+ await page.route(layoutURL,async route=>{
+   if(route.request().method()==='POST'&&route.request().postDataJSON().action==='commit')await held;
+   await route.continue();
+ });
+ const commit=page.waitForRequest(request=>request.url().endsWith('/layout')&&request.method()==='POST'&&request.postDataJSON().action==='commit');
+ try {
+   await page.locator('[data-room-modal-close]').click();
+   await commit;
+   await expect(page.locator('.room-edit-dialog')).toBeVisible();
+   await expect(page.locator('[data-room-modal-close]')).toBeDisabled();
+   await expect(page.locator('[data-layout-kind="annotation"]')).toHaveCount(3);
+ } finally {
+   release();
+ }
+ await expect(page.locator('.room-edit-dialog')).not.toBeVisible();
  room=(await(await page.request.get(`/api/member/exhibitions/${id}`)).json()).exhibition.rooms[0];expect(room.annotations).toHaveLength(3);expect(await page.evaluate(()=>{const e=new Event('beforeunload',{cancelable:true});window.dispatchEvent(e);return e.defaultPrevented;})).toBe(false);
 });

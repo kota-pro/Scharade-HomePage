@@ -12,6 +12,11 @@ export async function openPropertySection(page:Page,title:string){
  await expect(section).toHaveCount(1);
  if(!await section.evaluate(el=>(el as HTMLDetailsElement).open))await section.locator('summary').click();
 }
+export async function openRoomCreation(page: Page) {
+ const section = page.locator('details[data-property-section="四角形の展示室を追加"]');
+ if (await section.count()) await openPropertySection(page, '四角形の展示室を追加');
+ await expect(page.locator('[data-room-add]')).toBeVisible();
+}
 export async function clickLayout(page:Page,x:number,y:number){const p=await page.locator('[data-layout-canvas]').evaluate((svg,p)=>{const q=new DOMPoint(p.x,p.y).matrixTransform((svg as SVGSVGElement).getScreenCTM()!);return{x:q.x,y:q.y};},{x,y});await page.mouse.click(p.x,p.y);}
 
 // Presence/layout repaints may replace an SVG child between locator resolution

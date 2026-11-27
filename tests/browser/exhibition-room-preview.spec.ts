@@ -1,3 +1,4 @@
+import { fixtureExhibition } from "./fixture-exhibition";
 import { test, expect } from '@playwright/test';
 import { fixtureLogin } from './fixture-auth';
 import { addShape } from './layout-tools-helper';
@@ -7,19 +8,18 @@ test('central overview shows the saved floor scene, fits mobile, switches rooms 
   const errors: string[] = [];
   page.on('pageerror', e => errors.push(e.message));
   await fixtureLogin(page.request, '/api/auth/login', { headers, data: { email: 'planner@example.invalid', password: 'fixture-password-123' } });
-  const id = `f2000000-0000-4000-8000-00000000000${['chromium', 'firefox', 'webkit'].indexOf(info.project.name) + 1}`;
-  const state = async () => (await (await page.request.get(`/api/member/exhibitions/${id}`)).json()).exhibition;
-  const data = await (await page.request.get(`/api/member/exhibitions/${id}`)).json(), r = data.exhibition.rooms[0];
-  r.vertices[0].radius = 250;
-  r.placements = [{ workId: data.submissions[0].content.works[0].id, wall: 0, x: 1200, bottom: 1000, rotation: 0 }];
-  r.openings = [{ id: crypto.randomUUID(), kind: 'door', wall: 0, offset: 3000, width: 900, bottom: 0, height: 2000 }];
-  r.tables = [{ id: crypto.randomUUID(), name: '受付', x: 4200, y: 2700, width: 900, depth: 600, rotation: 0 }];
-  r.boardGroups = [{ id: crypto.randomUUID(), name: '連結展示ボード', x: 1500, y: 1800, rotation: 0, panels: [0, 1].map(i => ({ id: crypto.randomUUID(), name: `パネル${i + 1}`, width: 900, height: 1800, thickness: 30, hingeAngle: i ? 45 : 0 })) }];
-  r.annotations = [false, true].map(hidden => ({ id: crypto.randomUUID(), kind: 'power', x: hidden ? 2000 : 1000, y: 3000, width: 200, height: 300, rotation: 0, fontSize: 100, text: '' }));
-  r.editor = { order: [], hidden: [`annotation:${r.annotations[1].id}`], locked: [], groups: [] };
-  const second = { ...structuredClone(r), id: crypto.randomUUID(), name: '別の展示室', placements: [], tables: [], openings: [], annotations: [], boardGroups: [], editor: {order: [], hidden: [], locked: [], groups: []} };
-  const setup = await page.request.post('/api/member/exhibitions', { headers, data: { action: 'rooms', exhibitionId: id, revision: data.exhibition.revision, rooms: [r, second] } });
-  expect(setup.ok(), await setup.text()).toBe(true);
+  const id = await fixtureExhibition(info.project.name, "展示室のプレビュー", { rooms: ([room], [workId]) => {
+    room.vertices[0].radius = 250;
+    room.placements = [{ workId, wall: 0, x: 1200, bottom: 1000, rotation: 0 }];
+    room.openings = [{ id: crypto.randomUUID(), kind: 'door', wall: 0, offset: 3000, width: 900, bottom: 0, height: 2000 }];
+    room.tables = [{ id: crypto.randomUUID(), name: '受付', x: 4200, y: 2700, width: 900, depth: 600, rotation: 0 }];
+    room.boardGroups = [{ id: crypto.randomUUID(), name: '連結展示ボード', x: 1500, y: 1800, rotation: 0, panels: [0, 1].map(i => ({ id: crypto.randomUUID(), name: `パネル${i + 1}`, width: 900, height: 1800, thickness: 30, hingeAngle: i ? 45 : 0 })) }];
+    room.annotations = [false, true].map(hidden => ({ id: crypto.randomUUID(), kind: 'power', x: hidden ? 2000 : 1000, y: 3000, width: 200, height: 300, rotation: 0, fontSize: 100, text: '' }));
+    room.editor = { order: [], hidden: [`annotation:${room.annotations[1].id}`], locked: [], groups: [] };
+    const second = { ...structuredClone(room), id: crypto.randomUUID(), name: '別の展示室', placements: [], tables: [], openings: [], annotations: [], boardGroups: [], editor: { order: [], hidden: [], locked: [], groups: [] } };
+    return [room, second];
+  } });
+  const state = async () => (await (await page.request.get(`/api/member/exhibitions/${id}`, { maxRetries: 1 })).json()).exhibition;
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/Member/manage/exhibitions/${id}/layout`);
   const preview = page.locator('.room-summary-preview');

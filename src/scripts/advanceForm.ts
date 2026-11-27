@@ -1,4 +1,5 @@
 import { readApiResponse, apiErrorMessage } from "./apiResponse";
+import { siteErrorDetails } from "../lib/siteErrors.ts";
 import { operationNotice } from "./siteNotice";
 export {};
 const form = document.querySelector<HTMLFormElement>("#advance-form");
@@ -136,7 +137,7 @@ if (form && button && status && preview && send && sendStatus && receiptFile && 
     const values = Object.fromEntries(new FormData(form));
     const body: Record<string, unknown> = { ...values, amount: Number(values.amount) };
     if (submittedBody && comparable(submittedBody) !== comparable(body)) {
-      showStatus(status, "前回の受付結果が未確認です。重複を防ぐため、前回の内容に戻して送信してください。内容の変更は会計担当者へご連絡ください。", true);
+      showStatus(status, siteErrorDetails["advance-restore-previous"].message, true);
       status.focus();
       return;
     }
@@ -158,6 +159,7 @@ if (form && button && status && preview && send && sendStatus && receiptFile && 
     receiptImage.hidden = !imageUrl;
     if (imageUrl) receiptImage.src = imageUrl;
     status.hidden = sendStatus.hidden = true;
+    operationNotice("", false, "advance-form");
     previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     preview.showModal();
@@ -168,11 +170,13 @@ if (form && button && status && preview && send && sendStatus && receiptFile && 
   preview.addEventListener("cancel", event => { event.preventDefault(); closePreview(); });
   preview.addEventListener("keydown", event => {
     if (event.key !== "Tab") return;
-    const controls = Array.from(preview.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")).filter(control => !control.closest("[hidden]"));
-    if (!controls.length) { event.preventDefault(); return; }
-    const first = controls[0], last = controls[controls.length - 1];
-    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    const controls = [...preview.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")]
+      .filter(control => control.tabIndex >= 0 && control.getClientRects().length > 0);
+    event.preventDefault();
+    if (!controls.length) return;
+    const current = controls.findIndex(control => control === document.activeElement);
+    const next = event.shiftKey ? (current <= 0 ? controls.length - 1 : current - 1) : (current + 1) % controls.length;
+    controls[next].focus();
   });
   preview.addEventListener("click", event => {
     if (event.target !== preview) return;

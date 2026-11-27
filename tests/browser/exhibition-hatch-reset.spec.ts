@@ -1,10 +1,11 @@
+import { fixtureExhibition } from "./fixture-exhibition";
 import {test,expect,type Page} from '@playwright/test';
 import {fixtureLogin} from './fixture-auth';
 import {addShape,clickLayout,outputSvgText} from './layout-tools-helper';
 const headers={Origin:'http://127.0.0.1:4329'};
 async function open(page:Page,engine:string,seed=false){
   page.setDefaultTimeout(10000);await page.setViewportSize({width:1440,height:1000});expect((await fixtureLogin(page.request,'/api/auth/login',{headers,data:{email:'planner@example.invalid',password:'fixture-password-123'}})).ok()).toBe(true);
-  let id:string;if(seed)id=`f2000000-0000-4000-8000-00000000000${['chromium','firefox','webkit'].indexOf(engine)+1}`;else{const response=await page.request.post('/api/member/exhibitions',{headers,data:{action:'create',title:`ハッチング ${engine}`}});expect(response.ok(),await response.text()).toBe(true);id=(await response.json()).exhibition.id;}
+  let id:string;if(seed)id=await fixtureExhibition(engine,"レイアウトのリセット確認");else{const response=await page.request.post('/api/member/exhibitions',{headers,data:{action:'create',title:`ハッチング ${engine}`}});expect(response.ok(),await response.text()).toBe(true);id=(await response.json()).exhibition.id;}
   await page.goto(`/Member/manage/exhibitions/${id}/layout`);await page.locator('[data-open-room-editor="floor"]').click();if(!seed)await page.locator('[data-room-add]').click();await page.locator('[data-layout-snap]').uncheck();
   const get=async()=>(await(await page.request.get(`/api/member/exhibitions/${id}`)).json());const save=async()=>{await page.locator('[data-layout-save]').click();await expect(page.locator('[data-layout-save]')).toBeEnabled();await expect(page.locator('.site-notice').last()).toContainText('保存しました');};await save();return{id,get,save};
 }

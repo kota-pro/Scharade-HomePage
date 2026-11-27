@@ -28,6 +28,7 @@ export const siteErrorDetails = {
   'cms-generation-field': { code: 'SITE-014', message: '「期」を保存するには、microCMSのPortfolioに generation（数値）フィールドを追加してください。期を変更せずに保存すると、ほかの項目は更新できます。' },
   'account-deletion-unconfirmed': { code: 'SITE-014', message: 'Portfolioの削除を確認できませんでした。アカウントは残しています。microCMSの削除・取得権限とコンテンツの参照関係を確認して再試行してください。' },
   'account-deletion-unknown': { code: 'SITE-009', message: 'Portfolioの削除結果を確認できませんでした。アカウントは残しています。時間をおいて再試行してください。' },
+  'advance-restore-previous': { code: 'SITE-009', message: '前回の受付結果が未確認です。重複を防ぐため、前回の内容に戻して送信してください。内容の変更は会計担当者へご連絡ください。' },
   'review-notification': { code: 'SITE-009', message: '承認は完了しましたが、メールを送信できませんでした。「確定する」で通知を再試行できます。' },
 } as const;
 export function registeredErrorDetail(code: unknown, message: string) {

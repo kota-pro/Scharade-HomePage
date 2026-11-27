@@ -80,7 +80,7 @@ export function createSeriesDialog(options: Options) {
     dialog = document.createElement('dialog');
     dialog.className = 'exhibition-confirm-dialog exhibition-page series-editor-dialog';
     dialog.setAttribute('aria-label', '組写真の配置・サイズ編集');
-    dialog.innerHTML = `<header class="exhibition-confirm-header"><div><h2>組写真の配置</h2><p>${escape(options.getWork(id)?.title || '無題')}</p></div><button type="button" class="layout-close" data-series-dialog-close aria-label="組写真ツールを閉じる"><span></span><span></span></button></header><div class="series-dialog-body" data-series-dialog-body></div><div class="series-dialog-footer"><p>変更した配置はフォームに反映されます。閉じると入力画面に戻ります。</p><button type="button" data-series-dialog-close>配置を反映して閉じる</button></div>`;
+    dialog.innerHTML = `<header class="exhibition-confirm-header"><div><h2>組写真の配置</h2><p>${escape(options.getWork(id)?.title || '無題')}</p></div><div data-help-launcher-slot></div><button type="button" class="layout-close" data-series-dialog-close aria-label="組写真ツールを閉じる"><span></span><span></span></button></header><div class="series-dialog-body" data-series-dialog-body></div><div class="series-dialog-footer"><p>変更した配置はフォームに反映されます。閉じると入力画面に戻ります。</p><button type="button" data-series-dialog-close>配置を反映して閉じる</button></div>`;
     document.body.append(dialog); restoreOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden';
     const resize = () => { if (!dialog?.querySelector('[data-dragging="true"]')) paint(); };
     window.addEventListener('resize', resize);

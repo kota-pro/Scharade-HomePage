@@ -181,7 +181,7 @@ test("Portfolio displays each saved title and shooting detail on hover and in th
   await expect(viewer.locator("[data-photo-film]")).toBeVisible();
   for (const container of [thumbnail, viewer]) {
     for (const field of ["camera", "lens", "film", "settings"]) {
-      await expect(container.locator(`[data-photo-${field}]`)).toHaveCSS("font-family", /^"?Grandiflora One"?[,]/);
+      await expect(container.locator(`[data-photo-${field}]`)).toHaveCSS("font-family", /^"?YakuHanMP"?,\s*"?Grandiflora One"?,\s*serif$/);
     }
   }
   await page.goto(`/Portfolio/edit?id=${id}`); await card.getByRole("button", { name: "写真情報を編集", exact: true }).click();

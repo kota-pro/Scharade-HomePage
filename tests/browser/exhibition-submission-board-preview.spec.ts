@@ -1,3 +1,4 @@
+import { fixtureExhibition } from "./fixture-exhibition";
 import { test, expect } from "@playwright/test";
 import { fixtureLogin } from "./fixture-auth";
 
@@ -7,7 +8,7 @@ test("submission QR tab previews all saved cards without changing drafts, versio
   page.on("pageerror", error => errors.push(error.message));
   const headers = { Origin: "http://127.0.0.1:4329" };
   expect((await fixtureLogin(page.request, "/api/auth/login", { headers, data: { email: "planner@example.invalid", password: "fixture-password-123" } })).ok()).toBe(true);
-  const id = `f2000000-0000-4000-8000-00000000000${["chromium", "firefox", "webkit"].indexOf(info.project.name) + 1}`;
+  const id = await fixtureExhibition(info.project.name, "提出済みのタイトルボード");
   const endpoint = `/api/member/exhibitions/${id}`;
   const get = async () => await (await page.request.get(endpoint)).json();
   const before = await get();
@@ -54,9 +55,9 @@ test("submission QR tab previews all saved cards without changing drafts, versio
   expect(await page.evaluate(() => document.body.style.overflow)).toBe("hidden");
   // Failed reads are recoverable and leave the original detail dialog intact.
   const pattern = `**/api/member/exhibitions/${id}/output?kind=board-preview&workId=**`;
-  await page.route(pattern, route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ ok: false, message: "一時的な読み込みエラー" }) }));
+  await page.route(pattern, route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ ok: false, errorCode: "EXH-016" }) }));
   await trigger.click();
-  await expect(preview.locator("[data-board-preview-status]")).toContainText("タイトルボードのプレビューを表示できませんでした。");
+  await expect(preview.locator("[data-board-preview-status]")).toContainText("エラー番号：EXH-016");
   await expect(image).toBeHidden();
   await page.unroute(pattern);
   await preview.locator("[data-board-preview-refresh]").click();

@@ -536,6 +536,9 @@ test("ordinary notices can target one member and cannot be read by others", asyn
     expect(updatedInbox.notifications.find((n: { id: string }) => n.id === id).readAt)
       .toBe(readInbox.notifications.find((n: { id: string }) => n.id === id).readAt);
   } finally {
+    // Unload the staff page before Playwright closes its intercepted WebKit context.
+    await page.goto("about:blank", { waitUntil: "domcontentloaded" });
+    await page.unrouteAll({ behavior: "ignoreErrors" });
     await member.close();
     await outsider.close();
   }

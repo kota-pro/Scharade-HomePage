@@ -32,7 +32,7 @@ test("member logout handles failure, prevents duplicate requests and ends the se
   await page.route("**/api/auth/logout",async route=>{attempts++;await route.fulfill({status:503,json:{ok:false}});});
   const button=page.locator("#member-logout");
   await button.evaluate((el:HTMLButtonElement)=>{el.click();el.click();});
-  await expect(page.locator("#member-logout-status")).toContainText("ログアウトできませんでした");
+  await expect(page.locator("#member-logout-status")).toHaveAttribute("data-site-error-code", "SITE-011");
   expect(attempts).toBe(1);await expect(button).toBeEnabled();
   await page.unroute("**/api/auth/logout");await button.focus();await page.keyboard.press("Enter");
   await expect(page).toHaveURL("http://127.0.0.1:4329/");await expect(page.locator(".user-welcome")).toHaveCount(0);
