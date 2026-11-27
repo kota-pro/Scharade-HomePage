@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { fixtureLogin } from "./fixture-auth";
+import { openRoomCreation } from "./layout-tools-helper";
 const headers = { Origin: "http://127.0.0.1:4329" };
 async function screen(page: Page, x: number, y: number) {
   return page.locator("[data-layout-canvas]").evaluate(
@@ -197,6 +198,7 @@ test("dimension-first rooms, tool cursors and drag-drawn rectangles/ellipses per
   await page.locator("[data-room-modal-close]").click();
   const original = await room(page, id);
   await page.locator('[data-open-room-editor="floor"]').click();
+  await openRoomCreation(page);
   await page.locator('[data-room-size="width"]').fill("7000");
   await page.locator('[data-room-size="height"]').fill("3000");
   await page.locator("[data-room-add]").click();

@@ -37,7 +37,8 @@ test('responsive form restores uncertain submission and retries with the same id
   await confirm(page);await send(page);await expect(page.locator('#advance-send-status')).toHaveAttribute('data-error','true');
   await page.getByRole('button',{name:'入力に戻る',exact:true}).click();
   await page.getByLabel('金額・円（必須）').fill('9999');await confirm(page);
-  await expect(page.locator('#advance-preview')).not.toBeVisible();await expect(page.locator('#advance-status')).toContainText('前回の受付結果が未確認');
+  await expect(page.locator('#advance-preview')).not.toBeVisible();await expect(page.locator('#advance-status')).toContainText('エラー番号：SITE-009');
+  await expect(page.locator('#advance-status')).toContainText('前回の内容に戻して送信してください');
   await page.reload();await expect(page.getByLabel('金額・円（必須）')).toHaveValue('1250');await expect(page.locator('#advance-status')).toContainText('復元');
   await page.unroute('**/api/member/advances');const sent=page.waitForRequest('**/api/member/advances');await confirm(page);await send(page);
   expect((await sent).postDataJSON().idempotencyKey).toBe(originalKey);await expect(page.locator('#advance-status')).toContainText('受付番号：ADV-');await expect(page.getByLabel('金額・円（必須）')).toHaveValue('');
@@ -72,7 +73,10 @@ test('confirmation shows every field safely, supports editing and fits phone and
   await expect(dialog.locator('[data-preview-field="university"]')).toHaveText('テスト大学');
   await expect(dialog.locator('[data-preview-field="lineName"]')).toHaveText('会員LINE');
   await expect(dialog.locator('.advance-preview-account')).toContainText('長いログイン表示名');
+  const help = dialog.getByRole('button', { name: /^ヘルプを開く/ });
+  await page.keyboard.press('Shift+Tab');await expect(help).toBeFocused();
   await page.keyboard.press('Shift+Tab');await expect(page.locator('#advance-send')).toBeFocused();
+  await page.keyboard.press('Tab');await expect(help).toBeFocused();
   await page.keyboard.press('Tab');await expect(page.locator('#advance-close')).toBeFocused();
   expect(requests).toBe(0);expect(await page.evaluate(()=>sessionStorage.getItem('scharade-advance:member'))).toBeNull();
   await page.getByRole('button',{name:'項目名・用途を修正'}).click();await expect(page.getByLabel('項目名・用途（必須）')).toBeFocused();
@@ -88,7 +92,7 @@ test('confirmation shows every field safely, supports editing and fits phone and
     const sendBox=await page.locator('#advance-send').boundingBox();expect(sendBox).not.toBeNull();expect(sendBox!.x).toBeGreaterThanOrEqual(0);expect(sendBox!.x+sendBox!.width).toBeLessThanOrEqual(width+1);expect(sendBox!.y+sendBox!.height).toBeLessThanOrEqual(height+1);
     if(browserName==='chromium'&&[1440,390,320].includes(width))await page.screenshot({path:test.info().outputPath(`advance-confirm-${width}.png`),animations:'disabled'});
   }
-  await page.keyboard.press('Escape');await expect(dialog).not.toBeVisible();await expect(page.locator('button[type="submit"]')).toBeFocused();
+  await page.keyboard.press('Escape');await expect(dialog).not.toBeVisible();await expect(page.locator('#advance-form button[type="submit"]')).toBeFocused();
   await expect(page.getByLabel('金額・円（必須）')).toHaveValue('2500');expect(await page.evaluate(()=>document.body.style.overflow)).not.toBe('hidden');
   await page.getByLabel('備考（任意）').fill('');await confirm(page);await expect(dialog.locator('[data-preview-field="notes"]')).toHaveText('（未入力）');
   await page.locator('#advance-close').click();await expect(dialog).not.toBeVisible();

@@ -492,7 +492,7 @@ function setupHelp(root: HTMLElement) {
   const resizeObserver = new ResizeObserver(queuePosition); resizeObserver.observe(banner);
   const observer = new MutationObserver(records => {
     const dialog = [...document.querySelectorAll<HTMLDialogElement>('dialog[open]')].filter(d => d !== panel).at(-1);
-    const launcherParent = dialog || root;
+    const launcherParent = dialog?.querySelector("[data-help-launcher-slot]") ?? dialog ?? root;
     if (launcher.parentElement !== launcherParent) launcherParent.append(launcher);
     if (!tour || tour.hidden || panel.open || !guide || records.every(r => (r.target instanceof Element ? r.target : r.target.parentElement)?.closest('[data-help-root], [data-help-tour], [data-help-arrow]'))) return;
     clearTimeout(mutationTimer); mutationTimer = window.setTimeout(() => { if (tour && !tour.hidden && guide) prepareTarget(guide.steps[tour.index], false); }, 120);

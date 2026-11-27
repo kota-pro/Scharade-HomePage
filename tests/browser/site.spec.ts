@@ -46,6 +46,7 @@ async function login(page: any, account = "admin") {
 test("public pages: breadcrumbs and no horizontal overflow at 320, 390, 768, 1440, 1920", async ({
   page,
 }) => {
+  test.setTimeout(120000); // 85 document navigations across the five viewport widths.
   for (const width of [320, 390, 768, 1440, 1920]) {
     await page.setViewportSize({ width, height: 900 });
     for (const route of [
@@ -67,7 +68,7 @@ test("public pages: breadcrumbs and no horizontal overflow at 320, 390, 768, 144
       "/posts/test-post",
       "/404",
     ]) {
-      const response = await page.goto(route);
+      const response = await page.goto(route, { waitUntil: "domcontentloaded" });
       expect(response?.status(), route).toBe(route === "/404" ? 404 : 200);
       if (route === "/404") {
         await expect(page.getByRole("alert")).toContainText("SITE-006");
@@ -149,7 +150,7 @@ test("admin edits drafts, previews, publishes, restores and reaches every Portfo
   await page.goto("/Admin");
   await expect(page.locator(".user-welcome")).toHaveAttribute(
     "href",
-    "/Member",
+    "/Dashboard",
   );
   await page.goto("/Admin/content/home");
   await page
@@ -185,8 +186,8 @@ test("admin edits drafts, previews, publishes, restores and reaches every Portfo
   );
   expect(await publish("restore")).toBe(200);
   await page.goto("/Portfolio/edit?id=other");
-  await expect(page.getByLabel("期", { exact: true })).toBeVisible();
-  await page.getByLabel("期", { exact: true }).fill("53");
+  const grade = page.getByLabel("Grade / 学年", { exact: true });
+  await expect(grade).toBeVisible();
   await page.locator("#field-name").fill("管理者が更新した会員");
   let writes = 0;
   page.on("request", (r) => {

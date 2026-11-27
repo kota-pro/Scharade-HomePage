@@ -1,3 +1,5 @@
+import { fixtureExhibition } from "./fixture-exhibition";
+import { openPropertySection } from "./layout-tools-helper";
 import {addShape} from './layout-tools-helper';
 import { fixtureLogin } from "./fixture-auth";
 import { test, expect } from "@playwright/test";
@@ -5,8 +7,8 @@ import sharp from "sharp";
 const headers={Origin:"http://127.0.0.1:4329"};
 async function login(page:any,email="member@example.invalid") {expect((await fixtureLogin(page.request, "/api/auth/login", {headers,data:{email,password:"fixture-password-123"}})).ok()).toBe(true);}
 test("split metadata, file labels, width warnings and popup status survive a saved draft",async({page},info)=>{
-  await login(page);const index=["chromium","firefox","webkit"].indexOf(info.project.name)+1,id=`f1000000-0000-4000-8000-00000000000${index}`;
-  await page.goto(`/Exhibition/${id}`);await page.locator("[data-begin]").click();
+  await login(page);const id=await fixtureExhibition(info.project.name,"写真展フォームの入力",{source:"form"});
+  await page.goto(`/Exhibition/${id}`);if (await page.locator("[data-begin]").count()) await page.locator("[data-begin]").click();
   await page.locator('[data-common="name"]').fill("作者");await page.locator('[data-common="authorName"]').fill("作者");await page.locator('[data-common="grade"]').selectOption("1年");
   await page.getByLabel("通常展示",{exact:true}).check();await page.getByLabel("単写真枚数").fill("1");await page.getByLabel("単写真枚数").press("Tab");
   await page.locator('[data-work-key="title"]').fill("あ".repeat(14));await expect(page.locator('[data-work-key="title"]')).toHaveAttribute("aria-invalid","false");
@@ -29,7 +31,7 @@ test("split metadata, file labels, width warnings and popup status survive a sav
 
 });
 test("series background and Escape clear selection; zoom and edge snap use the editor viewport",async({page},info)=>{
-  await login(page);const index=["chromium","firefox","webkit"].indexOf(info.project.name)+1,id=`f1000000-0000-4000-8000-00000000000${index}`;
+  await login(page);const id=await fixtureExhibition(info.project.name,"写真展フォームの入力",{source:"form"});
   await page.goto(`/Exhibition/${id}`);if(await page.locator('[data-begin]').count())await page.locator('[data-begin]').click();
   if(!await page.locator('[data-count="series"]').count())await page.getByLabel("通常展示",{exact:true}).check();
   await page.getByLabel("組写真作品数").fill("1");await page.getByLabel("組写真作品数").press("Tab");
@@ -52,17 +54,20 @@ test("series background and Escape clear selection; zoom and edge snap use the e
 });
 
 test("integrated canvas stays fixed across tabs and connected boards preserve both faces and seam validation",async({page},info)=>{
- const index=["chromium","firefox","webkit"].indexOf(info.project.name)+1,id=`f2000000-0000-4000-8000-00000000000${index}`;await login(page,"planner@example.invalid");await page.setViewportSize({width:1440,height:1000});let data=await(await page.request.get(`/api/member/exhibitions/${id}`)).json();const r=data.exhibition.rooms[0];r.placements=[];r.boardPlacements=[];r.titleBoards=[];r.editor=undefined;expect((await page.request.post('/api/member/exhibitions',{headers,data:{action:'rooms',exhibitionId:id,revision:data.exhibition.revision,rooms:[r]}})).ok()).toBe(true);
+ await login(page,"planner@example.invalid");
+ await page.setViewportSize({width:1440,height:1000});
+ const id=await fixtureExhibition(info.project.name,"連結展示ボード");
+ const data=await (await page.request.get(`/api/member/exhibitions/${id}`)).json();
  await page.goto(`/Member/manage/exhibitions/${id}/layout`);await page.locator('[data-open-room-editor="floor"]').click();const canvas=page.locator('[data-layout-canvas]'),initial=(await canvas.boundingBox())!;for(const tab of ['align','layers','works','properties']){await page.locator(`[data-layout-tab="${tab}"]`).click();expect(await canvas.boundingBox()).toEqual(initial);}
- const add=async()=>{await addShape(page,'board');};await add();await page.locator('[data-layout-panel-add]').click();await page.locator('[data-layout-panel="1"][data-layout-panel-key="hingeAngle"]').fill('90');await page.locator('[data-layout-panel="1"][data-layout-panel-key="hingeAngle"]').press('Tab');await add();await page.locator('[data-layout-join]').click();await expect(page.locator('[data-layout-kind="board"] polygon')).toHaveCount(3);
+ const add=async()=>{await addShape(page,'board');};await add();await openPropertySection(page, '接続した展示ボード');await page.locator('[data-layout-panel-add]').click();await page.locator('[data-layout-panel="1"][data-layout-panel-key="hingeAngle"]').fill('90');await page.locator('[data-layout-panel="1"][data-layout-panel-key="hingeAngle"]').press('Tab');await add();await openPropertySection(page, '接続した展示ボード');await page.locator('[data-layout-join]').click();await expect(page.locator('[data-layout-kind="board"] polygon')).toHaveCount(3);
  const choice=page.locator('[data-layout-view]'),faces=await choice.locator('option').evaluateAll(es=>(es as HTMLOptionElement[]).filter(e=>e.value.startsWith('board:')).map(e=>e.value));expect(faces).toHaveLength(2);await choice.selectOption(faces[0]);await page.locator('[data-layout-snap]').uncheck();await page.locator('[data-layout-smart]').uncheck();
  const click=async(x:number,y:number)=>{const p=await canvas.evaluate((el,p)=>{const q=new DOMPoint(p.x,p.y).matrixTransform((el as SVGSVGElement).getScreenCTM()!);return{x:q.x,y:q.y};},{x,y});await page.mouse.click(p.x,p.y);};
- const put=async(workId:string,x:number)=>{await page.locator('[data-layout-tab="works"]').click();await page.locator(`[data-layout-work-add="${workId}"]`).click();await click(x,500);await click(x+400,1100);};const ws=data.submissions[0].content.works;await put(ws[0].id,100);await put(ws[1].id,1100);await page.locator('[data-layout-tab="properties"]').click();const previousLeft=await page.locator('[data-layout-property="left"]').inputValue();await page.locator('[data-layout-property="left"]').fill('800');await page.locator('[data-layout-property="left"]').press('Tab');await expect(page.locator('.site-notice').last()).toContainText('継ぎ目');await expect(page.locator('[data-layout-property="left"]')).toHaveValue(previousLeft);await page.locator('[data-layout-property="left"]').fill('1100');await page.locator('[data-layout-property="left"]').press('Tab');await choice.selectOption(faces[1]);await put(ws[2].id,100);await page.locator('[data-layout-save]').click();await expect(page.locator('.site-notice').last()).toContainText('展示室レイアウトを保存');await page.reload();await page.locator('[data-open-room-editor="wall"]').click();await page.locator('[data-layout-view]').selectOption(faces[0]);await expect(page.locator('[data-layout-kind="work"]')).toHaveCount(2);await expect(page.locator('[data-layout-kind="titleboard"]')).toHaveCount(2);
+ const put=async(workId:string,x:number)=>{await page.locator('[data-layout-tab="works"]').click();await page.locator(`[data-layout-work-add="${workId}"]`).click();await click(x,500);await click(x+400,1100);};const ws=data.submissions[0].content.works;await put(ws[0].id,100);await put(ws[1].id,1100);await page.locator('[data-layout-tab="properties"]').click();await openPropertySection(page, '位置・向き');const previousLeft=await page.locator('[data-layout-property="left"]').inputValue();await page.locator('[data-layout-property="left"]').fill('800');await page.locator('[data-layout-property="left"]').press('Tab');await expect(page.locator('.site-notice').last()).toContainText('継ぎ目');await expect(page.locator('[data-layout-property="left"]')).toHaveValue(previousLeft);await page.locator('[data-layout-property="left"]').fill('1100');await page.locator('[data-layout-property="left"]').press('Tab');await choice.selectOption(faces[1]);await put(ws[2].id,100);await page.locator('[data-layout-save]').click();await expect(page.locator('.site-notice').last()).toContainText('展示室レイアウトを保存');await page.reload();await page.locator('[data-open-room-editor="wall"]').click();await page.locator('[data-layout-view]').selectOption(faces[0]);await expect(page.locator('[data-layout-kind="work"]')).toHaveCount(2);await expect(page.locator('[data-layout-kind="titleboard"]')).toHaveCount(2);
  const final=await(await page.request.get(`/api/member/exhibitions/${id}`)).json();expect(final.exhibition.rooms[0].boardPlacements).toHaveLength(3);expect(final.exhibition.rooms[0].titleBoards).toHaveLength(3);
 });
 
 test("participant list covers all notified members and overview has no form preview",async({page},info)=>{
-  await login(page,"planner@example.invalid");const index=["chromium","firefox","webkit"].indexOf(info.project.name)+1,id=`f2000000-0000-4000-8000-00000000000${index}`;
+  await login(page,"planner@example.invalid");const id=await fixtureExhibition(info.project.name,"通知先の参加者一覧");
   await page.goto(`/Member/manage/exhibitions/${id}`);await expect(page.locator('.exhibition-save-preview')).toHaveCount(0);await page.locator('.exhibition-admin-nav').getByRole('link',{name:'参加者一覧',exact:true}).click();await expect(page.locator('[data-participant-row]')).toHaveCount(2);await expect(page.locator('[data-participant-count]')).toHaveText('2 / 2人を表示');
   await page.locator('[data-participant-filter="vote"]').selectOption('absent');await expect(page.locator('[data-participant-row]:visible')).toHaveCount(1);await page.locator('[data-participant-filter="query"]').fill('存在しない名前');await expect(page.locator('[data-participant-row]:visible')).toHaveCount(0);await page.locator('[data-participant-filter="query"]').fill('別の会員');await expect(page.locator('[data-participant-row]:visible')).toHaveCount(1);
   await page.locator('[data-attendance-user="other"]').selectOption('attending');await page.locator('[data-save-attendance="other"]').click();await expect(page.locator('.site-notice').last()).toContainText('参加状況を保存');await page.locator('[data-participant-filter="query"]').fill('');await page.locator('[data-participant-filter="vote"]').selectOption('attending');await expect(page.locator('[data-participant-row]:visible')).toHaveCount(2);
@@ -99,7 +104,12 @@ test('staff caption counters use the same fitted size and retain a long caption 
 test('owners preview unsaved cards from each exhibition section, return to editing, retry and preview after the deadline',async({page,browser},info)=>{
   test.setTimeout(90000);
   await login(page,'planner@example.invalid');
-  const index=['chromium','firefox','webkit'].indexOf(info.project.name)+1,id=`f3000000-0000-4000-8000-00000000000${index}`,endpoint=`/api/exhibitions/${id}`;
+  const id=await fixtureExhibition(info.project.name,"本人のタイトルボードプレビュー",{source:"book"}),endpoint=`/api/exhibitions/${id}`;
+  const submissionState=async()=>{
+    const response=await page.request.get(endpoint,{maxRetries:1});
+    if(!response.ok()) throw new Error(await response.text());
+    return response.json();
+  };
   const initial=(await(await page.request.get(`/api/member/exhibitions/${id}`)).json()).exhibition,schema=initial.schemas.at(-1),specialId=crypto.randomUUID(),normalId=schema.sections[0].id;
   const changed=await page.request.post('/api/member/exhibitions',{headers,data:{action:'schema',exhibitionId:id,revision:initial.revision,schema:{...schema,sections:[...schema.sections,{id:specialId,title:'企画展示・街の光',description:''}]}}});expect(changed.status(),await changed.text()).toBe(200);
   await login(page);await page.goto(`/Exhibition/${id}`);await page.locator('[data-begin]').click();
@@ -113,7 +123,7 @@ test('owners preview unsaved cards from each exhibition section, return to editi
   await normal.locator('[data-work-key="title"]').fill('通常の作品');await normal.locator('[data-work-key="caption"]').fill('あ'.repeat(155)+'i');
   await normal.locator('[data-work-detail="place"]').fill('新宿');await normal.locator('[data-work-detail="prefecture"]').selectOption('東京都');
   await special.locator('[data-work-key="title"]').fill('企画の作品');await special.locator('[data-work-key="caption"]').fill('企画展示の説明です。');
-  await expect(page.locator('[data-draft-sync-status]')).toHaveText('自動保存済み');const before=await(await page.request.get(endpoint)).json();expect(before.submission.draft.works).toHaveLength(2);
+  await expect(page.locator('[data-draft-sync-status]')).toHaveText('自動保存済み');const before=await submissionState();expect(before.submission.draft.works).toHaveLength(2);
   const button=page.getByRole('button',{name:'タイトルボードをプレビュー',exact:true});await button.click();
   const modal=page.getByRole('dialog',{name:'自分のタイトルボードのプレビュー'}),image=modal.locator('[data-board-preview-image]');
   await expect(modal).toBeVisible();await expect(image).toBeVisible();await expect(image).toHaveJSProperty('naturalWidth',840);
@@ -125,21 +135,21 @@ test('owners preview unsaved cards from each exhibition section, return to editi
   for(const width of [1440,375]){await page.setViewportSize({width,height:900});await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true);expect((await modal.boundingBox())!.width).toBeLessThan(width);}
   await modal.evaluate(e=>e.scrollTop=0);await page.screenshot({path:info.outputPath('own-title-board-preview-mobile.png')});
   await page.keyboard.press('Escape');await expect(modal).toHaveCount(0);await expect(button).toBeFocused();await expect(normal.locator('[data-work-key="caption"]')).toHaveValue('あ'.repeat(155)+'i');
-  expect((await(await page.request.get(endpoint)).json()).submission).toEqual(before.submission);
+  expect((await submissionState()).submission).toEqual(before.submission);
   await normal.locator('[data-work-key="caption"]').fill('あ'.repeat(156));await button.click();await expect(image).toBeVisible();await expect(modal.locator('[data-board-preview-issues]')).toContainText('枠');await modal.getByRole('button',{name:'プレビューを閉じる',exact:true}).click();
   await normal.locator('[data-work-key="caption"]').fill('更新後の短い説明');
   await page.route(`**${endpoint}`,async route=>{if(route.request().method()==='POST'&&route.request().postDataJSON().action==='boards.preview')return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({ok:false,message:'プレビューを再試行してください'})});return route.continue();});
-  await expect(page.locator('[data-draft-sync-status]')).toHaveText('自動保存済み');const updated=await(await page.request.get(endpoint)).json();
+  await expect(page.locator('[data-draft-sync-status]')).toHaveText('自動保存済み');const updated=await submissionState();
   await button.click();await expect(modal.locator('[data-board-preview-status]')).toContainText('EXH-016');await expect(modal.getByRole('button',{name:'プレビューを更新',exact:true})).toBeEnabled();
   await page.unroute(`**${endpoint}`);await modal.getByRole('button',{name:'プレビューを更新',exact:true}).click();await expect(image).toBeVisible();await expect(modal.locator('[data-board-preview-caption]')).toContainText('10pt');expect(await image.getAttribute('src')).not.toBe(first);
-  await modal.getByRole('button',{name:'フォームに戻る',exact:true}).click();expect((await(await page.request.get(endpoint)).json()).submission).toEqual(updated.submission);
+  await modal.getByRole('button',{name:'フォームに戻る',exact:true}).click();expect((await submissionState()).submission).toEqual(updated.submission);
   await page.locator('[data-save]').click();await expect(page.locator('.exhibition-status')).toContainText('下書きを保存しました');
-  const saved=await(await page.request.get(endpoint)).json(),staff=await browser.newContext();
+  const saved=await submissionState(),staff=await browser.newContext();
   try {
     await fixtureLogin(staff.request,'http://127.0.0.1:4329/api/auth/login',{headers,data:{email:'planner@example.invalid',password:'fixture-password-123'}});
     const e=(await(await staff.request.get(`http://127.0.0.1:4329/api/member/exhibitions/${id}`)).json()).exhibition;
-    const closed=await staff.request.post('http://127.0.0.1:4329/api/member/exhibitions',{headers,data:{action:'settings',exhibitionId:id,revision:e.revision,title:e.title,status:'open',gallery:e.gallery,opensAt:e.opensAt,closesAt:new Date(Date.now()-1000).toISOString(),voteOpensAt:e.participation.opensAt,voteClosesAt:e.participation.closesAt}});expect(closed.status(),await closed.text()).toBe(200);
+    const closed=await staff.request.post('http://127.0.0.1:4329/api/member/exhibitions',{headers,data:{action:'settings',exhibitionId:id,revision:e.revision,title:e.title,status:'closed',gallery:e.gallery,opensAt:e.opensAt,closesAt:new Date(Date.now()-1000).toISOString(),voteOpensAt:e.participation.opensAt,voteClosesAt:e.participation.closesAt}});expect(closed.status(),await closed.text()).toBe(200);
   }finally{await staff.close();}
   await page.reload();await expect(page.locator('[data-common="name"]')).toBeDisabled();await expect(button).toBeEnabled();await button.click();await expect(image).toBeVisible();await page.keyboard.press('Escape');
-  expect((await(await page.request.get(endpoint)).json()).submission).toEqual(saved.submission);
+  expect((await submissionState()).submission).toEqual(saved.submission);
 });

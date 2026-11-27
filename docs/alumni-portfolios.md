@@ -14,7 +14,7 @@
 - `src/lib/auth.ts` の `canEditPortfolio`: 個人ページの編集リンク、編集画面、保存APIで共通の編集権限を判定する。
 - `src/pages/Portfolio/index.astro`: 学年の正規化、卒業生の分類、All Members・幹部欄からの除外。
 - `tests/alumni-portfolio.test.ts`: 所有者の再連携を含むロール別権限と学年表記の確認。
-- `tests/browser/alumni-portfolio.spec.ts`: Chromium・Firefox・WebKitで、390/1440pxの一覧と編集画面・保存APIの権限を確認する。専用の架空データは `ALUMNI_PORTFOLIO_FIXTURES=1` で有効化する。
+- `tests/browser/alumni-portfolio.spec.ts`: Chromium・Firefox・WebKitで、390/1440pxの一覧と編集画面・保存APIの権限を確認する。標準のブラウザ検証では専用の架空データを使用する。
 
 ## 2026年11月6日の復元作業
 

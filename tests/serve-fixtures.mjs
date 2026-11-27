@@ -25,7 +25,7 @@ Object.assign(process.env, {
   MFA_ENCRYPTION_KEY: "ef".repeat(32),
   SIGNUP_REVIEW_SECRET: "fixture-review-secret-at-least-32-characters",
   GMAIL_PASS: "synthetic-no-network-mail",
-  SITE_ERROR_REPORTS_ENABLED: process.env.BROWSER_ERROR_REPORTS === '1' ? '1' : '0',
+  SITE_ERROR_REPORTS_ENABLED: process.env.BROWSER_ERROR_REPORTS === '0' ? '0' : '1',
   INSTAGRAM_CLIENT_ID: "",
   INSTAGRAM_CLIENT_SECRET: "",
   EXHIBITION_GAS_URL: "", EXHIBITION_WEBHOOK_SECRET: "", EXHIBITION_DRIVE_GAS_URL: "", EXHIBITION_DRIVE_WEBHOOK_SECRET: "",
@@ -142,6 +142,7 @@ for(let index=0;index<3;index++) {
   const e=structuredClone(exhibitionFixtures[index]);e.id=`f4000000-0000-4000-8000-00000000000${index+1}`;e.title=`提出上限確認 ${index+1}`;exhibitionFixtures.push(e);
 }
 fs.writeFileSync(path.join(dir, "exhibitions.json"), JSON.stringify({ version: 1, exhibitions: exhibitionFixtures, submissions: layoutSubmissions, assets: [], outputs: [] }));
+fs.writeFileSync(path.join(dir, "browser-exhibition-seeds.json"), JSON.stringify({ exhibitions: exhibitionFixtures, submissions: layoutSubmissions }));
 const { drainExhibitionQueues } = await import("../src/lib/exhibitionIntegrations.ts");
 const { drainShiftGeneration } = await import("../src/lib/exhibitionShiftJobs.ts");
 const fixtureNoticeWorker = setInterval(() => {
@@ -178,7 +179,7 @@ let portfolios = users.map((u) => ({
   instagram: u.id === "other" ? "fixture_member" : "",
   x_url: u.id === "other" ? "https://x.com/fixture_member" : "",
 }));
-if (process.env.ALUMNI_PORTFOLIO_FIXTURES === "1") portfolios.push(
+if (process.env.ALUMNI_PORTFOLIO_FIXTURES !== "0") portfolios.push(
   { ...portfolios[0], id: "wpfqu4-8h10", name: "保管された作品", grade: "4th Grade", isExecutive: true, role: "元幹部" },
   { ...portfolios[0], id: "alumni-fixture-og", name: "卒業生OG", grade: "OG", isExecutive: true, role: "元幹部" },
   { ...portfolios[0], id: "alumni-fixture-ob", name: "卒業生OB", grade: ["OB/OG"], isExecutive: true, role: "元幹部" },

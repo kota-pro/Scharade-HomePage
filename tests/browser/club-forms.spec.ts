@@ -572,7 +572,8 @@ test("executives generate all four draft types, inspect actual links, and contro
       .getByRole("link", { name: "回答用フォーム", exact: true }),
   ).toHaveAttribute("href", firstUrl);
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.reload();
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.locator(`[data-club-id="${firstId}"]`)).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth + 1,

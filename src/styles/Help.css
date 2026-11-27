@@ -1,6 +1,8 @@
 :root { --help-top: max(8.3vw, 60px); }
 body[data-app-shell] { --help-top: env(safe-area-inset-top, 0px); }
 button.help-launcher[data-help-open] { position: fixed; top: calc(var(--help-top) + 14px); right: max(16px, env(safe-area-inset-right)); z-index: 95; box-sizing: border-box; padding: 0; min-width: 44px; min-height: 44px; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #ddd; border-radius: 50%; background: #fff; box-shadow: 0 3px 12px #0002; color: #222; font: 700 24px/1 sans-serif; cursor: pointer; }
+[data-help-launcher-slot] { margin-inline-start: auto; }
+[data-help-launcher-slot] > button.help-launcher[data-help-open] { position: relative; inset: auto; }
 button.help-launcher[data-help-open]:hover { background: #fff9d7; }
 button.help-launcher[data-help-open] > svg { width: 32px; height: 32px; display: block; }
 .help-notification-badge { position: absolute; top: -5px; right: -5px; min-width: 19px; height: 19px; box-sizing: border-box; padding: 0 4px; display: grid; place-items: center; border: 2px solid #fff; border-radius: 999px; background: #bb3838; color: #fff; font: 700 10px/1 sans-serif; }

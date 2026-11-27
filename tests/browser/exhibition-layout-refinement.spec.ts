@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { fixtureLogin } from "./fixture-auth";
-import { addShape, clickLayout, outputSvgText } from "./layout-tools-helper";
+import { addShape, openRoomCreation, clickLayout, outputSvgText } from "./layout-tools-helper";
 const headers = { Origin: "http://127.0.0.1:4329" };
 async function login(page: Page, email = "planner@example.invalid") {
   expect((await fixtureLogin(page.request, "/api/auth/login", { headers, data: { email, password: "fixture-password-123" } })).ok()).toBe(true);
@@ -50,7 +50,7 @@ test("manual shape sizes and floor opening previews match their eventual placeme
   expect(await canvas.boundingBox()).toEqual(rect);
   for (const width of [1440, 390]) { await page.setViewportSize({ width, height: 1000 }); await expect(page.locator("[data-layout-save]")).toBeInViewport(); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth+2)).toBe(true); await page.screenshot({ path: info.outputPath(`align-${width}.png`) }); }
   await page.locator("[data-room-modal-close]").click(); await page.locator('[data-open-room-editor="floor"]').click();
-  await expect(page.locator('[data-layout-tab="properties"]')).toHaveAttribute("aria-selected", "true"); await expect(page.locator("[data-room-add]")).toBeVisible();
+  await expect(page.locator('[data-layout-tab="properties"]')).toHaveAttribute("aria-selected", "true"); await openRoomCreation(page);
   expect(errors).toEqual([]);
 });
 
