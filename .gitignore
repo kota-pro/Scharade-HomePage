@@ -8,6 +8,7 @@ out/
 .vercel/
 
 .DS_Store
+._*
 .history/
 *.log
 
